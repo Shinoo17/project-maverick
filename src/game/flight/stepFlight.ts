@@ -11,7 +11,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   if (!state.alive) return
   const velocity = new Vector3().copy(state.velocity)
   const speed = velocity.length()
-  stepSpeed(state, command, dt, speed)
+  const { thrust, braking } = stepSpeed(state, command, dt, speed)
   const authority = clamp(speed / 90, 0.12, 1) * clamp(160 / Math.max(speed, 1), 0.6, 1)
   const blend = 1 - Math.exp(-p.rateResponse * dt)
   const rates = state.rates
@@ -30,12 +30,11 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   if (lateral.length() > 55) lateral.setLength(55)
   const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2)
   const drag = p.drag * speed * speed + turnLoss + Math.max(0, speed - 260) ** 2 * 0.02
-  const deceleration = Math.min(12, Math.max(0, speed - state.targetSpeedMps) * 0.4)
-  const thrust = command.airbrake ? 0 : state.enginePower * p.acceleration
-  const force = forward.clone().multiplyScalar(thrust).add(lateral).addScaledVector(path, -drag - deceleration - (command.airbrake ? 30 : 0))
+  const force = forward.clone().multiplyScalar(thrust).add(lateral).addScaledVector(path, -drag - braking)
   // Arcade trim cancels cross-path gravity while retaining climb/descent energy cost.
   force.addScaledVector(path, -p.gravity * path.y)
   velocity.addScaledVector(force, dt)
+  if (velocity.dot(path) < 0) velocity.addScaledVector(path, -velocity.dot(path))
   Object.assign(state.velocity, velocity)
   state.position.x += velocity.x * dt; state.position.y += velocity.y * dt; state.position.z += velocity.z * dt
   if (state.position.y <= 3) { state.position.y = 3; state.alive = false; state.stopReason = 'terrain' }

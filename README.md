@@ -44,7 +44,7 @@ npm run preview
 | `src/locales` | Thai/English copy |
 | `tests` | Runtime/content/storage and animation behavior checks |
 
-Phase 1 adds a 60 Hz world / 120 Hz flight runtime, W/S target speed, pitch/yaw/roll, Mouse + Keyboard and Keyboard-only presets, two chase camera roll modes, telemetry, pause/reset and terrain/boundary stops. Thai/English uses react-i18next. Both airframes use the experimental F-22 baseline; aircraft-specific balancing, maneuvers, combat, bots and multiplayer follow in later phases. The hangar runs without starting a game session.
+Phase 1 adds a 60 Hz world / 120 Hz flight runtime, direct W/S acceleration with a short coast on release, a positional mouse stick that reads as a joystick on the glass, with the pointer angle setting the bank and a swirl around the gate rolling the aircraft, pitch/yaw/roll, Mouse + Keyboard and Keyboard-only presets, two chase camera roll modes, telemetry, pause/reset and terrain/boundary stops. Thai/English uses react-i18next. Both airframes use the experimental F-22 baseline; aircraft-specific balancing, maneuvers, combat, bots and multiplayer follow in later phases. The hangar runs without starting a game session.
 
 ## Asset presentation
 

@@ -9,6 +9,7 @@ export interface PilotCommand {
   pitch: number
   roll: number
   yaw: number
+  // Signed acceleration request: W = +1, S = -1, release = 0.
   speedAdjust: number
   airbrake: boolean
   afterburner: boolean

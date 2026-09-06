@@ -1,8 +1,10 @@
 /example
 /node_modules/
 /dist/
-/public/assets/aircraft/*.glb
+/.vite/
+/public/assets/**/*.glb
 /public/basis/
 *.tsbuildinfo
 .DS_Store
 /artifacts/
+node_modules

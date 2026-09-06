@@ -29,7 +29,7 @@ export class GameRuntime {
         position: { x: index * 40, y: trainingMap.spawnAltitude, z: 0 },
         orientation: { x: 0, y: 0, z: 0, w: 1 },
         velocity: { x: trainingMap.spawnSpeed, y: 0, z: 0 }, alive: true,
-        targetSpeedMps: trainingMap.spawnSpeed, enginePower: flightProfile.drag * trainingMap.spawnSpeed ** 2 / flightProfile.acceleration,
+        speedDrive: 0, enginePower: flightProfile.drag * trainingMap.spawnSpeed ** 2 / flightProfile.maxThrust,
         rates: { pitch: 0, yaw: 0, roll: 0 },
       })),
     }
