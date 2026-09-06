@@ -42,6 +42,8 @@ FND-02/03 ทำก่อนนำ flight state เข้า runtime; FND-04 gat
 
 ## P1 — เครื่องหนึ่งลำที่บังคับง่าย
 
+มี implementation baseline แล้ว: ดู [Phase 1 flight slice](../phase-1-flight-slice.md) สำหรับไฟล์เจ้าของงานและผลตรวจ ตารางด้านล่างเป็น acceptance เป้าหมาย โดย flight feel และ release QA ยังต้อง playtest
+
 | Task | ผลลัพธ์ | Acceptance |
 |---|---|---|
 | FLT-01 | Flat map + canonical axes + safe spawn | scale/forward/pitch/yaw/roll sign ตรงกันทั้ง sim และ GLB |

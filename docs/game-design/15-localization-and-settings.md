@@ -10,6 +10,8 @@
 
 ## โครงสร้างข้อความ
 
+Implementation P1 ใช้ `i18next` + `react-i18next` ผ่าน `initReactI18next` และ `useTranslation` ที่ `src/locales/index.ts` เก็บข้อความใน typed `en.ts` / `th.ts` namespace เดียวก่อน ขอบเขต namespace แยกตามตัวอย่างด้านล่างเมื่อข้อความโต ไม่ส่ง translation dependency เข้า game core
+
 ```text
 locales/
   th/ common.json, hangar.json, flight.json, combat.json, tutorial.json, aircraft.json

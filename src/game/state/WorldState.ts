@@ -8,6 +8,10 @@ export interface AircraftState {
   position: Vec3
   orientation: Quat
   velocity: Vec3
+  targetSpeedMps: number
+  enginePower: number
+  rates: { pitch: number; yaw: number; roll: number }
+  stopReason?: 'terrain' | 'boundary'
   alive: boolean
 }
 export interface WorldState {

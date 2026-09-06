@@ -1,0 +1,39 @@
+.is-flight { min-height: 650px; }
+.flight-root { position: relative; flex: 1; min-height: 580px; background: #acc5d2; }
+.flight-scene { position: absolute; inset: 0; outline: none; }
+.flight-hud { position: absolute; inset: 0; pointer-events: none; color: #fff; padding: 24px; }
+.flight-identity { display: flex; gap: 12px; align-items: baseline; width: fit-content; background: #19252de8; padding: 12px 16px; }
+.flight-identity strong { font-family: var(--display); font-size: 24px; }
+.flight-identity span { font-size: 13px; }
+.flight-telemetry { display: flex; width: fit-content; gap: 28px; margin: 1px 0; padding: 16px; background: #19252de8; font-variant-numeric: tabular-nums; }
+.flight-telemetry dt { font-size: 13px; color: #c4d3da; }
+.flight-telemetry dd { margin: 4px 0 0; font-size: 28px; font-weight: 600; }
+.flight-telemetry small { display: block; font-size: 12px; color: #c4d3da; font-weight: 400; }
+.flight-actions { position: absolute; right: 24px; top: 24px; display: flex; align-items: center; gap: 14px; font-size: 13px; background: #19252de8; padding-left: 12px; }
+.flight-actions button { pointer-events: auto; background: #293c47; min-height: 44px; padding: 0 16px; }
+.flight-reticle { position: absolute; top: 50%; left: 50%; font-size: 28px; transform: translate(-50%, -50%); text-shadow: 1px 2px 3px #243029; }
+.flight-stick { position: absolute; bottom: 98px; left: calc(50% - 48px); width: 96px; height: 96px; border: 1px solid #fff9; border-radius: 50%; }
+.flight-stick i { position: absolute; left: 43px; top: 43px; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.flight-controls { position: absolute; bottom: 18px; left: 24px; right: 24px; margin: 0 auto; width: fit-content; max-width: calc(100% - 48px); padding: 12px 18px; font-size: 13px; line-height: 1.65; background: #19252de8; }
+.flight-warning { text-align: center; margin-top: 20px; color: #181d20; background: #ffdb82; width: fit-content; margin-inline: auto; padding: 8px 16px; }
+.flight-warning:empty { display: none; }
+.flight-menu { width: min(500px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 28px; border: 1px solid #596970; background: #19232b; color: #edf0ed; }
+.flight-menu::backdrop { background: #10182085; }
+.flight-menu-kicker { font-size: 13px; color: #cbb88f; margin-bottom: 12px; }
+.flight-menu h1 { font-size: 26px; margin-bottom: 12px; }
+.flight-menu p { line-height: 1.7; font-size: 14px; }
+.flight-menu .flight-baseline { font-size: 12px; color: #b4c3cd; margin-top: 6px; }
+.flight-menu label { display: block; font-size: 13px; margin-top: 18px; }
+.flight-menu select { display: block; width: 100%; min-height: 44px; padding: 8px 12px; margin-top: 6px; background: #293943; border: 1px solid #596970; }
+.flight-menu .flight-instructions { font-size: 13px; color: #c9d2d8; margin: 20px 0; }
+.flight-menu button, .flight-menu a { display: block; text-align: center; text-decoration: none; color: #edf0ed; width: 100%; min-height: 44px; padding: 12px; margin-top: 8px; background: #293943; }
+.flight-menu .flight-primary { background: #ffcd60; color: #1a201e; font-weight: 700; }
+.flight-menu button:hover, .flight-menu a:hover { filter: brightness(1.1); }
+@media (max-width: 760px) {
+  .flight-identity span { display: none; }
+  .flight-hud { padding: 12px; }
+  .flight-actions { right: 12px; top: 12px; }
+  .flight-actions span { display: none; }
+  .flight-telemetry { gap: 18px; }
+  .flight-telemetry dd { font-size: 22px; }
+}

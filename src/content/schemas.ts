@@ -16,5 +16,6 @@ export interface AircraftDefinition {
 
 export interface SessionConfig {
   mode: 'playground' | 'offline'
+  mapId?: 'flat-range'
   aircraftIds: AircraftId[]
 }

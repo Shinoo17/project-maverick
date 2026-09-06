@@ -1,6 +1,6 @@
 # Reference viewer code
 
-The animation rest-pose/static-track preparation and studio environment approach are adapted from the supplied `example/F22` reference.
+The animation rest-pose/static-track preparation, flight control-surface hinge mapping and studio environment approach are adapted from the supplied `example/F22` reference.
 
 MIT License
 

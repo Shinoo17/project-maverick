@@ -15,13 +15,14 @@ import { Box, ChevronRight, CircleSlash, Grid2X2, Lightbulb, Plane, Rocket, Rota
 import { aircraft, getAircraft, modelUrl } from '../../content/aircraft'
 import type { AircraftId } from '../../content/schemas'
 import { selectAircraft, useSessionSettings } from '../../app/sessionStore'
-import { getTranslations } from '../../locales'
+import { useTexts } from '../../locales'
 import type { Stage } from '../../render/aircraft/animationStages'
 import type { CameraCommand, CameraReport, CameraRequest, ViewPreset } from '../../render/ObsidianScene'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import { SceneBoundary } from '../../ui/components/SceneBoundary'
 import { supportsWebGL2 } from '../../platform/webgl'
 import { clipLabel, clipOrder } from './clipLabels'
+import { LaunchPanel } from './LaunchPanel'
 import './hangar.css'
 
 const ObsidianScene = lazy(() => import('../../render/ObsidianScene'))
@@ -44,7 +45,7 @@ function useReducedMotion() {
 export function HangarPage() {
   const { aircraftId, locale } = useSessionSettings()
   const current = getAircraft(aircraftId)
-  const text = getTranslations(locale)
+  const text = useTexts()
   const [loaded, setLoaded] = useState<{ id: AircraftId; stages: Stage[] } | null>(null)
   const [failed, setFailed] = useState(false)
   const [webglAvailable] = useState(supportsWebGL2)
@@ -105,7 +106,7 @@ export function HangarPage() {
 
   const statusCode = !webglAvailable ? 'NO GPU' : failed ? 'FAULT' : ready ? 'READY' : 'SYNC'
   const panelTitle = tab === 'weapons' ? text.weaponsControl : tab === 'flight' ? text.flightControl : text.airframeControl
-  const views: [ViewPreset, string][] = [['hero', '3/4'], ['front', 'FRONT'], ['side', 'SIDE'], ['top', 'TOP']]
+  const views: [ViewPreset, string][] = [['hero', text.viewPerspective], ['front', text.viewFront], ['side', text.viewSide], ['top', text.viewTop]]
   const tabs: [PanelTab, string, typeof Scan][] = [['systems', text.tabSystems, Scan], ['flight', text.tabFlight, Plane], ['weapons', text.tabWeapons, Rocket]]
 
   return <main className="hangar-root">
@@ -136,6 +137,7 @@ export function HangarPage() {
         <p>{current.role[locale]}</p>
       </div>
 
+      <div className="hangar-rail">
       <aside className="hangar-panel" aria-label={text.hangar}>
         <div className="hangar-panel-heading">
           <span>{panelTitle}</span>
@@ -209,6 +211,9 @@ export function HangarPage() {
 
         <p className="hangar-note" id="hangar-hint">{text.panelNote}</p>
       </aside>
+
+      <LaunchPanel available={webglAvailable} />
+      </div>
     </div>
 
     {pickerOpen && <div className="hangar-picker" role="dialog" aria-modal="true" aria-label={text.selectAircraft}>

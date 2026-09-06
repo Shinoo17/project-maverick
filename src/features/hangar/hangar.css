@@ -241,3 +241,27 @@ html[lang='th'] .is-hangar .hangar-card-copy small { text-transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .is-hangar * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Mission controls sit below the inspection panel in one bounded, scrollable rail. */
+.is-hangar .hangar-rail { position: absolute; top: 24px; right: 24px; bottom: 18px; width: 304px; display: flex; flex-direction: column; gap: 12px; pointer-events: auto; }
+.is-hangar .hangar-rail .hangar-panel { position: relative; inset: auto; width: 100%; min-height: 0; flex: 1; overflow-y: auto; }
+.is-hangar .launch-panel { flex: 0 0 auto; }
+.is-hangar .launch-setup { display: flex; border: 1px solid #65727e; background: #3c4853; }
+.is-hangar .launch-fields { flex: 1; min-width: 0; padding: 10px 12px; }
+.is-hangar .launch-fields label { display: block; }
+.is-hangar .launch-fields label + label { margin-top: 7px; }
+.is-hangar .launch-fields label span { display: block; color: #d3dce3; font-size: 12px; }
+.is-hangar .launch-fields select { pointer-events: auto; width: 100%; min-height: 30px; border: 0; background: #3c4853; color: #fff; font-size: 14px; font-weight: 650; }
+.is-hangar .launch-emblem { display: grid; place-items: center; width: 65px; flex-shrink: 0; background: #2264b6; color: #fff; }
+.is-hangar .launch-play { width: 100%; min-height: 83px; border: 1px solid #ffdb82; background: linear-gradient(115deg, #fff29a, #ffbc38 65%, #ffa71e); color: #17160d; font-family: var(--hangar-display); font-size: 38px; font-weight: 900; letter-spacing: 0.04em; }
+.is-hangar .launch-play:hover:not(:disabled) { background: #ffda70; color: #17160d; }
+.is-hangar .launch-play:active:not(:disabled) { background: #efb03b; }
+.is-hangar .launch-caption { text-align: center; font-size: 12px; line-height: 1.5; color: #adb8be; margin-top: 6px; }
+@media (max-width: 1080px) {
+  .is-hangar .hangar-root { min-height: 1100px; }
+  .is-hangar .hangar-stage { height: 480px; }
+  .is-hangar .hangar-title { top: 310px; }
+  .is-hangar .hangar-rail { top: 440px; right: 16px; left: 16px; bottom: 18px; width: auto; }
+  .is-hangar .hangar-rail .hangar-panel { max-height: none; }
+  .is-hangar .hangar-system-list { max-height: 160px; }
+}

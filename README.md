@@ -1,6 +1,6 @@
 # Project Maverick
 
-React + TypeScript foundation with an interactive aircraft studio. See [MASTER_PLAN.md](MASTER_PLAN.md) for the full game roadmap and [phase implementation notes](docs/phase-0-implementation.md) for the scope and validation of this slice.
+React + TypeScript aircraft studio and playable Phase 1 training flight. See [MASTER_PLAN.md](MASTER_PLAN.md) for the full game roadmap and [Phase 1 implementation notes](docs/phase-1-flight-slice.md) for the scope and validation of this slice.
 
 ## Run
 
@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:5173/#/ for the foundation studio. Additional design routes in this shared workspace are exposed in the top navigation.
+Open http://127.0.0.1:5173/#/ for the hangar. Select Practice / Flat training range below the inspection panel and press Play, or open `#/flight` directly.
 
 `npm install` copies the two source aircraft from `model/` into the generated public asset directory and installs the matching Three.js Basis texture decoders locally. After replacing a source GLB, run `npm run assets:prepare`. Generated copies and decoder binaries are ignored by Git; keep the source GLBs with the project.
 
@@ -44,7 +44,7 @@ npm run preview
 | `src/locales` | Thai/English copy |
 | `tests` | Runtime/content/storage and animation behavior checks |
 
-Flight, input adapters, combat, weapons, bots and multiplayer are later phases. The P0 runtime advances world ticks but does not simulate flight. The hangar runs without starting a game session.
+Phase 1 adds a 60 Hz world / 120 Hz flight runtime, W/S target speed, pitch/yaw/roll, Mouse + Keyboard and Keyboard-only presets, two chase camera roll modes, telemetry, pause/reset and terrain/boundary stops. Thai/English uses react-i18next. Both airframes use the experimental F-22 baseline; aircraft-specific balancing, maneuvers, combat, bots and multiplayer follow in later phases. The hangar runs without starting a game session.
 
 ## Asset presentation
 
