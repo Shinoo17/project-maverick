@@ -1,0 +1,8 @@
+/example
+/node_modules/
+/dist/
+/public/assets/aircraft/*.glb
+/public/basis/
+*.tsbuildinfo
+.DS_Store
+/artifacts/
