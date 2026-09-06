@@ -6,7 +6,6 @@ export interface FlightSession {
   input: FlightInput
   preset: InputPreset
   cameraMode: CameraRollMode
-  sensitivity: number
   running: boolean
   resetId: number
 }

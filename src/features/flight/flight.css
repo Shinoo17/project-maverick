@@ -1,7 +1,8 @@
 .is-flight { min-height: 650px; }
 .flight-root { position: relative; flex: 1; min-height: 580px; background: #acc5d2; }
 .flight-scene { position: absolute; inset: 0; outline: none; }
-.flight-hud { position: absolute; inset: 0; pointer-events: none; color: #fff; padding: 24px; }
+/* Clipped: the gate is the window, so the stick marker sits on the edge at full deflection. */
+.flight-hud { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: #fff; padding: 24px; }
 .flight-identity { display: flex; gap: 12px; align-items: baseline; width: fit-content; background: #19252de8; padding: 12px 16px; }
 .flight-identity strong { font-family: var(--display); font-size: 24px; }
 .flight-identity span { font-size: 13px; }
@@ -13,10 +14,6 @@
 .flight-actions button { pointer-events: auto; background: #293c47; min-height: 44px; padding: 0 16px; }
 .flight-reticle { position: absolute; top: 50%; left: 50%; font-size: 28px; transform: translate(-50%, -50%); text-shadow: 1px 2px 3px #243029; }
 .flight-path { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-/* The stick gate, drawn at the size it actually has. A pilot who has lost track of the
-   stick has one place to look, and "put it back in the middle" is then actionable. */
-.flight-gate { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 1px solid #ffffff4d; border-radius: 50%; }
-.flight-gate::before { content: ''; position: absolute; top: 50%; left: 50%; width: 12%; height: 12%; transform: translate(-50%, -50%); border: 1px solid #ffffff4d; border-radius: 50%; }
 .flight-stick { position: absolute; top: 50%; left: 50%; width: 13px; height: 13px; margin: -7px 0 0 -7px; border: 2px solid #fff; border-radius: 50%; outline: 1px solid #24302966; }
 .flight-path { font-size: 25px; color: #ffe29b; text-shadow: 1px 2px 3px #243029; }
 .flight-controls { position: absolute; bottom: 18px; left: 24px; right: 24px; margin: 0 auto; width: fit-content; max-width: calc(100% - 48px); padding: 12px 18px; font-size: 13px; line-height: 1.65; background: #19252de8; }

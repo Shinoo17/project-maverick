@@ -1,5 +1,5 @@
 import { neutralCommand } from '../runtime/commands'
-import { LEVEL_FRAME, MOUSE_SENSITIVITY, clampSensitivity, clearStick, createMouseStick, engageStick, moveStick, readStickAxes, refitStick, type ScreenFrame } from './mouseStick'
+import { LEVEL_FRAME, clearStick, createMouseStick, engageStick, moveStick, readStickAxes, refitStick, stickGate, type ScreenFrame, type StickGate } from './mouseStick'
 export type InputPreset = 'mouse' | 'keyboard'
 // A held key is always full deflection and the shaped stick never is, so "strictly larger
 // wins" gives the keyboard priority over the mouse without a special case for it.
@@ -7,26 +7,21 @@ const strongest = (digital: number, analog: number) => Math.abs(analog) > Math.a
 export class FlightInput {
   readonly held = new Set<string>()
   readonly stick = createMouseStick()
-  // Shorter side of the flight surface, in pixels; the gate is a fraction of it.
-  extent = 480
-  // Divides the gate radius: turn it up and less of the screen is a full deflection.
-  sensitivity: number = MOUSE_SENSITIVITY.default
+  // The flight surface in pixels, and the gate that spans it.
+  width = 640; height = 480
+  gate: StickGate = stickGate(640, 480)
   // How far the airframe appears rotated inside the frame, and how much of that applies.
   screen: ScreenFrame = LEVEL_FRAME
   clear() { this.held.clear(); clearStick(this.stick); this.screen = LEVEL_FRAME }
   // The surface has taken the pointer: neutral and live from the first frame.
   engage() { engageStick(this.stick) }
   setViewport(width: number, height: number) {
-    const extent = Math.min(width, height)
-    if (!(extent > 0) || extent === this.extent) return
-    this.extent = extent
-    refitStick(this.stick, extent, this.sensitivity)
+    if (!(width > 0 && height > 0) || (width === this.width && height === this.height)) return
+    this.width = width; this.height = height
+    this.gate = stickGate(width, height)
+    refitStick(this.stick, this.gate)
   }
-  setSensitivity(value: number) {
-    this.sensitivity = clampSensitivity(value)
-    refitStick(this.stick, this.extent, this.sensitivity)
-  }
-  move(x: number, y: number) { moveStick(this.stick, x, y, this.extent, this.sensitivity) }
+  move(x: number, y: number) { moveStick(this.stick, x, y, this.gate) }
   command(tick: number, entityId: string, preset: InputPreset) {
     const c = neutralCommand(tick, entityId)
     const has = (...codes: string[]) => codes.some(code => this.held.has(code))

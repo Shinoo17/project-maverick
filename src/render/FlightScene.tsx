@@ -10,10 +10,10 @@ import { GameRuntime } from '../game/runtime/GameRuntime'
 import type { AircraftState } from '../game/state/WorldState'
 import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
-import { screenFrame, stickRadiusPx } from '../game/input/mouseStick'
+import { screenFrame } from '../game/input/mouseStick'
 import { createFlightRig } from './aircraft/flightRig'
 
-export type FlightIndicators = Record<'nose' | 'path' | 'gate' | 'stick', RefObject<HTMLDivElement | null>>
+export type FlightIndicators = Record<'nose' | 'path' | 'stick', RefObject<HTMLDivElement | null>>
 interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; onReady: () => void; onTelemetry: (state: AircraftState) => void }
 function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
@@ -71,19 +71,13 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
     rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1))
     camera.updateMatrixWorld()
-    // The gate is a fraction of the shorter side, so it follows a resized window.
+    // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
-    const radius = stickRadiusPx(session.input.extent, session.input.sensitivity)
-    const gate = indicators.gate.current, marker = indicators.stick.current
-    if (gate) { gate.style.width = gate.style.height = `${radius * 2}px` }
+    // The held position is already clamped to the gate, so the marker is simply where it is.
+    const marker = indicators.stick.current
     if (marker) {
-      // Clamped to the disc exactly as the input layer does it, so the marker stays in the
-      // direction the pilot is pointing even out at the limit.
-      const stick = session.input.stick
-      const length = Math.max(Math.hypot(stick.x, stick.y), 1e-6)
-      const scale = Math.min(length, 1) / length
-      marker.style.left = `${size.width / 2 + stick.x * scale * radius}px`
-      marker.style.top = `${size.height / 2 - stick.y * scale * radius}px`
+      marker.style.left = `${size.width / 2 + session.input.stick.px}px`
+      marker.style.top = `${size.height / 2 + session.input.stick.py}px`
     }
     const nose = new Vector3(1, 0, 0).applyQuaternion(pose.orientation)
     const directions = { nose, path: new Vector3().copy(state.velocity).normalize() }

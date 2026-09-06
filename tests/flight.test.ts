@@ -5,7 +5,7 @@ import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
 import { FlightInput } from '../src/game/input/FlightInput'
 import { FlightCamera } from '../src/render/FlightCamera'
-import { MOUSE_SENSITIVITY, MOUSE_STICK, createMouseStick, engageStick, moveStick, readStickAxes, screenFrame, stickRadiusPx } from '../src/game/input/mouseStick'
+import { MOUSE_STICK, createMouseStick, engageStick, moveStick, readStickAxes, screenFrame, stickGate } from '../src/game/input/mouseStick'
 import type { CameraRollMode } from '../src/render/FlightCamera'
 import type { AircraftState } from '../src/game/state/WorldState'
 import { stepFlight } from '../src/game/flight/stepFlight'
@@ -113,10 +113,13 @@ describe('P1 flight acceptance', () => {
 })
 describe('input and locales', () => {
   it('cancels opposite keys, overrides mouse and clears held/stick state', () => {
-    const input = new FlightInput(); input.engage(); input.move(240, -240)
-    // Clamped to the disc by length, so a diagonal shove keeps its direction.
-    expect(Math.hypot(input.stick.x, input.stick.y)).toBeCloseTo(1)
-    expect(input.stick.x).toBeCloseTo(input.stick.y)
+    const input = new FlightInput(); input.setViewport(1000, 1000); input.engage(); input.move(4000, -4000)
+    // Clamped to the corner of the gate, and the shaping saturates everything past one
+    // radius, so a diagonal shove arrives at full deflection still pointing where it was sent.
+    expect([input.stick.px, input.stick.py]).toEqual([500, -500])
+    const shove = input.command(0, 'aircraft-1', 'mouse')
+    expect(Math.hypot(shove.pitch, shove.roll)).toBeCloseTo(1)
+    expect(shove.roll).toBeCloseTo(shove.pitch)
     input.engage()
     input.held.add('ArrowUp'); input.held.add('ArrowDown'); input.held.add('KeyA'); input.held.add('KeyD'); input.held.add('KeyW'); input.held.add('KeyS')
     const command = input.command(0, 'aircraft-1', 'mouse')
@@ -141,12 +144,12 @@ The pointer stick, end to end: a position inside the gate, turned into the airfr
 by how far the camera leaves the aircraft looking rotated, and flown.
 */
 function place(input: FlightInput, aim: { x: number; y: number }) {
-  const radius = stickRadiusPx(input.extent)
+  const radius = input.gate.radius
   input.move(aim.x * radius - input.stick.px, -aim.y * radius - input.stick.py)
 }
 function flyMouse(state: AircraftState, aim: (seconds: number) => { x: number; y: number }, seconds: number, mode: CameraRollMode = 'horizon') {
   const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
-  input.extent = 1000; input.engage()
+  input.setViewport(1000, 1000); input.engage()
   for (let i = 0; i < seconds * 120; i++) {
     place(input, aim(i / 120))
     rig.update(camera, state, mode, 1 / 120)
@@ -194,54 +197,76 @@ describe('flight envelope', () => {
 })
 
 describe('positional mouse stick', () => {
-  it('divides the gate by sensitivity so the pointer can roam more or less of the screen', () => {
-    const wide = stickRadiusPx(1000, MOUSE_SENSITIVITY.min), tight = stickRadiusPx(1000, MOUSE_SENSITIVITY.max)
-    expect(wide).toBeGreaterThan(stickRadiusPx(1000))
-    expect(tight).toBeLessThan(stickRadiusPx(1000))
-    // At the widest setting the gate spans most of a window whose short side is 1000px.
-    expect(wide * 2).toBeGreaterThan(1000)
-    expect(stickRadiusPx(1000, NaN)).toBeCloseTo(stickRadiusPx(1000))
-    expect(stickRadiusPx(1000, 99)).toBeCloseTo(tight)
-    // Turning it up re-clamps what is held rather than stranding it outside a smaller gate.
-    const input = new FlightInput(); input.extent = 1000; input.engage()
-    input.move(stickRadiusPx(1000), 0)
-    input.setSensitivity(MOUSE_SENSITIVITY.max)
-    expect(input.stick.px).toBeCloseTo(tight)
-    expect(Math.hypot(input.stick.x, input.stick.y)).toBeCloseTo(1)
+  it('is the window itself, with full deflection on the shorter side', () => {
+    // A wide window: the pointer reaches the left and right edges, and full deflection is
+    // reached at the top and bottom ones, with the sides as room to point rather than travel.
+    const wide = stickGate(1600, 900)
+    expect(wide.halfWidth).toBe(800); expect(wide.halfHeight).toBe(450)
+    expect(wide.radius).toBe(450)
+    expect(stickGate(0, NaN)).toEqual({ halfWidth: 0.5, halfHeight: 0.5, radius: 0.5 })
+    // A resized window re-clamps what is held rather than stranding it outside a smaller gate.
+    const input = new FlightInput(); input.setViewport(1600, 900); input.engage()
+    input.move(2000, 0)
+    expect(input.stick.px).toBe(800)
+    input.setViewport(800, 900)
+    expect(input.stick.px).toBe(400)
+    expect(input.stick.x).toBeCloseTo(1)
   })
-  it('is a disc with a soft middle and a squared curve, and only reads while live', () => {
+  it('has a soft middle and a squared curve, and only reads while live', () => {
     const stick = createMouseStick()
     expect(readStickAxes(stick)).toBeNull()
     engageStick(stick)
     expect(readStickAxes(stick)).toEqual({ pitch: 0, roll: 0 })
-    const radius = stickRadiusPx(1000)
-    expect(radius).toBeCloseTo(1000 * MOUSE_STICK.radius)
+    const gate = stickGate(1000, 1000), radius = gate.radius
+    expect(radius).toBe(500)
     // Inside the dead zone nothing is commanded; a positional stick has one neutral and the
     // dead zone is what makes it a place rather than a point.
-    moveStick(stick, radius * MOUSE_STICK.deadZone * 0.9, 0, 1000)
+    moveStick(stick, radius * MOUSE_STICK.deadZone * 0.9, 0, gate)
     expect(readStickAxes(stick)).toEqual({ pitch: 0, roll: 0 })
     // Squared response: half the gate is a quarter of the deflection, near enough.
-    moveStick(stick, radius * 0.5 - stick.px, 0, 1000)
+    moveStick(stick, radius * 0.5 - stick.px, 0, gate)
     expect(readStickAxes(stick)!.roll).toBeCloseTo(((0.5 - MOUSE_STICK.deadZone) / (1 - MOUSE_STICK.deadZone)) ** 2)
-    moveStick(stick, radius - stick.px, 0, 1000)
+    moveStick(stick, radius - stick.px, 0, gate)
     expect(readStickAxes(stick)!.roll).toBeCloseTo(1)
     expect(readStickAxes(stick)!.pitch).toBeCloseTo(0)
     // A diagonal reaches full deflection at the same distance from the middle as a straight
-    // pull, and the direction survives the clamp.
-    moveStick(stick, -stick.px, -stick.py, 1000)
-    moveStick(stick, 4000, -4000, 1000)
+    // pull — the shaping saturates past one radius — and the direction survives the corner.
+    moveStick(stick, -stick.px, -stick.py, gate)
+    moveStick(stick, 4000, -4000, gate)
+    expect(stick.px).toBe(500); expect(stick.py).toBe(-500)
     const diagonal = readStickAxes(stick)!
     expect(Math.hypot(diagonal.pitch, diagonal.roll)).toBeCloseTo(1)
     expect(diagonal.pitch).toBeCloseTo(diagonal.roll)
-    // A shove far outside the gate owes no travel back: one radius of return re-centres it.
-    moveStick(stick, -radius * Math.SQRT1_2, radius * Math.SQRT1_2, 1000)
+    // A shove far outside owes no travel back beyond the gate itself: a corner is a diagonal
+    // from the middle, and returning that diagonal re-centres it.
+    moveStick(stick, -500, 500, gate)
     expect(Math.hypot(stick.x, stick.y)).toBeCloseTo(0)
-    moveStick(stick, NaN, Infinity, 1000)
+    moveStick(stick, NaN, Infinity, gate)
     expect([stick.px, stick.py].every(Number.isFinite)).toBe(true)
+  })
+  /*
+  A window is not square, so the gate is not either: the pointer reaches the left and right
+  edges of a wide one, and everything past the shorter side's half is already full stick.
+  Pinned because the shaping divides by the raw length, which now runs over 1 out there —
+  the deflection has to saturate and keep its direction rather than overshoot or fold.
+  */
+  it('lets the pointer roam a wide window, at full deflection past the shorter side', () => {
+    const input = new FlightInput(); input.setViewport(1600, 900); input.engage()
+    input.move(2000, 0)
+    expect(input.stick.px).toBe(800)
+    expect(input.stick.x).toBeCloseTo(800 / 450)
+    const wide = input.command(0, 'a', 'mouse')
+    expect(wide.roll).toBeCloseTo(1); expect(wide.pitch).toBeCloseTo(0)
+    // The corner is full deflection too, pointing at the corner rather than folded back.
+    input.move(0, -2000)
+    expect([input.stick.px, input.stick.py]).toEqual([800, -450])
+    const corner = input.command(1, 'a', 'mouse')
+    expect(Math.hypot(corner.pitch, corner.roll)).toBeCloseTo(1)
+    expect(corner.roll / corner.pitch).toBeCloseTo(800 / 450)
   })
   it('turns the drawn vector into the airframe frame', () => {
     const stick = engageStick(createMouseStick())
-    moveStick(stick, 0, -stickRadiusPx(1000), 1000)
+    moveStick(stick, 0, -stickGate(1000, 1000).radius, stickGate(1000, 1000))
     // Wings level the screen is the airframe: up the screen is pitch up.
     expect(readStickAxes(stick, { angle: 0, blend: 1 })).toEqual({ pitch: 1, roll: 0 } as never)
     // Ninety degrees of bank and a pull up the screen is a pure roll back to level.
@@ -309,7 +334,7 @@ describe('mouse flight', () => {
       const state = make().snapshot().aircraft[0]
       let accumulated = 0, wentInverted = false
       const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
-      input.extent = 1000; input.engage()
+      input.setViewport(1000, 1000); input.engage()
       for (let i = 0; i < 9 * 120; i++) {
         place(input, circle(i / 120, sign))
         rig.update(camera, state, 'horizon', 1 / 120)
@@ -343,7 +368,7 @@ describe('mouse flight', () => {
     // High enough that the dive cannot reach the ground and end the test early.
     state.position.y = 4000
     const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
-    input.extent = 1000; input.engage()
+    input.setViewport(1000, 1000); input.engage()
     let steepest = 0
     for (let i = 0; i < 8 * 120; i++) {
       place(input, { x: 0, y: -1 })
@@ -373,8 +398,38 @@ describe('mouse flight', () => {
     expect(Math.abs(shallow.state.rates.roll)).toBeLessThan(0.05)
     expect(shallow.bank).toBeCloseTo(Math.PI / 6, 1)
   })
+  // Edge to edge is the mirrored bank, half a turn away. Pinned because the correction's sine
+  // is zero exactly there: without the saturation the aircraft sits at its bank and pushes.
+  // Direction pinned too — the hand went right, so the roll goes right, whatever side a
+  // degree of bank happens to put the sine on.
+  it('flies the half turn across the gate to the mirrored bank, on the side the hand went', () => {
+    const state = make().snapshot().aircraft[0]
+    // High enough that the roll cannot reach the ground and end the test early.
+    state.position.y = 6000
+    const settled = flyMouse(state, () => ({ x: -1, y: 0 }), 5)
+    expect(settled.bank).toBeCloseTo(-Math.PI / 2, 1)
+    expect(Math.abs(state.rates.roll)).toBeLessThan(0.05)
+    const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
+    input.setViewport(1000, 1000); input.engage()
+    let accumulated = 0
+    for (let i = 0; i < 3 * 120; i++) {
+      place(input, { x: 1, y: 0 })
+      rig.update(camera, state, 'horizon', 1 / 120)
+      input.screen = screenFrame(state, 'horizon')
+      const before = new Quaternion().copy(state.orientation)
+      stepFlight(state, input.command(i, state.id, 'mouse'), 1 / 120)
+      const after = new Quaternion().copy(state.orientation)
+      const delta = before.invert().multiply(after)
+      accumulated += 2 * Math.atan2(delta.x, delta.w)
+      // Rolling the way the hand went, until the mirrored bank is reached.
+      if (i > 12 && i < 120) expect(state.rates.roll).toBeGreaterThan(0.3)
+    }
+    expect(accumulated).toBeGreaterThan(2.5)
+    expect(screenFrame(state, 'horizon').angle).toBeCloseTo(Math.PI / 2, 1)
+    expect(state.alive).toBe(true)
+  })
   it('lets a held key outrank the stick on the axis it owns', () => {
-    const input = new FlightInput(); input.extent = 1000; input.engage()
+    const input = new FlightInput(); input.setViewport(1000, 1000); input.engage()
     place(input, { x: 1, y: 1 })
     const free = input.command(0, 'a', 'mouse')
     expect(free.roll).toBeCloseTo(Math.SQRT1_2); expect(free.pitch).toBeCloseTo(Math.SQRT1_2)
@@ -387,7 +442,7 @@ describe('mouse flight', () => {
   it('flies the same path whatever the render rate refreshes the camera at', () => {
     const results = [30, 60, 144].map(fps => {
       const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
-      input.extent = 1000; input.engage()
+      input.setViewport(1000, 1000); input.engage()
       const runtime = make(); runtime.start()
       for (let i = 0; i < fps * 8; i++) {
         place(input, circle(i / fps, 1))

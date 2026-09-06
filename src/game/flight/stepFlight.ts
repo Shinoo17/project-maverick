@@ -17,7 +17,9 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const rates = state.rates
   rates.pitch += (command.pitch * p.pitchRate * authority - rates.pitch) * blend
   rates.yaw += (command.yaw * p.yawRate * authority - rates.yaw) * blend
-  rates.roll += (command.roll * p.rollRate * authority - rates.roll) * blend
+  const rollTarget = command.roll * p.rollRate * authority
+  const reversing = rollTarget * rates.roll < 0
+  rates.roll += (rollTarget - rates.roll) * (reversing ? 1 - Math.exp(-p.rollReversalResponse * dt) : blend)
   const angular = new Vector3(rates.roll, -rates.yaw, rates.pitch)
   const orientation = new Quaternion().copy(state.orientation)
   const angle = angular.length() * dt
