@@ -71,3 +71,11 @@ Decision ID / วันที่ / ผู้แก้
 ```
 
 เมื่อเปลี่ยนกฎแก้เอกสารเจ้าของเรื่องก่อน แล้วอัปเดต Master เฉพาะเมื่อ scope/dependency/gate เปลี่ยน ไม่คัดลอกตาราง controls หรือ tuning ไปทุกไฟล์จนมีหลาย source of truth
+
+## D13 / 7 กันยายน 2026 / P2 manual PSM
+
+ผู้ใช้แก้ brief ให้ผู้เล่นกำหนดท่าเอง จึงเลิก tap-to-Cobra prototype และใช้ hold C + steer ใน speed envelope ไม่มี auto-brake/auto-pitch/auto-nose-recovery; Cobra, pitch-led 180° และ yaw-led 180° เกิดจาก axis commands ต่างกันผ่าน core เดียวกัน Recovery รักษาหัวที่ผู้เล่นเลือกและใช้ bounded force ทำให้ velocity ตามหัว มีต้นทุนพลังงาน/budget/cooldown ผลทดสอบอยู่ [P2 ผลส่งมอบ](../phase-2-playground.md) และ `tests/maneuvers.test.ts`
+
+เลือก C hold เป็น modifier ที่ไม่ชนปุ่มระบบ; X/S ชะลอเข้าโซนและ W เร่งออกแยกกัน เพื่อไม่ต้องจำ chord Airbrake+W ที่ขัดคำสั่งกัน ไม่เพิ่ม Alt/Command shortcut หรือ rebinding ในรอบนี้
+
+ลิงก์อ้างอิงที่ผู้ใช้ให้: [คลิป 1](https://www.youtube.com/shorts/q0Tuyx5WwA8), [คลิป 2](https://www.youtube.com/shorts/Yw5KgrmmnPo), [คลิป 3](https://www.youtube.com/watch?v=T2FeMftBUYc) เครื่องมือ web fetch เปิดไม่สำเร็จ จึงใช้แนวทางเกมที่ผู้ใช้ระบุเป็น brief และไม่อ้างรายละเอียดที่มองไม่เห็นจากคลิป

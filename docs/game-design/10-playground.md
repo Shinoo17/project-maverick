@@ -2,6 +2,10 @@
 
 [กลับ Master Plan](../../MASTER_PLAN.md) · P1–P2 แล้วเพิ่มเครื่องมือ combat ใน P4–P5
 
+## สถานะ P2 · 7 กันยายน 2026
+
+Free Flight, บทฝึก 1–6 แบบย่อ, สี่ spawn presets, telemetry, slow motion, pause single-step และ replay export/runner อยู่ในโค้ดแล้ว ดู [ผลส่งมอบ P2](../phase-2-playground.md) สำหรับเกณฑ์ที่ตรวจจริง บทกล้องปัจจุบันตรวจการสลับ V; rear/free-look และตัวเลือก combat ในแผนด้านล่างยังไม่เปิดใช้ UI export ได้ แต่ยังไม่มี import/live tuning UI
+
 ## เป้าหมาย
 
 เป็นที่ลองเครื่อง ฝึก control และปรับ flight feel โดยไม่ต้องชนะ match ใช้ runtime/flight/weapon ชุดเดียวกับ Offline เปลี่ยนเฉพาะ mode rules และ scenario ห้ามสร้าง `playgroundFlightModel` อีกชุด

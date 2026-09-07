@@ -33,6 +33,6 @@ export function createFlightRig(model: Object3D) {
   return (state: AircraftState) => {
     const pitch = state.rates.pitch / flightProfile.pitchRate, roll = state.rates.roll / flightProfile.rollRate, yaw = state.rates.yaw / flightProfile.yawRate
     controls.forEach(surface => surface.set?.(clamp(pitch * surface.pitch + roll * surface.roll + yaw * surface.yaw, -surface.limit, surface.limit)))
-    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5))
+    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5 - (state.maneuver.phase === 'active' || state.maneuver.phase === 'recovery' ? clamp(pitch, -1, 1) * 14 : 0)))
   }
 }

@@ -11,6 +11,8 @@ import type { AircraftState } from '../game/state/WorldState'
 import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
 import { screenFrame } from '../game/input/mouseStick'
+import { trainingRings } from '../game/playground/practice'
+import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 
 export type FlightIndicators = Record<'nose' | 'path' | 'stick', RefObject<HTMLDivElement | null>>
@@ -48,28 +50,29 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     const runtime = session.runtime
     if (!runtime || !group.current) return
     if (reset.current !== session.resetId) {
-      reset.current = session.resetId; runtime.reset(); rig.reset()
+      reset.current = session.resetId; rig.reset()
       previous.current = current.current = runtime.snapshot().aircraft[0]
     }
     let alpha = 1
     if (session.running) {
       runtime.resume()
-      alpha = runtime.advance(dt, (tick, id) => {
+      alpha = runtime.advance(dt * session.timeScale, (tick, id) => {
         const live = runtime.snapshot().aircraft[0]
         previous.current = live
         // Refreshed per simulation tick, not per rendered frame: the sim steps at 120 Hz
         // inside one advance() call, and a correction held across four ticks of a 2 rad/s
         // roll would make the aircraft answer differently at 30 fps than at 144.
+        session.input.psmControl = live.maneuver.phase === 'active' || live.maneuver.phase === 'recovery'
         session.input.screen = screenFrame(live, session.cameraMode)
         return session.input.command(tick, id, session.preset)
       })
       current.current = runtime.snapshot().aircraft[0]
-    } else runtime.pause()
+    } else { runtime.pause(); previous.current = current.current = runtime.snapshot().aircraft[0] }
     const state = current.current!
     updateRig(state)
     const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
-    rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1))
+    rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion)
     camera.updateMatrixWorld()
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
@@ -92,7 +95,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
   })
-  return <group ref={group}><primitive object={model} dispose={null} /></group>
+  return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} /></>
 }
 function Range() {
   return <>
@@ -100,7 +103,7 @@ function Range() {
     <gridHelper args={[16000, 160, '#6a7964', '#7e8b73']} />
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[600, 0.1, 0]}><planeGeometry args={[1400, 65]} /><meshStandardMaterial color="#535b59" /></mesh>
     {Array.from({ length: 18 }, (_, i) => <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[i * 70, 0.2, 0]}><planeGeometry args={[35, 2]} /><meshBasicMaterial color="#eee8cb" /></mesh>)}
-    {[800, 1800, 2800].map(x => <mesh key={x} rotation={[0, Math.PI / 2, 0]} position={[x, 400, 0]}><torusGeometry args={[65, 2, 8, 48]} /><meshStandardMaterial color="#f1cd61" /></mesh>)}
+    {trainingRings.map(x => <mesh key={x} rotation={[0, Math.PI / 2, 0]} position={[x, 400, 0]}><torusGeometry args={[65, 2, 8, 48]} /><meshStandardMaterial color="#f1cd61" /></mesh>)}
   </>
 }
 export default function FlightScene(props: Props) {

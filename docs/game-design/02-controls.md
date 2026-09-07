@@ -2,6 +2,14 @@
 
 [กลับ Master Plan](../../MASTER_PLAN.md) · P1 · เจ้าของปุ่มและการ resolve input เพียงไฟล์เดียว
 
+## ปุ่มที่ใช้จริงใน P2 · 7 กันยายน 2026
+
+W/S เร่ง/ลดความเร็วจริงตาม P1 (ไม่เก็บ target speed); X เบรก; Space ค้างร่วมกับเลี้ยวเป็น High-G; Shift ค้างเป็น afterburner; **C ค้าง + pitch/yaw เพื่อเข้า manual PSM** ในช่วง 65–115 m/s และสูง ≥150 m; ปล่อย C เพื่อออก ผู้เล่นยังคุมทุกแกนเอง; R reset ไปจุดเริ่มฝึกเดิมโดยยังบินต่อ; V สลับ camera roll mode; P/Esc พัก ไม่มี tap-to-Cobra หรือ input buffer สำหรับการแตะสั่งท่า
+
+ใน PSM เมาส์อ่าน body pitch/roll โดยตรงเพื่อให้ดึงผ่าน vertical/inverted ต่อเนื่องได้; ผู้เล่นคืนคันบังคับกลางเพื่อหยุดหมุน เชิดแล้วกดหัวลงเป็น Cobra หรือดึงต่อเพื่อ 180° ก่อน W เร่งออก ไม่ใช้ Alt/Command ซึ่งชนปุ่มระบบ และไม่ผูก Airbrake+W ซึ่งเป็นคำสั่งเบรก/เร่งขัดกัน
+
+Mouse positional stick และ keyboard overrides ใช้ P1 เดิม ทั้ง input presets ส่ง PilotCommand เดียวกัน รายการ rebinding/free-look/weapon ด้านล่างยังเป็นข้อเสนออนาคต ไม่ใช่ฟังก์ชันทั้งหมดที่เปิดใช้ใน P2
+
 ## แนวทางที่แนะนำ
 
 ค่าเริ่มต้นเป็น **Mouse virtual stick + Keyboard**: เมาส์ขึ้น/ลงสั่ง pitch เมาส์ซ้าย/ขวาสั่ง roll พร้อม coordinated yaw assist เล็กน้อย เล็งด้วยการหันเครื่องจริง ไม่ให้เมาส์ย้าย crosshair แล้วยิงนอกแนวปืน ใช้แบบนี้เป็น baseline เพราะต่อจากตัวอย่างง่ายและยังควบคุม roll เองได้

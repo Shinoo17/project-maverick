@@ -1,6 +1,6 @@
 # Project Maverick
 
-React + TypeScript aircraft studio and playable Phase 1 training flight. See [MASTER_PLAN.md](MASTER_PLAN.md) for the full game roadmap and [Phase 1 implementation notes](docs/phase-1-flight-slice.md) for the scope and validation of this slice.
+React + TypeScript aircraft studio and playable P2 Playground and manual maneuvers. See [MASTER_PLAN.md](MASTER_PLAN.md) for the full game roadmap and [P2 implementation notes](docs/phase-2-playground.md) for the scope and validation of this slice.
 
 ## Run
 
@@ -44,7 +44,13 @@ npm run preview
 | `src/locales` | Thai/English copy |
 | `tests` | Runtime/content/storage and animation behavior checks |
 
-Phase 1 adds a 60 Hz world / 120 Hz flight runtime, direct W/S acceleration with a short coast on release, a positional mouse stick that reads as a joystick on the glass, with the pointer angle setting the bank and a swirl around the gate rolling the aircraft, pitch/yaw/roll, Mouse + Keyboard and Keyboard-only presets, two chase camera roll modes, telemetry, pause/reset and terrain/boundary stops. Thai/English uses react-i18next. Both airframes use the experimental F-22 baseline; aircraft-specific balancing, maneuvers, combat, bots and multiplayer follow in later phases. The hangar runs without starting a game session.
+Phase 1 adds a 60 Hz world / 120 Hz flight runtime, direct W/S acceleration with a short coast on release, a positional mouse stick that reads as a joystick on the glass, with the pointer angle setting the bank and a swirl around the gate rolling the aircraft, pitch/yaw/roll, Mouse + Keyboard and Keyboard-only presets, two chase camera roll modes, telemetry, pause/reset and terrain/boundary stops. Thai/English uses react-i18next. Both airframes use the experimental F-22 baseline; aircraft-specific balancing, combat, bots and multiplayer follow in later phases. The hangar runs without starting a game session.
+
+## P2 Playground
+
+Choose a lesson in the flight briefing; it selects a suitable spawn. Hold **C + steer** inside the PSM speed band (65–115 m/s / 351–621 ARCADE km/h, ≥150 m altitude). C alone never pitches or brakes. Pull up then push down for Cobra, or pull farther for a 180° reversal; centre the stick, release C and use W to rebuild speed. Recovery preserves your chosen nose direction. Hold **Space + turn** for High-G, **X** to airbrake and **Shift** for afterburner. **R** resets; **P / Esc** pauses.
+
+Flight Lab in Pause includes detailed telemetry, ×0.25/×0.5 time, single-step and replay JSON export (first 60 simulation seconds). `runFlightReplay` is the headless replay entry point. See [P2 scope, measured tuning and validation](docs/phase-2-playground.md).
 
 ## Asset presentation
 

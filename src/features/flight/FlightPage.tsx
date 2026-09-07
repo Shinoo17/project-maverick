@@ -12,12 +12,17 @@ import { SceneBoundary } from '../../ui/components/SceneBoundary'
 import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { FlightSession } from './session'
+import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
+import { practiceSpawns, type PracticePreset } from '../../game/playground/practice'
 import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 export function FlightPage() {
   const { t } = useTranslation()
   const { aircraftId, locale } = useSessionSettings()
-  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(), preset: 'mouse', cameraMode: 'horizon', running: false, resetId: 0 }), [])
+  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(), preset: 'mouse', cameraMode: 'horizon', running: false, resetId: 0, timeScale: 1, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches }), [])
+  const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
+  const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
+  const [timeScale, setTimeScale] = useState(1), [reducedMotion, setReducedMotion] = useState(session.reducedMotion)
   const [hasStarted, setHasStarted] = useState(false)
   const [ready, setReady] = useState(false), [running, setRunning] = useState(false), [failed, setFailed] = useState(false)
   const [retry, setRetry] = useState(0), [pointerError, setPointerError] = useState(false)
@@ -42,8 +47,9 @@ export function FlightPage() {
       if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes((e.target as HTMLElement)?.tagName)) return
       if (!session.running) return
       if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); pause(); return }
-      if (e.code === 'KeyV') { if (!e.repeat) { session.cameraMode = session.cameraMode === 'horizon' ? 'aircraft' : 'horizon'; setCameraMode(session.cameraMode) }; return }
-      if (['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'KeyX', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); session.input.held.add(e.code) }
+      if (e.code === 'KeyR' && !e.repeat) { e.preventDefault(); session.input.clear(); if (session.preset === 'mouse') session.input.engage(); session.resetId++; session.runtime?.reset(); setCameraChanged(false); return }
+      if (e.code === 'KeyV') { if (!e.repeat) { session.cameraMode = session.cameraMode === 'horizon' ? 'aircraft' : 'horizon'; setCameraMode(session.cameraMode); setCameraChanged(true) }; return }
+      if (['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'KeyX', 'KeyC', 'Space', 'ShiftLeft', 'ShiftRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); session.input.press(e.code) }
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
     const move = (e: MouseEvent) => { if (session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.move(e.movementX, e.movementY) }
@@ -77,8 +83,15 @@ export function FlightPage() {
       session.running = true; session.runtime?.resume(); setRunning(true); setHasStarted(true); surface.current?.focus()
     } catch (error) { if (import.meta.env.DEV) console.warn('Flight pointer lock:', error); setPointerError(true); dialog.current?.showModal() }
   }
-  function resetFlight() {
-    pause(); setHasStarted(false); session.resetId++; session.runtime?.reset(); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null)
+  function resetFlight(nextPreset: PracticePreset = practicePreset) {
+    pause(); setHasStarted(false); session.resetId++; session.runtime?.reset(nextPreset); setCameraChanged(false); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null)
+  }
+  function exportFlight() {
+    const replay = session.runtime?.exportReplay()
+    if (!replay) return
+    const url = URL.createObjectURL(new Blob([JSON.stringify(replay, null, 2)], { type: 'application/json' }))
+    const link = document.createElement('a'); link.href = url; link.download = 'maverick-flight-p2.json'; link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const speed = telemetry ? Math.hypot(telemetry.velocity.x, telemetry.velocity.y, telemetry.velocity.z) : 130
   const number = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
@@ -100,6 +113,8 @@ export function FlightPage() {
       <div ref={indicators.nose} className="flight-reticle" aria-hidden="true">+</div>
       <div ref={indicators.path} className="flight-path" aria-hidden="true">◇</div>
       {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true" />}
+      <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
+      {timeScale !== 1 && <p className="flight-timescale">{t('practiceSpeed')} ×{timeScale}</p>}
       <p className="flight-controls">{t('controlsHint')}</p>
     </div>
     <dialog ref={dialog} className="flight-menu" aria-labelledby="flight-menu-title" onCancel={e => e.preventDefault()}>
@@ -109,11 +124,22 @@ export function FlightPage() {
       <p className="flight-baseline">{t('baseline')}</p>
       <label htmlFor="flight-input">{t('inputPreset')}</label><select id="flight-input" value={preset} onChange={e => { session.preset = e.target.value as typeof preset; setPreset(session.preset); session.input.clear(); setPointerError(false) }}><option value="mouse">{t('mousePreset')}</option><option value="keyboard">{t('keyboardPreset')}</option></select>
       <label htmlFor="flight-camera">{t('camera')}</label><select id="flight-camera" value={cameraMode} onChange={e => { session.cameraMode = e.target.value as typeof cameraMode; setCameraMode(session.cameraMode) }}><option value="horizon">{t('horizonCamera')}</option><option value="aircraft">{t('aircraftCamera')}</option></select>
-      <p className="flight-instructions">{t('controlsHint')}{preset === 'mouse' && <><br />{t('mouseHint')}</>}</p>
+      <label htmlFor="practice-preset">{t('practicePreset')}</label><select id="practice-preset" disabled={!ready} value={practicePreset} onChange={e => { const value = e.target.value as PracticePreset; setPracticePreset(value); resetFlight(value) }}>{(Object.keys(practiceSpawns) as PracticePreset[]).map(id => <option key={id} value={id}>{t(`spawn_${id}`)}</option>)}</select>
+      <label htmlFor="practice-lesson">{t('practiceLesson')}</label><select id="practice-lesson" disabled={!ready} value={lesson} onChange={e => { const value = Number(e.target.value); setLesson(value); const spawn: PracticePreset = value === 6 ? 'cobra' : value === 5 ? 'recovery' : value === 4 ? 'highG' : 'free'; setPracticePreset(spawn); resetFlight(spawn) }}>{[0, 1, 2, 3, 4, 5, 6].map(id => <option key={id} value={id}>{t(lessonLabels[id])}</option>)}</select>
+      <details className="flight-lab-settings"><summary>{t('flightLab')}</summary>
+        <label htmlFor="practice-speed">{t('practiceSpeed')}</label><select id="practice-speed" value={timeScale} onChange={e => { session.timeScale = Number(e.target.value); setTimeScale(session.timeScale) }}>{[1, 0.5, 0.25].map(value => <option key={value} value={value}>×{value}</option>)}</select>
+        <label><input type="checkbox" checked={lab} onChange={e => setLab(e.target.checked)} /> {t('showTelemetry')}</label>
+        <label><input type="checkbox" checked={reducedMotion} onChange={e => { session.reducedMotion = e.target.checked; setReducedMotion(e.target.checked) }} /> {t('reducedFlightMotion')}</label>
+        <button disabled={!ready || !!stopped} onClick={() => { session.runtime?.singleStep(); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null) }}>{t('singleStep')}</button>
+        <button disabled={!ready} onClick={exportFlight}>{t('exportFlight')}</button><p>{t('exportFlightHint')}</p>
+      </details>
+      <p className="flight-instructions">{t('controlsHint')}</p>
+      {preset === 'mouse' && <details className="flight-mouse-help"><summary>{t('mousePreset')}</summary><p>{t('mouseHint')}</p></details>}
+      <details className="flight-mouse-help"><summary>{t('psmControlsHelp')}</summary><p>{t('psmControlsDetail')}</p></details>
       {pointerError && <p role="alert">{t('pointerError')}</p>}
       {failed ? <button className="flight-primary" onClick={() => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) }}>{t('retry')}</button>
         : <button className="flight-primary" disabled={!ready || !webgl || !!stopped} onClick={() => void begin()}>{!ready && webgl ? t('flightLoading') : hasStarted ? t('resumeFlight') : t('beginFlight')}</button>}
-      {ready && <button onClick={resetFlight}>{t('resetFlight')}</button>}
+      {ready && <button onClick={() => resetFlight()}>{t('resetFlight')}</button>}
       <a href="#/" onClick={pause}>{t('backHangar')}</a>
     </dialog>
   </main>

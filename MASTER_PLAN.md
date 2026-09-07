@@ -86,7 +86,7 @@ flowchart TD
 
 ## 5. Roadmap และจุดตัดสินใจ
 
-สถานะ implementation 6 ก.ย. 2026: P0 และ P1 baseline อยู่ในแอปรากแล้ว ดู [Roadmap/ผลส่งมอบ Phase 1](docs/phase-1-flight-slice.md) สำหรับงานที่ทำจริง การตรวจ และ gate ที่ยังต้อง playtest ข้อความแผนในส่วนอื่นยังเป็นเป้าหมายของเกมเต็ม
+สถานะ implementation 7 ก.ย. 2026: P0/P1 และ P2 Playground baseline อยู่ในแอปรากแล้ว ดู [P2 ผลส่งมอบและข้อจำกัด](docs/phase-2-playground.md) สำหรับ manual PSM/Cobra/180° reversal, High-G, burner และบทฝึก; flight feel ยังรอ playtest ด้วยมือ ดู [Roadmap/ผลส่งมอบ Phase 1](docs/phase-1-flight-slice.md) สำหรับงานที่ทำจริง การตรวจ และ gate ที่ยังต้อง playtest ข้อความแผนในส่วนอื่นยังเป็นเป้าหมายของเกมเต็ม
 
 ไม่กำหนดวันที่เสร็จจากการเดา ก่อนเริ่มแต่ละ phase ให้แตกงานใน 18 และประเมินจากความเร็วทำงานจริง จบ phase เมื่อผ่าน gate ไม่ใช่เมื่อมี UI ให้เห็นเท่านั้น
 

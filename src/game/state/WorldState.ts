@@ -1,3 +1,5 @@
+import type { PracticeState } from '../playground/practice'
+import type { ManeuverState } from '../flight/maneuvers'
 import type { AircraftId } from '../../content/schemas'
 
 export type Vec3 = { x: number; y: number; z: number }
@@ -8,6 +10,7 @@ export interface AircraftState {
   position: Vec3
   orientation: Quat
   velocity: Vec3
+  maneuver: ManeuverState
   speedDrive: number
   enginePower: number
   rates: { pitch: number; yaw: number; roll: number }
@@ -16,5 +19,6 @@ export interface AircraftState {
 }
 export interface WorldState {
   tick: number
+  practice: PracticeState
   aircraft: AircraftState[]
 }

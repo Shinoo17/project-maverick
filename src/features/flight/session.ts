@@ -8,4 +8,6 @@ export interface FlightSession {
   cameraMode: CameraRollMode
   running: boolean
   resetId: number
+  timeScale: number
+  reducedMotion: boolean
 }

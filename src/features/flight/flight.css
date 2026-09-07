@@ -39,3 +39,38 @@
   .flight-telemetry { gap: 18px; }
   .flight-telemetry dd { font-size: 22px; }
 }
+/* P2 extends the existing instruments; the aircraft keeps the centre of the view. */
+.maneuver-instrument { position: absolute; top: 192px; left: 24px; width: 292px; background: #19252de8; padding: 16px; font-size: 13px; }
+.maneuver-status { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.maneuver-status > span { color: #c4d3da; }
+.maneuver-status strong { color: #ffe29b; }
+.maneuver-instrument p { min-height: 40px; margin: 12px 0; line-height: 1.55; }
+.maneuver-readings { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
+.maneuver-readings b { display: block; font-size: 22px; margin-top: 5px; }
+.burner-meter { margin-top: 16px; }
+.burner-meter meter { display: block; width: 100%; height: 12px; margin-top: 6px; accent-color: #cfb88a; }
+.maneuver-flags { display: flex; gap: 16px; margin-top: 12px; color: #c4d3da; }
+.maneuver-flags [data-active="true"] { color: #ffe29b; text-decoration: underline; text-underline-offset: 4px; }
+.flight-lesson { position: absolute; right: 24px; top: 88px; width: 300px; background: #19252de8; padding: 16px; font-size: 13px; }
+.flight-lesson strong { display: block; line-height: 1.65; font-size: 15px; font-weight: 500; margin: 10px 0; }
+.flight-lesson > span, .flight-lesson small { color: #ffe29b; }
+.flight-lab { position: absolute; top: 280px; right: 24px; width: 300px; padding: 16px; background: #19252de8; font-size: 12px; font-variant-numeric: tabular-nums; }
+.flight-lab div { display: flex; justify-content: space-between; gap: 12px; margin: 7px 0; }
+.flight-lab dd { margin: 0; }.flight-lab dt { color: #c4d3da; }
+.flight-timescale { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); padding: 8px 12px; color: #ffe29b; background: #19252de8; font-size: 13px; }
+.flight-lab-settings { margin-top: 22px; border-top: 1px solid #596970; padding-top: 16px; }
+.flight-lab-settings summary { cursor: pointer; min-height: 32px; font-size: 14px; }
+.flight-lab-settings input { margin-right: 6px; accent-color: #cfb88a; }
+.flight-menu button:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 1000px) { .maneuver-instrument { width: 248px; }.flight-lesson, .flight-lab { width: 250px; } }
+@media (max-width: 760px) {
+  .maneuver-instrument { left: 12px; top: 166px; width: 212px; padding: 12px; }
+  .flight-lesson { top: auto; bottom: 145px; right: 12px; width: 212px; padding: 12px; }
+  .flight-lab { top: 80px; right: 12px; width: 212px; }
+  .flight-timescale { top: 45px; left: auto; right: 12px; transform: none; }
+}
+@media (max-width: 520px) { .flight-lab { top: auto; bottom: 140px; width: calc(100% - 24px); }.flight-lesson { bottom: 295px; width: 175px; }.maneuver-instrument { width: 185px; } }
+.psm-speed-band { margin: 8px 0 14px; color: #c4d3da; font-size: 12px; }
+.psm-speed-band[data-ready="true"] { color: #ffe29b; }
+.flight-mouse-help { margin: 12px 0; font-size: 13px; }
+.flight-mouse-help summary { cursor: pointer; min-height: 36px; display: list-item; padding: 8px 0; }
