@@ -6,7 +6,7 @@ import { neutralCommand, type PilotCommand } from './commands'
 import { stepFlight } from '../flight/stepFlight'
 import { createPracticeState, practiceSpawns, stepPractice, type PracticePreset } from '../playground/practice'
 import { createManeuverState } from '../flight/maneuvers'
-import { flightProfile } from '../flight/profile'
+import { flightProfile, flightProfileVersion } from '../flight/profile'
 
 // No RAF, timers, DOM or renderer: the future scene/session host owns the sole driver.
 // Flight is integrated twice per world tick; presentation never drives an entity separately.
@@ -67,7 +67,7 @@ export class GameRuntime {
     this.status = 'paused'; this.clock.reset()
   }
   exportReplay() {
-    return { schemaVersion: 1, profileVersion: 'p2-manual-2', config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track) }
+    return { schemaVersion: 1, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track) }
   }
   reset(preset: PracticePreset = this.preset) {
     if (this.status === 'disposed') return

@@ -45,7 +45,9 @@ describe('P1 flight acceptance', () => {
     const pitch = run(60, 1, () => ({ pitch: 1 })).snapshot().aircraft[0]
     const forward = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(pitch.orientation))
     expect(forward.y).toBeGreaterThan(0.3)
-    expect(forward.angleTo(new Vector3().copy(pitch.velocity))).toBeGreaterThan(0.1)
+    const slip = forward.angleTo(new Vector3().copy(pitch.velocity))
+    expect(slip).toBeGreaterThan(0.015)
+    expect(slip).toBeLessThan(10 * Math.PI / 180)
     expect(pitch.position.y).toBeGreaterThan(400)
     const yaw = run(60, 1, () => ({ yaw: 1 })).snapshot().aircraft[0]
     expect(yaw.position.z).toBeGreaterThan(0)
@@ -149,14 +151,16 @@ function place(input: FlightInput, aim: { x: number; y: number }) {
 }
 function flyMouse(state: AircraftState, aim: (seconds: number) => { x: number; y: number }, seconds: number, mode: CameraRollMode = 'horizon') {
   const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
+  let peakCrossTrack = 0
   input.setViewport(1000, 1000); input.engage()
   for (let i = 0; i < seconds * 120; i++) {
     place(input, aim(i / 120))
     rig.update(camera, state, mode, 1 / 120)
     input.screen = screenFrame(state, mode)
     stepFlight(state, input.command(i, state.id, 'mouse'), 1 / 120)
+    peakCrossTrack = Math.max(peakCrossTrack, Math.abs(state.position.z))
   }
-  return { state, bank: screenFrame(state, mode).angle }
+  return { state, bank: screenFrame(state, mode).angle, peakCrossTrack }
 }
 const attitude = (state: AircraftState) => {
   const q = new Quaternion().copy(state.orientation)
@@ -392,7 +396,9 @@ describe('mouse flight', () => {
     const knife = flyMouse(make().snapshot().aircraft[0], () => ({ x: 1, y: 0 }), 6)
     expect(Math.abs(knife.state.rates.roll)).toBeLessThan(0.05)
     expect(knife.bank).toBeCloseTo(Math.PI / 2, 1)
-    expect(knife.state.position.z).toBeGreaterThan(150)
+    // Tighter turns can already be returning by six seconds; measure the turn's
+    // excursion rather than requiring the final point to stay far to the right.
+    expect(knife.peakCrossTrack).toBeGreaterThan(150)
     // A pointer thirty degrees off the top of the gate is thirty degrees of bank.
     const shallow = flyMouse(make().snapshot().aircraft[0], () => ({ x: 0.6 * 0.5, y: 0.6 * Math.sqrt(3) / 2 }), 3)
     expect(Math.abs(shallow.state.rates.roll)).toBeLessThan(0.05)

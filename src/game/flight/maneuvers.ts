@@ -8,6 +8,9 @@ export const maneuverProfile = {
   entryMin: 65, entryMax: 115, minAltitude: 150,
   pitchRate: 2.6, yawRate: 1.6, rollRate: 2.1, maxRotation: Math.PI * 2, activeSeconds: 3, cooldown: 4,
   highGRate: 1.4, highGDrag: 2, burnerSeconds: 6, burnerRecharge: 12,
+  // Keep PSM airflow independent of normal-flight grip tuning.
+  pathResponse: 1.5, activeGrip: 0.08, recoveryGrip: 2.5,
+  recoveryAcceleration: 70,
 } as const
 export type PsmPhase = 'normal' | 'armed' | 'active' | 'recovery' | 'cooldown'
 export type PsmBlock = 'none' | 'altitude' | 'speed'
