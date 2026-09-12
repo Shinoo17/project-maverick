@@ -95,7 +95,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
   })
-  return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} /></>
+  return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} aircraft={group} /></>
 }
 function Range() {
   return <>

@@ -52,6 +52,18 @@ Choose a lesson in the flight briefing; it selects a suitable spawn. Hold **C + 
 
 Flight Lab in Pause includes detailed telemetry, ×0.25/×0.5 time, single-step and replay JSON export (first 60 simulation seconds). `runFlightReplay` is the headless replay entry point. See [P2 scope, measured tuning and validation](docs/phase-2-playground.md).
 
+## Wing condensation
+
+Flight renders both the original broad condensation cloud above the wings / shoulders and two narrow, straight volumetric wingtip trails. The pressure cloud retains its swept-wing shape, skin-attached layer, billowing 3D noise, short inboard shear rolls and light attenuation. The straight trails attach to measured outboard trailing-edge vertices of the F-22 and Su-57 GLBs; their common direction follows downstream air-relative velocity, including signed AoA and sideslip. AoA, airspeed, measured G and humidity drive both effects; unloading or dry air fades both out. The fields are combined through optical depth in one composite pass, so they coexist without additive glow. Cloud billows do not displace the straight trail centerlines.
+
+Signed AoA reversals crossfade cloud density between fixed upper/lower wing surfaces, with a smooth ±3° neutral band and a frame-rate-independent response (about 0.9 s to complete 95% of a reversal at the default Fade setting). The old cloud dissipates as the opposite side forms, instead of flipping at an angle threshold. This transition freezes on simulation pause, follows slow motion / single-step, and resets with the aircraft.
+
+This is a local aerodynamic visual approximation, not CFD or a persistent world-space wake: the straight trails follow the displayed aircraft pose. The flight sandbox still uses an illustrative altitude-based humidity profile until a weather system exists; preview humidity is adjustable. Engine exhaust visuals are separate and deferred.
+
+Open `/vapor-preview.html` on the dev or preview server to inspect the same renderer on either aircraft. It opens in a side reference view; the **Cloud + wingtip vortex** preset shows both effects in a three-quarter view at 21° AoA / 6.8 G. Cruise, High-G and High AoA presets, orbit views, pause, humidity, and density/noise/turbulence/fade/airflow sliders are also available. Preview speed is real km/h; the flight HUD keeps its existing arcade scale. Activation defaults live in `src/render/vapor/conditions.ts`; measured attachment points and length/width tuning live in `src/render/vapor/profile.ts`; the restored pressure cloud lives in `src/render/vapor/cloudShader.ts`.
+
+The volume follows the interpolated aircraft pose, freezes with pause, follows slow motion and single-step, and clears on reset. Reduced motion freezes internal flow for both effects. The renderer uses 72 samples inside the wing-cloud bounds and 24 per intersected straight core, clips both fields against scene depth, filters subpixel trail widths, skips the extra pass at cruise, and disposes its textures and render target on unmount.
+
 ## Asset presentation
 
 Source GLBs are unchanged. The registry excludes F-22's two detached bay fittings and Su-57's oversized `Nozzles_ORIG_backup`. Su-57 displays the stowed gear/probe variant and omits the prototype antenna. Both models are oriented to +X forward and normalized to a studio display length; this display scale is not the physical flight scale.

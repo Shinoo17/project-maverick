@@ -29,13 +29,15 @@ export class FlightCamera {
     const cosine = transported.dot(desiredUp)
     const angle = Math.abs(sine) < 1e-8 && cosine < 0 ? Math.PI : Math.atan2(sine, cosine)
     this.up.copy(transported).applyAxisAngle(forward, angle * (reducedMotion ? 1 : 1 - Math.exp(-3 * dt))).normalize()
-    const desiredPosition = position.clone().addScaledVector(forward, -34 - this.cinematic * 22).addScaledVector(this.up, 9 + this.cinematic * 7)
+    // Keep the airframe prominent in the chase view. The previous 34-unit
+    // offset left the jet reading as a small HUD marker on wide screens.
+    const desiredPosition = position.clone().addScaledVector(forward, -12 - this.cinematic * 8).addScaledVector(this.up, 5 + this.cinematic * 4.5)
     desiredPosition.y = Math.max(5, desiredPosition.y)
-    const target = position.clone().addScaledVector(forward, 55 - this.cinematic * 45)
+    const target = position.clone().addScaledVector(forward, 34 - this.cinematic * 25)
     const desiredQ = new Quaternion().setFromRotationMatrix(new Matrix4().lookAt(desiredPosition, target, this.up))
     if (!this.initialized || reducedMotion) { camera.position.copy(desiredPosition); camera.quaternion.copy(desiredQ); this.initialized = true }
     else { camera.position.lerp(desiredPosition, 1 - Math.exp(-10 * dt)); camera.quaternion.slerp(desiredQ, 1 - Math.exp(-8 * dt)) }
-    const fov = reducedMotion ? 69 : 65 + Math.min(12, new Vector3().copy(state.velocity).length() / 22) + (state.maneuver.burnerActive ? 4 : 0)
+    const fov = reducedMotion ? 61 : 56 + Math.min(8, new Vector3().copy(state.velocity).length() / 32) + (state.maneuver.burnerActive ? 2.5 : 0)
     camera.fov += (fov - camera.fov) * (reducedMotion ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
     camera.position.y = Math.max(5, camera.position.y)
   }
