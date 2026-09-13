@@ -1,4 +1,5 @@
 import { pressureCloudShader } from './cloudShader'
+import { exhaustShader } from '../exhaust/shaders'
 
 export const vaporVertex = /* glsl */ `
 varying vec2 vUv;
@@ -18,6 +19,8 @@ varying vec2 vUv;
 
 float noise3(vec3 p) { return texture(noiseTex, p / 32.0).r; }
 
+${exhaustShader}
+
 ${pressureCloudShader}
 
 // March only each thin oriented core. Uniform sampling across a large aircraft
@@ -31,6 +34,7 @@ vec2 intersectTrail(vec3 ro, vec3 rd, float extent) {
 }
 
 float opticalDepth(vec3 ray, vec3 origin, float surfaceDistance, float side) {
+  if (strength * densityGain < .002) return 0.0;
   // Fixed origins and a common air-relative direction; no waves on centerlines.
   // Pick a stable basis even at 90-degree incidence in a post-stall maneuver.
   vec3 reference = abs(airflowDirection.y) > .95 ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
@@ -81,6 +85,7 @@ void main() {
   vec3 ray = normalize((worldToAircraft * vec4(worldRay, 0.0)).xyz);
   vec4 viewSurface = inverseProjection * vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
   float surfaceDistance = length(viewSurface.xyz / viewSurface.w);
+  vec3 illuminatedScene = exhaustComposite(base.rgb, ray, surfaceDistance);
   float optical = opticalDepth(ray, wingtipLeft, surfaceDistance, -1.0)
                 + opticalDepth(ray, wingtipRight, surfaceDistance, 1.0);
   // Neutral white daylight scattering. Optical depth composes overlapping
@@ -91,7 +96,7 @@ void main() {
   float totalOptical = optical + pressure.a;
   float transmission = exp(-min(totalOptical, 12.0));
   vec3 combinedLight = (vaporLight * optical + pressure.rgb) / max(.00001, totalOptical);
-  gl_FragColor = vec4(base.rgb * transmission + combinedLight * (1.0 - transmission), base.a);
+  gl_FragColor = vec4(illuminatedScene * transmission + combinedLight * (1.0 - transmission), base.a);
   #include <tonemapping_fragment>
   #ifdef TONE_MAPPING
     if (solidBackground && depth >= .9999999) {

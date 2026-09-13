@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      input: { main: 'index.html', vapor: 'vapor-preview.html' },
+      input: { main: 'index.html', vapor: 'vapor-preview.html', exhaust: 'exhaust-preview.html' },
       output: {
         manualChunks: {
           three: ['three'],

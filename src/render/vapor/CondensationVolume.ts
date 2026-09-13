@@ -8,6 +8,7 @@ import { defaultVaporSettings, vaporActivation, type VaporConditions, type Vapor
 import { vaporFragment, vaporVertex } from './shaders'
 import { vortexAirflow, vortexProfile, wingtipOrigins } from './profile'
 import { CloudSideTransition } from './CloudSideTransition'
+import { ExhaustResponse, exhaustProfiles, type ExhaustConditions } from '../exhaust/profile'
 
 /** One opaque scene pass + bounded ray integration. Owns all of its GPU resources. */
 export class CondensationVolume {
@@ -21,6 +22,7 @@ export class CondensationVolume {
   private readonly size = new Vector2()
   private readonly flowDirection = new Vector3()
   private readonly cloudSide = new CloudSideTransition()
+  private readonly exhaust = new ExhaustResponse()
   private initialized = false
   private strength = 0
   private conditions: VaporConditions = { speed: 0, aoa: 0, g: 1, sideslip: 0, humidity: .78 }
@@ -40,6 +42,12 @@ export class CondensationVolume {
     this.material = new ShaderMaterial({
       vertexShader: vaporVertex, fragmentShader: vaporFragment, depthTest: false, depthWrite: false, blending: NoBlending,
       uniforms: {
+        nozzleLeft: { value: new Vector3() }, nozzleRight: { value: new Vector3() },
+        nozzleRadius: { value: new Vector2() }, exhaustResolution: { value: new Vector2(1, 1) },
+        exhaustPower: { value: 0 }, burnerStrength: { value: 0 }, exhaustTime: { value: 0 },
+        nozzleInset: { value: 0 }, nozzleRound: { value: 0 }, nozzleVector: { value: 0 },
+        chamberRadius: { value: 0 }, burnerViolet: { value: 0 },
+        exhaustLength: { value: 0 }, exhaustTurbulence: { value: 0 },
         solidBackground: { value: false }, sceneColor: { value: this.target.texture }, sceneDepth: { value: this.target.depthTexture }, noiseTex: { value: this.noise },
         inverseProjection: { value: new Matrix4() }, cameraWorld: { value: new Matrix4() }, worldToAircraft: { value: new Matrix4() },
         cameraLocal: { value: new Vector3() }, airflowDirection: { value: new Vector3(-1, 0, 0) }, flowPhase: { value: 0 },
@@ -59,9 +67,30 @@ export class CondensationVolume {
 
   reset() {
     this.initialized = false; this.strength = 0
+    this.exhaust.reset()
+    this.material.uniforms.exhaustPower.value = 0
+    this.material.uniforms.burnerStrength.value = 0
     this.cloudSide.reset()
     this.material.uniforms.flowPhase.value = 0
     this.material.uniforms.cloudAdvection.value.set(0, 0, 0)
+  }
+
+  updateExhaust(next: ExhaustConditions, dt: number, reducedMotion = false) {
+    this.exhaust.update(next, dt, reducedMotion)
+    const p = exhaustProfiles[next.aircraftId], u = this.material.uniforms
+    // F-22 vectoring pivots at the flap hinge, 0.983 m ahead of the lip.
+    const pivot = next.aircraftId === 'f22' ? .983 : 0
+    const x = p.lipX + pivot * (1 - Math.cos(next.vectorAngle))
+    const y = p.height + pivot * Math.sin(next.vectorAngle)
+    u.nozzleLeft.value.set(x, y, p.centerZ - p.spacing)
+    u.nozzleRight.value.set(x, y, p.centerZ + p.spacing)
+    u.nozzleRadius.value.set(p.width, p.radiusY)
+    u.nozzleInset.value = p.inset; u.nozzleRound.value = p.round
+    u.chamberRadius.value = p.chamberRadius; u.burnerViolet.value = p.burnerViolet
+    u.nozzleVector.value = next.vectorAngle
+    u.exhaustLength.value = p.length; u.exhaustTurbulence.value = p.turbulence
+    u.exhaustPower.value = this.exhaust.power; u.burnerStrength.value = this.exhaust.burner
+    u.exhaustTime.value = this.exhaust.time
   }
 
   update(next: VaporConditions, dt: number, reducedMotion = false, aircraft: AircraftId = 'f22', freezeFlow = false) {
@@ -94,11 +123,12 @@ export class CondensationVolume {
 
   render(renderer: WebGLRenderer, scene: Scene, camera: Camera, aircraftMatrix: Matrix4) {
     const previousTarget = renderer.getRenderTarget()
-    // Cruise costs no extra framebuffer or postprocessing pass.
-    if (this.strength * this.settings.density < .002) { renderer.render(scene, camera); return }
+    // One shared scene pass for exhaust and condensation; skip when both are off.
+    if (this.strength * this.settings.density < .002 && this.exhaust.power < .002) { renderer.render(scene, camera); return }
     renderer.getDrawingBufferSize(this.size)
     if (this.target.width !== this.size.x || this.target.height !== this.size.y) this.target.setSize(this.size.x, this.size.y)
     const u = this.material.uniforms
+    u.exhaustResolution.value.copy(this.size)
     u.solidBackground.value = scene.background instanceof Color
     u.worldToAircraft.value.copy(aircraftMatrix).invert()
     u.cameraWorld.value.copy(camera.matrixWorld)

@@ -69,6 +69,7 @@ float pressureDensity(vec3 p, bool detail) {
 // RGB stores density-weighted lighting, A stores optical depth. Combining the
 // two fields in optical depth keeps overlap translucent instead of double-additive.
 vec4 cloudOpticalDepth(vec3 ray, float surfaceDistance, float forwardLight) {
+  if (strength * densityGain < .002) return vec4(0.0);
   vec3 safeRay = mix(vec3(-1.0), vec3(1.0), step(vec3(0.0), ray)) * max(abs(ray), vec3(1e-7));
   vec3 a = (vec3(-9.5, -4.8, -8.0) - cameraLocal) / safeRay;
   vec3 b = (vec3(5.8, 4.8, 8.0) - cameraLocal) / safeRay;

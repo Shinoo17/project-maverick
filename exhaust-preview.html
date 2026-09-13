@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Maverick · Exhaust preview</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#252d33;color:#edf0ed;font:14px system-ui,sans-serif}#view{position:fixed;inset:0}aside{position:relative;margin:20px;padding:20px;width:280px;background:#1c2227;border:1px solid #3b474e}h1{font-size:21px;margin:0 0 18px}label{display:block;margin:16px 0 8px}button,select,input{font:inherit}button,select{min-height:40px;background:#293239;color:inherit;border:1px solid #59666e;border-radius:3px;padding:8px}button{margin:4px 2px 0 0;cursor:pointer}button[aria-pressed=true]{border-color:#cfb88a;color:#cfb88a}input[type=range]{width:100%;accent-color:#cfb88a}select{width:100%}p{line-height:1.6;color:#adb8be}#error{color:#ffb5a6;overflow-wrap:anywhere} :focus-visible{outline:2px solid #cfb88a;outline-offset:3px}@media(max-width:600px){aside{width:235px;margin:8px;padding:12px}}
+</style></head><body><div id="view"></div><aside>
+<h1>F-22 / Exhaust</h1>
+<label for="aircraft">เครื่องบิน</label><select id="aircraft"><option value="f22">F-22 Raptor</option><option value="su57">Su-57 Felon</option></select>
+<label for="power">Throttle <output id="powerValue">100%</output></label><input id="power" type="range" min="0" max="1" step=".01" value="1">
+<button id="burner" aria-pressed="true">Afterburner: ON</button><button id="pause" aria-pressed="false">หยุดการไหล</button>
+<label>มุมมอง</label><button id="quarter">ท้ายเฉียง</button><button id="rear">ภายใน nozzle</button><button id="side">ด้านข้าง</button><button id="front">ด้านหน้า</button>
+<label for="vector">F-22 thrust vector <output id="vectorValue">0°</output></label><input id="vector" type="range" min="-14" max="14" step="1" value="0">
+<button id="cloud" aria-pressed="false">Condensation: OFF</button><button id="background">พื้นหลัง: สว่าง</button>
+<p>ลากเพื่อหมุน · เลื่อนเพื่อซูม<br>ใช้เอฟเฟกต์เดียวกับโหมดบิน</p><p id="status" role="status">กำลังโหลดโมเดล…</p><p id="error" role="alert"></p>
+</aside><script type="module" src="/src/render/exhaust/preview.ts"></script></body></html>

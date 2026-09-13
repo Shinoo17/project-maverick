@@ -2,6 +2,7 @@ import { Object3D, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../../game/state/WorldState'
 import { flightProfile } from '../../game/flight/profile'
 import { clamp } from '../../game/flight/speed'
+import { nozzleVectorDegrees } from '../exhaust/profile'
 
 // Mesh/hinge facts are adapted from example/F22's verified rig manifest. All
 // transforms are local to a cloned presentation model; no simulation writes.
@@ -33,6 +34,6 @@ export function createFlightRig(model: Object3D) {
   return (state: AircraftState) => {
     const pitch = state.rates.pitch / flightProfile.pitchRate, roll = state.rates.roll / flightProfile.rollRate, yaw = state.rates.yaw / flightProfile.yawRate
     controls.forEach(surface => surface.set?.(clamp(pitch * surface.pitch + roll * surface.roll + yaw * surface.yaw, -surface.limit, surface.limit)))
-    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5 - (state.maneuver.phase === 'active' || state.maneuver.phase === 'recovery' ? clamp(pitch, -1, 1) * 14 : 0)))
+    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5 + nozzleVectorDegrees(state)))
   }
 }

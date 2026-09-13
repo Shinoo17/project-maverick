@@ -5,6 +5,7 @@ import type { FlightSession } from '../features/flight/session'
 import { WORLD_STEP } from '../game/runtime/clock'
 import { CondensationVolume } from './vapor/CondensationVolume'
 import { flightVaporConditions } from './vapor/conditions'
+import { flightExhaustConditions } from './exhaust/profile'
 
 export function FlightEffects({ session, aircraft }: { session: FlightSession; aircraft: RefObject<Group | null> }) {
   const gl = useThree(state => state.gl)
@@ -25,6 +26,7 @@ export function FlightEffects({ session, aircraft }: { session: FlightSession; a
     const dt = session.running ? Math.min(delta, .1) * session.timeScale : tick.current >= 0 ? Math.max(0, now - tick.current) * WORLD_STEP : 0
     tick.current = now
     volume.current.update(flightVaporConditions(state), dt, session.reducedMotion, state.aircraftId)
+    volume.current.updateExhaust(flightExhaustConditions(state), dt, session.reducedMotion)
     aircraft.current.updateWorldMatrix(true, false)
     volume.current.render(gl, scene, camera, aircraft.current.matrixWorld)
   }, 1)
