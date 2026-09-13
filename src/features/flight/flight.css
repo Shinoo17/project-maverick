@@ -3,22 +3,6 @@
 .flight-scene { position: absolute; inset: 0; outline: none; }
 /* Clipped: the gate is the window, so the stick marker sits on the edge at full deflection. */
 .flight-hud { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: #fff; padding: 24px; }
-.flight-identity { display: flex; gap: 12px; align-items: baseline; width: fit-content; background: #19252de8; padding: 12px 16px; }
-.flight-identity strong { font-family: var(--display); font-size: 24px; }
-.flight-identity span { font-size: 13px; }
-.flight-telemetry { display: flex; width: fit-content; gap: 28px; margin: 1px 0; padding: 16px; background: #19252de8; font-variant-numeric: tabular-nums; }
-.flight-telemetry dt { font-size: 13px; color: #c4d3da; }
-.flight-telemetry dd { margin: 4px 0 0; font-size: 28px; font-weight: 600; }
-.flight-telemetry small { display: block; font-size: 12px; color: #c4d3da; font-weight: 400; }
-.flight-actions { position: absolute; right: 24px; top: 24px; display: flex; align-items: center; gap: 14px; font-size: 13px; background: #19252de8; padding-left: 12px; }
-.flight-actions button { pointer-events: auto; background: #293c47; min-height: 44px; padding: 0 16px; }
-.flight-reticle { position: absolute; top: 50%; left: 50%; font-size: 28px; transform: translate(-50%, -50%); text-shadow: 1px 2px 3px #243029; }
-.flight-path { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-.flight-stick { position: absolute; top: 50%; left: 50%; width: 13px; height: 13px; margin: -7px 0 0 -7px; border: 2px solid #fff; border-radius: 50%; outline: 1px solid #24302966; }
-.flight-path { font-size: 25px; color: #ffe29b; text-shadow: 1px 2px 3px #243029; }
-.flight-controls { position: absolute; bottom: 18px; left: 24px; right: 24px; margin: 0 auto; width: fit-content; max-width: calc(100% - 48px); padding: 12px 18px; font-size: 13px; line-height: 1.65; background: #19252de8; }
-.flight-warning { text-align: center; margin-top: 20px; color: #181d20; background: #ffdb82; width: fit-content; margin-inline: auto; padding: 8px 16px; }
-.flight-warning:empty { display: none; }
 .flight-menu { width: min(500px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 28px; border: 1px solid #596970; background: #19232b; color: #edf0ed; }
 .flight-menu::backdrop { background: #10182085; }
 .flight-menu-kicker { font-size: 13px; color: #cbb88f; margin-bottom: 12px; }
@@ -31,46 +15,91 @@
 .flight-menu button, .flight-menu a { display: block; text-align: center; text-decoration: none; color: #edf0ed; width: 100%; min-height: 44px; padding: 12px; margin-top: 8px; background: #293943; }
 .flight-menu .flight-primary { background: #ffcd60; color: #1a201e; font-weight: 700; }
 .flight-menu button:hover, .flight-menu a:hover { filter: brightness(1.1); }
-@media (max-width: 760px) {
-  .flight-identity span { display: none; }
-  .flight-hud { padding: 12px; }
-  .flight-actions { right: 12px; top: 12px; }
-  .flight-actions span { display: none; }
-  .flight-telemetry { gap: 18px; }
-  .flight-telemetry dd { font-size: 22px; }
-}
 /* P2 extends the existing instruments; the aircraft keeps the centre of the view. */
-.maneuver-instrument { position: absolute; top: 192px; left: 24px; width: 292px; background: #19252de8; padding: 16px; font-size: 13px; }
-.maneuver-status { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.maneuver-status > span { color: #c4d3da; }
-.maneuver-status strong { color: #ffe29b; }
-.maneuver-instrument p { min-height: 40px; margin: 12px 0; line-height: 1.55; }
-.maneuver-readings { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; }
-.maneuver-readings b { display: block; font-size: 22px; margin-top: 5px; }
-.burner-meter { margin-top: 16px; }
-.burner-meter meter { display: block; width: 100%; height: 12px; margin-top: 6px; accent-color: #cfb88a; }
-.maneuver-flags { display: flex; gap: 16px; margin-top: 12px; color: #c4d3da; }
-.maneuver-flags [data-active="true"] { color: #ffe29b; text-decoration: underline; text-underline-offset: 4px; }
-.flight-lesson { position: absolute; right: 24px; top: 88px; width: 300px; background: #19252de8; padding: 16px; font-size: 13px; }
-.flight-lesson strong { display: block; line-height: 1.65; font-size: 15px; font-weight: 500; margin: 10px 0; }
-.flight-lesson > span, .flight-lesson small { color: #ffe29b; }
-.flight-lab { position: absolute; top: 280px; right: 24px; width: 300px; padding: 16px; background: #19252de8; font-size: 12px; font-variant-numeric: tabular-nums; }
-.flight-lab div { display: flex; justify-content: space-between; gap: 12px; margin: 7px 0; }
-.flight-lab dd { margin: 0; }.flight-lab dt { color: #c4d3da; }
-.flight-timescale { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); padding: 8px 12px; color: #ffe29b; background: #19252de8; font-size: 13px; }
 .flight-lab-settings { margin-top: 22px; border-top: 1px solid #596970; padding-top: 16px; }
 .flight-lab-settings summary { cursor: pointer; min-height: 32px; font-size: 14px; }
 .flight-lab-settings input { margin-right: 6px; accent-color: #cfb88a; }
 .flight-menu button:disabled { opacity: 0.5; cursor: not-allowed; }
-@media (max-width: 1000px) { .maneuver-instrument { width: 248px; }.flight-lesson, .flight-lab { width: 250px; } }
-@media (max-width: 760px) {
-  .maneuver-instrument { left: 12px; top: 166px; width: 212px; padding: 12px; }
-  .flight-lesson { top: auto; bottom: 145px; right: 12px; width: 212px; padding: 12px; }
-  .flight-lab { top: 80px; right: 12px; width: 212px; }
-  .flight-timescale { top: 45px; left: auto; right: 12px; transform: none; }
-}
-@media (max-width: 520px) { .flight-lab { top: auto; bottom: 140px; width: calc(100% - 24px); }.flight-lesson { bottom: 295px; width: 175px; }.maneuver-instrument { width: 185px; } }
 .psm-speed-band { margin: 8px 0 14px; color: #c4d3da; font-size: 12px; }
 .psm-speed-band[data-ready="true"] { color: #ffe29b; }
 .flight-mouse-help { margin: 12px 0; font-size: 13px; }
 .flight-mouse-help summary { cursor: pointer; min-height: 36px; display: list-item; padding: 8px 0; }
+/* The flight HUD follows example/F22: one canvas of phosphor symbology (hudPainter.ts), and
+   quiet dark plates for the few readouts that stay HTML. Menu and hangar keep their palette. */
+.is-flight .topbar { height: 48px; }
+.is-flight .brand span { font-size: 18px; }
+.is-flight .brand svg { width: 20px; }
+/* --hud-advisory-* and --hud-status-top are set by FlightInstruments from the glass layout. */
+.flight-hud {
+  --hud-ice: #62ff84; --hud-green-dim: rgba(98, 255, 132, 0.68); --hud-green-soft: rgba(98, 255, 132, 0.24);
+  --hud-glyph: 0 0 7px rgba(48, 255, 104, 0.34); --hud-plate: rgba(3, 9, 12, 0.72); --hud-panel: rgba(7, 12, 15, 0.86); --hud-panel-line: rgba(98, 255, 132, 0.22);
+  color: var(--hud-ice); padding: 0; font-family: 'DIN Alternate', 'Arial Narrow', 'Aptos Narrow', sans-serif; font-variant-numeric: tabular-nums; text-shadow: var(--hud-glyph);
+}
+.hud-glass { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.hud-a11y-readout { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.flight-identity { position: absolute; left: 24px; top: 18px; display: flex; align-items: baseline; gap: 12px; }
+.flight-identity strong { color: var(--hud-ice); font-size: 15px; font-weight: 700; letter-spacing: 0.12em; }
+.flight-identity span { color: var(--hud-green-dim); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+.flight-actions { position: absolute; top: 14px; right: 20px; display: flex; gap: 12px; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; }
+.flight-actions > span { color: var(--hud-green-dim); text-transform: uppercase; }
+.flight-actions button { min-height: 40px; padding: 6px 14px; pointer-events: auto; color: var(--hud-green-dim); border: 1px solid var(--hud-green-soft); border-radius: 2px; background: var(--hud-plate); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-shadow: none; }
+.flight-actions button:hover { color: var(--hud-ice); border-color: var(--hud-ice); }
+.flight-actions button:focus-visible { outline: 2px solid var(--hud-ice); outline-offset: 2px; }
+/* The mouse stick: drawn like the glass's own stick dot, positioned by FlightScene. */
+.flight-stick { position: absolute; top: 50%; left: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border: 1.7px solid var(--hud-ice); border-radius: 50%; box-shadow: 0 0 0 2.4px rgba(48, 255, 104, 0.24); }
+/* Advisory plates. A warning outranks the maneuver state and takes its slot. */
+.flight-warning, .maneuver-instrument { position: absolute; top: var(--hud-advisory-top, 78%); left: var(--hud-advisory-left, 50%); transform: translateX(var(--hud-advisory-shift, -50%)); margin: 0; }
+.flight-warning { width: max-content; max-width: min(92%, 560px); padding: 7px 16px; border: 1px solid var(--hud-ice); border-radius: 2px; color: var(--hud-ice); background: rgba(3, 9, 12, 0.86); font-size: 13px; font-weight: 700; line-height: 1.4; letter-spacing: 0.08em; animation: hud-alert 720ms steps(1, end) infinite alternate; }
+.flight-warning:empty { display: none; }
+.flight-hud:has(.flight-warning:not(:empty)) .maneuver-instrument { display: none; }
+.maneuver-instrument { width: max-content; max-width: min(420px, 46%); color: var(--hud-green-dim); font-size: 11px; text-align: center; }
+.flight-hud[style*="--hud-advisory-shift: 0%"] .maneuver-instrument { text-align: left; }
+.maneuver-status { display: inline-flex; justify-content: center; align-items: baseline; gap: 10px; padding: 7px 16px; border: 1px solid var(--hud-ice); border-radius: 2px; color: var(--hud-ice); background: var(--hud-plate); }
+.maneuver-status span { color: var(--hud-green-dim); font-size: 10px; font-weight: 600; letter-spacing: 0.17em; text-transform: uppercase; }
+.maneuver-status strong { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
+.maneuver-instrument[data-phase="active"] .maneuver-status, .maneuver-instrument[data-phase="recovery"] .maneuver-status { background: rgba(3, 9, 12, 0.86); }
+.maneuver-instrument p { margin: 8px 0 0; line-height: 1.6; letter-spacing: 0.03em; }
+.maneuver-instrument .psm-speed-band { color: inherit; margin: 4px 0 0; font-size: 10px; letter-spacing: 0.1em; }
+.maneuver-instrument .psm-speed-band[data-ready="true"] { color: var(--hud-ice); }
+.maneuver-instrument:not([data-details="true"]) p,
+.maneuver-instrument:not([data-details="true"]) .psm-speed-band,
+.maneuver-instrument .maneuver-readings { display: none; }
+@keyframes hud-alert { from { opacity: 1; } to { opacity: 0.62; } }
+/* Panels borrow the reference's carbon plate. */
+.flight-lesson { position: absolute; right: 20px; top: 64px; width: 250px; padding: 12px 14px; border: 1px solid var(--hud-panel-line); border-radius: 3px; background: var(--hud-panel); color: var(--hud-green-dim); font-size: 11px; line-height: 1.55; letter-spacing: 0.03em; text-shadow: none; }
+.flight-lesson > span { display: block; color: var(--hud-ice); font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.flight-lesson strong { display: block; margin: 6px 0; color: var(--hud-ice); font-size: 12px; font-weight: 600; }
+.flight-lesson small { font-size: 10px; letter-spacing: 0.1em; }
+.flight-lab { position: absolute; right: 16px; bottom: 16px; width: 210px; margin: 0; padding: 12px 14px; border: 1px solid var(--hud-panel-line); border-radius: 3px; background: var(--hud-panel); color: var(--hud-green-dim); font-size: 10px; letter-spacing: 0.08em; text-shadow: none; }
+.flight-lab div { display: flex; justify-content: space-between; gap: 10px; margin: 4px 0; }
+.flight-lab dd { margin: 0; color: var(--hud-ice); font-weight: 700; text-align: right; }
+.flight-controls { position: absolute; bottom: 8px; left: 20px; right: 20px; margin: 0; text-align: center; color: var(--hud-green-dim); font-size: 10px; line-height: 1.5; letter-spacing: 0.04em; }
+.flight-timescale { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); margin: 0; padding: 3px 10px; border: 1px solid var(--hud-green-soft); border-radius: 2px; background: var(--hud-plate); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
+@media (max-height: 760px) {
+  .flight-controls { display: none; }
+  .maneuver-instrument[data-details="true"] p, .maneuver-instrument[data-details="true"] .psm-speed-band { display: none; }
+}
+@media (max-width: 1000px) {
+  .flight-identity span, .flight-actions > span { display: none; }
+  .flight-lesson { width: 210px; }
+}
+@media (max-width: 760px) {
+  .flight-identity { left: 14px; top: 17px; }
+  .flight-actions { right: 12px; top: 10px; }
+  .flight-actions button { padding: 6px 8px; }
+  .flight-controls { display: none; }
+  .maneuver-instrument { max-width: 86%; }
+  .maneuver-instrument[data-details="true"] p, .maneuver-instrument[data-details="true"] .psm-speed-band { display: none; }
+  /* Under the GND row, left of the right-aligned status column and above the advisory. */
+  .flight-lesson { top: calc(var(--hud-status-top, 72%) + 24px); left: 12px; right: auto; width: 46%; padding: 8px 10px; font-size: 10px; }
+  .flight-lesson strong { font-size: 11px; }
+  .flight-lab { left: 50%; right: auto; bottom: auto; top: 27%; transform: translateX(-50%); width: 210px; }
+  .flight-warning { font-size: 11px; padding: 5px 10px; }
+}
+@media (max-width: 700px) {
+  .is-flight { height: 100dvh; min-height: 700px; }
+  .flight-root { min-height: 652px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flight-warning { animation: none; }
+}

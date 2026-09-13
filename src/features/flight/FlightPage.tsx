@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useSessionSettings } from '../../app/sessionStore'
 import { getAircraft, modelUrl } from '../../content/aircraft'
 import { FlightInput } from '../../game/input/FlightInput'
-import { arcadeSpeed } from '../../game/flight/speed'
+import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import type { AircraftState } from '../../game/state/WorldState'
 import { SceneBoundary } from '../../ui/components/SceneBoundary'
 import { supportsWebGL2 } from '../../platform/webgl'
@@ -18,7 +18,7 @@ import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 export function FlightPage() {
   const { t } = useTranslation()
-  const { aircraftId, locale } = useSessionSettings()
+  const { aircraftId } = useSessionSettings()
   const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(), preset: 'mouse', cameraMode: 'horizon', running: false, resetId: 0, timeScale: 1, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches }), [])
   const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
@@ -29,7 +29,7 @@ export function FlightPage() {
   const [preset, setPreset] = useState(session.preset), [cameraMode, setCameraMode] = useState(session.cameraMode)
   const [telemetry, setTelemetry] = useState<AircraftState | null>(null)
   const [webgl] = useState(supportsWebGL2)
-  const indicators = useMemo(() => ({ nose: createRef<HTMLDivElement>(), path: createRef<HTMLDivElement>(), stick: createRef<HTMLDivElement>() }), [])
+  const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), hud: createRef<HudDriver>() }), [])
   const surface = useRef<HTMLDivElement>(null), dialog = useRef<HTMLDialogElement>(null)
   const pause = useCallback(() => {
     session.running = false; session.runtime?.pause(); session.input.clear(); setRunning(false)
@@ -93,8 +93,6 @@ export function FlightPage() {
     const link = document.createElement('a'); link.href = url; link.download = 'maverick-flight-p2.json'; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
-  const speed = telemetry ? Math.hypot(telemetry.velocity.x, telemetry.velocity.y, telemetry.velocity.z) : 130
-  const number = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
   const stopped = telemetry && !telemetry.alive
   return <main className="flight-root">
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
@@ -103,17 +101,13 @@ export function FlightPage() {
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
+      <FlightInstruments driver={indicators.hud} />
       <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
-      <dl className="flight-telemetry">
-        <div><dt>{t('actualSpeed')}</dt><dd>{number(arcadeSpeed(speed))}<small>{t('arcadeUnit')}</small></dd></div>
-        <div><dt>{t('altitude')}</dt><dd>{number(telemetry?.position.y ?? 400)}<small>{t('metres')}</small></dd></div>
-      </dl>
       <div className="flight-actions"><span>{t(cameraMode === 'horizon' ? 'horizonCamera' : 'aircraftCamera')}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
-      {running && telemetry && <p className="flight-warning" role="status">{Math.hypot(telemetry.position.x, telemetry.position.z) > 6500 || telemetry.position.y > 6500 ? t('boundaryWarning') : telemetry.position.y < 100 ? t('lowAltitude') : ''}</p>}
-      <div ref={indicators.nose} className="flight-reticle" aria-hidden="true">+</div>
-      <div ref={indicators.path} className="flight-path" aria-hidden="true">◇</div>
-      {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true" />}
+      <FlightSystemStatus state={telemetry} />
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
+      {running && telemetry && <p className="flight-warning" role="status">{Math.hypot(telemetry.position.x, telemetry.position.z) > 6500 || telemetry.position.y > 6500 ? t('boundaryWarning') : telemetry.position.y < 100 ? t('lowAltitude') : Math.hypot(telemetry.velocity.x, telemetry.velocity.y, telemetry.velocity.z) < 60 ? t('hudLowEnergy') : ''}</p>}
+      {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true" />}
       {timeScale !== 1 && <p className="flight-timescale">{t('practiceSpeed')} ×{timeScale}</p>}
       <p className="flight-controls">{t('controlsHint')}</p>
     </div>
