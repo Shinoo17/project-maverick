@@ -8,7 +8,7 @@
 <label for="power">Throttle <output id="powerValue">100%</output></label><input id="power" type="range" min="0" max="1" step=".01" value="1">
 <button id="burner" aria-pressed="true">Afterburner: ON</button><button id="pause" aria-pressed="false">หยุดการไหล</button>
 <label>มุมมอง</label><button id="quarter">ท้ายเฉียง</button><button id="rear">ภายใน nozzle</button><button id="side">ด้านข้าง</button><button id="front">ด้านหน้า</button>
-<label for="vector">F-22 thrust vector <output id="vectorValue">0°</output></label><input id="vector" type="range" min="-14" max="14" step="1" value="0">
+<label for="vector">Pitch / thrust vector <output id="vectorValue">0°</output></label><input id="vector" type="range" min="-20" max="20" step="1" value="0">
 <button id="cloud" aria-pressed="false">Condensation: OFF</button><button id="background">พื้นหลัง: สว่าง</button>
 <p>ลากเพื่อหมุน · เลื่อนเพื่อซูม<br>ใช้เอฟเฟกต์เดียวกับโหมดบิน</p><p id="status" role="status">กำลังโหลดโมเดล…</p><p id="error" role="alert"></p>
 </aside><script type="module" src="/src/render/exhaust/preview.ts"></script></body></html>

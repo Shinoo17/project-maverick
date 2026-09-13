@@ -5,6 +5,7 @@ import { FixedClock, FLIGHT_STEP } from './clock'
 import { neutralCommand, type PilotCommand } from './commands'
 import { stepFlight } from '../flight/stepFlight'
 import { createPracticeState, practiceSpawns, stepPractice, type PracticePreset } from '../playground/practice'
+import { createThrustVectoringState } from '../flight/thrustVectoring'
 import { createManeuverState } from '../flight/maneuvers'
 import { flightProfile, flightProfileVersion } from '../flight/profile'
 
@@ -32,7 +33,7 @@ export class GameRuntime {
         position: { x: index * 40, y: practiceSpawns[this.preset].altitude, z: 0 },
         orientation: { x: 0, y: 0, z: 0, w: 1 },
         velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, alive: true,
-        maneuver: createManeuverState(),
+        maneuver: createManeuverState(), thrustVectoring: createThrustVectoringState(),
         speedDrive: 0, enginePower: flightProfile.drag * practiceSpawns[this.preset].speed ** 2 / flightProfile.maxThrust,
         rates: { pitch: 0, yaw: 0, roll: 0 },
       })),

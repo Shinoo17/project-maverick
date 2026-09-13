@@ -4,17 +4,21 @@ import type { PilotCommand } from '../runtime/commands'
 import { trainingMap } from '../../content/maps'
 import { flightProfile as p } from './profile'
 import { stepManeuvers, maneuverProfile } from './maneuvers'
+import { f22ThrustForces, f22TvcTargets, stepThrustVectoring } from './thrustVectoring'
 import { clamp, stepSpeed } from './speed'
 
 // Canonical body axes: +X forward, +Y up, +Z right. Positive pitch raises nose;
 // positive roll banks right; positive yaw turns right. Only this module maps signs.
 export function stepFlight(state: AircraftState, command: PilotCommand, dt: number) {
-  if (!state.alive) return
+  if (!state.alive || dt <= 0) return
   const velocity = new Vector3().copy(state.velocity)
   const speed = velocity.length()
   const assist = stepManeuvers(state, command, dt, speed)
   const m = state.maneuver
   const { thrust, braking } = stepSpeed(state, { ...command, airbrake: assist.brake }, dt, speed)
+  stepThrustVectoring(state, command, dt, speed, assist.alpha * 180 / Math.PI)
+  const vectoredThrust = state.aircraftId === 'f22' ? f22ThrustForces(state.thrustVectoring, thrust) : null
+  const allocatedThrust = vectoredThrust ? f22ThrustForces({ ...state.thrustVectoring, ...f22TvcTargets(command, state.thrustVectoring.authority) }, thrust) : null
   const authority = clamp(speed / 90, 0.12, 1) * clamp(160 / Math.max(speed, 1), 0.6, 1)
   const blend = 1 - Math.exp(-p.rateResponse * dt)
   const rates = state.rates
@@ -32,6 +36,9 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   pitchTarget = (assist.pitch ?? pitchTarget) * (1 - grip) + pitchTarget * grip
   yawTarget = (assist.yaw ?? yawTarget) * (1 - grip) + yawTarget * grip
   const response = (target: number, rate: number) => {
+    // The F-22 rate damper remains active when the stick is released, even
+    // while TVC actuators are still traveling back during post-stall flight.
+    if (state.aircraftId === 'f22' && target === 0) return 1 - Math.exp(-p.neutralResponse * dt)
     const normal = target === 0 ? p.neutralResponse : target * rate < 0 ? p.counterResponse : p.rateResponse
     return 1 - Math.exp(-(p.rateResponse + (normal - p.rateResponse) * grip) * dt)
   }
@@ -39,7 +46,20 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   rates.yaw += (yawTarget - rates.yaw) * response(yawTarget, rates.yaw)
   const rollTarget = assist.roll ?? command.roll * p.rollRate * authority
   const reversing = rollTarget * rates.roll < 0
-  rates.roll += (rollTarget - rates.roll) * (reversing ? 1 - Math.exp(-p.rollReversalResponse * dt) : blend)
+  const rollBlend = state.aircraftId === 'f22' && command.roll === 0 ? 1 - Math.exp(-p.neutralResponse * dt) : blend
+  rates.roll += (rollTarget - rates.roll) * (reversing ? 1 - Math.exp(-p.rollReversalResponse * dt) : rollBlend)
+  if (allocatedThrust) {
+    // Allocate part of the requested control moment to TVC instead of counting
+    // it twice in the aerodynamic rate controller. This is surface demand only.
+    rates.pitch -= allocatedThrust.angularAcceleration.pitch * dt
+    rates.roll -= allocatedThrust.angularAcceleration.roll * dt
+  }
+  if (vectoredThrust) {
+    // Engine moments always use the ACTUAL simulation-owned actuator angles.
+    rates.pitch += vectoredThrust.angularAcceleration.pitch * dt
+    rates.roll += vectoredThrust.angularAcceleration.roll * dt
+    rates.yaw += vectoredThrust.angularAcceleration.yaw * dt
+  }
   if (m.phase === 'active') m.rotation += Math.hypot(rates.pitch, rates.yaw) * dt
   const angular = new Vector3(rates.roll, -rates.yaw, rates.pitch)
   const orientation = new Quaternion().copy(state.orientation)
@@ -70,7 +90,10 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + m.highG * (maneuverProfile.highGDrag - 1)) * (assist.assisted ? 0.55 : 1)
   const psmDrag = assist.assisted ? speed * speed * (Math.sin(assist.alpha) ** 2 + Math.max(0, -Math.cos(assist.alpha)) * 0.4) * 0.0025 : 0
   const drag = p.drag * speed * speed + turnLoss + psmDrag + Math.max(0, speed - 260) ** 2 * 0.02
-  const force = forward.clone().multiplyScalar(thrust).add(lateral).addScaledVector(path, -drag - braking)
+  const engineForce = vectoredThrust
+    ? new Vector3().copy(vectoredThrust.acceleration).applyQuaternion(orientation)
+    : forward.clone().multiplyScalar(thrust)
+  const force = engineForce.add(lateral).addScaledVector(path, -drag - braking)
   // Arcade trim cancels cross-path gravity while retaining climb/descent energy cost.
   force.addScaledVector(path, -p.gravity * path.y)
   if (assist.assisted) force.y -= p.gravity * 0.5

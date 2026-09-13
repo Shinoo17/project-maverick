@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
-import { Box3, Group, Mesh, Vector3 } from 'three'
+import { Box3, Group, Mesh, Quaternion, Vector3 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { aircraft } from '../src/content/aircraft'
 import { prepareAnimations } from '../src/render/aircraft/animationStages'
 import { ExhaustResponse, exhaustProfiles, flightExhaustConditions } from '../src/render/exhaust/profile'
+import { createFlightRig } from '../src/render/aircraft/flightRig'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 
 const conditions = { aircraftId: 'f22' as const, power: 1, afterburner: false, vectorAngle: 0 }
@@ -71,6 +72,33 @@ describe('nozzle anchors on shipped GLBs', () => {
         expect(p.centerZ + sign * p.spacing).toBeCloseTo(nozzle.getCenter(new Vector3()).z, 2)
         expect(nozzle.containsPoint(new Vector3(p.lipX + p.inset, p.height, p.centerZ + sign * p.spacing))).toBe(true)
         expect(p.width * 2).toBeLessThan(nozzle.max.z - nozzle.min.z)
+      }
+      if (definition.id === 'f22') {
+        const s = new GameRuntime({ mode: 'playground', aircraftIds: ['f22'] }).snapshot().aircraft[0]
+        s.enginePower = 0 // isolate vector angle from symmetric exit-area motion
+        const bones = ['L', 'R'].flatMap(side => ['Upper', 'Lower'].map(part => ({ side, bone: root.getObjectByName(`Engine_Nozzle_${side}_Flap_${part}`)!.parent! })))
+        const rest = bones.map(({ bone }) => bone.getWorldQuaternion(new Quaternion()).normalize())
+        const rig = createFlightRig(root)
+        for (const angles of [{ left: 20, right: 20 }, { left: -20, right: -20 }, { left: -6, right: 6 }, { left: 14, right: 20 }]) {
+          Object.assign(s.thrustVectoring, angles)
+          const before = structuredClone(s)
+          rig(s, 0); root.updateMatrixWorld(true)
+          for (const [i, { side, bone }] of bones.entries()) {
+            const angle = (side === 'L' ? angles.left : angles.right) * Math.PI / 180
+            const actual = bone.getWorldQuaternion(new Quaternion()).normalize().multiply(rest[i].clone().invert()).normalize()
+            const expected = new Quaternion().setFromAxisAngle(new Vector3(0, 0, -1), angle)
+            expect(actual.angleTo(expected)).toBeLessThan(.0001)
+            const direction = new Vector3(-1, 0, 0).applyQuaternion(actual)
+            // Exported parent scales introduce less than 0.006 degrees of decomposition error.
+            expect(Math.abs(direction.y - Math.sin(angle))).toBeLessThan(.0001)
+            expect(Math.abs(direction.z)).toBeLessThan(.0001)
+          }
+          expect(s).toEqual(before)
+        }
+        // Rendering may be repeated or paused: it must not damp or advance TVC.
+        const pose = bones[0].bone.quaternion.clone()
+        rig(s, 10)
+        expect(bones[0].bone.quaternion.angleTo(pose)).toBeLessThan(1e-7)
       }
     } finally {
       asset.scene.traverse(o => { if (o instanceof Mesh) { o.geometry.dispose(); for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.dispose() } })

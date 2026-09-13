@@ -1,7 +1,7 @@
+import type { Vector3 } from 'three'
 import type { AircraftId } from '../../content/schemas'
 import type { AircraftState } from '../../game/state/WorldState'
 import { clamp } from '../../game/flight/speed'
-import { flightProfile } from '../../game/flight/profile'
 
 // Metres in FlightWorld's centered, 18.9 m presentation frame (+X forward).
 // Measured AFTER node removal, prepareAnimations(frame zero), and orientation.
@@ -13,14 +13,14 @@ export const exhaustProfiles = {
   su57: { lipX: -8.22, height: -.6691, spacing: 1.3903, centerZ: 0, width: .50, radiusY: .50, inset: .92, round: 1, chamberRadius: 0, burnerViolet: 0, length: 6.6, turbulence: .26 },
 } as const satisfies Record<AircraftId, object>
 
-export interface ExhaustConditions { aircraftId: AircraftId; power: number; afterburner: boolean; vectorAngle: number }
-export function nozzleVectorDegrees(state: AircraftState) {
-  return state.aircraftId === 'f22' && (state.maneuver.phase === 'active' || state.maneuver.phase === 'recovery')
-    ? -clamp(state.rates.pitch / flightProfile.pitchRate, -1, 1) * 14 : 0
-}
+export interface ExhaustNozzleFrame { origin: Vector3; axis: Vector3; up: Vector3; radius: number }
+export interface ExhaustNozzles { left: ExhaustNozzleFrame; right: ExhaustNozzleFrame }
+
+export interface ExhaustConditions { aircraftId: AircraftId; power: number; afterburner: boolean; vectorAngle: number; vectorAngles?: { left: number; right: number }; nozzles?: ExhaustNozzles }
 export function flightExhaustConditions(state: AircraftState): ExhaustConditions {
   return { aircraftId: state.aircraftId, power: state.alive ? clamp(state.enginePower, 0, 1) : 0,
-    afterburner: state.alive && state.maneuver.burnerActive, vectorAngle: nozzleVectorDegrees(state) * Math.PI / 180 }
+    afterburner: state.alive && state.maneuver.burnerActive, vectorAngle: 0,
+    vectorAngles: state.aircraftId === 'f22' ? { left: state.thrustVectoring.left * Math.PI / 180, right: state.thrustVectoring.right * Math.PI / 180 } : undefined }
 }
 
 /** Presentation smoothing only; never writes back into the flight simulation. */

@@ -1,3 +1,4 @@
+import type { ThrustVectoringState } from '../flight/thrustVectoring'
 import type { PracticeState } from '../playground/practice'
 import type { ManeuverState } from '../flight/maneuvers'
 import type { AircraftId } from '../../content/schemas'
@@ -13,6 +14,7 @@ export interface AircraftState {
   maneuver: ManeuverState
   speedDrive: number
   enginePower: number
+  thrustVectoring: ThrustVectoringState
   rates: { pitch: number; yaw: number; roll: number }
   stopReason?: 'terrain' | 'boundary'
   alive: boolean

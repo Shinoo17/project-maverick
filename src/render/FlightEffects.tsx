@@ -5,9 +5,9 @@ import type { FlightSession } from '../features/flight/session'
 import { WORLD_STEP } from '../game/runtime/clock'
 import { CondensationVolume } from './vapor/CondensationVolume'
 import { flightVaporConditions } from './vapor/conditions'
-import { flightExhaustConditions } from './exhaust/profile'
+import { flightExhaustConditions, type ExhaustNozzles } from './exhaust/profile'
 
-export function FlightEffects({ session, aircraft }: { session: FlightSession; aircraft: RefObject<Group | null> }) {
+export function FlightEffects({ session, aircraft, nozzles }: { session: FlightSession; aircraft: RefObject<Group | null>; nozzles?: ExhaustNozzles }) {
   const gl = useThree(state => state.gl)
   const volume = useRef<CondensationVolume | null>(null)
   const reset = useRef(-1), tick = useRef(-1)
@@ -26,7 +26,7 @@ export function FlightEffects({ session, aircraft }: { session: FlightSession; a
     const dt = session.running ? Math.min(delta, .1) * session.timeScale : tick.current >= 0 ? Math.max(0, now - tick.current) * WORLD_STEP : 0
     tick.current = now
     volume.current.update(flightVaporConditions(state), dt, session.reducedMotion, state.aircraftId)
-    volume.current.updateExhaust(flightExhaustConditions(state), dt, session.reducedMotion)
+    volume.current.updateExhaust({ ...flightExhaustConditions(state), nozzles }, dt, session.reducedMotion)
     aircraft.current.updateWorldMatrix(true, false)
     volume.current.render(gl, scene, camera, aircraft.current.matrixWorld)
   }, 1)

@@ -1,5 +1,5 @@
 // Shared experimental F-22 baseline; airframe-specific balancing belongs to P3.
-export const flightProfileVersion = 'p2-grip-3'
+export const flightProfileVersion = 'p2-tvc-4'
 export const flightProfile = {
   minPoweredMps: 65, maxPoweredMps: 200,
   acceleration: 24, deceleration: 24, driveResponse: 8, releaseResponse: 6,

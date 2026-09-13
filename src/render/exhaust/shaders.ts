@@ -2,12 +2,13 @@
 // billboards, blurred flame texture or per-frame particle allocations.
 export const exhaustShader = /* glsl */ `
 uniform vec3 nozzleLeft, nozzleRight;
-uniform vec2 nozzleRadius, exhaustResolution;
+uniform vec2 nozzleRadiusLeft, nozzleRadiusRight, exhaustResolution;
+uniform vec3 nozzleAxisLeft, nozzleAxisRight, nozzleUpLeft, nozzleUpRight;
 uniform float exhaustPower, burnerStrength, exhaustTime, nozzleInset, nozzleRound;
-uniform float exhaustLength, exhaustTurbulence, nozzleVector;
+uniform float exhaustLength, exhaustTurbulence;
 uniform float chamberRadius, burnerViolet;
 
-vec2 exhaustBounds(vec3 ro, vec3 rd, float lengthMax) {
+vec2 exhaustBounds(vec3 ro, vec3 rd, float lengthMax, vec2 nozzleRadius) {
   vec3 safe = mix(vec3(-1.0), vec3(1.0), step(vec3(0.0), rd)) * max(abs(rd), vec3(1e-7));
   vec3 extent = vec3(nozzleRadius * 2.1, lengthMax);
   vec3 a = (vec3(-extent.xy, -nozzleInset) - ro) / safe;
@@ -17,15 +18,14 @@ vec2 exhaustBounds(vec3 ro, vec3 rd, float lengthMax) {
 }
 
 // RGB is integrated emission, alpha is a small background-refraction weight.
-vec4 exhaustRay(vec3 ray, vec3 origin, float surfaceDistance, float seed) {
+vec4 exhaustRay(vec3 ray, vec3 origin, vec3 axis, vec3 up, vec2 nozzleRadius, float surfaceDistance, float seed) {
   if (exhaustPower < .002) return vec4(0.0);
-  float cs = cos(nozzleVector), sn = sin(nozzleVector);
-  vec3 axis = vec3(-cs, sn, 0.0), up = vec3(sn, cs, 0.0);
+  vec3 across = normalize(cross(up, axis));
   vec3 offset = cameraLocal - origin;
-  vec3 ro = vec3(offset.z, dot(offset, up), dot(offset, axis));
-  vec3 rd = vec3(ray.z, dot(ray, up), dot(ray, axis));
+  vec3 ro = vec3(dot(offset, across), dot(offset, up), dot(offset, axis));
+  vec3 rd = vec3(dot(ray, across), dot(ray, up), dot(ray, axis));
   float plumeLength = mix(.38 + exhaustPower * .32, exhaustLength * (.60 + .40 * exhaustPower), burnerStrength);
-  vec2 hit = exhaustBounds(ro, rd, plumeLength);
+  vec2 hit = exhaustBounds(ro, rd, plumeLength, nozzleRadius);
   float start = max(0.0, hit.x), end = min(surfaceDistance, hit.y);
   if (end <= start) return vec4(0.0);
   // Dry exhaust is short and smooth; reserve fine integration for compression
@@ -140,8 +140,8 @@ vec4 exhaustRay(vec3 ray, vec3 origin, float surfaceDistance, float seed) {
 }
 
 vec3 exhaustComposite(vec3 base, vec3 ray, float surfaceDistance) {
-  vec4 left = exhaustRay(ray, nozzleLeft, surfaceDistance, 3.1);
-  vec4 right = exhaustRay(ray, nozzleRight, surfaceDistance, 19.7);
+  vec4 left = exhaustRay(ray, nozzleLeft, nozzleAxisLeft, nozzleUpLeft, nozzleRadiusLeft, surfaceDistance, 3.1);
+  vec4 right = exhaustRay(ray, nozzleRight, nozzleAxisRight, nozzleUpRight, nozzleRadiusRight, surfaceDistance, 19.7);
   float haze = min(left.a + right.a, 1.0);
   if (haze < .0001) return base + left.rgb + right.rgb;
   vec2 displacement = vec2(sin(vUv.y * 310.0 + exhaustTime * 13.0), sin(vUv.x * 290.0 - exhaustTime * 11.0));

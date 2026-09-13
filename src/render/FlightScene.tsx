@@ -10,6 +10,7 @@ import { GameRuntime } from '../game/runtime/GameRuntime'
 import type { AircraftState } from '../game/state/WorldState'
 import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
+import { WORLD_STEP } from '../game/runtime/clock'
 import { screenFrame } from '../game/input/mouseStick'
 import { trainingRings } from '../game/playground/practice'
 import { FlightEffects } from './FlightEffects'
@@ -23,6 +24,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
   const rig = useMemo(() => new FlightCamera(), [])
   const group = useRef<Group>(null)
   const elapsed = useRef(0), reset = useRef(-1)
+  const rigTick = useRef(-1)
   const previous = useRef<AircraftState | null>(null), current = useRef<AircraftState | null>(null)
   const model = useMemo(() => {
     const copy = clone(asset.scene)
@@ -49,7 +51,8 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
   useFrame(({ camera, size }, dt) => {
     const runtime = session.runtime
     if (!runtime || !group.current) return
-    if (reset.current !== session.resetId) {
+    const rigReset = reset.current !== session.resetId
+    if (rigReset) {
       reset.current = session.resetId; rig.reset()
       previous.current = current.current = runtime.snapshot().aircraft[0]
     }
@@ -69,7 +72,10 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
       current.current = runtime.snapshot().aircraft[0]
     } else { runtime.pause(); previous.current = current.current = runtime.snapshot().aircraft[0] }
     const state = current.current!
-    updateRig(state)
+    const tick = runtime.snapshot().tick
+    const rigDt = session.running ? Math.min(dt, .1) * session.timeScale : rigTick.current >= 0 ? Math.max(0, tick - rigTick.current) * WORLD_STEP : 0
+    updateRig(state, rigDt, rigReset)
+    rigTick.current = tick
     const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
     rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion)
@@ -95,7 +101,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
   })
-  return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} aircraft={group} /></>
+  return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} /></>
 }
 function Range() {
   return <>

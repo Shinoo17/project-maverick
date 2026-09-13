@@ -8,6 +8,7 @@ import { defaultVaporSettings, vaporActivation, type VaporConditions, type Vapor
 import { vaporFragment, vaporVertex } from './shaders'
 import { vortexAirflow, vortexProfile, wingtipOrigins } from './profile'
 import { CloudSideTransition } from './CloudSideTransition'
+import { f22TvcProfile } from '../../game/flight/thrustVectoring'
 import { ExhaustResponse, exhaustProfiles, type ExhaustConditions } from '../exhaust/profile'
 
 /** One opaque scene pass + bounded ray integration. Owns all of its GPU resources. */
@@ -43,9 +44,12 @@ export class CondensationVolume {
       vertexShader: vaporVertex, fragmentShader: vaporFragment, depthTest: false, depthWrite: false, blending: NoBlending,
       uniforms: {
         nozzleLeft: { value: new Vector3() }, nozzleRight: { value: new Vector3() },
-        nozzleRadius: { value: new Vector2() }, exhaustResolution: { value: new Vector2(1, 1) },
+        nozzleRadiusLeft: { value: new Vector2() }, nozzleRadiusRight: { value: new Vector2() },
+        nozzleAxisLeft: { value: new Vector3(-1, 0, 0) }, nozzleAxisRight: { value: new Vector3(-1, 0, 0) },
+        nozzleUpLeft: { value: new Vector3(0, 1, 0) }, nozzleUpRight: { value: new Vector3(0, 1, 0) },
+        exhaustResolution: { value: new Vector2(1, 1) },
         exhaustPower: { value: 0 }, burnerStrength: { value: 0 }, exhaustTime: { value: 0 },
-        nozzleInset: { value: 0 }, nozzleRound: { value: 0 }, nozzleVector: { value: 0 },
+        nozzleInset: { value: 0 }, nozzleRound: { value: 0 },
         chamberRadius: { value: 0 }, burnerViolet: { value: 0 },
         exhaustLength: { value: 0 }, exhaustTurbulence: { value: 0 },
         solidBackground: { value: false }, sceneColor: { value: this.target.texture }, sceneDepth: { value: this.target.depthTexture }, noiseTex: { value: this.noise },
@@ -78,16 +82,25 @@ export class CondensationVolume {
   updateExhaust(next: ExhaustConditions, dt: number, reducedMotion = false) {
     this.exhaust.update(next, dt, reducedMotion)
     const p = exhaustProfiles[next.aircraftId], u = this.material.uniforms
-    // F-22 vectoring pivots at the flap hinge, 0.983 m ahead of the lip.
-    const pivot = next.aircraftId === 'f22' ? .983 : 0
-    const x = p.lipX + pivot * (1 - Math.cos(next.vectorAngle))
-    const y = p.height + pivot * Math.sin(next.vectorAngle)
-    u.nozzleLeft.value.set(x, y, p.centerZ - p.spacing)
-    u.nozzleRight.value.set(x, y, p.centerZ + p.spacing)
-    u.nozzleRadius.value.set(p.width, p.radiusY)
+    for (const side of ['Left', 'Right'] as const) {
+      const key = side === 'Left' ? 'left' : 'right'
+      const frame = next.nozzles?.[key]
+      if (frame) {
+        u[`nozzle${side}`].value.copy(frame.origin)
+        u[`nozzleAxis${side}`].value.copy(frame.axis)
+        u[`nozzleUp${side}`].value.copy(frame.up)
+        u[`nozzleRadius${side}`].value.set(frame.radius, frame.radius)
+      } else {
+        const angle = next.vectorAngles?.[key] ?? next.vectorAngle
+        const pivot = next.aircraftId === 'f22' ? f22TvcProfile.lipArm : 0
+        u[`nozzle${side}`].value.set(p.lipX + pivot * (1 - Math.cos(angle)), p.height + pivot * Math.sin(angle), p.centerZ + (side === 'Left' ? -1 : 1) * p.spacing)
+        u[`nozzleAxis${side}`].value.set(-Math.cos(angle), Math.sin(angle), 0)
+        u[`nozzleUp${side}`].value.set(Math.sin(angle), Math.cos(angle), 0)
+        u[`nozzleRadius${side}`].value.set(p.width, p.radiusY)
+      }
+    }
     u.nozzleInset.value = p.inset; u.nozzleRound.value = p.round
     u.chamberRadius.value = p.chamberRadius; u.burnerViolet.value = p.burnerViolet
-    u.nozzleVector.value = next.vectorAngle
     u.exhaustLength.value = p.length; u.exhaustTurbulence.value = p.turbulence
     u.exhaustPower.value = this.exhaust.power; u.burnerStrength.value = this.exhaust.burner
     u.exhaustTime.value = this.exhaust.time

@@ -2,7 +2,8 @@ import { Object3D, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../../game/state/WorldState'
 import { flightProfile } from '../../game/flight/profile'
 import { clamp } from '../../game/flight/speed'
-import { nozzleVectorDegrees } from '../exhaust/profile'
+import { type ExhaustNozzles } from '../exhaust/profile'
+import { createSu57FlightRig } from './su57Rig'
 
 // Mesh/hinge facts are adapted from example/F22's verified rig manifest. All
 // transforms are local to a cloned presentation model; no simulation writes.
@@ -25,15 +26,18 @@ function hinge(model: Object3D, name: string, axis: Vector3, reference: Vector3)
   const rest = bone.quaternion.clone(), rotation = new Quaternion()
   return (degrees: number) => bone.quaternion.copy(rest).multiply(rotation.setFromAxisAngle(axis, degrees * Math.PI / 180))
 }
-export function createFlightRig(model: Object3D) {
+export type FlightRig = ((state: AircraftState, dt?: number, reset?: boolean) => void) & { exhaust?: ExhaustNozzles }
+export function createFlightRig(model: Object3D): FlightRig {
+  if (model.getObjectByName('Gimbal_L') && model.getObjectByName('Gimbal_R')) return createSu57FlightRig(model)
   const controls = surfaces.map(surface => ({ ...surface, set: hinge(model, surface.mesh, new Vector3(0, 1, 0), surface.yaw ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1)) }))
-  const nozzles = ['L', 'R'].flatMap(side => ['Upper', 'Lower'].map((part, index) => ({
+  const nozzles = (['L', 'R'] as const).flatMap(side => ['Upper', 'Lower'].map((part, index) => ({
+    side: side === 'L' ? 'left' as const : 'right' as const,
     direction: index === 0 ? 1 : -1,
     set: hinge(model, `Engine_Nozzle_${side}_Flap_${part}`, new Vector3(1, 0, 0), new Vector3(0, 0, -1)),
   })))
   return (state: AircraftState) => {
     const pitch = state.rates.pitch / flightProfile.pitchRate, roll = state.rates.roll / flightProfile.rollRate, yaw = state.rates.yaw / flightProfile.yawRate
     controls.forEach(surface => surface.set?.(clamp(pitch * surface.pitch + roll * surface.roll + yaw * surface.yaw, -surface.limit, surface.limit)))
-    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5 + nozzleVectorDegrees(state)))
+    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5 + state.thrustVectoring[nozzle.side]))
   }
 }
