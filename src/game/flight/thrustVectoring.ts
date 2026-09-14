@@ -1,21 +1,15 @@
 import type { PilotCommand } from '../runtime/commands'
 import type { AircraftState, Vec3 } from '../state/WorldState'
 import { clamp } from './speed'
+import { f22TvcProfile, getFlightProfile, type ThrustVectoringProfile } from './profile'
 
 /** Degrees, positive = exhaust up / tail force down / nose up. Simulation-owned. */
 export interface ThrustVectoringState { left: number; right: number; authority: number }
 export const createThrustVectoringState = (): ThrustVectoringState => ({ left: 0, right: 0, authority: 0 })
-export const f22TvcProfile = {
-  maxAngle: 20, rollGain: 6, actuatorRate: 45, actuatorResponse: 7, authorityResponse: 5,
-  // Metres in the same centered +X-forward frame as the displayed aircraft.
-  pivotX: -6.3824, height: -1.0373, spacing: .6517, lipArm: .983,
-  // Mass-normalized inertia (I/m, m²), tuned for this arcade airframe. These are
-  // not claimed to be measured F-22 inertias or a real flight-control schedule.
-  inertia: { roll: 12, yaw: 40, pitch: 40 },
-} as const
+export { f22TvcProfile } from './profile'
 const smooth = (value: number) => { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t) }
 
-export function f22TvcAuthority(airspeed: number, aoa: number, phase: AircraftState['maneuver']['phase']) {
+export function tvcAuthority(airspeed: number, aoa: number, phase: AircraftState['maneuver']['phase']) {
   const slow = 1 - smooth((airspeed - 55) / 145)
   const highAlpha = smooth((Math.abs(aoa) - 8) / 57)
   const maneuver = phase === 'active' ? 1 : phase === 'recovery' ? .55 : 0
@@ -23,8 +17,7 @@ export function f22TvcAuthority(airspeed: number, aoa: number, phase: AircraftSt
 }
 
 /** Requested allocation, separate from actuator travel and never used as actual thrust. */
-export function f22TvcTargets(command: Pick<PilotCommand, 'pitch' | 'roll'>, authority: number) {
-  const p = f22TvcProfile
+export function tvcTargets(command: Pick<PilotCommand, 'pitch' | 'roll'>, authority: number, p: ThrustVectoringProfile = f22TvcProfile) {
   const pitch = clamp(command.pitch, -1, 1) * p.maxAngle * authority
   const roll = clamp(command.roll, -1, 1) * p.rollGain * authority
   // +roll banks right: port exhaust DOWN lifts the port wing, starboard exhaust
@@ -34,10 +27,11 @@ export function f22TvcTargets(command: Pick<PilotCommand, 'pitch' | 'roll'>, aut
 
 /** Runs at the fixed flight step, including neutral input. No high-AoA enable gate. */
 export function stepThrustVectoring(state: AircraftState, command: Pick<PilotCommand, 'pitch' | 'roll'>, dt: number, airspeed: number, aoa: number) {
-  if (state.aircraftId !== 'f22' || !state.alive || dt <= 0) return
-  const tvc = state.thrustVectoring, p = f22TvcProfile
-  tvc.authority += (f22TvcAuthority(airspeed, aoa, state.maneuver.phase) - tvc.authority) * (1 - Math.exp(-p.authorityResponse * dt))
-  const targets = f22TvcTargets(command, tvc.authority)
+  const p = getFlightProfile(state.aircraftId).thrustVectoring
+  if (!p || !state.alive || dt <= 0) return
+  const tvc = state.thrustVectoring
+  tvc.authority += (tvcAuthority(airspeed, aoa, state.maneuver.phase) - tvc.authority) * (1 - Math.exp(-p.authorityResponse * dt))
+  const targets = tvcTargets(command, tvc.authority, p)
   for (const side of ['left', 'right'] as const) {
     const change = (targets[side] - tvc[side]) * (1 - Math.exp(-p.actuatorResponse * dt))
     tvc[side] = clamp(tvc[side] + clamp(change, -p.actuatorRate * dt, p.actuatorRate * dt), -p.maxAngle, p.maxAngle)
@@ -45,8 +39,8 @@ export function stepThrustVectoring(state: AircraftState, command: Pick<PilotCom
 }
 
 /** Sum two thrust vectors and r × F moments. Thrust here is acceleration (F/m). */
-export function f22ThrustForces(tvc: ThrustVectoringState, thrust: number) {
-  const p = f22TvcProfile, engine = Math.max(0, thrust) / 2
+export function thrustForces(tvc: ThrustVectoringState, thrust: number, p: ThrustVectoringProfile = f22TvcProfile) {
+  const engine = Math.max(0, thrust) / 2
   const acceleration: Vec3 = { x: 0, y: 0, z: 0 }
   const torquePerMass: Vec3 = { x: 0, y: 0, z: 0 }
   for (const [side, z] of [['left', -p.spacing], ['right', p.spacing]] as const) {
@@ -66,3 +60,6 @@ export function f22ThrustForces(tvc: ThrustVectoringState, thrust: number) {
     yaw: -torquePerMass.y / p.inertia.yaw,
   } }
 }
+
+// Compatibility exports for the original F-22 fixtures. Runtime uses explicit profiles.
+export { tvcAuthority as f22TvcAuthority, tvcTargets as f22TvcTargets, thrustForces as f22ThrustForces }

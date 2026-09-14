@@ -82,9 +82,11 @@ void main() {
   float depth = texture2D(sceneDepth, vUv).r;
   vec4 viewFar = inverseProjection * vec4(vUv * 2.0 - 1.0, 1.0, 1.0);
   vec3 worldRay = normalize((cameraWorld * vec4(viewFar.xyz / viewFar.w, 0.0)).xyz);
-  vec3 ray = normalize((worldToAircraft * vec4(worldRay, 0.0)).xyz);
+  vec3 localRay = (worldToAircraft * vec4(worldRay, 0.0)).xyz;
+  vec3 ray = normalize(localRay);
   vec4 viewSurface = inverseProjection * vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-  float surfaceDistance = length(viewSurface.xyz / viewSurface.w);
+  // Depth and ray integration must share aircraft units (the hangar scales its preview).
+  float surfaceDistance = length(viewSurface.xyz / viewSurface.w) * length(localRay);
   vec3 illuminatedScene = exhaustComposite(base.rgb, ray, surfaceDistance);
   float optical = opticalDepth(ray, wingtipLeft, surfaceDistance, -1.0)
                 + opticalDepth(ray, wingtipRight, surfaceDistance, 1.0);

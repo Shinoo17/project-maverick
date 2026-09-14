@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Check, ChevronRight, Crosshair, X } from 'lucide-react'
+import { Check, ChevronRight, Crosshair, Plane, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { trainingMap } from '../../content/maps'
 
-/* Foot of the rail: one mission line, then the amber Play. The line states the
-   current mode and map and opens the picker; one real mode and one real map so far. */
-export function LaunchPanel({ available }: { available: boolean }) {
+type LaunchPanelProps = {
+  available: boolean
+  airframe: string
+  airframePickerOpen: boolean
+  onChangeAirframe: () => void
+}
+
+/* Foot of the rail: the airframe line, one mission line, then the amber Play. Each line
+   states its current choice and opens its picker; the airframe picker overlay stays in
+   HangarPage. One real mode and one real map so far. */
+export function LaunchPanel({ available, airframe, airframePickerOpen, onChangeAirframe }: LaunchPanelProps) {
   const { t } = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const modes = [{ id: 'playground', label: t('training') }]
@@ -23,6 +31,12 @@ export function LaunchPanel({ available }: { available: boolean }) {
   }, [pickerOpen])
 
   return <section className="launch-panel" aria-label={t('mission')}>
+    <button type="button" className="launch-setup" onClick={onChangeAirframe} aria-haspopup="dialog" aria-expanded={airframePickerOpen}
+      aria-label={`${t('hangarBay')}: ${airframe} · ${t('changeAirframe')}`}>
+      <Plane size={17} strokeWidth={1.6} aria-hidden="true" />
+      <span className="launch-setup-copy"><strong>{airframe}</strong><i aria-hidden="true" /><small>{t('changeAirframe')}</small></span>
+      <ChevronRight size={15} aria-hidden="true" />
+    </button>
     {/* Mode and map read as one line; the line itself is the control that opens the
         picker, same affordance as the airframe row above. Labels live in the aria
         name and in the overlay — the rail has no room to repeat them. */}

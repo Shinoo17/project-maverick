@@ -1,4 +1,5 @@
 import { MathUtils, Vector3 } from 'three'
+import { getAircraft } from '../../content/aircraft'
 import type { AircraftId } from '../../content/schemas'
 import type { VaporConditions } from './conditions'
 
@@ -7,6 +8,12 @@ import type { VaporConditions } from './conditions'
 export const wingtipOrigins: Record<AircraftId, { left: [number, number, number]; right: [number, number, number] }> = {
   f22: { left: [-4.396, -1.134, -6.809], right: [-4.396, -1.134, 6.796] },
   su57: { left: [-5.101, -.651, -6.821], right: [-5.101, -.651, 6.821] },
+}
+
+const wingSheets = { f22: { span: 6.7, height: -.74 }, su57: { span: 6.4, height: -.35 } }
+export function getVaporProfile(aircraftId: string) {
+  const id = getAircraft(aircraftId).presentationId
+  return { origins: wingtipOrigins[id], ...wingSheets[id] }
 }
 
 export function vortexProfile(c: VaporConditions) {

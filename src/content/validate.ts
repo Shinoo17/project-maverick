@@ -1,5 +1,7 @@
+import { flightProfiles, validateFlightProfile } from '../game/flight/profile'
+import { getWeapon, weaponStations } from './weapons'
 import { getAircraft } from './aircraft'
-import type { AircraftDefinition, SessionConfig } from './schemas'
+import { presentationIds, type AircraftDefinition, type SessionConfig } from './schemas'
 
 export function validateAircraft(entries: readonly AircraftDefinition[]) {
   const ids = new Set<string>()
@@ -7,6 +9,19 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
     const path = `aircraft[${index}]`
     if (!entry.id || ids.has(entry.id)) throw new Error(`${path}.id: missing or duplicate`)
     ids.add(entry.id)
+    if (!Object.hasOwn(flightProfiles, entry.flightProfileId)) throw new Error(`${path}.flightProfileId: unknown profile`)
+    validateFlightProfile(flightProfiles[entry.flightProfileId])
+    if (!presentationIds.includes(entry.presentationId)) throw new Error(`${path}.presentationId: unknown profile`)
+    if (!Object.hasOwn(weaponStations, entry.weaponStationProfileId)) throw new Error(`${path}.weaponStationProfileId: unknown profile`)
+    const stations = weaponStations[entry.weaponStationProfileId]
+    const stationIds = new Set<string>()
+    for (const station of stations) {
+      if (!station.id || stationIds.has(station.id)) throw new Error(`${path}.stations.id: missing or duplicate`)
+      stationIds.add(station.id)
+      if (!Number.isInteger(station.capacity) || station.capacity < 1) throw new Error(`${path}.stations.capacity: expected positive integer`)
+      getWeapon(station.weaponId)
+      for (const locale of ['th', 'en'] as const) if (!station.name[locale]?.trim()) throw new Error(`${path}.stations.name.${locale}: required`)
+    }
     if (!/^[\w-]+\.glb$/.test(entry.modelFile)) throw new Error(`${path}.modelFile: expected local GLB filename`)
     if (entry.rotation.length !== 3 || entry.rotation.some((value) => !Number.isFinite(value))) {
       throw new Error(`${path}.rotation: expected three finite numbers`)
@@ -24,5 +39,6 @@ export function validateSession(config: SessionConfig) {
   if (!config.aircraftIds.length) throw new Error('session.aircraftIds: expected at least one aircraft')
   config.aircraftIds.forEach((id, index) => {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }
+    validateAircraft([getAircraft(id)])
   })
 }

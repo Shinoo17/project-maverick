@@ -29,7 +29,7 @@ interface AircraftDefinition {
   factsId: string;
   flightProfileId: string;
   assetId: string;
-  loadoutPresetIds: string[];
+  weaponStationProfileId: string;
   availability: 'dev-only' | 'ready' | 'disabled';
 }
 interface AircraftFact {
@@ -68,14 +68,14 @@ FlightProfile เป็น numeric data serializable ตาม 03/04 ไม่�
 
 แสดง acceleration, sustained turn, energy retention, roll response, low-speed nose authority และ recovery เป็นแถบเปรียบเทียบ 1–5 พร้อม tooltip วิธีวัด ต้อง derive จาก standardized flight scenarios หรือ curated summary ที่อ้าง benchmark revision ไม่ใช้ค่าคะแนนนั้นเป็น physics parameter ซ้ำอีกชุด
 
-โชว์ sweet spot และตัวอย่าง “เลี้ยวดีเมื่ออยู่ในช่วงนี้” มากกว่า top speed ใหญ่ที่สุด Loadout หน้าจอใช้ display label เดียวกับ HUD ว่าเป็นค่าภายในเกม
+โชว์ sweet spot และตัวอย่าง “เลี้ยวดีเมื่ออยู่ในช่วงนี้” มากกว่า top speed ใหญ่ที่สุด อาวุธในหน้าจอใช้ display label เดียวกับ HUD ว่าเป็นค่าภายในเกม
 
 ## ขั้นตอนเพิ่มเครื่องใหม่
 
 1. เพิ่ม id, facts และคำแปล; กำหนด variant ให้แน่ชัด
 2. เพิ่ม flight profile จาก baseline แล้วเปลี่ยนเฉพาะกลุ่มที่สร้างเอกลักษณ์
 3. เพิ่ม GLB/rig/collider/hardpoint mapping ผ่าน validator
-4. เพิ่ม loadout ที่ตรวจ mount compatibility ได้
+4. กำหนด weaponId/capacity ของทุกจุดติดตั้งให้เติมอาวุธเต็มจำนวนอัตโนมัติ
 5. รัน flight benchmark เดียวกันกับทุกลำ แล้วตรวจ hangar/flight/maneuver visually
 6. เปลี่ยน availability เป็น ready เมื่อ asset และ facts ที่จำเป็นผ่าน
 

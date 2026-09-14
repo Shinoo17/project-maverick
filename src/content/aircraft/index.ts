@@ -2,13 +2,15 @@ import type { AircraftDefinition } from '../schemas'
 
 export const aircraft: readonly AircraftDefinition[] = [
   {
-    id: 'f22', designation: 'F-22', name: 'Raptor', modelFile: 'F22_compact.glb',
+    id: 'f22', flightProfileId: 'raptor-energy', presentationId: 'f22', weaponStationProfileId: 'f22',
+    designation: 'F-22', name: 'Raptor', modelFile: 'F22_compact.glb',
     role: { th: 'เครื่องบินขับไล่ครองอากาศ · ตรวจจับยาก + ซูเปอร์ครูซ', en: 'Air superiority fighter · Stealth and supercruise' },
     rotation: [0, 0, 0], removeNodes: ['MLG_Bay_Fitting_01', 'MLG_Bay_Fitting_02'],
     description: { th: 'สำรวจตัวเครื่องและกลไกที่เคลื่อนไหวได้จากโมเดลจริง', en: 'Explore the airframe and its animated mechanical systems.' },
   },
   {
-    id: 'su57', designation: 'Su-57', name: 'Felon', modelFile: 'SU57_compact.glb',
+    id: 'su57', flightProfileId: 'felon-agility', presentationId: 'su57', weaponStationProfileId: 'su57',
+    designation: 'Su-57', name: 'Felon', modelFile: 'SU57_compact.glb',
     role: { th: 'เครื่องบินขับไล่อเนกประสงค์ · คล่องตัวสูง + เวกเตอร์แรงขับ', en: 'Multirole fighter · High agility and thrust vectoring' },
     rotation: [0, Math.PI / 2, 0],
     // Export-only nozzle backup is enormous and far outside the airframe. The

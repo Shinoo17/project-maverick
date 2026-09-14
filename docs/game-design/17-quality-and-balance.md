@@ -42,7 +42,7 @@ Same-build headless replay เป้าคลาดเคลื่อนหล�
 | Offline 4 aircraft + combat | 60 FPS เป้าหมาย; low preset 30 FPS fallback โดย simulation rate ไม่เปลี่ยน |
 | Simulation CPU | p95 ≤3 ms ต่อ world tick สำหรับ 4 aircraft + normal combat load |
 | Rendering | draw calls เป้ารวม ≤250 ที่ Medium; ปรับจาก hardware จริง |
-| Dynamic objects | รองรับ bullets 512, missiles 32, decoys 64 ตาม loadout/cadence ที่ถูกกติกา |
+| Dynamic objects | รองรับ bullets 512, missiles 32, decoys 64 ตาม station capacity/cadence ที่ถูกกติกา |
 | Scene lifecycle | สลับ 20 ครั้งแล้ว geometry/texture/listener counts plateau ไม่โตต่อเนื่อง |
 
 Projectile pool เต็มห้ามลบนัดที่กำลังเดินทางเงียบ ๆ จนทำให้ hit ต่างกัน ใช้ worst-case cadence×TTL คำนวณ capacity; ถ้าถึง hard safety limit ให้ reject fire พร้อม event และ metric โดยกติกาเดียวกันทุกฝ่าย Visual pools ล้นลด effect ได้โดยไม่เปลี่ยน sim

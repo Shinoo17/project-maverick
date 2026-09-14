@@ -38,7 +38,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     orientation.position.copy(bounds.getCenter(new Vector3())).negate()
     return root
   }, [asset, definition])
-  const updateRig = useMemo(() => createFlightRig(model), [model])
+  const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId] })
     session.runtime = runtime; runtime.start(); runtime.pause()

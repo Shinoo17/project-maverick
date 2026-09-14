@@ -1,6 +1,6 @@
 import { Box3, Group, Matrix4, Mesh, Object3D, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../../game/state/WorldState'
-import { flightProfile } from '../../game/flight/profile'
+import { getFlightProfile } from '../../game/flight/profile'
 import { clamp } from '../../game/flight/speed'
 import type { ExhaustNozzles } from '../exhaust/profile'
 
@@ -9,6 +9,7 @@ const smooth = (x: number) => { const t = clamp(x, 0, 1); return t * t * (3 - 2 
 
 /** Presentation allocation: normal flight favors surfaces, slow/high-alpha flight TVC. */
 export function su57ControlTargets(state: AircraftState) {
+  const flightProfile = getFlightProfile(state.aircraftId).flight
   const speed = Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z)
   const slow = 1 - smooth((speed - 45) / 105)
   const alpha = smooth((state.maneuver.alpha - 12) / 58)

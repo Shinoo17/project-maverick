@@ -2,23 +2,24 @@ import { Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
 import type { PilotCommand } from '../runtime/commands'
 import { trainingMap } from '../../content/maps'
-import { flightProfile as p } from './profile'
-import { stepManeuvers, maneuverProfile } from './maneuvers'
-import { f22ThrustForces, f22TvcTargets, stepThrustVectoring } from './thrustVectoring'
+import { getFlightProfile } from './profile'
+import { stepManeuvers } from './maneuvers'
+import { thrustForces, tvcTargets, stepThrustVectoring } from './thrustVectoring'
 import { clamp, stepSpeed } from './speed'
 
 // Canonical body axes: +X forward, +Y up, +Z right. Positive pitch raises nose;
 // positive roll banks right; positive yaw turns right. Only this module maps signs.
 export function stepFlight(state: AircraftState, command: PilotCommand, dt: number) {
   if (!state.alive || dt <= 0) return
+  const { flight: p, maneuver: maneuverProfile, thrustVectoring: tvc } = getFlightProfile(state.aircraftId)
   const velocity = new Vector3().copy(state.velocity)
   const speed = velocity.length()
   const assist = stepManeuvers(state, command, dt, speed)
   const m = state.maneuver
   const { thrust, braking } = stepSpeed(state, { ...command, airbrake: assist.brake }, dt, speed)
   stepThrustVectoring(state, command, dt, speed, assist.alpha * 180 / Math.PI)
-  const vectoredThrust = state.aircraftId === 'f22' ? f22ThrustForces(state.thrustVectoring, thrust) : null
-  const allocatedThrust = vectoredThrust ? f22ThrustForces({ ...state.thrustVectoring, ...f22TvcTargets(command, state.thrustVectoring.authority) }, thrust) : null
+  const vectoredThrust = tvc ? thrustForces(state.thrustVectoring, thrust, tvc) : null
+  const allocatedThrust = tvc ? thrustForces({ ...state.thrustVectoring, ...tvcTargets(command, state.thrustVectoring.authority, tvc) }, thrust, tvc) : null
   const authority = clamp(speed / 90, 0.12, 1) * clamp(160 / Math.max(speed, 1), 0.6, 1)
   const blend = 1 - Math.exp(-p.rateResponse * dt)
   const rates = state.rates
@@ -36,9 +37,9 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   pitchTarget = (assist.pitch ?? pitchTarget) * (1 - grip) + pitchTarget * grip
   yawTarget = (assist.yaw ?? yawTarget) * (1 - grip) + yawTarget * grip
   const response = (target: number, rate: number) => {
-    // The F-22 rate damper remains active when the stick is released, even
+    // The profile-controlled rate damper remains active when the stick is released, even
     // while TVC actuators are still traveling back during post-stall flight.
-    if (state.aircraftId === 'f22' && target === 0) return 1 - Math.exp(-p.neutralResponse * dt)
+    if (p.neutralDampingDuringPsm && target === 0) return 1 - Math.exp(-p.neutralResponse * dt)
     const normal = target === 0 ? p.neutralResponse : target * rate < 0 ? p.counterResponse : p.rateResponse
     return 1 - Math.exp(-(p.rateResponse + (normal - p.rateResponse) * grip) * dt)
   }
@@ -46,7 +47,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   rates.yaw += (yawTarget - rates.yaw) * response(yawTarget, rates.yaw)
   const rollTarget = assist.roll ?? command.roll * p.rollRate * authority
   const reversing = rollTarget * rates.roll < 0
-  const rollBlend = state.aircraftId === 'f22' && command.roll === 0 ? 1 - Math.exp(-p.neutralResponse * dt) : blend
+  const rollBlend = p.neutralDampingDuringPsm && command.roll === 0 ? 1 - Math.exp(-p.neutralResponse * dt) : blend
   rates.roll += (rollTarget - rates.roll) * (reversing ? 1 - Math.exp(-p.rollReversalResponse * dt) : rollBlend)
   if (allocatedThrust) {
     // Allocate part of the requested control moment to TVC instead of counting

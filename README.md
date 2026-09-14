@@ -1,6 +1,6 @@
 # Project Maverick
 
-React + TypeScript aircraft studio and playable P2 Playground and manual maneuvers. See [MASTER_PLAN.md](MASTER_PLAN.md) for the full game roadmap and [P2 implementation notes](docs/phase-2-playground.md) for the scope and validation of this slice.
+React + TypeScript aircraft studio with P3 aircraft profiles and full armament and a playable P2 Playground. See [MASTER_PLAN.md](MASTER_PLAN.md) for the full game roadmap and [P2 implementation notes](docs/phase-2-playground.md) for the scope and validation of this slice.
 
 ## Run
 
@@ -44,7 +44,13 @@ npm run preview
 | `src/locales` | Thai/English copy |
 | `tests` | Runtime/content/storage and animation behavior checks |
 
-Phase 1 adds a 60 Hz world / 120 Hz flight runtime, direct W/S acceleration with a short coast on release, a positional mouse stick that reads as a joystick on the glass, with the pointer angle setting the bank and a swirl around the gate rolling the aircraft, pitch/yaw/roll, Mouse + Keyboard and Keyboard-only presets, two chase camera roll modes, telemetry, pause/reset and terrain/boundary stops. Thai/English uses react-i18next. Both airframes use the experimental F-22 baseline; aircraft-specific balancing, combat, bots and multiplayer follow in later phases. The hangar runs without starting a game session.
+Phase 1 adds a 60 Hz world / 120 Hz flight runtime, direct W/S acceleration with a short coast on release, a positional mouse stick that reads as a joystick on the glass, with the pointer angle setting the bank and a swirl around the gate rolling the aircraft, pitch/yaw/roll, Mouse + Keyboard and Keyboard-only presets, two chase camera roll modes, telemetry, pause/reset and terrain/boundary stops. Thai/English uses react-i18next. F-22 and Su-57 now resolve separate experimental flight/maneuver profiles; combat, bots and multiplayer follow in later phases. The hangar runs without starting a game session.
+
+## P3 profiles and aircraft weapons
+
+The **Flight** tab controls the airframe and exhaust. **Weapons** inspects every supported weapon, including the gun: All shows every available model, and selecting a weapon isolates it or displays No model. Every aircraft automatically carries the full capacity of every weapon station; there is no loadout selector or saved preset. Runtime spawn, reset and replay use the same station definitions. F-22 carries 1 M61A2, 2 AIM-9 and 6 AIM-120; Su-57 carries 1 cannon, 2 IR training missiles and 4 radar training missiles. Firing remains a later phase; Su-57 missile identities are explicit game placeholders.
+
+See [P3 implementation and remaining gates](docs/phase-3-aircraft-loadouts.md) for the branch audit, extension recipe, provenance and limitations. P3 is in progress: facts content, weapon geometry and asset LODs remain outstanding.
 
 ## P2 Playground
 

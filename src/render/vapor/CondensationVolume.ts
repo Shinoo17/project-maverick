@@ -6,10 +6,9 @@ import {
 import type { AircraftId } from '../../content/schemas'
 import { defaultVaporSettings, vaporActivation, type VaporConditions, type VaporSettings } from './conditions'
 import { vaporFragment, vaporVertex } from './shaders'
-import { vortexAirflow, vortexProfile, wingtipOrigins } from './profile'
+import { vortexAirflow, vortexProfile, getVaporProfile } from './profile'
 import { CloudSideTransition } from './CloudSideTransition'
-import { f22TvcProfile } from '../../game/flight/thrustVectoring'
-import { ExhaustResponse, exhaustProfiles, type ExhaustConditions } from '../exhaust/profile'
+import { ExhaustResponse, getExhaustProfile, type ExhaustConditions } from '../exhaust/profile'
 
 /** One opaque scene pass + bounded ray integration. Owns all of its GPU resources. */
 export class CondensationVolume {
@@ -81,7 +80,7 @@ export class CondensationVolume {
 
   updateExhaust(next: ExhaustConditions, dt: number, reducedMotion = false) {
     this.exhaust.update(next, dt, reducedMotion)
-    const p = exhaustProfiles[next.aircraftId], u = this.material.uniforms
+    const p = getExhaustProfile(next.aircraftId), u = this.material.uniforms
     for (const side of ['Left', 'Right'] as const) {
       const key = side === 'Left' ? 'left' : 'right'
       const frame = next.nozzles?.[key]
@@ -92,7 +91,7 @@ export class CondensationVolume {
         u[`nozzleRadius${side}`].value.set(frame.radius, frame.radius)
       } else {
         const angle = next.vectorAngles?.[key] ?? next.vectorAngle
-        const pivot = next.aircraftId === 'f22' ? f22TvcProfile.lipArm : 0
+        const pivot = p.lipArm
         u[`nozzle${side}`].value.set(p.lipX + pivot * (1 - Math.cos(angle)), p.height + pivot * Math.sin(angle), p.centerZ + (side === 'Left' ? -1 : 1) * p.spacing)
         u[`nozzleAxis${side}`].value.set(-Math.cos(angle), Math.sin(angle), 0)
         u[`nozzleUp${side}`].value.set(Math.sin(angle), Math.cos(angle), 0)
@@ -114,7 +113,7 @@ export class CondensationVolume {
     for (const key of ['speed', 'aoa', 'g', 'sideslip', 'humidity'] as const) this.conditions[key] += (next[key] - this.conditions[key]) * blend
     const c = this.conditions, u = this.material.uniforms
     u.cloudUpperWeight.value = this.cloudSide.update(next.aoa, dt, this.settings.fade)
-    const profile = vortexProfile(c), origins = wingtipOrigins[aircraft]
+    const profile = vortexProfile(c), wing = getVaporProfile(aircraft), origins = wing.origins
     u.strength.value = this.strength
     u.trailLength.value = profile.length; u.trailRadius.value = profile.radius
     u.wingtipLeft.value.fromArray(origins.left); u.wingtipRight.value.fromArray(origins.right)
@@ -122,8 +121,8 @@ export class CondensationVolume {
     u.alpha.value = c.aoa; u.load.value = Math.min(1, Math.max(0, (Math.abs(c.g) - 1) / 7))
     u.speed.value = c.speed; u.slip.value = c.sideslip; u.humidity.value = c.humidity
     // Original pressure-sheet placement for the normalized F-22 / Su-57 wings.
-    u.wingSpan.value = aircraft === 'su57' ? 6.4 : 6.7
-    u.wingHeight.value = aircraft === 'su57' ? -.35 : -.74
+    u.wingSpan.value = wing.span
+    u.wingHeight.value = wing.height
     u.densityGain.value = this.settings.density; u.noiseGain.value = Math.min(1.5, this.settings.noise)
     u.turbulence.value = reducedMotion ? 0 : this.settings.turbulence * profile.turbulence
     if (!reducedMotion && !freezeFlow) {

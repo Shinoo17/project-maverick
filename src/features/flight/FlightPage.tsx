@@ -90,7 +90,7 @@ export function FlightPage() {
     const replay = session.runtime?.exportReplay()
     if (!replay) return
     const url = URL.createObjectURL(new Blob([JSON.stringify(replay, null, 2)], { type: 'application/json' }))
-    const link = document.createElement('a'); link.href = url; link.download = 'maverick-flight-p2.json'; link.click()
+    const link = document.createElement('a'); link.href = url; link.download = 'maverick-flight-p3.json'; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const stopped = telemetry && !telemetry.alive
@@ -101,7 +101,7 @@ export function FlightPage() {
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
-      <FlightInstruments driver={indicators.hud} />
+      <FlightInstruments aircraftId={aircraftId} driver={indicators.hud} />
       <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
       <div className="flight-actions"><span>{t(cameraMode === 'horizon' ? 'horizonCamera' : 'aircraftCamera')}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />

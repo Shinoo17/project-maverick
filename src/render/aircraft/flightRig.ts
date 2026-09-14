@@ -1,6 +1,7 @@
 import { Object3D, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../../game/state/WorldState'
-import { flightProfile } from '../../game/flight/profile'
+import { getAircraft } from '../../content/aircraft'
+import { getFlightProfile } from '../../game/flight/profile'
 import { clamp } from '../../game/flight/speed'
 import { type ExhaustNozzles } from '../exhaust/profile'
 import { createSu57FlightRig } from './su57Rig'
@@ -27,17 +28,29 @@ function hinge(model: Object3D, name: string, axis: Vector3, reference: Vector3)
   return (degrees: number) => bone.quaternion.copy(rest).multiply(rotation.setFromAxisAngle(axis, degrees * Math.PI / 180))
 }
 export type FlightRig = ((state: AircraftState, dt?: number, reset?: boolean) => void) & { exhaust?: ExhaustNozzles }
-export function createFlightRig(model: Object3D): FlightRig {
-  if (model.getObjectByName('Gimbal_L') && model.getObjectByName('Gimbal_R')) return createSu57FlightRig(model)
-  const controls = surfaces.map(surface => ({ ...surface, set: hinge(model, surface.mesh, new Vector3(0, 1, 0), surface.yaw ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1)) }))
+function createF22FlightRig(model: Object3D): FlightRig {
+  const controls = surfaces.map(surface => ({ ...surface, angle: 0, set: hinge(model, surface.mesh, new Vector3(0, 1, 0), surface.yaw ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1)) }))
   const nozzles = (['L', 'R'] as const).flatMap(side => ['Upper', 'Lower'].map((part, index) => ({
     side: side === 'L' ? 'left' as const : 'right' as const,
     direction: index === 0 ? 1 : -1,
     set: hinge(model, `Engine_Nozzle_${side}_Flap_${part}`, new Vector3(1, 0, 0), new Vector3(0, 0, -1)),
   })))
-  return (state: AircraftState) => {
+  return (state: AircraftState, dt = 1 / 60, reset = false) => {
+    const flightProfile = getFlightProfile(state.aircraftId).flight
     const pitch = state.rates.pitch / flightProfile.pitchRate, roll = state.rates.roll / flightProfile.rollRate, yaw = state.rates.yaw / flightProfile.yawRate
-    controls.forEach(surface => surface.set?.(clamp(pitch * surface.pitch + roll * surface.roll + yaw * surface.yaw, -surface.limit, surface.limit)))
+    // Smooth the presentation actuators on press, reversal and release. The
+    // exponential response has the same timing at every frame rate (~0.28 s to 90%).
+    const blend = reset ? 1 : 1 - Math.exp(-Math.max(0, dt) / .12)
+    controls.forEach(surface => {
+      const target = clamp(pitch * surface.pitch + roll * surface.roll + yaw * surface.yaw, -surface.limit, surface.limit)
+      surface.angle += (target - surface.angle) * blend
+      surface.set?.(surface.angle)
+    })
     nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5 + state.thrustVectoring[nozzle.side]))
   }
+}
+
+const rigFactories = { f22: createF22FlightRig, su57: createSu57FlightRig }
+export function createFlightRig(model: Object3D, aircraftId: string): FlightRig {
+  return rigFactories[getAircraft(aircraftId).presentationId](model)
 }

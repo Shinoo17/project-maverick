@@ -66,7 +66,7 @@ Master นี้เป็นเจ้าของขอบเขต ลำดั
 
 ```mermaid
 flowchart TD
-  H[Hangar: เลือก aircraft และ loadout] --> C[Session config]
+  H[Hangar: เลือก aircraft พร้อมอาวุธเต็มความจุ] --> C[Session config]
   C --> P[Playground]
   C --> O[Offline]
   C --> M[Multiplayer: ทำท้ายสุด]
@@ -88,6 +88,8 @@ flowchart TD
 
 สถานะ implementation 7 ก.ย. 2026: P0/P1 และ P2 Playground baseline อยู่ในแอปรากแล้ว ดู [P2 ผลส่งมอบและข้อจำกัด](docs/phase-2-playground.md) สำหรับ manual PSM/Cobra/180° reversal, High-G, burner และบทฝึก; flight feel ยังรอ playtest ด้วยมือ ดู [Roadmap/ผลส่งมอบ Phase 1](docs/phase-1-flight-slice.md) สำหรับงานที่ทำจริง การตรวจ และ gate ที่ยังต้อง playtest ข้อความแผนในส่วนอื่นยังเป็นเป้าหมายของเกมเต็ม
 
+สถานะ 14 ก.ย. 2026: เริ่ม P3 profile/armament foundation แล้ว — Flight/Weapons อ่านข้อมูลรายลำ, ติดตั้งอาวุธเต็มความจุอัตโนมัติใน session และเอา branch ตามชื่อเครื่องออกจาก core; facts/LOD/weapon geometry ยังไม่ครบ ดู [P3 implementation](docs/phase-3-aircraft-loadouts.md)
+
 ไม่กำหนดวันที่เสร็จจากการเดา ก่อนเริ่มแต่ละ phase ให้แตกงานใน 18 และประเมินจากความเร็วทำงานจริง จบ phase เมื่อผ่าน gate ไม่ใช่เมื่อมี UI ให้เห็นเท่านั้น
 
 | Phase | ผลงานที่เล่น/ตรวจได้ | Dependencies | Exit gate |
@@ -95,7 +97,7 @@ flowchart TD
 | P0 Foundation | runtime กลาง, content schema, ภาษา, session, บันทึก baseline เดิม | ไม่มี | เปิด headless world ได้; mount/unmount ไม่สร้าง loop ซ้ำ |
 | P1 Flight slice | F-22 บินในสนามเรียบ, W/S, pitch/yaw/roll, กล้องสอง roll modes | P0 | ควบคุมได้ทั้งสอง input presets; 30/60/144 FPS ไม่เปลี่ยนผลบิน |
 | P2 Playground & maneuver | ฝึก Airbrake, High-G, Cobra, telemetry, recovery | P1 | nose/path แยกกันจริง; ใช้ท่าแล้วมี cost; มือใหม่กลับมาบินปกติได้ |
-| P3 Hangar & aircraft | โรงเก็บ, facts/game tabs, loadout, profile อย่างน้อยสองลำ | P1–P2 + asset pipeline | เพิ่ม profile โดยไม่เพิ่มเงื่อนไขชื่อเครื่องใน flight core |
+| P3 Hangar & aircraft | โรงเก็บ, facts/game tabs, อาวุธเต็มความจุ, profile อย่างน้อยสองลำ | P1–P2 + asset pipeline | เพิ่ม profile โดยไม่เพิ่มเงื่อนไขชื่อเครื่องใน flight core |
 | P4 Gun duel | ปืน, damage, respawn, บอทไล่/หนีหนึ่งตัว | P2; ใช้ F-22 mirror ได้ | เล่น guns-only 1v1 ครบหนึ่ง match; มีเวลาเล็งและยิงได้ |
 | P5 Offline combat | missile IR, lock, flares, bot tactics, results | P4 | ยิง/หลบ/แพ้/ชนะ/เริ่มใหม่ได้ครบ; ไม่ต้องเรียก backend |
 | P6 Offline release | สามลำ, สนาม dogfight, settings สองภาษา, polish/performance | P3 + P5 | checklist ใน 17 ผ่าน; aircraft แต่ละลำมี counterplay |

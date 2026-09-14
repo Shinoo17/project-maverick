@@ -81,7 +81,7 @@ describe('P1 flight acceptance', () => {
     const other = model.clone(true), state = make().snapshot().aircraft[0]
     state.rates.roll = 1
     const before = structuredClone(state)
-    createFlightRig(model)(state)
+    createFlightRig(model, 'f22')(state, .3) // allow the presentation actuator to settle
     expect(bone.quaternion.angleTo(new Quaternion())).toBeGreaterThan(0.1)
     expect(other.children[0].quaternion.toArray()).toEqual([0, 0, 0, 1])
     expect(state).toEqual(before)

@@ -3,17 +3,10 @@ import type { AircraftState } from '../state/WorldState'
 import type { PilotCommand } from '../runtime/commands'
 import { clamp } from './speed'
 
-// Arcade assist tuning, shared by both experimental airframes until P3 profiles.
-export const maneuverProfile = {
-  entryMin: 65, entryMax: 115, minAltitude: 150,
-  pitchRate: 2.6, yawRate: 1.6, rollRate: 2.1, maxRotation: Math.PI * 2, activeSeconds: 3, cooldown: 4,
-  highGRate: 1.4, highGDrag: 2, burnerSeconds: 6, burnerRecharge: 12,
-  // Keep PSM airflow independent of normal-flight grip tuning.
-  pathResponse: 1.5, activeGrip: 0.08, recoveryGrip: 2.5,
-  recoveryAcceleration: 70,
-} as const
+import { getFlightProfile } from './profile'
+export { maneuverProfile } from './profile'
 export type PsmPhase = 'normal' | 'armed' | 'active' | 'recovery' | 'cooldown'
-export type PsmBlock = 'none' | 'altitude' | 'speed'
+export type PsmBlock = 'none' | 'altitude' | 'speed' | 'unsupported'
 export interface ManeuverState {
   phase: PsmPhase; timer: number; rotation: number; stable: number; cooldown: number
   blocked: PsmBlock; entrySpeed: number; exitSpeed: number
@@ -28,15 +21,15 @@ export function createManeuverState(): ManeuverState {
     alpha: 0, g: 1, pathRate: 0, drag: 0 }
 }
 export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: number, speed: number) {
-  const m = state.maneuver, p = maneuverProfile
+  const m = state.maneuver, p = getFlightProfile(state.aircraftId).maneuver
   const q = new Quaternion().copy(state.orientation)
   const forward = new Vector3(1, 0, 0).applyQuaternion(q)
   const path = speed > 0.01 ? new Vector3().copy(state.velocity).normalize() : forward.clone()
   const alpha = forward.angleTo(path)
   // C is an envelope modifier, never a maneuver trigger. No automatic braking,
   // pitch-up, target pose, or nose alignment: the pilot owns all three axes.
-  const eligible = state.position.y >= p.minAltitude && speed >= p.entryMin && speed <= p.entryMax
-  m.blocked = state.position.y < p.minAltitude ? 'altitude' : speed < p.entryMin || speed > p.entryMax ? 'speed' : 'none'
+  const eligible = p.psmEnabled && state.position.y >= p.minAltitude && speed >= p.entryMin && speed <= p.entryMax
+  m.blocked = !p.psmEnabled ? 'unsupported' : state.position.y < p.minAltitude ? 'altitude' : speed < p.entryMin || speed > p.entryMax ? 'speed' : 'none'
   if (m.phase === 'cooldown') {
     m.cooldown = Math.max(0, m.cooldown - dt)
     if (m.cooldown === 0 && !command.psmArm) m.phase = 'normal'

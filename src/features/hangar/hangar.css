@@ -171,11 +171,6 @@ html[lang='th'] .is-hangar .hangar-empty strong { text-transform: none; }
   color: var(--hangar-ash); background: var(--hangar-hangar); transition: color 180ms ease, background 180ms ease; }
 .hangar-view-grid button:hover { color: var(--hangar-ice); background: #111a1f; }
 
-.hangar-hangar-open { width: 100%; min-height: 46px; display: grid; grid-template-columns: minmax(0, 1fr) 16px;
-  align-items: center; gap: 9px; padding: 6px 10px; text-align: left; color: var(--hangar-ash);
-  background: rgba(255, 255, 255, 0.035); transition: color 150ms ease, background 150ms ease; }
-.hangar-hangar-open:hover { color: var(--hangar-fog); background: rgba(154, 215, 232, 0.1); }
-
 .hangar-toggle-stack { display: grid; gap: 2px; border-bottom: 0; }
 .hangar-toggle { min-height: 38px; display: grid; grid-template-columns: 22px 1fr 24px; align-items: center; padding: 0 3px;
   font-family: var(--hangar-display); font-size: 10px; text-align: left; color: var(--hangar-ash); background: transparent; }
@@ -246,7 +241,7 @@ html[lang='th'] .is-hangar .hangar-card-copy small { text-transform: none; }
 }
 
 /* Mission controls sit below the inspection panel in one bounded, scrollable rail. */
-.is-hangar .hangar-rail { position: absolute; top: 24px; right: 24px; bottom: 18px; width: 304px; display: flex; flex-direction: column; gap: 12px; pointer-events: auto; }
+.is-hangar .hangar-rail { position: absolute; top: 24px; right: 24px; bottom: 18px; width: 304px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
 .is-hangar .hangar-rail .hangar-panel { position: relative; inset: auto; width: 100%; min-height: 0; flex: 1; overflow-y: auto; }
 /* The launch block carries no literal colour: everything below comes from the
    hangar tokens, so the strip reads as part of the panel above it and the amber
@@ -257,6 +252,7 @@ html[lang='th'] .is-hangar .hangar-card-copy small { text-transform: none; }
   align-items: center; gap: 10px; padding: 0 12px; text-align: left; color: var(--hangar-ash);
   border: 1px solid var(--hangar-line); background: var(--hangar-carbon);
   transition: color 150ms ease, background 150ms ease, border-color 150ms ease; }
+.is-hangar .launch-setup + .launch-setup { margin-top: 6px; }
 .is-hangar .launch-setup:hover { color: var(--hangar-fog); border-color: var(--hangar-line-strong); background: rgba(154, 215, 232, 0.07); }
 .is-hangar .launch-setup > svg:first-child { color: var(--hangar-ice); }
 .is-hangar .launch-setup-copy { min-width: 0; display: flex; align-items: center; gap: 9px; font-family: var(--hangar-display); }
@@ -297,3 +293,160 @@ html[lang='th'] .is-hangar .hangar-card-copy small { text-transform: none; }
   .is-hangar .hangar-rail .hangar-panel { max-height: none; }
   .is-hangar .hangar-system-list { max-height: 160px; }
 }
+
+/* Profile and weapon inspection extend the existing instrument rail. */
+.is-hangar .hangar-content {
+  flex: 1 0 auto; min-height: 200px; overflow: visible; pointer-events: auto;
+  scrollbar-width: thin; scrollbar-color: var(--hangar-ash) var(--hangar-hangar);
+  overscroll-behavior: contain; padding-right: 6px;
+}
+.is-hangar .hangar-content h2 {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
+  font-size: 13px; font-weight: 600; color: var(--hangar-fog);
+}
+.is-hangar .hangar-content-note { margin: 12px 0; font-size: 12px; line-height: 1.65; color: #adb8be; }
+.is-hangar .weapon-list { list-style: none; margin: 0; padding: 0; }
+.is-hangar .weapon-list li { padding: 14px 0; border-bottom: 1px solid var(--hangar-line); }
+.is-hangar .weapon-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 13px; }
+.is-hangar .weapon-heading strong { font-weight: 600; overflow-wrap: anywhere; }
+.is-hangar .weapon-heading span { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.is-hangar .weapon-list p, .is-hangar .weapon-list small { display: block; margin: 5px 0 0; font-size: 12px; line-height: 1.6; color: #adb8be; }
+.is-hangar .weapon-reference a { display: inline-flex; align-items: center; min-height: 40px; font-size: 12px; color: var(--hangar-ice); text-underline-offset: 3px; }
+.is-hangar .weapon-reference a:hover { color: var(--hangar-fog); }
+.is-hangar .profile-readings { margin: 0; font-size: 12px; }
+.is-hangar .profile-readings div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding: 12px 0; border-bottom: 1px solid var(--hangar-line); }
+.is-hangar .profile-readings dt { color: #adb8be; }
+.is-hangar .profile-readings dd { margin: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .is-hangar .hangar-content { flex: none; max-height: none; overflow: visible; } }
+
+.is-hangar .weapon-reference summary { min-height: 40px; padding: 12px 0; cursor: pointer; font-size: 12px; color: var(--hangar-ice); }
+.is-hangar .weapon-reference a { display: flex; }
+.is-hangar .weapon-reference summary:focus-visible { outline: 2px solid var(--hangar-ice); outline-offset: 2px; }
+
+@media (max-width: 1080px) {
+  .is-hangar .hangar-root { min-height: 0; padding-bottom: 18px; }
+  .is-hangar .hangar-hud { position: relative; padding-top: 440px; }
+  .is-hangar .hangar-rail { position: relative; inset: auto; width: auto; margin: 0 16px; }
+  .is-hangar .hangar-rail .hangar-panel { flex: none; overflow: visible; }
+  .is-hangar .hangar-content { flex: none; overflow: visible; }
+}
+
+/* Manual preview follows the F22 reference pad and held afterburner control. */
+.is-hangar .hangar-flight { flex: 1 0 auto; }
+.is-hangar .hangar-content .hangar-label { font-size: 12px; color: #adb8be; }
+/* The flight heading is the rail's own micro-cap label; LIVE carries the F22 status dot. */
+.is-hangar .hangar-flight .hangar-count { display: flex; align-items: center; color: var(--hangar-ice); }
+.is-hangar .hangar-flight .hangar-count::before { width: 5px; height: 5px; margin-right: 6px; border-radius: 50%;
+  background: var(--hangar-ice); box-shadow: 0 2px 8px rgba(154, 215, 232, 0.45); content: ''; }
+.is-hangar .hangar-flight-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+/* The pad wears the F22 control-button skin: ash on a hairline wash, ice fill while held. */
+.is-hangar .hangar-flight-pad button { min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 4px 2px; border-radius: 2px; color: var(--hangar-ash); background: rgba(255, 255, 255, 0.035); touch-action: none;
+  user-select: none; transition: color 120ms ease, background 120ms ease, transform 120ms var(--hangar-ease-out); }
+.is-hangar .hangar-flight-pad button span { font-family: var(--hangar-display); font-size: var(--hangar-small); font-weight: 700;
+  letter-spacing: var(--hangar-small-track); text-transform: uppercase; }
+/* Thai needs the leading the micro-caps scale gives away, so the pad grows a row. */
+html[lang='th'] .is-hangar .hangar-flight-pad button { min-height: 54px; }
+html[lang='th'] .is-hangar .hangar-flight-pad button span { text-transform: none; }
+.is-hangar .hangar-flight-pad button:hover { color: var(--hangar-fog); background: rgba(154, 215, 232, 0.1); }
+.is-hangar .hangar-flight-pad button:active, .is-hangar .hangar-flight-pad button.is-active {
+  color: var(--hangar-void); background: var(--hangar-ice); transform: translateY(1px); }
+/* Level is the pad's reset, not an axis: it reads lighter, like the F22 reset key. */
+.is-hangar .flight-pad-level { grid-column: 2; grid-row: 2; color: var(--hangar-fog); background: rgba(218, 226, 230, 0.1); }
+.is-hangar .flight-pad-rollRight { grid-column: 3; grid-row: 2; }
+.is-hangar .flight-pad-pitchDown { grid-column: 1; grid-row: 3; }
+/* The readout is the F22 instrument strip: hairline gutters, one cell per axis.
+   The fourth column is the reference's own empty bay — it keeps the cells at quarter width. */
+.is-hangar .hangar-flight-readings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 8px 0 0;
+  background: var(--hangar-line); text-align: center; }
+.is-hangar .hangar-flight-readings > div { min-width: 0; display: grid; gap: 3px; padding: 6px 4px; background: var(--hangar-hangar); }
+.is-hangar .hangar-flight-readings dt { font-family: var(--hangar-display); font-size: var(--hangar-small); font-weight: 700;
+  letter-spacing: var(--hangar-small-track); text-transform: uppercase; color: var(--hangar-dim); }
+.is-hangar .hangar-flight-readings dd { margin: 0; font-family: var(--hangar-display); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.05em; font-variant-numeric: tabular-nums; color: var(--hangar-fog); }
+.is-hangar .hangar-thrust { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hangar-line); }
+.is-hangar .hangar-thrust label { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; font-family: var(--hangar-display);
+  font-size: var(--hangar-micro); font-weight: 700; letter-spacing: var(--hangar-micro-track); text-transform: uppercase; color: var(--hangar-dim); }
+html[lang='th'] .is-hangar .hangar-thrust label { text-transform: none; }
+.is-hangar .hangar-thrust label svg { flex: 0 0 auto; }
+.is-hangar .hangar-thrust output { margin-left: auto; font-family: var(--hangar-display); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; font-variant-numeric: tabular-nums; color: var(--hangar-fog); }
+.is-hangar .hangar-throttle-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 30px; align-items: center; gap: 8px; margin: 0; }
+/* W and S read as keycaps in the F22 panel, so they stay square and small; the row keeps its
+   height from the 40px track, which is what the thumb is dragged along. */
+.is-hangar .hangar-throttle-row button { height: 30px; padding: 0; border: 1px solid var(--hangar-line-strong); border-radius: 2px;
+  font-family: var(--hangar-display); font-size: 9px; font-weight: 700; color: var(--hangar-ash); background: rgba(255, 255, 255, 0.035);
+  touch-action: none; transition: color 120ms ease, background 120ms ease; }
+.is-hangar .hangar-throttle-row button:hover { color: var(--hangar-fog); background: rgba(154, 215, 232, 0.1); }
+.is-hangar .hangar-throttle-row button:active { color: var(--hangar-void); background: var(--hangar-ice); }
+/* A range input cannot paint its track in two colours, so the rail and the fill are the
+   track element's own pseudos and the input rides transparent on top. Both bars are
+   absolutely positioned with no `top`: the flex centring below is what places them. */
+.is-hangar .hangar-throttle-track { position: relative; height: 40px; display: flex; align-items: center; }
+.is-hangar .hangar-throttle-track::before, .is-hangar .hangar-throttle-track::after {
+  position: absolute; right: 0; left: 0; height: 3px; content: ''; }
+.is-hangar .hangar-throttle-track::before { background: rgba(218, 226, 230, 0.12); }
+.is-hangar .hangar-throttle-track::after { background: var(--hangar-ice); transform: scaleX(var(--hangar-throttle-scale, 0));
+  transform-origin: left center; transition: transform 100ms linear, background 160ms ease; }
+.is-hangar .hangar-thrust.is-afterburner .hangar-throttle-track::after { background: var(--hangar-amber); }
+.is-hangar .hangar-throttle-track input { position: relative; z-index: 1; width: 100%; min-width: 0; height: 40px; margin: 0;
+  appearance: none; -webkit-appearance: none; background: transparent; cursor: ew-resize; }
+/* The runnable track fills the input so the thumb centres on the 40px touch target,
+   which is where the two hairline bars sit. */
+.is-hangar .hangar-throttle-track input::-webkit-slider-runnable-track { height: 40px; background: transparent; }
+.is-hangar .hangar-throttle-track input::-webkit-slider-thumb { width: 8px; height: 18px; margin-top: 11px; appearance: none;
+  -webkit-appearance: none; border: 1px solid var(--hangar-fog); border-radius: 2px; background: var(--hangar-carbon); }
+.is-hangar .hangar-throttle-track input::-moz-range-track { height: 40px; background: transparent; }
+.is-hangar .hangar-throttle-track input::-moz-range-thumb { width: 8px; height: 18px; border: 1px solid var(--hangar-fog);
+  border-radius: 2px; background: var(--hangar-carbon); }
+.is-hangar .hangar-afterburner { position: relative; width: 100%; min-height: 40px; margin-top: 4px; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center; gap: 8px; padding: 0 10px; overflow: hidden; border: 1px solid rgba(255, 183, 74, 0.32); border-radius: 2px;
+  color: var(--hangar-fog); background: rgba(255, 183, 74, 0.055);
+  transition: color 140ms ease, background 180ms ease, box-shadow 180ms ease, transform 120ms var(--hangar-ease-out); }
+/* The amber rule fills in along the base while the burner is held. */
+.is-hangar .hangar-afterburner::after { position: absolute; right: 0; bottom: 0; left: 0; height: 2px; background: var(--hangar-amber);
+  content: ''; transform: scaleX(0); transform-origin: left center; transition: transform 220ms var(--hangar-ease-out); }
+.is-hangar .hangar-afterburner span, .is-hangar .hangar-afterburner small { font-family: var(--hangar-display); font-weight: 700; text-transform: uppercase; }
+html[lang='th'] .is-hangar .hangar-afterburner span, html[lang='th'] .is-hangar .hangar-afterburner small { text-transform: none; }
+.is-hangar .hangar-afterburner span { font-size: var(--hangar-micro); letter-spacing: var(--hangar-micro-track); text-align: left; }
+.is-hangar .hangar-afterburner small { margin: 0; font-size: var(--hangar-small); letter-spacing: var(--hangar-small-track); color: var(--hangar-amber); }
+.is-hangar .hangar-afterburner:hover { background: rgba(255, 183, 74, 0.1); }
+.is-hangar .hangar-afterburner:active { transform: translateY(1px); }
+.is-hangar .hangar-afterburner.is-active { color: var(--hangar-void); background: var(--hangar-amber); box-shadow: 0 8px 20px rgba(255, 183, 74, 0.18); }
+.is-hangar .hangar-afterburner.is-active::after { transform: scaleX(1); }
+.is-hangar .hangar-afterburner.is-active small { color: rgba(5, 7, 9, 0.72); }
+.is-hangar .hangar-flight button:disabled { opacity: .45; cursor: not-allowed; }
+/* The key legend reads as instrument lettering, like the F22 help line under the pad. */
+.is-hangar .hangar-control-hint { margin: 10px 0 0; font-family: var(--hangar-display); font-size: var(--hangar-small);
+  line-height: 1.5; letter-spacing: var(--hangar-small-track); text-align: center; text-transform: uppercase; color: var(--hangar-dim); }
+/* Thai reads as a sentence, not a legend: it keeps its own leading and stays left. */
+html[lang='th'] .is-hangar .hangar-control-hint { line-height: var(--hangar-micro-lh); text-align: left; text-transform: none; }
+
+/* Weapon rows are the F22 catalogue option: a hairline ice wash, an ice edge when selected. */
+.is-hangar .hangar-weapon-options { display: grid; align-content: start; gap: 3px; }
+.is-hangar .hangar-weapon-option { min-height: 46px; width: 100%; display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(45px, 66px);
+  align-items: center; gap: 9px; padding: 6px 8px; border-left: 2px solid transparent; border-radius: 2px;
+  text-align: left; color: var(--hangar-ash); background: transparent;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease; }
+.is-hangar .hangar-weapon-option:hover { color: var(--hangar-fog); background: rgba(154, 215, 232, 0.05); }
+.is-hangar .hangar-weapon-option.is-active { border-left-color: var(--hangar-ice); color: var(--hangar-fog); background: rgba(154, 215, 232, 0.09); }
+/* The first row is ALL: it takes the separator so the catalogue reads as a list beneath it. */
+.is-hangar .hangar-weapon-option:first-child { margin-bottom: 5px; padding-bottom: 9px; border-bottom: 1px solid var(--hangar-line); border-radius: 2px 2px 0 0; }
+.is-hangar .hangar-weapon-option > svg { justify-self: center; }
+.is-hangar .hangar-weapon-option strong { display: block; font-family: var(--hangar-display); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; overflow-wrap: anywhere; }
+/* The display face carries no Thai, so the name takes the same bump as the micro-caps tokens. */
+html[lang='th'] .is-hangar .hangar-weapon-option strong { font-size: 12px; letter-spacing: 0.01em; }
+.is-hangar .hangar-weapon-option span small { display: block; margin-top: 3px; font-family: var(--hangar-display); font-size: var(--hangar-small);
+  font-weight: 700; line-height: var(--hangar-micro-lh); letter-spacing: var(--hangar-small-track); color: var(--hangar-dim); }
+.is-hangar .hangar-weapon-option.is-active span small { color: var(--hangar-ice); }
+/* The station reading stays dim and wrapping: Thai status strings are far longer than the F22 bay codes. */
+.is-hangar .hangar-weapon-option > small { margin: 0; font-family: var(--hangar-display); font-size: var(--hangar-small); font-weight: 700;
+  line-height: var(--hangar-micro-lh); letter-spacing: var(--hangar-small-track); text-align: right; text-transform: uppercase;
+  overflow-wrap: anywhere; color: var(--hangar-dim); }
+html[lang='th'] .is-hangar .hangar-weapon-option > small { text-transform: none; }
+.is-hangar .hangar-weapon-quantity { display: grid; place-items: center; font-family: var(--hangar-display); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--hangar-dim); }
+.is-hangar .hangar-weapon-option.is-active .hangar-weapon-quantity { color: var(--hangar-ice); }
+.is-hangar .hangar-weapon-retry { position: absolute; top: 24px; left: 24px; padding: 12px 16px; color: var(--hangar-fog); background: var(--hangar-carbon); z-index: 3; }
+.is-hangar .hangar-view-grid { grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); }

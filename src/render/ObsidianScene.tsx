@@ -12,6 +12,10 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { MeshReflectorMaterial as ReflectorMaterialImpl } from '@react-three/drei/materials/MeshReflectorMaterial'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { AircraftView, type AircraftViewProps } from './AircraftView'
+import { HangarFlightView } from './HangarFlightView'
+import { WeaponDisplay } from './WeaponDisplay'
+import type { HangarFlightState } from '../features/hangar/useHangarFlight'
+import type { WeaponDefinition, WeaponModelStatus } from '../content/weapons'
 import { AssetLoaderProvider } from './aircraft/assetLoader'
 import { SceneBoundary } from '../ui/components/SceneBoundary'
 
@@ -156,6 +160,12 @@ function CameraRig({ request, autoRotate, reducedMotion, onReport }: { request: 
 }
 
 export interface ObsidianSceneProps extends AircraftViewProps {
+  mode: 'systems' | 'flight' | 'weapons'
+  flightInput: HangarFlightState
+  inspectedWeapons: WeaponDefinition[]
+  weaponStatuses: Record<string, WeaponModelStatus>
+  onWeaponStatus: (id: string, status: WeaponModelStatus) => void
+  weaponRetryId: number
   grid: boolean
   /* V3 never cuts the studio lights, so this defaults to on. */
   studioLights?: boolean
@@ -167,7 +177,7 @@ export interface ObsidianSceneProps extends AircraftViewProps {
   retryId: number
 }
 
-function ObsidianScene({ grid, studioLights = true, autoRotate, reducedMotion, cameraRequest, onCameraReport, onError, retryId, ...aircraftProps }: ObsidianSceneProps) {
+function ObsidianScene({ mode, flightInput, inspectedWeapons, weaponStatuses, onWeaponStatus, weaponRetryId, grid, studioLights = true, autoRotate, reducedMotion, cameraRequest, onCameraReport, onError, retryId, ...aircraftProps }: ObsidianSceneProps) {
   const deckMaterial = useRef<ReflectorMaterialImpl>(null)
   return <Canvas shadows frameloop="demand" dpr={[1, 1.5]} camera={{ position: [12, 5, -14], fov: 36, near: 0.1, far: 200 }} gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.98 }}>
     <color attach="background" args={['#050507']} />
@@ -175,14 +185,20 @@ function ObsidianScene({ grid, studioLights = true, autoRotate, reducedMotion, c
     <Lighting studioLights={studioLights} deckMaterial={deckMaterial} />
     <AssetLoaderProvider>
       <SceneBoundary key={`${aircraftProps.aircraft.id}-${retryId}`} fallback={null} onError={onError}>
-        <Suspense fallback={null}><AircraftView key={aircraftProps.aircraft.id} {...aircraftProps} /></Suspense>
+        <Suspense fallback={null}>
+          <group visible={mode === 'systems'}><AircraftView key={aircraftProps.aircraft.id} {...aircraftProps} playing={mode === 'systems' && aircraftProps.playing} /></group>
+          {mode === 'flight' && <HangarFlightView key={aircraftProps.aircraft.id} aircraft={aircraftProps.aircraft} input={flightInput} playing={aircraftProps.playing} reducedMotion={reducedMotion} />}
+        </Suspense>
       </SceneBoundary>
+      {mode === 'weapons' && <WeaponDisplay weapons={inspectedWeapons} statuses={weaponStatuses} onStatus={onWeaponStatus} retryId={weaponRetryId} />}
     </AssetLoaderProvider>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, DECK_Y, 0]} receiveShadow>
       <planeGeometry args={[90, 90]} />
-      <MeshReflectorMaterial ref={deckMaterial} envMapIntensity={0} resolution={1024} blur={[80, 26]} mixBlur={0.7} mixStrength={0.75} mixContrast={1.25} depthScale={1.2} minDepthThreshold={0.4} maxDepthThreshold={1.05} mirror={0.68} color="#010206" metalness={1} roughness={0.34} />
+      {/* A translucent deck keeps the inspection grid while exposing airframe
+          parts below it. It must not occlude the exhaust's depth-based pass. */}
+      <MeshReflectorMaterial transparent opacity={0.2} depthWrite={false} ref={deckMaterial} envMapIntensity={0} resolution={1024} blur={[80, 26]} mixBlur={0.7} mixStrength={0.75} mixContrast={1.25} depthScale={1.2} minDepthThreshold={0.4} maxDepthThreshold={1.05} mirror={0.68} color="#010206" metalness={1} roughness={0.34} />
     </mesh>
-    {grid && <Grid position={[0, DECK_Y + 0.012, 0]} args={[120, 120]} cellSize={1} sectionSize={5} cellColor="#1c2c36" sectionColor="#3d6274" cellThickness={0.6} sectionThickness={0.9} fadeDistance={42} fadeStrength={2.4} infiniteGrid />}
+    {grid && <Grid material-depthWrite={false} position={[0, DECK_Y + 0.012, 0]} args={[120, 120]} cellSize={1} sectionSize={5} cellColor="#1c2c36" sectionColor="#3d6274" cellThickness={0.6} sectionThickness={0.9} fadeDistance={42} fadeStrength={2.4} infiniteGrid />}
     <CameraRig request={cameraRequest} autoRotate={autoRotate} reducedMotion={reducedMotion} onReport={onCameraReport} />
   </Canvas>
 }

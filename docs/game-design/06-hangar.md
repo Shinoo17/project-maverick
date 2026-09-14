@@ -4,7 +4,7 @@
 
 ## ผู้เล่นทำอะไรได้
 
-เข้าโรงเก็บ → เลือกเครื่อง → ดูโมเดล/อาวุธ → อ่านข้อมูลจริงหรือเทียบ status เกม → เลือก loadout → เข้า Playground หรือ Offline โดยส่ง `aircraftId` และ `loadoutId` ใน SessionConfig ไม่ส่ง Three.js scene ไป simulation
+เข้าโรงเก็บ → เลือกเครื่อง → ดูโมเดล/อาวุธ → อ่านข้อมูลจริงหรือเทียบ status เกม → เข้า Playground หรือ Offline โดยส่ง `aircraftId` ใน SessionConfig ไม่ส่ง Three.js scene ไป simulation
 
 ## โครงหน้าจอและข้อมูล
 
@@ -15,17 +15,16 @@
 | ภาพรวม | คำอธิบายสั้น จุดเด่น/จุดด้อย gameplay และปุ่มทดลองบิน |
 | แท็บ “ข้อมูลจริง” | curated facts, variant, source links และวันที่ตรวจ |
 | แท็บ “สมรรถนะในเกม” | game stats, sweet spot, maneuver capability, คำแนะนำเล่น |
-| แท็บ “อาวุธ” | hardpoints/internal bays, weapon role, จำนวนใน loadout, ข้อจำกัดการติดตั้ง |
+| แท็บ “อาวุธ” | hardpoints/internal bays, weapon role, จำนวนเต็มความจุของแต่ละจุด, ข้อจำกัดการติดตั้ง |
 | Comparison | เทียบสองลำด้วย stat ที่มีหน่วย/วิธีวัดเดียวกัน |
 
-เริ่มด้วย preset loadout ไม่ทำ drag-and-drop อาวุธเต็มระบบ ผู้เล่นยังเห็น 3D missile, ตำแหน่ง mount และเลือก preset ได้ อาวุธที่ยังไม่ implement อาจอยู่ใน knowledge viewer แต่ต้องระบุ “แสดงข้อมูลเท่านั้น” และห้ามใส่ combat loadout
+เครื่องบินติดตั้งอาวุธทุกชนิดที่รองรับเต็มความจุอัตโนมัติ ไม่มี preset หรือตัวเลือกถอด/เปลี่ยนอาวุธ ผู้เล่นเลือก All หรือรายชิ้นเพื่อสำรวจโมเดลได้ โดยไม่เปลี่ยน inventory โมเดลที่ไม่มีแสดง No model; อาวุธที่ยังไม่ implement เก็บใน inventory ได้แต่ยังเปิดยิงไม่ได้
 
 ## State และ boundary
 
 ```ts
 interface HangarSelection {
   aircraftId: string;
-  loadoutId: string;
   tab: 'overview' | 'facts' | 'gameplay' | 'weapons';
   comparisonId: string | null;
 }
@@ -54,6 +53,6 @@ React เป็น owner selection/tab/loader UI; asset cache เป็น owner
 
 1. สร้าง aircraft catalog จาก content registry และ selection state
 2. ทำ viewer ของหนึ่งลำก่อน แล้วสลับสองลำโดยไม่มี model-specific JSX
-3. ต่อ facts/game/loadout tabs และ SessionConfig
+3. ต่อ facts/game/weapons tabs และ SessionConfig
 4. ตรวจไทย/อังกฤษ ชื่อยาว เปลี่ยนเครื่องเร็ว โหลดล้มเหลว และกลับจาก match
-5. สลับเข้าออกโรงเก็บ/เกม 20 ครั้ง resource counts ไม่โตต่อเนื่อง; selected loadout ตรงกับ inventory เมื่อเกิดในเกม
+5. สลับเข้าออกโรงเก็บ/เกม 20 ครั้ง resource counts ไม่โตต่อเนื่อง; จำนวนอาวุธเต็มความจุในหน้าจอตรงกับ inventory เมื่อเกิดในเกม

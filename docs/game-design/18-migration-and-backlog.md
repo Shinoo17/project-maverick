@@ -13,7 +13,7 @@
 | [flight-model/step.js](../../example/F22/src/features/flight/flight-model/step.js) | 1,149 บรรทัด; orientation/velocity แยกแล้ว; fixed step 1/120 | รักษาหลักที่ดี แยก rates/forces/speed/maneuver ทีละ seam |
 | [flightInput.js](../../example/F22/src/features/flight/flightInput.js) | W/S ยังเป็น power intent และมี W+S extreme chord | เปลี่ยน semantic contract ให้ตรง target-speed spec ใหม่ ห้ามแค่เปลี่ยน label |
 | [chaseCamera.js](../../example/F22/src/features/flight/chaseCamera.js) | 1,155 บรรทัดและมีโมดูลย่อย | ใช้ scenarios เดิมป้องกัน regression ก่อนแยก view/roll policy |
-| [aircraft/f22.js](../../example/F22/src/aircraft/f22.js) | 975 บรรทัด รวม tuning, rig mapping และ functions เฉพาะ F-22 | แยก facts/flight/presentation/loadout; numeric content ไม่รับ callbacks |
+| [aircraft/f22.js](../../example/F22/src/aircraft/f22.js) | 975 บรรทัด รวม tuning, rig mapping และ functions เฉพาะ F-22 | แยก facts/flight/presentation/weapons; numeric content ไม่รับ callbacks |
 | [ManeuverBot.jsx](../../example/F22/src/features/flight/ManeuverBot.jsx) | scripted autopilot ผ่าน input เดียวกับผู้เล่น | เก็บแนวคิดไว้เป็น scenario runner; combat AI เพิ่ม perception/tactics ใหม่ |
 | [useFlightSession.js](../../example/F22/src/features/flight/useFlightSession.js) | ใช้ refs สำหรับ input/telemetry แล้ว | รักษาการแยก high-frequency state จาก React |
 | [SyncedFrameLoop.jsx](../../example/F22/src/three/SyncedFrameLoop.jsx) | มี manual frame loop และ pause redraw | ต้องเลือกเจ้าของ loop เดียวเมื่อเชื่อม runtime ใหม่ |
@@ -63,9 +63,11 @@ FND-02/03 ทำก่อนนำ flight state เข้า runtime; FND-04 gat
 
 ## P3 — Hangar และ Content
 
-เพิ่ม aircraft registry/UI → facts/game tabs → loadout presets/hardpoints → flight/hangar asset variants → profile ที่สอง → comparison benchmarks → aircraft ที่สามเมื่อ asset พร้อม
+เริ่ม foundation แล้ว 14 ก.ย. 2026: registry/profile รายลำ, full-armament validation/session และ Flight/Weapons UI — ดู [ผลส่งมอบและงานคงเหลือ](../phase-3-aircraft-loadouts.md) ยังไม่ปิด P3 gate ทั้งหมด
 
-Gate: ออกจาก Hangar ด้วย aircraftId/loadoutId แล้ว inventory/flight profile ตรงกัน เพิ่มลำที่ใช้กลไกเดิมโดยไม่เพิ่ม branch ใน core ถ้าใช้ proxy ให้ระบุ dev-only; ไม่ถือว่าลำ production เสร็จ
+เพิ่ม aircraft registry/UI → facts/game tabs → อาวุธเต็มความจุ/hardpoints → flight/hangar asset variants → profile ที่สอง → comparison benchmarks → aircraft ที่สามเมื่อ asset พร้อม
+
+Gate: ออกจาก Hangar ด้วย aircraftId แล้ว inventory/flight profile ตรงกัน เพิ่มลำที่ใช้กลไกเดิมโดยไม่เพิ่ม branch ใน core ถ้าใช้ proxy ให้ระบุ dev-only; ไม่ถือว่าลำ production เสร็จ
 
 ## P4 — Gun duel ก่อน Missile
 

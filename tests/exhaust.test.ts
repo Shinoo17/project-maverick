@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { aircraft } from '../src/content/aircraft'
 import { prepareAnimations } from '../src/render/aircraft/animationStages'
-import { ExhaustResponse, exhaustProfiles, flightExhaustConditions } from '../src/render/exhaust/profile'
+import { ExhaustResponse, getExhaustProfile, flightExhaustConditions } from '../src/render/exhaust/profile'
 import { createFlightRig } from '../src/render/aircraft/flightRig'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 
@@ -62,7 +62,7 @@ describe('nozzle anchors on shipped GLBs', () => {
       const bounds = new Box3().setFromObject(orientation), size = bounds.getSize(new Vector3())
       orientation.position.copy(bounds.getCenter(new Vector3())).negate()
       const root = new Group(); root.add(orientation); root.scale.setScalar(18.9 / Math.max(size.x, size.y, size.z)); root.updateMatrixWorld(true)
-      const p = exhaustProfiles[definition.id]
+      const p = getExhaustProfile(definition.id)
       for (const [side, sign] of [['L', -1], ['R', 1]] as const) {
         const nozzle = new Box3()
         const names = definition.id === 'f22' ? [`Engine_Nozzle_${side}_Flap_Upper`, `Engine_Nozzle_${side}_Flap_Lower`] : [`Nozzle_${side}`]
@@ -78,7 +78,7 @@ describe('nozzle anchors on shipped GLBs', () => {
         s.enginePower = 0 // isolate vector angle from symmetric exit-area motion
         const bones = ['L', 'R'].flatMap(side => ['Upper', 'Lower'].map(part => ({ side, bone: root.getObjectByName(`Engine_Nozzle_${side}_Flap_${part}`)!.parent! })))
         const rest = bones.map(({ bone }) => bone.getWorldQuaternion(new Quaternion()).normalize())
-        const rig = createFlightRig(root)
+        const rig = createFlightRig(root, definition.id)
         for (const angles of [{ left: 20, right: 20 }, { left: -20, right: -20 }, { left: -6, right: 6 }, { left: 14, right: 20 }]) {
           Object.assign(s.thrustVectoring, angles)
           const before = structuredClone(s)

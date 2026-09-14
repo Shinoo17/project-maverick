@@ -1,6 +1,6 @@
 # 07 — ปืน, Missile, Countermeasure และ Damage
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P4–P5 · พึ่ง runtime, flight, collision และ aircraft loadout
+[กลับ Master Plan](../../MASTER_PLAN.md) · P4–P5 · พึ่ง runtime, flight, collision และ aircraft armament
 
 ## Combat loop
 
@@ -66,7 +66,7 @@ Radar missile เป็น extension หลัง IR ผ่าน: ต้อง�
 
 ใช้ HP ก้อนเดียวใน MVP ไม่เพิ่ม damage subsystem ปีก/เครื่องยนต์จน flight loop นิ่ง การ hit ลด HP, ส่ง `damage-applied`; เปลี่ยน alive เป็น false ได้ครั้งเดียวและส่ง `aircraft-destroyed` ให้ mode รับ ห้าม renderer นับ score เอง
 
-`WeaponDefinition` มี id, kind, damage, cadence, range, projectile/seeker params, visualAssetId; `LoadoutPreset` อ้าง weaponId/count/mountId และ validator ตรวจ compatibility ส่วน `WeaponState` เก็บ heat, cooldown, inventory และ lock แยกต่อ entity
+`WeaponDefinition` มี id, kind, damage, cadence, range, projectile/seeker params, visualAssetId; `WeaponStation` ระบุ weaponId/capacity และ runtime เติมทุกจุดเต็มความจุ; validator ตรวจ station/weapon ID และ capacity ส่วน `WeaponState` เก็บ heat, cooldown, inventory และ lock แยกต่อ entity
 
 ขณะ pending launch bay animation ใช้เวลาเปิดที่กำหนดใน simulation profile หากใช้ delayed launch ให้ reserve ammo เมื่อยอมรับคำสั่งและ spawn เมื่อ delay จบ; ถ้าถูกทำลายก่อนให้ cancel โดยไม่มี projectile ค้าง ไม่รอ animation callback จาก GLB เพื่ออนุญาตยิง
 

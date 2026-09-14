@@ -6,9 +6,11 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { clone } from 'three/addons/utils/SkeletonUtils.js'
 import { getAircraft } from '../src/content/aircraft'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
-import { flightProfile } from '../src/game/flight/profile'
+import { getFlightProfile } from '../src/game/flight/profile'
 import { createFlightRig } from '../src/render/aircraft/flightRig'
 import { su57ControlTargets } from '../src/render/aircraft/su57Rig'
+
+const flightProfile = getFlightProfile('su57').flight
 
 const state = () => {
   const s = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['su57'] }).snapshot().aircraft[0]
@@ -96,7 +98,7 @@ describe('Su-57 shipped model articulation', () => {
     const { root } = fixture()
     const names = ['Aileron_l', 'Aileron_r', 'Flap_l', 'Flap_r', 'Elevator_l', 'Elevator_r', 'Rudder_l', 'Rudder_r']
     const before = names.map(name => root.getObjectByName(name)!.matrixWorld.clone())
-    createFlightRig(root); createFlightRig(root); root.updateMatrixWorld(true)
+    createFlightRig(root, 'su57'); createFlightRig(root, 'su57'); root.updateMatrixWorld(true)
     let hinges = 0
     root.traverse(o => { if (o.name.endsWith('_FlightHinge')) hinges++ })
     expect(hinges).toBe(8)
@@ -108,7 +110,7 @@ describe('Su-57 shipped model articulation', () => {
     })
   })
   it('moves real nozzle lips upward for nose-up and keeps exhaust attached through combined TVC and iris motion', () => {
-    const { root, displayed } = fixture(), rig = createFlightRig(root), s = state()
+    const { root, displayed } = fixture(), rig = createFlightRig(root, 'su57'), s = state()
     const mounts = ['L', 'R'].map(side => root.getObjectByName(`NozzleMount_${side}`)!.quaternion.clone())
     s.enginePower = 1; rig(s, 0, true)
     const neutral = [rig.exhaust!.left.origin.clone(), rig.exhaust!.right.origin.clone()]
@@ -143,7 +145,7 @@ describe('Su-57 shipped model articulation', () => {
     expect(rig.exhaust!.left.axis.distanceTo(rig.exhaust!.right.axis)).toBeGreaterThan(.1)
   })
   it('turns both real rudder trailing edges and nozzle axes starboard for positive yaw', () => {
-    const { root, model } = fixture(), rig = createFlightRig(root), s = state()
+    const { root, model } = fixture(), rig = createFlightRig(root, 'su57'), s = state()
     rig(s, 0, true)
     const before = rig.exhaust!.left.axis.clone()
     // Choose the aft-most vertex in the fin, including the multi-mesh port fin.
@@ -169,7 +171,7 @@ describe('Su-57 shipped model articulation', () => {
     expect(rig.exhaust!.left.axis.z).toBeGreaterThan(before.z)
   })
   it('freezes actuators at pause, clears old poses on reset, and never changes Body', () => {
-    const { root } = fixture(), rig = createFlightRig(root), s = state()
+    const { root } = fixture(), rig = createFlightRig(root, 'su57'), s = state()
     const body = root.getObjectByName('Body')!, bodyPose = body.matrix.clone()
     rig(s, 0, true)
     const gimbal = root.getObjectByName('Gimbal_L')!, initial = gimbal.quaternion.clone()

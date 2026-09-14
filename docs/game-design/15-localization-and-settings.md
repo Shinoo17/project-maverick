@@ -45,7 +45,7 @@ interface LocalPreferences {
   audio: { master: number; engine: number; weapons: number; ui: number };
   graphics: { quality: 'low' | 'medium' | 'high'; renderScale: number };
   accessibility: { uiScale: number; reducedMotion: boolean };
-  lastSelection: { aircraftId: string; loadoutId: string; mapId: string };
+  lastSelection: { aircraftId: string; mapId: string };
 }
 ```
 

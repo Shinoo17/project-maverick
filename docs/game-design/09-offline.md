@@ -6,7 +6,7 @@
 
 **Dogfight vs Bots** เริ่มจาก 1v1; หลังเล่นครบ loop แล้วเพิ่ม free-for-all รวมสูงสุด 4 ลำใน Offline MVP จำนวนนี้เป็นเป้าทดลองตาม performance ไม่ใช่ข้อจำกัดถาวร Team Deathmatch เป็น extension หลัง FFA นิ่ง; zone capture/CTF/campaign ไม่อยู่ใน release แรก
 
-ตั้งค่าก่อนเริ่ม: aircraft, loadout, map, bot count, difficulty, guns-only หรือ guns+IR, time limit และ score limit ใช้ preset “เริ่มเร็ว” ลดการตั้งค่าที่มือใหม่ต้องเข้าใจ
+ตั้งค่าก่อนเริ่ม: aircraft, map, bot count, difficulty, time limit และ score limit ใช้ preset “เริ่มเร็ว” ลดการตั้งค่าที่มือใหม่ต้องเข้าใจ
 
 ## Session config และ lifecycle
 
@@ -15,7 +15,6 @@ interface SessionConfig {
   mode: 'playground' | 'offline-dogfight';
   mapId: string;
   playerAircraftId: string;
-  loadoutId: string;
   seed: number;
   rules: {
     botCount: number;

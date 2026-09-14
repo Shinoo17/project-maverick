@@ -1,5 +1,6 @@
 import { arcadeSpeed } from '../../game/flight/speed'
-import { maneuverProfile } from '../../game/flight/maneuvers'
+import { getFlightProfile } from '../../game/flight/profile'
+import { aircraft } from '../../content/aircraft'
 import { useTranslation } from 'react-i18next'
 import type { AircraftState } from '../../game/state/WorldState'
 import type { PracticeState } from '../../game/playground/practice'
@@ -7,6 +8,7 @@ export const lessonLabels = ['lesson0', 'lesson1', 'lesson2', 'lesson3', 'lesson
 const lessonHints = ['lessonHint1', 'lessonHint1', 'lessonHint2', 'lessonHint3', 'lessonHint4', 'lessonHint5', 'lessonHint6'] as const
 export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: { state: AircraftState | null; practice?: PracticeState; lesson: number; cameraChanged: boolean; lab: boolean }) {
   const { t } = useTranslation()
+  const maneuverProfile = getFlightProfile(state?.aircraftId ?? aircraft[0].id).maneuver
   const m = state?.maneuver
   const complete = [false, cameraChanged,
     !!practice && practice.rings > 0 && Math.min(practice.pitch, practice.roll, practice.yaw) > 0.2,
@@ -17,12 +19,12 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
   const speed = state ? Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z) : 0
   const low = !!state && state.position.y < maneuverProfile.minAltitude
   const outsideSpeed = speed < maneuverProfile.entryMin || speed > maneuverProfile.entryMax
-  const psmReady = !!state && !low && !outsideSpeed
+  const psmReady = maneuverProfile.psmEnabled && !!state && !low && !outsideSpeed
   return <>
     <section className="maneuver-instrument" data-details={lab || lesson > 0} data-phase={status} aria-label={t('maneuver')}>
       <div className="maneuver-status"><span>{t('maneuver')}</span><strong>{t(status === 'normal' ? psmReady ? 'psmReady' : 'psmUnavailable' : `psm_${status}`)}</strong></div>
-      <p>{status === 'normal' ? t(low ? 'psmLow' : outsideSpeed ? 'psmSpeed' : 'psmHold') : t(`psmHint_${status}`)}</p>
-      <div className="psm-speed-band" data-ready={psmReady}>{t('psmBand', { min: Math.round(arcadeSpeed(maneuverProfile.entryMin)), max: Math.round(arcadeSpeed(maneuverProfile.entryMax)) })}</div>
+      <p>{!maneuverProfile.psmEnabled ? t('profileUnsupported') : status === 'normal' ? t(low ? 'psmLow' : outsideSpeed ? 'psmSpeed' : 'psmHold') : t(`psmHint_${status}`)}</p>
+      {maneuverProfile.psmEnabled && <div className="psm-speed-band" data-ready={psmReady}>{t('psmBand', { min: Math.round(arcadeSpeed(maneuverProfile.entryMin)), max: Math.round(arcadeSpeed(maneuverProfile.entryMax)) })}</div>}
       <div className="maneuver-readings"><span>{t('noseOffPath')} <b>{state ? `${(m?.alpha ?? 0).toFixed(0)}°` : '—'}</b></span>{status === 'cooldown' && <span>{t('psm_cooldown')} <b>{(m?.cooldown ?? 0).toFixed(1)} s</b></span>}</div>
     </section>
     {lesson > 0 && <section className="flight-lesson" aria-label={t('practiceLesson')}><span>{t(lessonLabels[lesson])}</span><strong role="status">{complete ? t('lessonDone') : t(lessonHints[lesson])}</strong><small>{t('ringsPassed', { count: practice?.rings ?? 0 })} · {t('psmCompleted', { count: m?.completed ?? 0 })}</small></section>}

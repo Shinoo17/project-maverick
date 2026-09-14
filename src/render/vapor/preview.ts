@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
-import { getAircraft, modelUrl } from '../../content/aircraft'
+import { aircraft as roster, getAircraft, modelUrl } from '../../content/aircraft'
 import type { AircraftId } from '../../content/schemas'
 import { prepareAnimations } from '../aircraft/animationStages'
 import { CondensationVolume } from './CondensationVolume'
@@ -27,7 +27,8 @@ controls.target.set(0, .4, 0); controls.minDistance = 13; controls.maxDistance =
 const jet = new Group(); scene.add(jet)
 const volume = new CondensationVolume(renderer)
 const values: VaporConditions = { speed: 183, aoa: 8, g: 6.8, sideslip: 0, humidity: .78 }
-let paused = false, modelReady = false, aircraft: AircraftId = 'f22', loadId = 0
+let paused = false, modelReady = false, aircraft: AircraftId = roster[0].id, loadId = 0
+element<HTMLSelectElement>('aircraft').replaceChildren(...roster.map(entry => new Option(entry.designation, entry.id)))
 const ktx2 = new KTX2Loader().setTranscoderPath('/basis/').detectSupport(renderer)
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2)
 function disposeModel(root: Group) { root.traverse(object => { if (object instanceof Mesh) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(m => { for (const value of Object.values(m)) if (value instanceof Texture) value.dispose(); m.dispose() }); if ('skeleton' in object) (object.skeleton as { dispose(): void }).dispose() } }) }

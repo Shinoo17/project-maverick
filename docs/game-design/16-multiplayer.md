@@ -4,7 +4,7 @@
 
 ## ขอบเขตแรก
 
-พิสูจน์ **1v1 private room** ก่อน: create/join ด้วย room code, เลือกเครื่อง/loadout, ready, match, results และ rematch เมื่อผ่าน latency/performance จึงเพิ่ม 2v2 ไม่ตั้งเป้า 16 คนเพียงเพราะเอกสารเก่าเคยกล่าวไว้ ยังไม่ทำ ranked, global matchmaking, account progression, voice chat หรือ host migration
+พิสูจน์ **1v1 private room** ก่อน: create/join ด้วย room code, เลือกเครื่องพร้อมอาวุธเต็มความจุ, ready, match, results และ rematch เมื่อผ่าน latency/performance จึงเพิ่ม 2v2 ไม่ตั้งเป้า 16 คนเพียงเพราะเอกสารเก่าเคยกล่าวไว้ ยังไม่ทำ ranked, global matchmaking, account progression, voice chat หรือ host migration
 
 ## สิ่งที่เตรียมตอน Offline
 
@@ -22,7 +22,7 @@ LocalSessionHost ทำหน้าที่รับ command/step world/publish
 
 Server เป็นเจ้าของ flight state ที่ใช้ตัดสินเกม, lock, ammo, damage, hit, score, spawn และ clock Client ส่ง intent เท่านั้น ห้ามรับ client `position`, `hp`, `hitTarget` เป็นคำตัดสินจริง
 
-Client ทำนายการบินตนเองเพื่อให้ input ตอบทันทีและแสดง muzzle/launch preview ได้ แต่ damage/hit confirm รอ server ทุก event มี stable id กันเอฟเฟกต์/คะแนนซ้ำเมื่อ reconcile การเปลี่ยน aircraft/loadout ทำก่อน spawn ผ่าน room rules ไม่เปลี่ยน stat ระหว่าง match จาก local settings
+Client ทำนายการบินตนเองเพื่อให้ input ตอบทันทีและแสดง muzzle/launch preview ได้ แต่ damage/hit confirm รอ server ทุก event มี stable id กันเอฟเฟกต์/คะแนนซ้ำเมื่อ reconcile การเปลี่ยน aircraft ทำก่อน spawn ผ่าน room rules ไม่เปลี่ยน stat ระหว่าง match จาก local settings
 
 ## Transport และข้อความ
 
@@ -31,7 +31,7 @@ Client ทำนายการบินตนเองเพื่อให้ 
 ```ts
 type ClientMessage =
   | { type: 'join'; protocolVersion: number; contentHash: string; roomCode: string }
-  | { type: 'ready'; aircraftId: string; loadoutId: string }
+  | { type: 'ready'; aircraftId: string }
   | { type: 'input'; sequence: number; commands: PilotCommand[] }
   | { type: 'leave' };
 
@@ -48,7 +48,7 @@ interface ServerSnapshot {
 
 Network state ต้องมีสิ่งจำเป็นต่อ simulation replay เช่น target speed, engine spool, maneuver phase/timers/reserve, heat/inventory/lock รวม RNG state ที่จำเป็นและ last processed action ids สำหรับ predicted entity ไม่ส่งแต่ position แล้วหวังว่าจะ reconcile flight ได้ DTO ใช้เลข/arrays ไม่ส่ง Three.js objects หรือ mesh/node references ข้อมูล sensor/ศัตรูส่งเท่าที่กติกาอนุญาต ไม่กระจาย server-only hidden state เพื่อให้ client คาดเดาผลเอง
 
-Server ตรวจ finite axes/ranges, packet size, action cadence, sequence/tick windows, entity ownership, capability/loadout legality และ one-shot action ids ถ้า contentHash/protocolVersion ไม่ตรง ปฏิเสธ join พร้อมข้อความอัปเดต client ไม่ปล่อยเล่นด้วย flight profile คนละชุด
+Server ตรวจ finite axes/ranges, packet size, action cadence, sequence/tick windows, entity ownership, capability และ inventory ตามความจุจุดติดตั้ง และ one-shot action ids ถ้า contentHash/protocolVersion ไม่ตรง ปฏิเสธ join พร้อมข้อความอัปเดต client ไม่ปล่อยเล่นด้วย flight profile คนละชุด
 
 ## Rates และ prediction ที่เสนอให้ benchmark
 
@@ -81,7 +81,7 @@ Input หายเกิน 250 ms ให้ neutral axes/stop firing และ�
 
 1. Headless server run world + protocol validator พร้อม client สองตัวบนเครื่องเดียว
 2. 1v1 authority + commands/snapshots + prediction/reconcile
-3. Lobby/ready/loadout/version check และ disconnect/rejoin flow
+3. Lobby/ready/armament/version check และ disconnect/rejoin flow
 4. ทดสอบ RTT 0/50/100/150 ms, jitter 20–50 ms, loss simulation และ background tab
 5. ตรวจ forged hits, duplicate actions, impossible speed commands, cooldown bypass และ oversized packets
 6. ผ่านเมื่อไม่มี hit/score ซ้ำ, local control ยังใช้ได้ที่เป้า RTT 100 ms, server tick cost อยู่ใน budget แล้วจึงเพิ่ม 2v2

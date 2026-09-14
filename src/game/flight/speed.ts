@@ -1,8 +1,9 @@
 import type { AircraftState } from '../state/WorldState'
 import type { PilotCommand } from '../runtime/commands'
-import { flightProfile as p } from './profile'
+import { getFlightProfile } from './profile'
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 export function stepSpeed(state: AircraftState, command: PilotCommand, dt: number, speed: number) {
+  const p = getFlightProfile(state.aircraftId).flight
   const m = state.maneuver
   const requested = command.airbrake ? 0 : command.speedAdjust
   const response = requested === 0 ? p.releaseResponse : p.driveResponse
