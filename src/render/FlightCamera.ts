@@ -5,7 +5,8 @@ export class FlightCamera {
   private up = new Vector3(0, 1, 0)
   private initialized = false
   private cinematic = 0
-  reset() { this.initialized = false; this.cinematic = 0; this.up.set(0, 1, 0) }
+  private offset = new Vector3()
+  reset() { this.initialized = false; this.cinematic = 0; this.up.set(0, 1, 0); this.offset.set(0, 0, 0) }
   update(camera: PerspectiveCamera, state: AircraftState, mode: CameraRollMode, dt: number, reducedMotion = false) {
     const q = new Quaternion().copy(state.orientation), position = new Vector3().copy(state.position)
     const forward = new Vector3(1, 0, 0).applyQuaternion(q)
@@ -29,15 +30,21 @@ export class FlightCamera {
     const cosine = transported.dot(desiredUp)
     const angle = Math.abs(sine) < 1e-8 && cosine < 0 ? Math.PI : Math.atan2(sine, cosine)
     this.up.copy(transported).applyAxisAngle(forward, angle * (reducedMotion ? 1 : 1 - Math.exp(-3 * dt))).normalize()
-    // Keep the airframe prominent in the chase view. The previous 34-unit
-    // offset left the jet reading as a small HUD marker on wide screens.
-    const desiredPosition = position.clone().addScaledVector(forward, -12 - this.cinematic * 8).addScaledVector(this.up, 5 + this.cinematic * 4.5)
-    desiredPosition.y = Math.max(5, desiredPosition.y)
-    const target = position.clone().addScaledVector(forward, 34 - this.cinematic * 25)
+    // Chase offset sized so the whole airframe (normalised to 18.9 units long) stays in frame
+    // even at rest, with speed only easing the camera back a few units.
+    const speed = new Vector3().copy(state.velocity).length()
+    const back = 24 + Math.min(3, speed / 70) + this.cinematic * 6
+    const desiredOffset = forward.clone().multiplyScalar(-back).addScaledVector(this.up, 6 + this.cinematic * 3.5)
+    desiredOffset.y = Math.max(5, position.y + desiredOffset.y) - position.y
+    const desiredPosition = position.clone().add(desiredOffset)
+    const target = position.clone().addScaledVector(forward, 12 - this.cinematic * 3)
     const desiredQ = new Quaternion().setFromRotationMatrix(new Matrix4().lookAt(desiredPosition, target, this.up))
-    if (!this.initialized || reducedMotion) { camera.position.copy(desiredPosition); camera.quaternion.copy(desiredQ); this.initialized = true }
-    else { camera.position.lerp(desiredPosition, 1 - Math.exp(-10 * dt)); camera.quaternion.slerp(desiredQ, 1 - Math.exp(-8 * dt)) }
-    const fov = reducedMotion ? 61 : 56 + Math.min(8, new Vector3().copy(state.velocity).length() / 32) + (state.maneuver.burnerActive ? 2.5 : 0)
+    // The offset is smoothed, not the world position: a world-space follow trails a moving
+    // jet by speed/rate, which pushed the camera 30+ units back at cruise and hugged the tail at rest.
+    if (!this.initialized || reducedMotion) { this.offset.copy(desiredOffset); camera.quaternion.copy(desiredQ); this.initialized = true }
+    else { this.offset.lerp(desiredOffset, 1 - Math.exp(-10 * dt)); camera.quaternion.slerp(desiredQ, 1 - Math.exp(-8 * dt)) }
+    camera.position.copy(position).add(this.offset)
+    const fov = reducedMotion ? 61 : 56 + Math.min(4, speed / 50) + (state.maneuver.burnerActive ? 2 : 0)
     camera.fov += (fov - camera.fov) * (reducedMotion ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
     camera.position.y = Math.max(5, camera.position.y)
   }

@@ -86,6 +86,34 @@ describe('P1 flight acceptance', () => {
     expect(other.children[0].quaternion.toArray()).toEqual([0, 0, 0, 1])
     expect(state).toEqual(before)
   })
+  it('keeps the whole airframe in frame at a steady chase distance from rest to top speed', () => {
+    // The flight model is normalised to 18.9 units on its longest axis; span and height are generous.
+    const corners: Vector3[] = []
+    for (const x of [-9.45, 9.45]) for (const y of [-3, 3]) for (const z of [-7.5, 7.5]) corners.push(new Vector3(x, y, z))
+    const distances: number[] = []
+    for (const speed of [0, 65, 200, 380]) {
+      for (const aspect of [16 / 9, 4 / 3]) {
+        const state = make().snapshot().aircraft[0], camera = new PerspectiveCamera(69, aspect, 0.5, 14000), rig = new FlightCamera()
+        const q = new Quaternion().copy(state.orientation), forward = new Vector3(1, 0, 0).applyQuaternion(q)
+        state.position = { x: 0, y: 1000, z: 0 }
+        state.velocity = { x: forward.x * speed, y: forward.y * speed, z: forward.z * speed }
+        for (let i = 0; i < 600; i++) {
+          state.position = { x: state.position.x + state.velocity.x / 60, y: state.position.y + state.velocity.y / 60, z: state.position.z + state.velocity.z / 60 }
+          rig.update(camera, state, 'horizon', 1 / 60)
+        }
+        camera.updateMatrixWorld()
+        const origin = new Vector3().copy(state.position)
+        for (const corner of corners) {
+          const ndc = corner.clone().applyQuaternion(q).add(origin).project(camera)
+          expect(Math.max(Math.abs(ndc.x), Math.abs(ndc.y))).toBeLessThan(0.95)
+          expect(ndc.z).toBeLessThan(1)
+        }
+        if (aspect === 16 / 9) distances.push(camera.position.distanceTo(origin))
+      }
+    }
+    expect(distances[0]).toBeGreaterThan(22)
+    expect(Math.max(...distances)).toBeLessThan(distances[0] + 4)
+  })
   it('returns to upright horizon after crossing vertical and settling inverted', () => {
     const state = make().snapshot().aircraft[0], camera = new PerspectiveCamera(), rig = new FlightCamera()
     for (let i = 0; i <= 960; i++) {
