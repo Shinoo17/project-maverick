@@ -12,7 +12,7 @@ import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
 import { WORLD_STEP } from '../game/runtime/clock'
 import { screenFrame } from '../game/input/mouseStick'
-import { trainingRings } from '../game/playground/practice'
+import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import type { HudDriver } from '../features/flight/FlightInstruments'
@@ -98,20 +98,9 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
   })
   return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} /></>
 }
-function Range() {
-  return <>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}><planeGeometry args={[20000, 20000]} /><meshStandardMaterial color="#8a947e" roughness={1} /></mesh>
-    <gridHelper args={[16000, 160, '#6a7964', '#7e8b73']} />
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[600, 0.1, 0]}><planeGeometry args={[1400, 65]} /><meshStandardMaterial color="#535b59" /></mesh>
-    {Array.from({ length: 18 }, (_, i) => <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[i * 70, 0.2, 0]}><planeGeometry args={[35, 2]} /><meshBasicMaterial color="#eee8cb" /></mesh>)}
-    {trainingRings.map(x => <mesh key={x} rotation={[0, Math.PI / 2, 0]} position={[x, 400, 0]}><torusGeometry args={[65, 2, 8, 48]} /><meshStandardMaterial color="#f1cd61" /></mesh>)}
-  </>
-}
 // Memoised: the page re-renders on every 10 Hz telemetry update, the scene never needs to.
 export default memo(function FlightScene(props: Props) {
   return <Canvas dpr={[1, 1.5]} camera={{ fov: 69, near: 0.5, far: 14000 }}>
-    <color attach="background" args={['#acc5d2']} /><fog attach="fog" args={['#acc5d2', 4500, 12000]} />
-    <hemisphereLight args={['#edf5ff', '#707958', 2]} /><directionalLight position={[100, 600, 300]} intensity={3} />
-    <Range /><AssetLoaderProvider><Suspense fallback={null}><FlightWorld {...props} /></Suspense></AssetLoaderProvider>
+    <TrainingRange /><AssetLoaderProvider><Suspense fallback={null}><FlightWorld {...props} /></Suspense></AssetLoaderProvider>
   </Canvas>
 })
