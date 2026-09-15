@@ -33,11 +33,13 @@ export class FlightCamera {
     // Chase offset sized so the whole airframe (normalised to 18.9 units long) stays in frame
     // even at rest, with speed only easing the camera back a few units.
     const speed = new Vector3().copy(state.velocity).length()
-    const back = 24 + Math.min(3, speed / 70) + this.cinematic * 6
-    const desiredOffset = forward.clone().multiplyScalar(-back).addScaledVector(this.up, 6 + this.cinematic * 3.5)
+    const back = 26 + Math.min(3, speed / 70) + this.cinematic * 6
+    const desiredOffset = forward.clone().multiplyScalar(-back).addScaledVector(this.up, 6.5 + this.cinematic * 3.5)
     desiredOffset.y = Math.max(5, position.y + desiredOffset.y) - position.y
     const desiredPosition = position.clone().add(desiredOffset)
-    const target = position.clone().addScaledVector(forward, 12 - this.cinematic * 3)
+    // Aim far ahead of the nose so the view runs near level and the jet sits in the lower third,
+    // leaving the middle of the frame clear for what it is flying at.
+    const target = position.clone().addScaledVector(forward, 50 - this.cinematic * 12).addScaledVector(this.up, 0.5)
     const desiredQ = new Quaternion().setFromRotationMatrix(new Matrix4().lookAt(desiredPosition, target, this.up))
     // The offset is smoothed, not the world position: a world-space follow trails a moving
     // jet by speed/rate, which pushed the camera 30+ units back at cruise and hugged the tail at rest.
