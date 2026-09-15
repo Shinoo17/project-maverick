@@ -33,17 +33,10 @@ export function WeaponDisplay({ weapons, statuses, onStatus, retryId }: {
 }) {
   // Each asset has its own suspense/error boundary: one failed file must never
   // hide a successfully loaded weapon, and selection unmounts every other model.
-  const { invalidate, scene } = useThree()
+  const { invalidate } = useThree()
   useEffect(() => { invalidate() }, [weapons, statuses, invalidate])
-  // Missile skins are mostly metallic, so they read almost entirely through
-  // reflections. Brighten the room environment only while weapons are shown;
-  // the deck keeps its own envMapIntensity and is unaffected.
-  useEffect(() => {
-    const previous = scene.environmentIntensity
-    scene.environmentIntensity = 0.75
-    invalidate()
-    return () => { scene.environmentIntensity = previous; invalidate() }
-  }, [scene, invalidate])
+  // Room environment brightness for metallic missile skins is owned by the
+  // scene's Lighting, so it stays consistent with the studio-lights toggle.
   const models = weapons.filter(weapon => weapon.model && statuses[weapon.id] !== 'missing')
   return <>
     {/* Soft camera-side fill and top light so the near flank is never in shadow. */}

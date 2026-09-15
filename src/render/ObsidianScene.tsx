@@ -41,14 +41,13 @@ const MIN_PHI = 0.06
 const MAX_PHI = Math.PI * 0.78
 const MIN_RADIUS = 6
 
-function Lighting({ studioLights, deckMaterial }: { studioLights: boolean; deckMaterial: RefObject<ReflectorMaterialImpl | null> }) {
+function Lighting({ studioLights, weaponsShown, deckMaterial }: { studioLights: boolean; weaponsShown: boolean; deckMaterial: RefObject<ReflectorMaterialImpl | null> }) {
   const { gl, scene, invalidate } = useThree()
   useEffect(() => {
     const room = new RoomEnvironment()
     const generator = new PMREMGenerator(gl)
     const target = generator.fromScene(room, 0.04)
     scene.environment = target.texture
-    scene.environmentIntensity = 0.18
     // An explicit map makes Three honor the deck's own envMapIntensity.
     // With envMap=null, WebGLRenderer overrides it with scene.environmentIntensity.
     const deck = deckMaterial.current
@@ -67,10 +66,17 @@ function Lighting({ studioLights, deckMaterial }: { studioLights: boolean; deckM
     }
   }, [gl, scene, invalidate, deckMaterial])
   // Key, cool kicker and warm kicker are the "studio lights" a viewer can cut.
-  // With them off the airframe keeps only ambient and the room environment.
-  useEffect(() => { invalidate() }, [studioLights, invalidate])
+  // With them off the airframe falls back to a soft fill and a brighter room
+  // environment: its skin is mostly metallic, so it reads through reflections.
+  // Missile skins are metallic too, so weapons always get the bright room.
+  // The deck keeps its own envMapIntensity and is unaffected.
+  useEffect(() => {
+    scene.environmentIntensity = weaponsShown ? 0.75 : studioLights ? 0.18 : 0.62
+    invalidate()
+  }, [scene, studioLights, weaponsShown, invalidate])
   return <>
-    <ambientLight intensity={studioLights ? 0.15 : 0.34} />
+    <ambientLight intensity={studioLights ? 0.15 : 0.5} />
+    {!studioLights && <hemisphereLight args={['#dfe6ee', '#15181c', 0.85]} />}
     {studioLights && <>
     {/* Three lights on one 9-unit ring, 120° apart, laid out around the hero camera
         (which sits at ~139°): white key 60° to one side, warm kicker 60° to the other,
@@ -182,7 +188,7 @@ function ObsidianScene({ mode, flightInput, inspectedWeapons, weaponStatuses, on
   return <Canvas shadows frameloop="demand" dpr={[1, 1.5]} camera={{ position: [12, 5, -14], fov: 36, near: 0.1, far: 200 }} gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.98 }}>
     <color attach="background" args={['#050507']} />
     <fog attach="fog" args={['#050507', 24, 62]} />
-    <Lighting studioLights={studioLights} deckMaterial={deckMaterial} />
+    <Lighting studioLights={studioLights} weaponsShown={mode === 'weapons'} deckMaterial={deckMaterial} />
     <AssetLoaderProvider>
       <SceneBoundary key={`${aircraftProps.aircraft.id}-${retryId}`} fallback={null} onError={onError}>
         <Suspense fallback={null}>
