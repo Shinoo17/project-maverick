@@ -4,9 +4,9 @@ The HUD glass, ported from the reference implementation's canvas painter
 Framework-free: it owns one 2D canvas and one `draw(state)` call; FlightInstruments calls it
 from the render loop, never through React state.
 
-Anything attitude-shaped — the pitch ladder, the boresight, the flight path marker — is
-projected from world space through the scene camera, so it stays registered with the ground.
-Anything scale-shaped — the tapes, the boxed readouts, the status block — is screen-fixed.
+Anything attitude-shaped — the pitch ladder, the nose pipper — is projected from world space
+through the scene camera, so it stays registered with the ground. Anything scale-shaped — the
+tapes, the boxed readouts, the status block — is screen-fixed.
 
 One phosphor-green family. Brightness, opacity and shape carry hierarchy; a wider translucent
 green pass under every mark keeps it legible over sky and ground without a CSS filter, so
@@ -175,9 +175,6 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
   function line(x1: number, y1: number, x2: number, y2: number, lineWidth = 1.4, color = HUD_GREEN) {
     luminous(() => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }, lineWidth, color)
   }
-  function circle(cx: number, cy: number, radius: number, lineWidth = 1.4, color = HUD_GREEN) {
-    luminous(() => { ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke() }, lineWidth, color)
-  }
   function pitchLine(x1: number, y1: number, x2: number, y2: number, lineWidth: number, color: string) {
     const paint = () => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }
     ctx.lineWidth = lineWidth + 3
@@ -257,29 +254,21 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     ctx.restore()
   }
 
-  // The cross rides the nose; the marker rides the true velocity. They separate in PSM.
-  function drawBoresight(state: GlassState, camera: Camera) {
+  // Where the nose points. A bare line with no bloom pass under it, so the small ring stays
+  // crisp beside the mouse reticle, the one other mark in the middle of the frame.
+  function drawNosePipper(state: GlassState, camera: Camera) {
     const point = projectPoint(camera, scratch.set(state.forward.x, state.forward.y, state.forward.z).multiplyScalar(4000).add(state.position), width, height)
     if (!point) return
-    const r = Math.max(layout.half * 0.02, 7)
-    line(point.x - r, point.y, point.x + r, point.y, 1.5, HUD_GREEN_DIM)
-    line(point.x, point.y - r, point.x, point.y + r, 1.5, HUD_GREEN_DIM)
-  }
-
-  function drawFlightPathMarker(state: GlassState, camera: Camera) {
-    const v = state.velocity
-    const along = v.x * v.x + v.y * v.y + v.z * v.z > 1e-4
-      ? scratch.set(v.x, v.y, v.z).normalize()
-      : scratch.set(state.forward.x, state.forward.y, state.forward.z)
-    const point = projectPoint(camera, along.multiplyScalar(4000).add(state.position), width, height)
-    if (!point) return
     const { x: cx, y: cy } = point
-    const r = Math.max(layout.half * 0.032, 11)
-    circle(cx, cy, r, 1.6)
-    line(cx - r, cy, cx - r * 2.3, cy, 1.6)
-    line(cx + r, cy, cx + r * 2.3, cy, 1.6)
-    line(cx, cy - r, cx, cy - r * 1.9, 1.6)
-    luminous(() => { ctx.beginPath(); ctx.rect(cx - 1.5, cy - 1.5, 3, 3); ctx.stroke() }, 1.2, HUD_GREEN)
+    const r = Math.max(layout.half * 0.018, 6)
+    ctx.lineWidth = 1.6
+    ctx.strokeStyle = HUD_GREEN
+    ctx.beginPath()
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.moveTo(cx - r, cy); ctx.lineTo(cx - r * 2.6, cy)
+    ctx.moveTo(cx + r, cy); ctx.lineTo(cx + r * 2.6, cy)
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy - r * 2.2)
+    ctx.stroke()
   }
 
   // --- Tapes ------------------------------------------------------------------
@@ -471,8 +460,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     // Scales stand on their own; only projected symbology waits for a camera.
     if (state.live && state.camera) {
       drawLadder(state, state.camera)
-      drawBoresight(state, state.camera)
-      drawFlightPathMarker(state, state.camera)
+      drawNosePipper(state, state.camera)
     }
     drawTape({
       x: layout.cx - layout.half * layout.tapeOffset, value: state.speed, side: 'left', tape: SPEED_TAPE, band: speedBand,

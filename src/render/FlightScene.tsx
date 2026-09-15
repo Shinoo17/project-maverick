@@ -89,7 +89,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
       marker.style.left = `${size.width / 2 + session.input.stick.px}px`
       marker.style.top = `${size.height / 2 + session.input.stick.py}px`
     }
-    // The HUD glass (ladder, boresight, flight path marker, tapes) is redrawn from the
+    // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
     indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) })

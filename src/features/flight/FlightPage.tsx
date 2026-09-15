@@ -107,7 +107,9 @@ export function FlightPage() {
       <FlightSystemStatus state={telemetry} />
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
       {running && telemetry && <p className="flight-warning" role="status">{Math.hypot(telemetry.position.x, telemetry.position.z) > 6500 || telemetry.position.y > 6500 ? t('boundaryWarning') : telemetry.position.y < 100 ? t('lowAltitude') : Math.hypot(telemetry.velocity.x, telemetry.velocity.y, telemetry.velocity.z) < 60 ? t('hudLowEnergy') : ''}</p>}
-      {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true" />}
+      {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" pathLength="96" /><path d="M50 14V8M86 50H92M50 86V92M14 50H8" /></svg>
+      </div>}
       {timeScale !== 1 && <p className="flight-timescale">{t('practiceSpeed')} ×{timeScale}</p>}
       <p className="flight-controls">{t('controlsHint')}</p>
     </div>

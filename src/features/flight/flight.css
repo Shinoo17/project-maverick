@@ -26,9 +26,6 @@
 .flight-mouse-help summary { cursor: pointer; min-height: 36px; display: list-item; padding: 8px 0; }
 /* The flight HUD follows example/F22: one canvas of phosphor symbology (hudPainter.ts), and
    quiet dark plates for the few readouts that stay HTML. Menu and hangar keep their palette. */
-.is-flight .topbar { height: 48px; }
-.is-flight .brand span { font-size: 18px; }
-.is-flight .brand svg { width: 20px; }
 /* --hud-advisory-* and --hud-status-top are set by FlightInstruments from the glass layout. */
 .flight-hud {
   --hud-ice: #62ff84; --hud-green-dim: rgba(98, 255, 132, 0.68); --hud-green-soft: rgba(98, 255, 132, 0.24);
@@ -45,8 +42,14 @@
 .flight-actions button { min-height: 40px; padding: 6px 14px; pointer-events: auto; color: var(--hud-green-dim); border: 1px solid var(--hud-green-soft); border-radius: 2px; background: var(--hud-plate); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-shadow: none; }
 .flight-actions button:hover { color: var(--hud-ice); border-color: var(--hud-ice); }
 .flight-actions button:focus-visible { outline: 2px solid var(--hud-ice); outline-offset: 2px; }
-/* The mouse stick: drawn like the glass's own stick dot, positioned by FlightScene. */
-.flight-stick { position: absolute; top: 50%; left: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border: 1.7px solid var(--hud-ice); border-radius: 50%; box-shadow: 0 0 0 2.4px rgba(48, 255, 104, 0.24); }
+/* The mouse reticle: the commanded direction, not an aim point, so it is soft, hollow and big —
+   a thin dashed ring with no centre dot, four outward ticks to find the middle by eye.
+   The box spans the ticks; the ring's radius is about 4.5% of the frame height. FlightScene
+   positions it. */
+.flight-stick { position: absolute; top: 50%; left: 50%; height: 12.5%; aspect-ratio: 1; transform: translate(-50%, -50%); opacity: 1; }
+.flight-stick svg { display: block; width: 100%; height: 100%; overflow: visible; fill: none; stroke: #fff; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.55)); }
+/* Twenty-four dashes, one centred under each tick. */
+.flight-stick circle { stroke-dasharray: 2.5 1.5; stroke-dashoffset: 1.25; }
 /* Advisory plates. A warning outranks the maneuver state and takes its slot. */
 .flight-warning, .maneuver-instrument { position: absolute; top: var(--hud-advisory-top, 78%); left: var(--hud-advisory-left, 50%); transform: translateX(var(--hud-advisory-shift, -50%)); margin: 0; }
 .flight-warning { width: max-content; max-width: min(92%, 560px); padding: 7px 16px; border: 1px solid var(--hud-ice); border-radius: 2px; color: var(--hud-ice); background: rgba(3, 9, 12, 0.86); font-size: 13px; font-weight: 700; line-height: 1.4; letter-spacing: 0.08em; animation: hud-alert 720ms steps(1, end) infinite alternate; }

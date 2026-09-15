@@ -26,7 +26,7 @@ function fly(state: AircraftState, t: number) {
   const q = new Quaternion().setFromAxisAngle(up, -heading * deg)
     .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), pitch * deg))
     .multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), bank * deg))
-  // Velocity lags the nose by a few degrees so the flight path marker separates from the cross.
+  // Velocity lags the nose by a few degrees, as it does in a real turn.
   const path = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().setFromAxisAngle(up, -heading * deg)
     .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), (pitch - 4) * deg))).multiplyScalar(speed)
   state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }

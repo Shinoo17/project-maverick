@@ -3,7 +3,7 @@
    under every mark instead of fills or black outlines.
    STORY: Read attitude off the world-registered ladder, energy off the outboard tapes and the
    PSM band bracket, height and boundary off the status block beneath the sightline.
-   FIRST VIEWPORT: Heading tape high; ladder, boresight and flight path marker central;
+   FIRST VIEWPORT: Heading tape high; ladder and nose pipper central;
    speed/A/B left, altitude/V/S right; GND, EDGE, pitch/bank and α/G below.
    MOTION: The glass is redrawn from the render loop's interpolated pose every frame. React
    renders only the canvas element and a visually hidden readout for screen readers. */
