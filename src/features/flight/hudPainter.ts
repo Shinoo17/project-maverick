@@ -472,6 +472,19 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     })
     drawHeadingTape(state)
     drawStatusBlock(state)
+    drawScreenCenter()
+  }
+
+  // Fixed dot at the exact middle of the frame, independent of where the nose points.
+  // A faint dark rim keeps it readable against bright sky and cloud.
+  function drawScreenCenter() {
+    ctx.beginPath()
+    ctx.arc(layout.cx, layout.cy, 2, 0, Math.PI * 2)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+    ctx.lineWidth = 1
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)'
+    ctx.stroke()
   }
 
   return { resize, draw }
