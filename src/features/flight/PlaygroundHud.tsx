@@ -28,6 +28,16 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
       <div className="maneuver-readings"><span>{t('noseOffPath')} <b>{state ? `${(m?.alpha ?? 0).toFixed(0)}°` : '—'}</b></span>{status === 'cooldown' && <span>{t('psm_cooldown')} <b>{(m?.cooldown ?? 0).toFixed(1)} s</b></span>}</div>
     </section>
     {lesson > 0 && <section className="flight-lesson" aria-label={t('practiceLesson')}><span>{t(lessonLabels[lesson])}</span><strong role="status">{complete ? t('lessonDone') : t(lessonHints[lesson])}</strong><small>{t('ringsPassed', { count: practice?.rings ?? 0 })} · {t('psmCompleted', { count: m?.completed ?? 0 })}</small></section>}
-    {lab && state && <dl className="flight-lab"><div><dt>{t('worldSpeed')}</dt><dd>{Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z).toFixed(1)} m/s</dd></div><div><dt>{t('pathTurn')}</dt><dd>{m!.pathRate.toFixed(1)} °/s</dd></div><div><dt>{t('bodyRates')}</dt><dd>{[state.rates.pitch, state.rates.roll, state.rates.yaw].map(v => (v * 180 / Math.PI).toFixed(0)).join(' / ')} °/s</dd></div><div><dt>{t('dragForce')}</dt><dd>{m!.drag.toFixed(1)} m/s²</dd></div><div><dt>{t('engineOutput')}</dt><dd>{Math.round(state.enginePower * 100)}%</dd></div><div><dt>{t('lastCobra')}</dt><dd>{m!.peakAlpha.toFixed(0)}° · {m!.entrySpeed.toFixed(0)} → {m!.exitSpeed.toFixed(0)} m/s</dd></div></dl>}
+    {lab && state && <dl className="flight-lab">
+      <div><dt>{t('worldSpeed')}</dt><dd>{speed.toFixed(1)} m/s</dd></div>
+      <div><dt>{t('pathTurn')}</dt><dd>{m!.pathRate.toFixed(1)} °/s</dd></div>
+      <div><dt>{t('bodyRates')}</dt><dd>{[state.rates.pitch, state.rates.roll, state.rates.yaw].map(v => (v * 180 / Math.PI).toFixed(0)).join(' / ')} °/s</dd></div>
+      <div><dt>{t('dragForce')}</dt><dd>{m!.drag.toFixed(1)} m/s²</dd></div>
+      <div><dt>{t('engineOutput')}</dt><dd>{Math.round(state.enginePower * 100)}%</dd></div>
+      <div><dt>{t('stallSeverity')}</dt><dd>{Math.round(state.stall.severity * 100)}%</dd></div>
+      <div><dt>{t('stallAoa')}</dt><dd>{state.stall.aoaDeg.toFixed(1)}°</dd></div>
+      <div><dt>{t('stallCause')}</dt><dd>{t(`stallCause_${state.stall.cause}`)}</dd></div>
+      <div><dt>{t('lastCobra')}</dt><dd>{m!.peakAlpha.toFixed(0)}° · {m!.entrySpeed.toFixed(0)} → {m!.exitSpeed.toFixed(0)} m/s</dd></div>
+    </dl>}
   </>
 }

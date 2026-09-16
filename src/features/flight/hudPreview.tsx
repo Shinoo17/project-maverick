@@ -1,6 +1,6 @@
 // Developer visual fixture: the real flight instruments over a synthetic flight,
 // without WebGL, pointer lock or the pause dialog. Query: ?t=12 freezes the clock,
-// ?lang=en, ?lesson=2, ?lab, ?warning, ?size=1280x672 (exact HUD frame for screenshots).
+// ?lang=en, ?lesson=2, ?lab, ?warning, ?stall, ?recovering, ?size=1280x672.
 import { createRef, StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +10,8 @@ import { GameRuntime } from '../../game/runtime/GameRuntime'
 import type { AircraftState } from '../../game/state/WorldState'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import { PlaygroundHud } from './PlaygroundHud'
+import { flightWarning } from './telemetry'
+import { angleOfAttack } from '../../game/flight/stall'
 import '../../ui/styles.css'
 import './flight.css'
 
@@ -36,6 +38,10 @@ function fly(state: AircraftState, t: number) {
   const m = state.maneuver
   m.burner = 0.55 + 0.45 * Math.sin(t * 0.2); m.burnerActive = Math.sin(t * 0.2) > 0.6
   m.g = 1 + Math.abs(bank) / 12; m.alpha = 4
+  state.stall = { severity: 0, cause: 'none', aoaDeg: angleOfAttack(state) }
+  // Explicit visual fixtures; the flight runtime remains the only physics owner.
+  if (params.has('stall')) state.stall = { severity: 0.8, cause: 'aoa', aoaDeg: 42 }
+  if (params.has('recovering')) state.stall = { severity: 0.4, cause: 'none', aoaDeg: 10 }
 }
 
 function Preview() {
@@ -61,13 +67,14 @@ function Preview() {
     request = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(request)
   }, [driver, state])
+  const warning = params.has('warning') ? 'lowAltitude' : flightWarning(telemetry)
   return <div className="app-shell is-flight"><main className="flight-root hud-preview-sky" style={frame}><div className="flight-hud">
     <FlightInstruments driver={driver} />
     <div className="flight-identity"><strong>F-22</strong><span>{t('training')} / {t('flatRange')}</span></div>
     <div className="flight-actions"><span>{t('horizonCamera')}</span><button>{t('pauseFlight')} · Esc</button></div>
     <FlightSystemStatus state={telemetry} />
     <PlaygroundHud state={telemetry} lesson={lesson} cameraChanged={false} lab={lab} />
-    <p className="flight-warning" role="status">{params.has('warning') ? t('lowAltitude') : ''}</p>
+    <p className="flight-warning" role="status">{warning ? t(warning) : ''}</p>
     <p className="flight-controls">{t('controlsHint')}</p>
   </div></main></div>
 }

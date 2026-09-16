@@ -50,6 +50,11 @@ Phase 1 adds a 60 Hz world / 120 Hz flight runtime, direct W/S acceleration with
 
 Flight tuning lives in one file per aircraft under `src/content/flight-profiles/`, with shared defaults and explicit PSM capability. Set `topSpeedKph` and `afterburnerTopSpeedKph` in displayed ARCADE km/h; the runtime converts them to simulation speed. Optional session `flightOverrides` change these limits without editing shared profiles. See the [flight profile guide](docs/flight-profiles.md) for tuning speeds, adding aircraft and configuring limited or unsupported PSM.
 
+Each aircraft also defines a `stall` block: speed/AoA entry and recovery thresholds,
+remaining surface control, drag and transition times. Stall progressively costs
+height and energy while preserving manual PSM/TVC control. Flight Lab shows its
+severity, signed AoA and cause; player advisories explain how to recover.
+
 The **Flight** tab controls the airframe and exhaust. **Weapons** inspects every supported weapon, including the gun: All shows every available model, and selecting a weapon isolates it or displays No model. Every aircraft automatically carries the full capacity of every weapon station; there is no loadout selector or saved preset. Runtime spawn, reset and replay use the same station definitions. F-22 carries 1 M61A2, 2 AIM-9 and 6 AIM-120; Su-57 carries 1 cannon, 2 IR training missiles and 4 radar training missiles. Firing remains a later phase; Su-57 missile identities are explicit game placeholders.
 
 See [P3 implementation and remaining gates](docs/phase-3-aircraft-loadouts.md) for the branch audit, extension recipe, provenance and limitations. P3 is in progress: facts content, weapon geometry and asset LODs remain outstanding.

@@ -4,6 +4,7 @@ import type { ManeuverState } from '../flight/maneuvers'
 import type { WeaponStore } from '../../content/weapons'
 import type { AircraftId } from '../../content/schemas'
 import type { SpeedLimits } from '../flight/speedLimits'
+import type { StallState } from '../flight/stall'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -18,6 +19,7 @@ export interface AircraftState {
   orientation: Quat
   velocity: Vec3
   maneuver: ManeuverState
+  stall: StallState
   speedDrive: number
   enginePower: number
   thrustVectoring: ThrustVectoringState

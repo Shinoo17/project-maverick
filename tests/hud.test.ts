@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PerspectiveCamera, Quaternion, Vector3 } from 'three'
-import { flightAttitude, burnerStatus } from '../src/features/flight/telemetry'
+import { flightAttitude, burnerStatus, flightWarning } from '../src/features/flight/telemetry'
 import { glassLayout, projectRung } from '../src/features/flight/hudPainter'
 import { glassState } from '../src/features/flight/FlightInstruments'
 import { arcadeSpeed } from '../src/game/flight/speed'
@@ -13,6 +13,27 @@ const pose = (heading: number, pitch = 0, bank = 0) => new Quaternion()
   .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), pitch * Math.PI / 180))
   .multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), bank * Math.PI / 180))
 const aircraft = () => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'] }).snapshot().aircraft[0]
+
+describe('stall advisories', () => {
+  it('shows recovery advice, suppresses it during active PSM, and keeps terrain/boundary priority', () => {
+    const state = aircraft()
+    expect(flightWarning(null)).toBeNull()
+    expect(flightWarning(state)).toBeNull()
+    state.stall = { severity: 1, cause: 'aoa', aoaDeg: 40 }
+    expect(flightWarning(state)).toBe('hudStall')
+    state.stall.cause = 'none'
+    expect(flightWarning(state)).toBe('hudStallRecovering')
+    state.maneuver.phase = 'active'
+    state.velocity.x = 40
+    expect(flightWarning(state)).toBeNull()
+    state.position.y = 50
+    expect(flightWarning(state)).toBe('lowAltitude')
+    state.position.x = 7000
+    expect(flightWarning(state)).toBe('boundaryWarning')
+    state.alive = false
+    expect(flightWarning(state)).toBeNull()
+  })
+})
 
 describe('HUD orientation', () => {
   it('reads nose heading through north wrap and every cardinal direction', () => {

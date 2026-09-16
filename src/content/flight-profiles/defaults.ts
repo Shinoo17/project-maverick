@@ -1,4 +1,4 @@
-import type { FlightProfile, ManeuverProfile } from '../../game/flight/profileTypes'
+import type { FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
 
 // Shared control responses. Airframe performance belongs in each aircraft file.
 // Changing these defaults affects every aircraft that does not override them.
@@ -14,6 +14,14 @@ export const flightDefaults = {
   turnAnticipation: 0.65,
   gravity: 9.81,
 } satisfies Partial<FlightProfile>
+
+// Forgiving transitions shared by all airframes; author the envelope per aircraft.
+export const stallDefaults = {
+  controlAuthority: 0.25,
+  dragMultiplier: 1.8,
+  entrySeconds: 0.4,
+  recoverySeconds: 1.2,
+} satisfies Partial<StallProfile>
 
 // New aircraft must opt into PSM. The remaining PSM values are a tuning baseline;
 // they do not grant the capability while psmEnabled is false.

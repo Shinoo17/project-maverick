@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { flightDefaults, maneuverDefaults } from '../src/content/flight-profiles/defaults'
+import { flightDefaults, maneuverDefaults, stallDefaults } from '../src/content/flight-profiles/defaults'
 import { flightProfiles, getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
 import { stepFlight } from '../src/game/flight/stepFlight'
 import { stepManeuvers } from '../src/game/flight/maneuvers'
@@ -22,18 +22,22 @@ describe('aircraft flight configuration', () => {
     const su57 = getFlightProfile('su57')
     const previousFlight = { ...f22.flight }
     const previousManeuver = { ...f22.maneuver }
+    const previousStall = { ...f22.stall }
     const otherAircraft = structuredClone(su57)
-    const defaults = structuredClone({ flightDefaults, maneuverDefaults })
+    const defaults = structuredClone({ flightDefaults, maneuverDefaults, stallDefaults })
     try {
       f22.flight.acceleration = 10
       f22.flight.rateResponse = 2
       f22.maneuver.entryMin = 90
       f22.maneuver.activeGrip = 0.2
+      f22.stall.stallSpeedKph = 200
+      f22.stall.entrySeconds = 1
       expect(su57).toEqual(otherAircraft)
-      expect({ flightDefaults, maneuverDefaults }).toEqual(defaults)
+      expect({ flightDefaults, maneuverDefaults, stallDefaults }).toEqual(defaults)
     } finally {
       Object.assign(f22.flight, previousFlight)
       Object.assign(f22.maneuver, previousManeuver)
+      Object.assign(f22.stall, previousStall)
     }
   })
 

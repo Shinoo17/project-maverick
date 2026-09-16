@@ -46,6 +46,25 @@ export interface FlightProfile {
 /** Session overrides deliberately support only speed limits for now. */
 export type FlightSpeedOverride = Partial<Pick<FlightProfile, 'topSpeedKph' | 'afterburnerTopSpeedKph'>>
 
+/** Arcade stall envelope; independent of PSM capability and physical TVC. */
+export interface StallProfile {
+  /** Displayed ARCADE km/h, using the same scale as topSpeedKph. */
+  stallSpeedKph: number
+  /** Must exceed stallSpeedKph to prevent threshold chatter. */
+  recoverySpeedKph: number
+  /** Absolute body-plane incidence in degrees, including backward flight. */
+  criticalAoaDeg: number
+  /** Must be below criticalAoaDeg. Both speed and AoA must recover. */
+  recoveryAoaDeg: number
+  /** Remaining surface control/path authority at full stall (0–1). Not TVC/PSM. */
+  controlAuthority: number
+  /** Multiplier on base drag at full stall (>= 1). PSM drag stays separate. */
+  dragMultiplier: number
+  /** Seconds for severity to move from 0 to 1, or 1 to 0. */
+  entrySeconds: number
+  recoverySeconds: number
+}
+
 export interface ManeuverProfile {
   /** Explicit PSM capability. High-G and afterburner remain independent. */
   psmEnabled: boolean
@@ -100,6 +119,7 @@ export interface ThrustVectoringProfile {
 
 export interface AircraftFlightProfile {
   flight: FlightProfile
+  stall: StallProfile
   maneuver: ManeuverProfile
   /** null disables the physical TVC solver; it does not disable PSM. */
   thrustVectoring: ThrustVectoringProfile | null

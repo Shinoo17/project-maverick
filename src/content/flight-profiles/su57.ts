@@ -1,5 +1,5 @@
 import type { AircraftFlightProfile } from '../../game/flight/profileTypes'
-import { flightDefaults, maneuverDefaults } from './defaults'
+import { flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
 
 export const su57Profile: AircraftFlightProfile = {
   flight: {
@@ -21,6 +21,13 @@ export const su57Profile: AircraftFlightProfile = {
     yawRate: 0.48,
     rollRate: 2.1,
     turnAcceleration: 145,
+  },
+  stall: {
+    ...stallDefaults,
+    stallSpeedKph: 300,
+    recoverySpeedKph: 350,
+    criticalAoaDeg: 30,
+    recoveryAoaDeg: 20,
   },
   maneuver: {
     ...maneuverDefaults,

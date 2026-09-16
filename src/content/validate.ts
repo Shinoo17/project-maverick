@@ -54,7 +54,11 @@ export function validateSession(config: SessionConfig) {
       for (const key of Object.keys(override)) {
         if (key !== 'topSpeedKph' && key !== 'afterburnerTopSpeedKph') throw new Error(`${path}.${key}: unsupported override`)
       }
-      resolveSpeedLimits(flightProfiles[getAircraft(id).flightProfileId].flight, override, path)
+      const profile = flightProfiles[getAircraft(id).flightProfileId]
+      resolveSpeedLimits(profile.flight, override, path)
+      if ((override.topSpeedKph ?? profile.flight.topSpeedKph) < profile.stall.recoverySpeedKph) {
+        throw new Error(`${path}.topSpeedKph: must be at least stall.recoverySpeedKph`)
+      }
     }
   }
 }

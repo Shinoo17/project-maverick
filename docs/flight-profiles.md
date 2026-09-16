@@ -4,6 +4,7 @@ Tune each aircraft in `src/content/flight-profiles/f22.ts` or `su57.ts`.
 These are arcade game settings, not real aircraft specifications.
 
 - `flight`: normal-flight speed, energy and handling.
+- `stall`: low-speed/high-incidence envelope and gradual loss/recovery of control.
 - `maneuver`: PSM capability, entry conditions, maneuver limits, high-G and afterburner.
 - `thrustVectoring`: physical twin-engine pitch-vectoring settings, or `null`.
 
@@ -77,7 +78,7 @@ campaign mode or a mission editor.
 
 ## Defaults and aircraft independence
 
-`defaults.ts` contains shared control responses and maneuver defaults. Each aircraft
+`defaults.ts` contains shared control responses, stall transitions and maneuver defaults. Each aircraft
 spreads these into its own objects and explicitly defines its flight performance.
 No aircraft inherits from another aircraft. Editing F-22 tuning does not change Su-57.
 Editing a shared default affects every aircraft that does not override that field.
@@ -85,6 +86,81 @@ Editing a shared default affects every aircraft that does not override that fiel
 Defaults disable PSM. A new aircraft must explicitly set `psmEnabled: true` to
 enable it. Leave the flag false for aircraft that cannot perform PSM; high-G and
 afterburner still work. There is no need to zero the unused PSM fields.
+
+## Tune stall
+
+Each aircraft explicitly defines its envelope. Both current aircraft start with
+the same forgiving arcade baseline; these are not measured aircraft specifications:
+
+```ts
+stall: {
+  ...stallDefaults,
+  stallSpeedKph: 300,
+  recoverySpeedKph: 350,
+  criticalAoaDeg: 30,
+  recoveryAoaDeg: 20,
+},
+```
+
+| Field | Meaning |
+| --- | --- |
+| `stallSpeedKph` | Below this displayed ARCADE speed, stall starts. |
+| `recoverySpeedKph` | Speed needed for recovery; must exceed stall speed and be <= normal top speed. |
+| `criticalAoaDeg` | Stall starts above this absolute body-plane incidence (degrees). |
+| `recoveryAoaDeg` | Incidence must fall to this or below for recovery; lower than the critical angle. |
+| `controlAuthority` | Remaining normal surface/path control at full stall, 0–1; default 0.25. |
+| `dragMultiplier` | Base drag multiplier at full stall, >= 1; default 1.8. |
+| `entrySeconds` | Severity ramps from 0 to 1 in this time; default 0.4 s. |
+| `recoverySeconds` | Severity ramps from 1 to 0 in this time; default 1.2 s. |
+
+Speed uses the same conversion as `topSpeedKph`: 300 on the HUD is about 55.56
+simulation m/s. `minPoweredMps: 65` still limits S to 351 on the HUD, so holding S
+alone does not stall these aircraft. Airbrake, climbing or maneuver losses can.
+Session overrides still only change top speeds, which must leave enough normal
+speed for stall recovery. They do not scale stall or PSM thresholds automatically.
+
+Either low speed or high absolute AoA starts stall. Once severity is nonzero,
+**both recovery thresholds** must be satisfied for it to fade. Those thresholds
+remain in effect until severity reaches zero, preventing rapid on/off switching.
+AoA is signed incidence in the aircraft's forward/up plane; sideways flow alone
+does not count as pitch AoA, while backward flow is near ±180°. This arcade model
+does not simulate wing loading, density, Mach effects or a physical lift curve.
+
+Stall progressively reduces normal control/path grip, increases base drag and
+removes arcade gravity support. It never locks the controls, forces a nose-down
+rotation or triggers a scripted spin. The default retains enough control to
+align the nose with the flight path and regain speed with W. At zero speed,
+gravity still makes the aircraft fall; the normal energy correction cannot freeze it.
+
+PSM capability is independent of stall. Active PSM retains its authored pitch,
+yaw and roll control, allowing Cobra, pedal turns and mixed-axis maneuvers.
+Recovery assist follows the pilot's chosen nose and blends back into normal
+control, including roll. Stall still costs energy and height during PSM. Physical
+TVC continues to apply actual actuator torque and still needs engine thrust.
+No aircraft-name branches or automatic maneuver selection are involved.
+
+### Debug and tune
+
+- Pause > Flight Lab > Show detailed telemetry displays severity, signed stall AoA
+  and the current cause. `state.stall` is also part of every runtime snapshot.
+- `cause: 'none'` with nonzero severity means recovery is fading out; `speed`,
+  `aoa` and `speed+aoa` identify unmet thresholds. AoA is sampled at the start of
+  each fixed flight step, not from the interpolated rendering pose.
+- The existing `maneuver.alpha` / nose-path reading includes yaw and remains the
+  PSM metric. Use the separate **Stall AoA** reading when tuning stall.
+- Player advisories explain recovery after leaving active PSM. Active PSM hides
+  stall/low-energy advice, but never hides low-altitude or boundary warnings.
+- Start with the four envelope values. For gentler onset, increase `entrySeconds`;
+  for easier handling in stall, increase `controlAuthority`; for less energy loss,
+  lower `dragMultiplier` toward 1. Tune PSM rates/grip separately.
+- The existing recovery practice spawn plus X enters low-speed stall; release X
+  and hold W to recover. Use the Cobra spawn with C and pitch/yaw/roll to test PSM.
+- Pause/single-step freezes/advances stall with the simulation. Reset clears it;
+  exported replays reproduce it. The physics version is `p3-stall-1`, so previous
+  speed-model replays are rejected instead of running under different rules.
+- `hud-preview.html?t=4&lab&stall&lang=th` shows the warning and debug layout without
+  WebGL; replace `stall` with `recovering` to inspect recovery text. These are
+  explicit visual fixtures, not simulation tests.
 
 ## Aircraft with limited PSM
 

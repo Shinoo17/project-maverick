@@ -6,14 +6,17 @@ import { getFlightProfile } from './profile'
 import { stepManeuvers } from './maneuvers'
 import { thrustForces, tvcTargets, stepThrustVectoring } from './thrustVectoring'
 import { clamp, stepSpeed } from './speed'
+import { stepStall } from './stall'
 
 // Canonical body axes: +X forward, +Y up, +Z right. Positive pitch raises nose;
 // positive roll banks right; positive yaw turns right. Only this module maps signs.
 export function stepFlight(state: AircraftState, command: PilotCommand, dt: number) {
   if (!state.alive || dt <= 0) return
-  const { flight: p, maneuver: maneuverProfile, thrustVectoring: tvc } = getFlightProfile(state.aircraftId)
+  const { flight: p, stall: stallProfile, maneuver: maneuverProfile, thrustVectoring: tvc } = getFlightProfile(state.aircraftId)
   const velocity = new Vector3().copy(state.velocity)
   const speed = velocity.length()
+  stepStall(state, stallProfile, speed, dt)
+  const surfaceControl = 1 - state.stall.severity * (1 - stallProfile.controlAuthority)
   const assist = stepManeuvers(state, command, dt, speed)
   const m = state.maneuver
   const { thrust, braking } = stepSpeed(state, { ...command, airbrake: assist.brake }, dt, speed)
@@ -24,10 +27,10 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const blend = 1 - Math.exp(-p.rateResponse * dt)
   const rates = state.rates
   const normalLimit = p.turnAcceleration * authority * (1 + m.highG * 0.6)
-  let pitchTarget = command.pitch * p.pitchRate * authority * (1 + m.highG * (maneuverProfile.highGRate - 1))
-  let yawTarget = command.yaw * p.yawRate * authority * (1 + m.highG * 0.4)
+  let pitchTarget = command.pitch * p.pitchRate * authority * surfaceControl * (1 + m.highG * (maneuverProfile.highGRate - 1))
+  let yawTarget = command.yaw * p.yawRate * authority * surfaceControl * (1 + m.highG * 0.4)
   const requestedTurn = Math.hypot(pitchTarget, yawTarget)
-  const turnBudget = normalLimit / Math.max(speed, 1) * p.turnRateReserve
+  const turnBudget = normalLimit * surfaceControl / Math.max(speed, 1) * p.turnRateReserve
   const rateScale = requestedTurn > 0 ? Math.min(1, turnBudget / requestedTurn) : 1
   pitchTarget *= rateScale; yawTarget *= rateScale
   // Restore normal handling progressively once recovery has caught the chosen nose.
@@ -45,15 +48,17 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   }
   rates.pitch += (pitchTarget - rates.pitch) * response(pitchTarget, rates.pitch)
   rates.yaw += (yawTarget - rates.yaw) * response(yawTarget, rates.yaw)
-  const rollTarget = assist.roll ?? command.roll * p.rollRate * authority
+  const normalRoll = command.roll * p.rollRate * authority * surfaceControl
+  const rollTarget = (assist.roll ?? normalRoll) * (1 - grip) + normalRoll * grip
   const reversing = rollTarget * rates.roll < 0
   const rollBlend = p.neutralDampingDuringPsm && command.roll === 0 ? 1 - Math.exp(-p.neutralResponse * dt) : blend
   rates.roll += (rollTarget - rates.roll) * (reversing ? 1 - Math.exp(-p.rollReversalResponse * dt) : rollBlend)
   if (allocatedThrust) {
     // Allocate part of the requested control moment to TVC instead of counting
     // it twice in the aerodynamic rate controller. This is surface demand only.
-    rates.pitch -= allocatedThrust.angularAcceleration.pitch * dt
-    rates.roll -= allocatedThrust.angularAcceleration.roll * dt
+    const allocation = 1 - grip * (1 - surfaceControl)
+    rates.pitch -= allocatedThrust.angularAcceleration.pitch * allocation * dt
+    rates.roll -= allocatedThrust.angularAcceleration.roll * allocation * dt
   }
   if (vectoredThrust) {
     // Engine moments always use the ACTUAL simulation-owned actuator angles.
@@ -83,27 +88,33 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   if (normalLateral.lengthSq() > 1e-8) normalLateral.setLength(speed * p.pathResponse * forward.angleTo(path))
   const anticipation = forward.clone().sub(previousForward).multiplyScalar(speed * p.turnAnticipation / dt)
   anticipation.addScaledVector(path, -anticipation.dot(path))
-  normalLateral.add(anticipation).clampLength(0, normalLimit)
+  normalLateral.add(anticipation).clampLength(0, normalLimit).multiplyScalar(surfaceControl)
   lateral.multiplyScalar(speed * maneuverProfile.pathResponse * authority * (m.phase === 'active' ? maneuverProfile.activeGrip : maneuverProfile.recoveryGrip))
   const lateralLimit = m.phase === 'recovery' ? maneuverProfile.recoveryAcceleration : 55 * (1 + m.highG * 0.6)
   if (lateral.length() > lateralLimit) lateral.setLength(lateralLimit)
   lateral.lerp(normalLateral, grip)
   const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + m.highG * (maneuverProfile.highGDrag - 1)) * (assist.assisted ? 0.55 : 1)
   const psmDrag = assist.assisted ? speed * speed * (Math.sin(assist.alpha) ** 2 + Math.max(0, -Math.cos(assist.alpha)) * 0.4) * 0.0025 : 0
-  const drag = p.drag * speed * speed + turnLoss + psmDrag
+  const stallDrag = 1 + state.stall.severity * (stallProfile.dragMultiplier - 1)
+  const drag = p.drag * speed * speed * stallDrag + turnLoss + psmDrag
   const engineForce = vectoredThrust
     ? new Vector3().copy(vectoredThrust.acceleration).applyQuaternion(orientation)
     : forward.clone().multiplyScalar(thrust)
   const force = engineForce.add(lateral).addScaledVector(path, -drag - braking)
   // Arcade trim cancels cross-path gravity while retaining climb/descent energy cost.
   force.addScaledVector(path, -p.gravity * path.y)
-  if (assist.assisted) force.y -= p.gravity * 0.5
   velocity.addScaledVector(force, dt)
   if (velocity.dot(path) < 0) velocity.addScaledVector(path, -velocity.dot(path))
   // Euler's perpendicular acceleration otherwise adds speed for free. Preserve
   // only longitudinal work in normal flight; blend this correction on recovery.
   const poweredSpeed = Math.max(0, speed + force.dot(path) * dt)
   if (velocity.lengthSq() > 0) velocity.setLength(velocity.length() * (1 - grip) + poweredSpeed * grip)
+  // Restore cross-path gravity as lift support fades. Apply AFTER the speed
+  // correction so a stopped aircraft can fall; longitudinal gravity is above.
+  // PSM already loses half its support, and stall can take the remaining half.
+  const gravityBlend = Math.max(state.stall.severity, 0.5 * (1 - grip))
+  velocity.addScaledVector(path, p.gravity * path.y * gravityBlend * dt)
+  velocity.y -= p.gravity * gravityBlend * dt
   m.alpha = forward.angleTo(velocity) * 180 / Math.PI
   m.pathRate = speed > 1 && velocity.length() > 1 ? path.angleTo(velocity) / dt * 180 / Math.PI : 0
   m.g = Math.sqrt(1 + (speed * m.pathRate * Math.PI / 180 / p.gravity) ** 2)

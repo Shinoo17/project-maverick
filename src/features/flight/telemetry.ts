@@ -4,6 +4,17 @@ import type { AircraftState } from '../../game/state/WorldState'
 const degrees = 180 / Math.PI
 export const wrapHeading = (value: number) => (value % 360 + 360) % 360
 
+export function flightWarning(state: AircraftState | null) {
+  if (!state || !state.alive) return null
+  if (Math.hypot(state.position.x, state.position.z) > 6500 || state.position.y > 6500) return 'boundaryWarning'
+  if (state.position.y < 100) return 'lowAltitude'
+  // High incidence is intentional during a manual PSM. Keep terrain warnings,
+  // but give recovery advice only once the pilot releases the maneuver.
+  if (state.maneuver.phase === 'active') return null
+  if (state.stall.severity > 0.1) return state.stall.cause === 'none' ? 'hudStallRecovering' : 'hudStall'
+  return Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z) < 60 ? 'hudLowEnergy' : null
+}
+
 // Range convention: +X is north, +Z east, +Y up. Read the nose, not velocity
 // (the two deliberately separate in PSM). Positive bank means right wing down.
 export function flightAttitude(orientation: AircraftState['orientation']) {

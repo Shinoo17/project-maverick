@@ -22,7 +22,7 @@ function nonnegative(value: number, path: string) {
 
 export function validateFlightProfile(profile: AircraftFlightProfile, path = 'flightProfile') {
   validateFinite(profile, path)
-  const { flight, maneuver, thrustVectoring } = profile
+  const { flight, stall, maneuver, thrustVectoring } = profile
 
   for (const key of ['minPoweredMps', 'maxThrust', 'gravity', 'pitchRate', 'yawRate', 'rollRate'] as const) {
     positive(flight[key], `${path}.flight.${key}`)
@@ -34,6 +34,22 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   if (flight.turnRateReserve > 1) {
     throw new Error(`${path}.flight.turnRateReserve: expected fraction between 0 and 1`)
   }
+
+  for (const key of ['stallSpeedKph', 'recoverySpeedKph', 'criticalAoaDeg', 'recoveryAoaDeg',
+    'controlAuthority', 'dragMultiplier', 'entrySeconds', 'recoverySeconds'] as const) {
+    if (!Number.isFinite(stall[key])) throw new Error(`${path}.stall.${key}: expected finite number`)
+    if (key === 'controlAuthority' || key === 'recoveryAoaDeg') nonnegative(stall[key], `${path}.stall.${key}`)
+    else positive(stall[key], `${path}.stall.${key}`)
+  }
+  if (stall.recoverySpeedKph <= stall.stallSpeedKph || stall.recoverySpeedKph > flight.topSpeedKph) {
+    throw new Error(`${path}.stall.recoverySpeedKph: must exceed stallSpeedKph and not exceed topSpeedKph`)
+  }
+  if (stall.criticalAoaDeg > 180) throw new Error(`${path}.stall.criticalAoaDeg: must not exceed 180`)
+  if (stall.recoveryAoaDeg >= stall.criticalAoaDeg) {
+    throw new Error(`${path}.stall.recoveryAoaDeg: must be below criticalAoaDeg`)
+  }
+  if (stall.controlAuthority > 1) throw new Error(`${path}.stall.controlAuthority: expected fraction between 0 and 1`)
+  if (stall.dragMultiplier < 1) throw new Error(`${path}.stall.dragMultiplier: must be at least 1`)
 
   positive(maneuver.burnerSeconds, `${path}.maneuver.burnerSeconds`)
   positive(maneuver.burnerRecharge, `${path}.maneuver.burnerRecharge`)
