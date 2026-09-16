@@ -1,4 +1,5 @@
-import type { FlightProfileId } from '../game/flight/profile'
+import type { FlightProfileId } from './flight-profiles'
+import type { FlightSpeedOverride } from '../game/flight/profileTypes'
 export type AircraftId = string
 export const presentationIds = ['f22', 'su57'] as const
 export type Locale = 'th' | 'en'
@@ -23,4 +24,6 @@ export interface SessionConfig {
   mode: 'playground' | 'offline'
   mapId?: 'flat-range'
   aircraftIds: AircraftId[]
+  /** Per aircraft type, in the same ARCADE km/h units as its profile. */
+  flightOverrides?: Record<AircraftId, FlightSpeedOverride>
 }

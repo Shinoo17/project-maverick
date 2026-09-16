@@ -1,4 +1,6 @@
-import { flightProfiles, validateFlightProfile } from '../game/flight/profile'
+import { flightProfiles } from './flight-profiles'
+import { validateFlightProfile } from '../game/flight/validateProfile'
+import { resolveSpeedLimits } from '../game/flight/speedLimits'
 import { getWeapon, weaponStations } from './weapons'
 import { getAircraft } from './aircraft'
 import { presentationIds, type AircraftDefinition, type SessionConfig } from './schemas'
@@ -10,7 +12,7 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
     if (!entry.id || ids.has(entry.id)) throw new Error(`${path}.id: missing or duplicate`)
     ids.add(entry.id)
     if (!Object.hasOwn(flightProfiles, entry.flightProfileId)) throw new Error(`${path}.flightProfileId: unknown profile`)
-    validateFlightProfile(flightProfiles[entry.flightProfileId])
+    validateFlightProfile(flightProfiles[entry.flightProfileId], `${path}.flightProfile(${entry.flightProfileId})`)
     if (!presentationIds.includes(entry.presentationId)) throw new Error(`${path}.presentationId: unknown profile`)
     if (!Object.hasOwn(weaponStations, entry.weaponStationProfileId)) throw new Error(`${path}.weaponStationProfileId: unknown profile`)
     const stations = weaponStations[entry.weaponStationProfileId]
@@ -41,4 +43,18 @@ export function validateSession(config: SessionConfig) {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }
     validateAircraft([getAircraft(id)])
   })
+  if (config.flightOverrides !== undefined) {
+    if (!config.flightOverrides || typeof config.flightOverrides !== 'object' || Array.isArray(config.flightOverrides)) {
+      throw new Error('session.flightOverrides: expected aircraft overrides')
+    }
+    for (const [id, override] of Object.entries(config.flightOverrides)) {
+      const path = `session.flightOverrides.${id}`
+      if (!config.aircraftIds.includes(id)) throw new Error(`${path}: aircraft is not in this session`)
+      if (!override || typeof override !== 'object' || Array.isArray(override)) throw new Error(`${path}: expected speed overrides`)
+      for (const key of Object.keys(override)) {
+        if (key !== 'topSpeedKph' && key !== 'afterburnerTopSpeedKph') throw new Error(`${path}.${key}: unsupported override`)
+      }
+      resolveSpeedLimits(flightProfiles[getAircraft(id).flightProfileId].flight, override, path)
+    }
+  }
 }

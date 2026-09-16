@@ -7,7 +7,7 @@ export function FlightProfilePanel({ aircraft }: { aircraft: AircraftDefinition 
   const { flight, maneuver } = getFlightProfile(aircraft.id)
   const text = useTexts()
   const rows = [
-    [text.profileSpeed, `${Math.round(arcadeSpeed(flight.minPoweredMps))}–${Math.round(arcadeSpeed(flight.maxPoweredMps))} ${text.arcadeUnit}`],
+    [text.profileSpeed, `${Math.round(arcadeSpeed(flight.minPoweredMps))}–${Math.round(flight.topSpeedKph)} ${text.arcadeUnit}`],
     [text.profileAcceleration, `${flight.acceleration.toFixed(1)} m/s²`],
     [text.profileYaw, `${Math.round(flight.yawRate * 180 / Math.PI)} °/s`],
     [text.profilePsm, maneuver.psmEnabled ? `${Math.round(maneuver.yawRate * 180 / Math.PI)} °/s` : text.profileUnsupported],

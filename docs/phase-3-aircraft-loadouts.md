@@ -35,7 +35,7 @@ Su-57 ยังใช้ generic PSM assist กับ nozzle rig ใน render l
 ## เพิ่มเครื่องบินลำถัดไป
 
 1. เพิ่ม definition ใน `src/content/aircraft/index.ts` พร้อม stable ID, ชื่อ/role/description สองภาษา, model transform และ removeNodes
-2. เพิ่มหรือ reuse entry ใน `src/game/flight/profile.ts`; profile ต้องเป็น plain serializable data. ตั้ง `psmEnabled: false` ได้สำหรับลำที่ไม่มี PSM assist; thrustVectoring เป็น null เมื่อไม่ใช้ solver นี้
+2. เพิ่มไฟล์รายลำใน `src/content/flight-profiles/` และลงทะเบียนใน `index.ts` หรือ reuse profile เดิม; profile ต้องเป็น plain serializable data. Defaults ตั้ง `psmEnabled: false` ให้เปิดเฉพาะลำที่รองรับ; thrustVectoring เป็น null เมื่อไม่ใช้ solver นี้ ดู [คู่มือ flight profile](flight-profiles.md) สำหรับการจูนลำที่ทำ PSM ได้จำกัด
 3. Reuse presentationId ได้เฉพาะ geometry/rig ที่ตรงกัน หากเป็น asset ใหม่ให้เพิ่ม ID ใน `content/schemas.ts`, adapter ใน render/aircraft/flightRig.ts และค่าตำแหน่งใน render/exhaust/profile.ts + render/vapor/profile.ts; ตรวจ anchor เทียบ GLB จริง ไม่ fallback ไป F-22
 4. เพิ่ม weapon definitions และ station profile ใน `src/content/weapons/index.ts`; แต่ละ station ระบุ weaponId/capacity และเครื่องบินอ้าง weaponStationProfileId ทุกจุดจะติดตั้งเต็มจำนวนอัตโนมัติ
 5. รัน `npm test` และ `npm run build`; ตรวจทั้ง model/rig, สลับลำ/ดูอาวุธ, reload, launch/reset/replay และ flight feel

@@ -90,7 +90,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   lateral.lerp(normalLateral, grip)
   const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + m.highG * (maneuverProfile.highGDrag - 1)) * (assist.assisted ? 0.55 : 1)
   const psmDrag = assist.assisted ? speed * speed * (Math.sin(assist.alpha) ** 2 + Math.max(0, -Math.cos(assist.alpha)) * 0.4) * 0.0025 : 0
-  const drag = p.drag * speed * speed + turnLoss + psmDrag + Math.max(0, speed - 260) ** 2 * 0.02
+  const drag = p.drag * speed * speed + turnLoss + psmDrag
   const engineForce = vectoredThrust
     ? new Vector3().copy(vectoredThrust.acceleration).applyQuaternion(orientation)
     : forward.clone().multiplyScalar(thrust)

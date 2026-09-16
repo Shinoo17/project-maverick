@@ -10,6 +10,8 @@ import { createManeuverState } from '../flight/maneuvers'
 import { fullArmament } from '../../content/weapons'
 import { getAircraft } from '../../content/aircraft'
 import { getFlightProfile, flightProfileVersion } from '../flight/profile'
+import { resolveSpeedLimits } from '../flight/speedLimits'
+import { dryThrustLimit } from '../flight/speed'
 
 // No RAF, timers, DOM or renderer: the future scene/session host owns the sole driver.
 // Flight is integrated twice per world tick; presentation never drives an entity separately.
@@ -25,23 +27,29 @@ export class GameRuntime {
     validateSession(config)
     // Keep only supported session fields, including when reading older replays.
     this.config = { mode: config.mode, aircraftIds: [...config.aircraftIds],
-      ...(config.mapId === undefined ? {} : { mapId: config.mapId }) }
+      ...(config.mapId === undefined ? {} : { mapId: config.mapId }),
+      ...(config.flightOverrides === undefined ? {} : { flightOverrides: structuredClone(config.flightOverrides) }) }
     this.world = this.createWorld()
   }
 
   private createWorld(): WorldState {
     return {
       tick: 0, practice: createPracticeState(),
-      aircraft: this.config.aircraftIds.map((aircraftId, index) => ({
-        id: `aircraft-${index + 1}`, aircraftId,
-        stores: fullArmament(getAircraft(aircraftId)),
-        position: { x: index * 40, y: practiceSpawns[this.preset].altitude, z: 0 },
-        orientation: { x: 0, y: 0, z: 0, w: 1 },
-        velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, alive: true,
-        maneuver: createManeuverState(), thrustVectoring: createThrustVectoringState(),
-        speedDrive: 0, enginePower: getFlightProfile(aircraftId).flight.drag * practiceSpawns[this.preset].speed ** 2 / getFlightProfile(aircraftId).flight.maxThrust,
-        rates: { pitch: 0, yaw: 0, roll: 0 },
-      })),
+      aircraft: this.config.aircraftIds.map((aircraftId, index) => {
+        const flight = getFlightProfile(aircraftId).flight
+        const speedLimits = resolveSpeedLimits(flight, this.config.flightOverrides?.[aircraftId])
+        return {
+          id: `aircraft-${index + 1}`, aircraftId, speedLimits,
+          stores: fullArmament(getAircraft(aircraftId)),
+          position: { x: index * 40, y: practiceSpawns[this.preset].altitude, z: 0 },
+          orientation: { x: 0, y: 0, z: 0, w: 1 },
+          velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, alive: true,
+          maneuver: createManeuverState(), thrustVectoring: createThrustVectoringState(),
+          speedDrive: 0,
+          enginePower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits),
+          rates: { pitch: 0, yaw: 0, roll: 0 },
+        }
+      }),
     }
   }
 
