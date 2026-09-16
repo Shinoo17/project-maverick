@@ -18,7 +18,7 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
   const m = state.maneuver
   const limits = state.speedLimits
   const topSpeed = m.burnerActive ? limits.afterburnerTopSpeedMps : limits.topSpeedMps
-  const requested = command.airbrake ? 0 : command.speedAdjust
+  const requested = command.speedAdjust
   const response = requested === 0 ? p.releaseResponse : p.driveResponse
   state.speedDrive += (requested - state.speedDrive) * (1 - Math.exp(-response * dt))
   if (requested === 0 && Math.abs(state.speedDrive) < 0.002) state.speedDrive = 0
@@ -35,7 +35,7 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
   const maxThrust = m.burnerActive
     ? Math.max(dryThrust * 1.6, p.drag * topSpeed ** 2 + AFTERBURNER_ACCELERATION)
     : dryThrust
-  const thrust = command.airbrake ? 0 : clamp(trim + acceleration, 0, maxThrust)
+  const thrust = clamp(trim + acceleration, 0, maxThrust)
 
   // Shed overspeed gradually (including after burner cutoff), never clamp velocity.
   // Gravity, turning losses and PSM still act independently in stepFlight.

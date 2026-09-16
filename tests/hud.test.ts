@@ -71,16 +71,16 @@ describe('HUD orientation', () => {
   })
 })
 describe('HUD afterburner states', () => {
-  it('reflects active, depleted, recharging and inhibited states from flight physics', () => {
+  it('reflects active, depleted, recharging and simultaneous airbrake states from flight physics', () => {
     const state = aircraft()
     expect(burnerStatus(null)).toBe('hudWaiting')
     expect(burnerStatus(state)).toBe('hudBurnerReady')
     stepFlight(state, { ...neutralCommand(0, state.id), afterburner: true }, 1 / 120)
     expect(burnerStatus(state)).toBe('hudBurnerActive')
     stepFlight(state, { ...neutralCommand(1, state.id), airbrake: true, afterburner: true }, 1 / 120)
-    expect(state.maneuver.burnerActive).toBe(false)
-    state.maneuver.airbrake = 1
-    expect(burnerStatus(state)).toBe('hudBurnerBlocked')
+    expect(state.maneuver.burnerActive).toBe(true)
+    expect(burnerStatus(state)).toBe('hudBurnerActive')
+    state.maneuver.burnerActive = false
     state.maneuver.burnerLocked = true
     expect(burnerStatus(state)).toBe('hudBurnerLocked')
     state.maneuver.burnerLocked = false; state.maneuver.airbrake = 0; state.maneuver.burnerRest = 2

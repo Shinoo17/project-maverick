@@ -25,7 +25,7 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
       <div className="maneuver-status"><span>{t('maneuver')}</span><strong>{t(status === 'normal' ? psmReady ? 'psmReady' : 'psmUnavailable' : `psm_${status}`)}</strong></div>
       <p>{!maneuverProfile.psmEnabled ? t('profileUnsupported') : status === 'normal' ? t(low ? 'psmLow' : outsideSpeed ? 'psmSpeed' : 'psmHold') : t(`psmHint_${status}`)}</p>
       {maneuverProfile.psmEnabled && <div className="psm-speed-band" data-ready={psmReady}>{t('psmBand', { min: Math.round(arcadeSpeed(maneuverProfile.entryMin)), max: Math.round(arcadeSpeed(maneuverProfile.entryMax)) })}</div>}
-      <div className="maneuver-readings"><span>{t('noseOffPath')} <b>{state ? `${(m?.alpha ?? 0).toFixed(0)}°` : '—'}</b></span>{status === 'cooldown' && <span>{t('psm_cooldown')} <b>{(m?.cooldown ?? 0).toFixed(1)} s</b></span>}</div>
+      <div className="maneuver-readings"><span>{t('noseOffPath')} <b>{state ? `${(m?.alpha ?? 0).toFixed(0)}°` : '—'}</b></span></div>
     </section>
     {lesson > 0 && <section className="flight-lesson" aria-label={t('practiceLesson')}><span>{t(lessonLabels[lesson])}</span><strong role="status">{complete ? t('lessonDone') : t(lessonHints[lesson])}</strong><small>{t('ringsPassed', { count: practice?.rings ?? 0 })} · {t('psmCompleted', { count: m?.completed ?? 0 })}</small></section>}
     {lab && state && <dl className="flight-lab">
@@ -34,6 +34,8 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
       <div><dt>{t('bodyRates')}</dt><dd>{[state.rates.pitch, state.rates.roll, state.rates.yaw].map(v => (v * 180 / Math.PI).toFixed(0)).join(' / ')} °/s</dd></div>
       <div><dt>{t('dragForce')}</dt><dd>{m!.drag.toFixed(1)} m/s²</dd></div>
       <div><dt>{t('engineOutput')}</dt><dd>{Math.round(state.enginePower * 100)}%</dd></div>
+      <div><dt>{t('psmAuthority')}</dt><dd>{Math.round(m!.controlAuthority * 100)}%</dd></div>
+      <div><dt>{t('tvcAngles')}</dt><dd>{state.thrustVectoring.left.toFixed(1)}° / {state.thrustVectoring.right.toFixed(1)}°</dd></div>
       <div><dt>{t('stallSeverity')}</dt><dd>{Math.round(state.stall.severity * 100)}%</dd></div>
       <div><dt>{t('stallAoa')}</dt><dd>{state.stall.aoaDeg.toFixed(1)}°</dd></div>
       <div><dt>{t('stallCause')}</dt><dd>{t(`stallCause_${state.stall.cause}`)}</dd></div>

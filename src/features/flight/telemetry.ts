@@ -37,6 +37,5 @@ export function burnerStatus(state: AircraftState | null) {
   if (m.burnerActive) return 'hudBurnerActive'
   if (m.burnerLocked) return 'hudBurnerLocked'
   if (m.burner < 1 && m.burnerRest > 1) return 'recharging'
-  if (m.airbrake > 0.1 || m.phase === 'armed' || m.phase === 'active' || (m.phase === 'recovery' && m.alpha > 0.5 * 180 / Math.PI)) return 'hudBurnerBlocked'
   return 'hudBurnerReady'
 }

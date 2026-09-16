@@ -92,3 +92,10 @@ Open `/exhaust-preview.html` for both real models, throttle/afterburner, nozzle/
 Source GLBs are unchanged. The registry excludes F-22's two detached bay fittings and Su-57's oversized `Nozzles_ORIG_backup`. Su-57 displays the stowed gear/probe variant and omits the prototype antenna. Both models are oriented to +X forward and normalized to a studio display length; this display scale is not the physical flight scale.
 
 The animation rest-pose/static-track preparation is adapted from `example/F22`, under its MIT license. See [third-party notice](THIRD_PARTY_NOTICES.md). Model provenance and distribution rights remain with the supplied assets; the code license is not a model license.
+
+PSM uses held **C** with thrust-powered pitch/yaw/roll assistance; it has no active
+time limit or cooldown. Use **W** for control thrust, **X** for independent airbraking,
+and **Shift** for afterburner (also available during PSM). Both F-22 and Su-57 have
+simulation-owned TVC that remains usable in stall without C. Su-57 uses an arcade
+canted-nozzle approximation. Tune profiles and inspect Flight Lab using
+[the flight profile guide](docs/flight-profiles.md).

@@ -109,15 +109,15 @@ describe('forgiving stall flight', () => {
 
   it('preserves actual TVC torque in full stall, while zero engine thrust produces none', () => {
     const p = getFlightProfile('f22')
-    for (const airbrake of [false, true]) {
-      const s = pose(230)
+    for (const speed of [0, 230]) {
+      const s = pose(speed)
       s.stall = { severity: 1, cause: 'speed', aoaDeg: 0 }
       s.thrustVectoring = { left: 15, right: 15, authority: 1 }
-      stepFlight(s, { ...neutralCommand(0, s.id), airbrake }, dt)
+      stepFlight(s, neutralCommand(0, s.id), dt)
       const thrust = s.enginePower * dryThrustLimit(p.flight, s.speedLimits)
       const torque = thrustForces(s.thrustVectoring, thrust, p.thrustVectoring!)
       expect(s.rates.pitch).toBeCloseTo(torque.angularAcceleration.pitch * dt, 10)
-      if (airbrake) expect(s.rates.pitch).toBe(0)
+      if (speed === 0) expect(s.rates.pitch).toBe(0)
       else expect(s.rates.pitch).toBeGreaterThan(0)
     }
   })
@@ -171,7 +171,7 @@ describe('forgiving stall flight', () => {
       const before = new Quaternion().copy(s.orientation)
       const input = tick < 90 ? { pitch: 1, yaw: 0.4, roll: 0.3 }
         : tick < 150 ? { pitch: 0, yaw: 1, roll: -0.5 } : { pitch: -1, yaw: -0.6, roll: 0.5 }
-      stepFlight(s, { ...neutralCommand(tick, s.id), ...input, psmArm: true }, dt)
+      stepFlight(s, { ...neutralCommand(tick, s.id), ...input, psmArm: true, speedAdjust: 1 }, dt)
       expect(before.angleTo(new Quaternion().copy(s.orientation))).toBeLessThan(0.04)
       expect(s.maneuver.phase).toBe('active')
       expect(s.alive).toBe(true)
@@ -199,7 +199,7 @@ describe('forgiving stall flight', () => {
       if (heading < -0.1) heading += Math.PI * 2
       const active = tick < 355
       const yaw = Math.max(-1, Math.min(1, (Math.PI - heading) * 2 - s.rates.yaw * 0.6))
-      stepFlight(s, { ...neutralCommand(tick, s.id), psmArm: active, yaw: active ? yaw : 0, speedAdjust: active ? 0 : 1 }, dt)
+      stepFlight(s, { ...neutralCommand(tick, s.id), psmArm: active, yaw: active ? yaw : 0, speedAdjust: 1 }, dt)
       peakStall = Math.max(peakStall, s.stall.severity)
     }
     expect(peakStall).toBe(1)

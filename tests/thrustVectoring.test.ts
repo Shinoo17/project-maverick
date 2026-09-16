@@ -83,7 +83,8 @@ describe('F-22 continuous simulation TVC', () => {
     expect(s.orientation.z).toBeGreaterThan(straight.orientation.z)
     expect(s.velocity.y).not.toBe(straight.velocity.y)
     const off = state(); off.thrustVectoring = { left: 15, right: 15, authority: 1 }
-    stepFlight(off, { ...command(), airbrake: true }, FLIGHT_STEP)
+    off.velocity = { x: 0, y: 0, z: 0 }
+    stepFlight(off, command(), FLIGHT_STEP)
     expect(off.enginePower).toBe(0); expect(off.rates.pitch).toBe(0)
   })
   it('sends each actual simulation angle to exhaust regardless of pitch rate or maneuver phase', () => {

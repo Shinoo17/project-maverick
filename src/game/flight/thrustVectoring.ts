@@ -16,17 +16,19 @@ export function tvcAuthority(airspeed: number, aoa: number, phase: AircraftState
   return .08 + .92 * Math.max(slow, highAlpha, maneuver)
 }
 
+type VectorCommand = Pick<PilotCommand, 'pitch' | 'roll'> & Partial<Pick<PilotCommand, 'yaw'>>
+
 /** Requested allocation, separate from actuator travel and never used as actual thrust. */
-export function tvcTargets(command: Pick<PilotCommand, 'pitch' | 'roll'>, authority: number, p: ThrustVectoringProfile = f22TvcProfile) {
+export function tvcTargets(command: VectorCommand, authority: number, p: ThrustVectoringProfile = f22TvcProfile) {
   const pitch = clamp(command.pitch, -1, 1) * p.maxAngle * authority
-  const roll = clamp(command.roll, -1, 1) * p.rollGain * authority
+  const differential = (clamp(command.roll, -1, 1) * p.rollGain + clamp(command.yaw ?? 0, -1, 1) * p.yawGain) * authority
   // +roll banks right: port exhaust DOWN lifts the port wing, starboard exhaust
   // UP lowers the starboard wing. Thus differential signs follow body-axis torque.
-  return { left: clamp(pitch - roll, -p.maxAngle, p.maxAngle), right: clamp(pitch + roll, -p.maxAngle, p.maxAngle) }
+  return { left: clamp(pitch - differential, -p.maxAngle, p.maxAngle), right: clamp(pitch + differential, -p.maxAngle, p.maxAngle) }
 }
 
 /** Runs at the fixed flight step, including neutral input. No high-AoA enable gate. */
-export function stepThrustVectoring(state: AircraftState, command: Pick<PilotCommand, 'pitch' | 'roll'>, dt: number, airspeed: number, aoa: number) {
+export function stepThrustVectoring(state: AircraftState, command: VectorCommand, dt: number, airspeed: number, aoa: number) {
   const p = getFlightProfile(state.aircraftId).thrustVectoring
   if (!p || !state.alive || dt <= 0) return
   const tvc = state.thrustVectoring
@@ -38,20 +40,28 @@ export function stepThrustVectoring(state: AircraftState, command: Pick<PilotCom
   }
 }
 
+/** Unit thrust direction in body axes; exhaust points the opposite way. */
+export function nozzleDirection(angleDeg: number, side: 'left' | 'right', p: ThrustVectoringProfile) {
+  const angle = clamp(angleDeg, -p.maxAngle, p.maxAngle) * Math.PI / 180
+  const cant = p.cantDeg * Math.PI / 180
+  return { x: Math.cos(angle), y: -Math.sin(angle) * Math.cos(cant),
+    z: (side === 'left' ? 1 : -1) * Math.sin(angle) * Math.sin(cant) }
+}
+
 /** Sum two thrust vectors and r × F moments. Thrust here is acceleration (F/m). */
 export function thrustForces(tvc: ThrustVectoringState, thrust: number, p: ThrustVectoringProfile = f22TvcProfile) {
   const engine = Math.max(0, thrust) / 2
   const acceleration: Vec3 = { x: 0, y: 0, z: 0 }
   const torquePerMass: Vec3 = { x: 0, y: 0, z: 0 }
   for (const [side, z] of [['left', -p.spacing], ['right', p.spacing]] as const) {
-    const angle = clamp(tvc[side], -p.maxAngle, p.maxAngle) * Math.PI / 180
-    const fx = engine * Math.cos(angle), fy = -engine * Math.sin(angle)
-    acceleration.x += fx; acceleration.y += fy
+    const direction = nozzleDirection(tvc[side], side, p)
+    const fx = engine * direction.x, fy = engine * direction.y, fz = engine * direction.z
+    acceleration.x += fx; acceleration.y += fy; acceleration.z += fz
     // Straight-thrust mounting moments are already canceled by the arcade trim.
     // Keep the incremental moments, including differential axial-thrust yaw.
     const dx = fx - engine
-    torquePerMass.x -= z * fy
-    torquePerMass.y += z * dx
+    torquePerMass.x += p.height * fz - z * fy
+    torquePerMass.y += z * dx - p.pivotX * fz
     torquePerMass.z += p.pivotX * fy - p.height * dx
   }
   return { acceleration, torquePerMass, angularAcceleration: {

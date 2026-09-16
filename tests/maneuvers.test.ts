@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
+import { stepManeuvers } from '../src/game/flight/maneuvers'
 import { stepFlight } from '../src/game/flight/stepFlight'
 const make = () => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'] })
 const speed = (v: { x: number; y: number; z: number }) => Math.hypot(v.x, v.y, v.z)
@@ -34,13 +35,14 @@ describe('P2 maneuvers', () => {
         const stick = Math.max(-1, Math.min(1, (target - pitchAngle) * 2 - s.rates.pitch * 0.8))
         const held = i < 300 && !(kind === 'cobra' && lowered && Math.abs(pitchAngle) < 0.15 && Math.abs(s.rates.pitch) < 0.3)
         const before = new Quaternion().copy(s.orientation)
-        stepFlight(s, { ...neutralCommand(i, s.id), psmArm: held, pitch: held ? stick : 0, speedAdjust: held ? 0 : 1 }, 1 / 120)
+        stepFlight(s, { ...neutralCommand(i, s.id), psmArm: held, pitch: held ? stick : 0, speedAdjust: 1 }, 1 / 120)
         expect(before.angleTo(new Quaternion().copy(s.orientation))).toBeLessThan(0.03)
         peak = Math.max(peak, s.maneuver.alpha); minimum = Math.min(minimum, speed(s.velocity))
         if (s.maneuver.phase === 'active') activePathAngle = Math.max(activePathAngle, new Vector3(1, 0, 0).angleTo(new Vector3().copy(s.velocity)))
       }
-      expect(peak).toBeGreaterThan(kind === 'cobra' ? 70 : 160)
-      expect(activePathAngle).toBeLessThan(0.35); expect(minimum).toBeLessThan(80)
+      expect(peak).toBeGreaterThan(kind === 'cobra' ? 70 : 120)
+      // Powered TVC also bends the path; it must still lag the post-stall nose.
+      expect(activePathAngle).toBeLessThan(0.7); expect(minimum).toBeLessThan(100)
       expect(s.maneuver.completed).toBe(1); expect(s.maneuver.phase).toBe('normal'); expect(s.alive).toBe(true)
       expect(s.maneuver.alpha).toBeLessThan(10)
       expect(s.velocity.x * (kind === 'cobra' ? 1 : -1)).toBeGreaterThan(150)
@@ -49,32 +51,40 @@ describe('P2 maneuvers', () => {
   })
   it('keeps neutral and opposite-axis commands effective during active PSM and recovery', () => {
     const s = make().snapshot().aircraft[0]; s.velocity.x = 105
-    for (let i = 0; i < 60; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true, pitch: 1 }, 1 / 120)
+    for (let i = 0; i < 120; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true, pitch: 1, speedAdjust: 1 }, 1 / 120)
     expect(s.rates.pitch).toBeGreaterThan(2)
     for (let i = 0; i < 60; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true }, 1 / 120)
     expect(Math.abs(s.rates.pitch)).toBeLessThan(0.2)
-    for (let i = 0; i < 30; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true, pitch: -1, yaw: 1, roll: -1 }, 1 / 120)
+    for (let i = 0; i < 30; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true, pitch: -1, yaw: 1, roll: -1, speedAdjust: 1 }, 1 / 120)
     expect(s.maneuver.phase).toBe('active'); expect(s.rates.pitch).toBeLessThan(-1)
     expect(s.rates.yaw).toBeGreaterThan(0.5); expect(s.rates.roll).toBeLessThan(-1)
     stepFlight(s, neutralCommand(0, s.id), 1 / 120); expect(s.maneuver.phase).toBe('recovery')
-    for (let i = 0; i < 60; i++) stepFlight(s, { ...neutralCommand(i, s.id), yaw: -1 }, 1 / 120)
+    for (let i = 0; i < 60; i++) stepFlight(s, { ...neutralCommand(i, s.id), yaw: -1, speedAdjust: 1 }, 1 / 120)
     expect(s.rates.yaw).toBeLessThan(-0.3)
   })
-  it('enforces entry speed/altitude and does not retrigger a held request after budget expiry', () => {
+  it('enforces entry speed/altitude and keeps a held maneuver active beyond old budgets', () => {
     for (const [entry, altitude] of [[64, 400], [116, 400], [105, 149]]) {
       const s = make().snapshot().aircraft[0]; s.velocity.x = entry; s.position.y = altitude
-      stepFlight(s, { ...neutralCommand(0, s.id), psmArm: true, pitch: 1 }, 1 / 120)
+      stepFlight(s, { ...neutralCommand(0, s.id), psmArm: true, pitch: 1, speedAdjust: 1 }, 1 / 120)
       expect(s.maneuver.phase).toBe('normal')
     }
     for (const entry of [65, 115]) {
       const s = make().snapshot().aircraft[0]; s.velocity.x = entry
-      stepFlight(s, { ...neutralCommand(0, s.id), psmArm: true, pitch: 1 }, 1 / 120)
+      stepFlight(s, { ...neutralCommand(0, s.id), psmArm: true, pitch: 1, speedAdjust: 1 }, 1 / 120)
       expect(s.maneuver.phase).toBe('active')
     }
-    const safe = make().snapshot().aircraft[0]; safe.velocity.x = 105; safe.position.y = 2000
-    for (let i = 0; i < 1800; i++) stepFlight(safe, { ...neutralCommand(i, safe.id), psmArm: true, pitch: i < 80 ? 1 : 0, speedAdjust: i > 360 ? 1 : 0 }, 1 / 120)
-    expect(safe.maneuver.phase).toBe('cooldown'); expect(safe.maneuver.cooldown).toBe(0)
-    stepFlight(safe, neutralCommand(0, safe.id), 1 / 120); expect(safe.maneuver.phase).toBe('normal')
+    const safe = make().snapshot().aircraft[0]
+    const held = { ...neutralCommand(0, safe.id), psmArm: true, pitch: 1 }
+    for (let i = 0; i < 1800; i++) {
+      safe.maneuver.rotation += 0.1
+      stepManeuvers(safe, held, 1 / 120, 105)
+    }
+    expect(safe.maneuver.phase).toBe('active')
+    expect(safe.maneuver.timer).toBeGreaterThan(14)
+    stepManeuvers(safe, neutralCommand(0, safe.id), 1 / 120, 105)
+    expect(safe.maneuver.phase).toBe('recovery')
+    stepManeuvers(safe, held, 1 / 120, 105)
+    expect(safe.maneuver.phase).toBe('active')
   })
   it('releases armed mode immediately and freezes maneuver timers while paused', () => {
     const r = make(); r.reset('cobra'); r.start()
@@ -92,14 +102,14 @@ describe('P2 maneuvers', () => {
     expect(speed(hard.velocity)).toBeLessThan(speed(normal.velocity))
     expect(speed(fly({ highG: true }).velocity)).toBeCloseTo(130)
   })
-  it('drains burner, enforces recharge lock and gives brake priority', () => {
+  it('drains burner, enforces recharge lock and permits airbrake with burner', () => {
     const s = make().snapshot().aircraft[0]
     for (let i = 0; i < 750; i++) stepFlight(s, { ...neutralCommand(i, s.id), afterburner: true }, 1 / 120)
     expect(s.maneuver.burnerLocked).toBe(true); expect(s.maneuver.burnerActive).toBe(false)
     for (let i = 0; i < 500; i++) stepFlight(s, neutralCommand(i, s.id), 1 / 120)
     expect(s.maneuver.burnerLocked).toBe(false)
     stepFlight(s, { ...neutralCommand(0, s.id), afterburner: true, airbrake: true }, 1 / 120)
-    expect(s.maneuver.burnerActive).toBe(false); expect(s.enginePower).toBe(0)
+    expect(s.maneuver.burnerActive).toBe(true); expect(s.enginePower).toBeGreaterThan(0)
   })
   it('replays PSM and burner identically at 30/60/144 render FPS', () => {
     const snapshots = [30, 60, 144].map(fps => { const r = make(); r.reset('cobra'); r.start(); for (let i = 0; i < fps * 12; i++) r.advance(1 / fps, (tick, id) => ({ ...neutralCommand(tick, id), psmArm: tick < 130, pitch: tick < 50 ? 1 : tick < 100 ? -1 : 0, afterburner: tick > 300 && tick < 500 })); return r.snapshot() })
@@ -149,10 +159,10 @@ describe('manual PSM turn plane', () => {
       let heading = Math.atan2(nose.z, nose.x); if (heading < -0.1) heading += Math.PI * 2
       const active = i < 355
       const yaw = Math.max(-1, Math.min(1, (Math.PI - heading) * 2 - s.rates.yaw * 0.6))
-      stepFlight(s, { ...neutralCommand(i, s.id), psmArm: active, yaw: active ? yaw : 0, speedAdjust: active ? 0 : 1 }, 1 / 120)
+      stepFlight(s, { ...neutralCommand(i, s.id), psmArm: active, yaw: active ? yaw : 0, speedAdjust: 1 }, 1 / 120)
     }
     expect(s.velocity.x).toBeLessThan(-150)
-    expect(s.maneuver.peakAlpha).toBeGreaterThan(150)
+    expect(s.maneuver.peakAlpha).toBeGreaterThan(90)
     expect(s.maneuver.completed).toBe(1)
     expect(Math.abs(s.orientation.x) + Math.abs(s.orientation.z)).toBeLessThan(0.001)
     expect(s.alive).toBe(true)

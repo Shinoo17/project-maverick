@@ -8,6 +8,8 @@ import { getAircraft } from '../src/content/aircraft'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { getFlightProfile } from '../src/game/flight/profile'
 import { createFlightRig } from '../src/render/aircraft/flightRig'
+import { stepThrustVectoring, tvcTargets, thrustForces } from '../src/game/flight/thrustVectoring'
+import { neutralCommand } from '../src/game/runtime/commands'
 import { su57ControlTargets } from '../src/render/aircraft/su57Rig'
 
 const flightProfile = getFlightProfile('su57').flight
@@ -18,41 +20,33 @@ const state = () => {
   return s
 }
 describe('Su-57 control allocation', () => {
-  it('keeps cruise neutral, reverses pitch, and increases TVC at low speed/high alpha', () => {
+  it('renders actual nozzle angles regardless of body rate, speed or PSM phase', () => {
     const s = state()
-    expect(su57ControlTargets(s).left.pitch).toBe(0)
-    s.rates.pitch = flightProfile.pitchRate
-    const cruise = su57ControlTargets(s)
-    expect(cruise.left.pitch).toBeGreaterThan(0)
-    expect(cruise.left.pitch).toBe(cruise.right.pitch)
-    s.velocity.x = 60
-    const slow = su57ControlTargets(s)
-    expect(slow.left.pitch).toBeGreaterThan(cruise.left.pitch * 4)
-    s.maneuver.phase = 'active'; s.maneuver.alpha = 95
-    expect(su57ControlTargets(s).left.pitch).toBe(18)
-    s.rates.pitch *= -1
-    expect(su57ControlTargets(s).left.pitch).toBe(-18)
+    s.thrustVectoring = { left: 12, right: -9, authority: 0.7 }
+    const expected = su57ControlTargets(s)
+    s.rates.pitch = -100; s.rates.yaw = 100; s.velocity.x = 20; s.maneuver.phase = 'active'
+    expect(su57ControlTargets(s).left).toEqual(expected.left)
+    expect(su57ControlTargets(s).right).toEqual(expected.right)
+    expect(Math.hypot(expected.left.pitch, expected.left.yaw)).toBeCloseTo(12)
+    expect(Math.hypot(expected.right.pitch, expected.right.yaw)).toBeCloseTo(9)
   })
-  it('allocates differential roll/yaw and preserves their mix within the cone', () => {
-    const s = state(); s.maneuver.phase = 'active'
-    s.rates.roll = flightProfile.rollRate
-    let t = su57ControlTargets(s)
+  it('uses shared, bounded travel for differential roll/yaw and mirrors the cant', () => {
+    const s = state(), p = getFlightProfile('su57').thrustVectoring!
+    Object.assign(s.thrustVectoring, tvcTargets({ pitch: 0, roll: 1, yaw: 1 }, 1, p))
+    const t = su57ControlTargets(s)
     expect(t.left.pitch).toBeLessThan(0); expect(t.right.pitch).toBeGreaterThan(0)
-    s.rates.yaw = flightProfile.yawRate
-    t = su57ControlTargets(s)
-    expect(t.left.yaw).not.toBe(t.right.yaw)
-    s.rates.pitch = flightProfile.pitchRate
-    t = su57ControlTargets(s)
-    expect(Math.max(Math.hypot(t.left.pitch, t.left.yaw), Math.hypot(t.right.pitch, t.right.yaw))).toBeCloseTo(18)
-    expect(t.right.pitch).toBeGreaterThan(t.left.pitch)
+    expect(t.left.yaw).toBeGreaterThan(0); expect(t.right.yaw).toBeGreaterThan(0)
+    expect(Math.hypot(t.left.pitch, t.left.yaw)).toBeCloseTo(p.maxAngle)
+    expect(Math.hypot(t.right.pitch, t.right.yaw)).toBeCloseTo(p.maxAngle)
+    const force = thrustForces(s.thrustVectoring, 30, p)
+    expect(force.angularAcceleration.yaw).toBeGreaterThan(0)
+    expect(force.angularAcceleration.roll).toBeGreaterThan(0)
+    expect(force.acceleration.z).toBeLessThan(0)
   })
-  it('gives signed recovery corrections that disappear as airflow aligns', () => {
+  it('never invents recovery nozzle motion from slip or angular velocity', () => {
     const s = state(); s.maneuver.phase = 'recovery'; s.maneuver.alpha = 60
-    s.velocity = { x: 40, y: -60, z: -20 }
-    let t = su57ControlTargets(s)
-    expect(t.left.pitch).toBeLessThan(0); expect(t.left.yaw).toBeLessThan(0)
-    s.velocity = { x: 180, y: 0, z: 0 }; s.maneuver.alpha = 0; s.maneuver.phase = 'normal'
-    t = su57ControlTargets(s)
+    s.velocity = { x: 40, y: -60, z: -20 }; s.rates.pitch = 1
+    const t = su57ControlTargets(s)
     expect(t.left.pitch).toBe(0); expect(t.left.yaw).toBe(0)
   })
   it('uses the V-shaped iris schedule and accepted burner state without simulation writes', () => {
@@ -115,6 +109,7 @@ describe('Su-57 shipped model articulation', () => {
     s.enginePower = 1; rig(s, 0, true)
     const neutral = [rig.exhaust!.left.origin.clone(), rig.exhaust!.right.origin.clone()]
     s.maneuver.phase = 'active'; s.rates.pitch = flightProfile.pitchRate
+    s.thrustVectoring.left = s.thrustVectoring.right = 18
     rig(s, 0, true)
     expect(rig.exhaust!.left.origin.y).toBeGreaterThan(neutral[0].y)
     expect(rig.exhaust!.right.origin.y).toBeGreaterThan(neutral[1].y)
@@ -126,6 +121,7 @@ describe('Su-57 shipped model articulation', () => {
       return points.flatMap((v, i) => v.y > end - .01 ? [i] : [])
     })
     s.rates.roll = flightProfile.rollRate; s.rates.yaw = flightProfile.yawRate; s.maneuver.burnerActive = true
+    s.thrustVectoring.left = -8; s.thrustVectoring.right = 18
     rig(s, 0, true)
     for (const [i, name] of ['L', 'R'].entries()) {
       const gimbal = root.getObjectByName(`Gimbal_${name}`)!, mesh = root.getObjectByName(`Nozzle_${name}`) as Mesh
@@ -162,6 +158,7 @@ describe('Su-57 shipped model articulation', () => {
       return selected
     })
     s.rates.yaw = flightProfile.yawRate
+    s.thrustVectoring.left = -14; s.thrustVectoring.right = 14
     rig(s, 0, true)
     for (const point of trailing) {
       const mesh = point.mesh!
@@ -178,6 +175,7 @@ describe('Su-57 shipped model articulation', () => {
     s.maneuver.phase = 'active'; s.rates.pitch = flightProfile.pitchRate; s.enginePower = 1
     rig(s, 0)
     expect(gimbal.quaternion.angleTo(initial)).toBeLessThan(1e-7)
+    stepThrustVectoring(s, { ...neutralCommand(0, s.id), pitch: 1 }, 1 / 120, 40, 90)
     rig(s, 1 / 120)
     expect(gimbal.quaternion.angleTo(initial)).toBeGreaterThan(0)
     expect(gimbal.quaternion.angleTo(initial)).toBeLessThanOrEqual(36 / 120 * Math.PI / 180 + 1e-7)

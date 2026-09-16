@@ -53,6 +53,8 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
 
   positive(maneuver.burnerSeconds, `${path}.maneuver.burnerSeconds`)
   positive(maneuver.burnerRecharge, `${path}.maneuver.burnerRecharge`)
+  positive(maneuver.blendSeconds, `${path}.maneuver.blendSeconds`)
+  positive(maneuver.fullControlThrust, `${path}.maneuver.fullControlThrust`)
   for (const [key, value] of Object.entries(maneuver)) {
     if (typeof value === 'number') nonnegative(value, `${path}.maneuver.${key}`)
   }
@@ -60,10 +62,11 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   // remains valid independently. Enabled PSM requires a usable entry envelope.
   if (maneuver.psmEnabled) {
     positive(maneuver.entryMin, `${path}.maneuver.entryMin`)
-    positive(maneuver.activeSeconds, `${path}.maneuver.activeSeconds`)
-    positive(maneuver.maxRotation, `${path}.maneuver.maxRotation`)
     if (maneuver.entryMax <= maneuver.entryMin) {
       throw new Error(`${path}.maneuver.entryMax: must exceed entryMin`)
+    }
+    if (maneuver.exitSpeed <= maneuver.entryMax) {
+      throw new Error(`${path}.maneuver.exitSpeed: must exceed entryMax`)
     }
   }
 
@@ -71,8 +74,12 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
     for (const [axis, value] of Object.entries(thrustVectoring.inertia)) {
       positive(value, `${path}.thrustVectoring.inertia.${axis}`)
     }
-    for (const key of ['maxAngle', 'rollGain', 'actuatorRate', 'actuatorResponse', 'authorityResponse', 'spacing', 'lipArm'] as const) {
+    for (const key of ['maxAngle', 'rollGain', 'yawGain', 'cantDeg', 'actuatorRate', 'actuatorResponse', 'authorityResponse', 'spacing', 'lipArm'] as const) {
+      if (!Number.isFinite(thrustVectoring[key])) throw new Error(`${path}.thrustVectoring.${key}: expected finite number`)
       nonnegative(thrustVectoring[key], `${path}.thrustVectoring.${key}`)
+    }
+    if (thrustVectoring.maxAngle > 45 || thrustVectoring.cantDeg > 90) {
+      throw new Error(`${path}.thrustVectoring: expected maxAngle <= 45 and cantDeg <= 90`)
     }
   }
 }

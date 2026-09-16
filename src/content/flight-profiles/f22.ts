@@ -4,6 +4,8 @@ import { flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
 export const f22TvcProfile: ThrustVectoringProfile = {
   maxAngle: 20,
   rollGain: 6,
+  yawGain: 0,
+  cantDeg: 0,
   actuatorRate: 45,
   actuatorResponse: 7,
   authorityResponse: 5,
@@ -52,8 +54,6 @@ export const f22Profile: AircraftFlightProfile = {
     pitchRate: 2.6,
     yawRate: 1.6,
     rollRate: 2.1,
-    activeSeconds: 3,
-    cooldown: 4,
     recoveryAcceleration: 70,
   },
   thrustVectoring: f22TvcProfile,

@@ -1,5 +1,22 @@
-import type { AircraftFlightProfile } from '../../game/flight/profileTypes'
+import type { AircraftFlightProfile, ThrustVectoringProfile } from '../../game/flight/profileTypes'
 import { flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
+
+// Arcade approximation of canted twin nozzles, not measured Su-57 performance.
+// Pitch uses both together; yaw and roll share differential nozzle travel.
+export const su57TvcProfile: ThrustVectoringProfile = {
+  maxAngle: 18,
+  rollGain: 6,
+  yawGain: 14,
+  cantDeg: 30,
+  actuatorRate: 36,
+  actuatorResponse: 7,
+  authorityResponse: 5,
+  pivotX: -7.2,
+  height: -0.6691,
+  spacing: 1.3903,
+  lipArm: 1.02,
+  inertia: { roll: 18, yaw: 40, pitch: 40 },
+}
 
 export const su57Profile: AircraftFlightProfile = {
   flight: {
@@ -38,11 +55,7 @@ export const su57Profile: AircraftFlightProfile = {
     pitchRate: 2.6,
     yawRate: 1.85,
     rollRate: 2.1,
-    activeSeconds: 3,
-    cooldown: 4.5,
     recoveryAcceleration: 66.5,
   },
-  // Generic PSM assist with presentation-only nozzles. The pitch-only twin-engine
-  // force solver does not represent the Su-57's three-axis nozzle rig.
-  thrustVectoring: null,
+  thrustVectoring: su57TvcProfile,
 }

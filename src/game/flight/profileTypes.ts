@@ -73,13 +73,16 @@ export interface ManeuverProfile {
   entryMax: number
   minAltitude: number
 
-  // PSM angular rates (rad/s), rotation budget (rad), and time budgets (s).
+  /** Leave PSM above this speed (m/s); must exceed entryMax for hysteresis. */
+  exitSpeed: number
+  /** Seconds to blend manual PSM control in/out. Not a duration limit. */
+  blendSeconds: number
+  /** Thrust (m/s²) needed for full PSM rate assistance. */
+  fullControlThrust: number
+  // PSM angular rates at full control thrust (rad/s).
   pitchRate: number
   yawRate: number
   rollRate: number
-  maxRotation: number
-  activeSeconds: number
-  cooldown: number
 
   /** PSM airflow alignment response (1/s), independent of normal flight. */
   pathResponse: number
@@ -96,11 +99,15 @@ export interface ManeuverProfile {
   burnerRecharge: number
 }
 
-/** Twin-engine, pitch-vectoring solver configuration. */
+/** Twin-engine TVC, with optional mirrored, canted deflection planes. */
 export interface ThrustVectoringProfile {
   /** Nozzle travel limit and differential roll allocation (degrees). */
   maxAngle: number
   rollGain: number
+  /** Differential yaw allocation (degrees); zero for pitch-only nozzles. */
+  yawGain: number
+  /** Outward cant of each nozzle's deflection plane (degrees); zero = vertical. */
+  cantDeg: number
   /** Actuator travel speed (degrees/s). */
   actuatorRate: number
   /** Actuator and authority response rates (1/s). */

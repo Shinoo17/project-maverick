@@ -33,12 +33,13 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const turnBudget = normalLimit * surfaceControl / Math.max(speed, 1) * p.turnRateReserve
   const rateScale = requestedTurn > 0 ? Math.min(1, turnBudget / requestedTurn) : 1
   pitchTarget *= rateScale; yawTarget *= rateScale
-  // Restore normal handling progressively once recovery has caught the chosen nose.
-  const capture = clamp((30 - assist.alpha * 180 / Math.PI) / 20, 0, 1)
-  const grip = m.phase === 'active' ? 0 : m.phase === 'recovery'
-    ? capture * capture * (3 - 2 * capture) * clamp(m.timer / 0.6, 0, 1) : 1
-  pitchTarget = (assist.pitch ?? pitchTarget) * (1 - grip) + pitchTarget * grip
-  yawTarget = (assist.yaw ?? yawTarget) * (1 - grip) + yawTarget * grip
+  // PSM grants a thrust-powered rate envelope, blended independently of stall.
+  // Surface control remains available when thrust is low; no free powered assist.
+  const grip = 1 - m.blend
+  m.controlAuthority = clamp(thrust / maneuverProfile.fullControlThrust, 0, 1)
+  const poweredBlend = m.blend * m.controlAuthority
+  pitchTarget += ((assist.pitch ?? pitchTarget) - pitchTarget) * poweredBlend
+  yawTarget += ((assist.yaw ?? yawTarget) - yawTarget) * poweredBlend
   const response = (target: number, rate: number) => {
     // The profile-controlled rate damper remains active when the stick is released, even
     // while TVC actuators are still traveling back during post-stall flight.
@@ -49,16 +50,17 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   rates.pitch += (pitchTarget - rates.pitch) * response(pitchTarget, rates.pitch)
   rates.yaw += (yawTarget - rates.yaw) * response(yawTarget, rates.yaw)
   const normalRoll = command.roll * p.rollRate * authority * surfaceControl
-  const rollTarget = (assist.roll ?? normalRoll) * (1 - grip) + normalRoll * grip
+  const rollTarget = normalRoll + ((assist.roll ?? normalRoll) - normalRoll) * poweredBlend
   const reversing = rollTarget * rates.roll < 0
   const rollBlend = p.neutralDampingDuringPsm && command.roll === 0 ? 1 - Math.exp(-p.neutralResponse * dt) : blend
   rates.roll += (rollTarget - rates.roll) * (reversing ? 1 - Math.exp(-p.rollReversalResponse * dt) : rollBlend)
   if (allocatedThrust) {
     // Allocate part of the requested control moment to TVC instead of counting
     // it twice in the aerodynamic rate controller. This is surface demand only.
-    const allocation = 1 - grip * (1 - surfaceControl)
+    const allocation = surfaceControl + poweredBlend * (1 - surfaceControl)
     rates.pitch -= allocatedThrust.angularAcceleration.pitch * allocation * dt
     rates.roll -= allocatedThrust.angularAcceleration.roll * allocation * dt
+    rates.yaw -= allocatedThrust.angularAcceleration.yaw * allocation * dt
   }
   if (vectoredThrust) {
     // Engine moments always use the ACTUAL simulation-owned actuator angles.
@@ -105,10 +107,9 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   force.addScaledVector(path, -p.gravity * path.y)
   velocity.addScaledVector(force, dt)
   if (velocity.dot(path) < 0) velocity.addScaledVector(path, -velocity.dot(path))
-  // Euler's perpendicular acceleration otherwise adds speed for free. Preserve
-  // only longitudinal work in normal flight; blend this correction on recovery.
+  // Direction changes must not create energy, including repeated PSM entry/release.
   const poweredSpeed = Math.max(0, speed + force.dot(path) * dt)
-  if (velocity.lengthSq() > 0) velocity.setLength(velocity.length() * (1 - grip) + poweredSpeed * grip)
+  if (velocity.lengthSq() > 0) velocity.setLength(poweredSpeed)
   // Restore cross-path gravity as lift support fades. Apply AFTER the speed
   // correction so a stopped aircraft can fall; longitudinal gravity is above.
   // PSM already loses half its support, and stall can take the remaining half.

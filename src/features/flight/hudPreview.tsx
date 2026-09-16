@@ -1,6 +1,6 @@
 // Developer visual fixture: the real flight instruments over a synthetic flight,
 // without WebGL, pointer lock or the pause dialog. Query: ?t=12 freezes the clock,
-// ?lang=en, ?lesson=2, ?lab, ?warning, ?stall, ?recovering, ?size=1280x672.
+// ?lang=en, ?lesson=2, ?lab, ?warning, ?stall, ?recovering, ?psm, ?size=1280x672.
 import { createRef, StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useTranslation } from 'react-i18next'
@@ -40,6 +40,10 @@ function fly(state: AircraftState, t: number) {
   m.g = 1 + Math.abs(bank) / 12; m.alpha = 4
   state.stall = { severity: 0, cause: 'none', aoaDeg: angleOfAttack(state) }
   // Explicit visual fixtures; the flight runtime remains the only physics owner.
+  if (params.has('psm')) {
+    m.phase = 'active'; m.blend = 1; m.controlAuthority = 0.85
+    state.thrustVectoring = { left: 12, right: 18, authority: 1 }
+  }
   if (params.has('stall')) state.stall = { severity: 0.8, cause: 'aoa', aoaDeg: 42 }
   if (params.has('recovering')) state.stall = { severity: 0.4, cause: 'none', aoaDeg: 10 }
 }

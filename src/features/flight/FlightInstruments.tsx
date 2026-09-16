@@ -24,7 +24,7 @@ export type HudDriver = (frame: HudFrame) => void
 // Past 2x the backing store is pixels nobody can see, repainted every frame.
 const MAX_PIXEL_RATIO = 2
 const burnerStates: Record<string, BurnerState> = {
-  hudBurnerActive: 'engaged', hudBurnerLocked: 'depleted', hudBurnerBlocked: 'inhibited', recharging: 'recharging', hudBurnerReady: 'ready', hudWaiting: 'ready',
+  hudBurnerActive: 'engaged', hudBurnerLocked: 'depleted', recharging: 'recharging', hudBurnerReady: 'ready', hudWaiting: 'ready',
 }
 const zero = { x: 0, y: 0, z: 0 }
 const standby: GlassState = {

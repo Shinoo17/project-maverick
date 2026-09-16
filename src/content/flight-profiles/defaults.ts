@@ -34,9 +34,9 @@ export const maneuverDefaults: ManeuverProfile = {
   pitchRate: 2.6,
   yawRate: 1.6,
   rollRate: 2.1,
-  maxRotation: Math.PI * 2,
-  activeSeconds: 3,
-  cooldown: 4,
+  exitSpeed: 135,
+  blendSeconds: 0.6,
+  fullControlThrust: 24,
 
   pathResponse: 1.5,
   activeGrip: 0.08,

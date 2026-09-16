@@ -7,36 +7,27 @@ import type { ExhaustNozzles } from '../exhaust/profile'
 const RAD = Math.PI / 180
 const smooth = (x: number) => { const t = clamp(x, 0, 1); return t * t * (3 - 2 * t) }
 
-/** Presentation allocation: normal flight favors surfaces, slow/high-alpha flight TVC. */
+/** Surfaces follow body rates; nozzles follow simulation-owned actuator angles. */
 export function su57ControlTargets(state: AircraftState) {
   const flightProfile = getFlightProfile(state.aircraftId).flight
   const speed = Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z)
   const slow = 1 - smooth((speed - 45) / 105)
   const alpha = smooth((state.maneuver.alpha - 12) / 58)
-  const postStall = state.maneuver.phase === 'active'
-  const recovering = state.maneuver.phase === 'recovery'
-  const authority = Math.max(.12 + .65 * slow, alpha, postStall ? 1 : recovering ? .8 : 0)
   const pitch = clamp(state.rates.pitch / flightProfile.pitchRate, -1, 1)
   const yaw = clamp(state.rates.yaw / flightProfile.yawRate, -1, 1)
   const roll = clamp(state.rates.roll / flightProfile.rollRate, -1, 1)
-  // Signed flow errors give small cruise trim and low-rate recovery corrections.
-  const path = new Vector3().copy(state.velocity).applyQuaternion(new Quaternion().copy(state.orientation).invert())
-  const pitchSlip = speed > 1 ? Math.atan2(-path.y, path.x) : 0
-  const yawSlip = speed > 1 ? Math.atan2(-path.z, path.x) : 0
-  const correction = recovering ? .32 : postStall ? 0 : .025
-  const p = clamp(pitch - pitchSlip * correction * (1 - Math.abs(pitch)), -1, 1) * 18 * authority
-  const y = clamp(yaw - yawSlip * correction * (1 - Math.abs(yaw)), -1, 1) * 14 * authority
-  const r = roll * 12 * authority
-  // Yaw also changes the lateral contribution per engine; roll uses differential pitch.
-  const left = { pitch: p - r, yaw: y * (1 - .22 * yaw) }
-  const right = { pitch: p + r, yaw: y * (1 + .22 * yaw) }
-  const scale = Math.min(1, 18 / Math.max(.001, Math.hypot(left.pitch, left.yaw), Math.hypot(right.pitch, right.yaw)))
-  for (const side of [left, right]) { side.pitch *= scale; side.yaw *= scale }
+  const tvc = getFlightProfile(state.aircraftId).thrustVectoring
+  const cant = (tvc?.cantDeg ?? 0) * RAD
+  const nozzle = (side: 'left' | 'right') => {
+    const angle = tvc ? state.thrustVectoring[side] : 0
+    return { pitch: angle * Math.cos(cant), yaw: angle * Math.sin(cant) * (side === 'left' ? -1 : 1) || 0 }
+  }
+  const left = nozzle('left'), right = nozzle('right')
   // enginePower is thrust/max dry thrust, not the guide's 0..1 lever. Only the
   // accepted burner flag enters the opening branch; high dry thrust stays closed.
   const power = state.alive ? clamp(state.enginePower, 0, 1) : 0
   const area = state.alive && state.maneuver.burnerActive ? 1 : .6 - 1.6 * power
-  return { pitch, yaw, roll, slow, alpha, left, right, area, authority }
+  return { pitch, yaw, roll, slow, alpha, left, right, area }
 }
 
 // Verified leading-edge endpoints in the shipped compact GLB's glTF frame
@@ -104,7 +95,7 @@ export function createSu57FlightRig(model: Object3D) {
     // Apply rotations in airframe axes and conjugate into each mount's actual
     // basis. The compact GLB has +Y aft, unlike the guide helper's +Z aft.
     const mount = gimbal.parent!.quaternion.clone()
-    return { gimbal, mesh, exit: measureExit(mesh), mount, inverseMount: mount.clone().invert(), rest: gimbal.quaternion.clone(), pitch: 0, yaw: 0 }
+    return { gimbal, mesh, exit: measureExit(mesh), mount, inverseMount: mount.clone().invert(), rest: gimbal.quaternion.clone() }
   })
   const frame = () => ({ origin: new Vector3(), axis: new Vector3(), up: new Vector3(), radius: 0 })
   const exhaust: ExhaustNozzles = { left: frame(), right: frame() }
@@ -123,14 +114,11 @@ export function createSu57FlightRig(model: Object3D) {
     area += (target.area - area) * irisBlend
     sides.forEach((side, i) => {
       const demand = i === 0 ? target.left : target.right
-      // 36 deg/s gives ~one second from one end of the cone to the other.
-      const dp = (demand.pitch - side.pitch) * blend, dy = (demand.yaw - side.yaw) * blend
-      const rate = initialized ? Math.min(1, 36 * step / Math.max(.00001, Math.hypot(dp, dy))) : 1
-      side.pitch += dp * rate; side.yaw += dy * rate
-      vector.set(side.pitch, side.yaw, 0)
+      // Actuator travel is already integrated by the fixed-step simulation.
+      vector.set(demand.pitch, demand.yaw, 0)
       const angle = vector.length() * RAD
       rotation.setFromAxisAngle(vector.normalize(), angle)
-      side.gimbal.quaternion.copy(side.inverseMount).multiply(rotation).multiply(side.mount).multiply(side.rest)
+      side.gimbal.quaternion.copy(side.inverseMount).multiply(rotation).multiply(side.mount).multiply(side.rest).normalize()
       const weights = side.mesh.morphTargetInfluences, dictionary = side.mesh.morphTargetDictionary
       if (weights && dictionary) {
         if (dictionary.Iris_Close !== undefined) weights[dictionary.Iris_Close] = Math.max(0, -area)

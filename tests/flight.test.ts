@@ -55,12 +55,15 @@ describe('P1 flight acceptance', () => {
     const right = new Vector3(0, 0, 1).applyQuaternion(new Quaternion().copy(roll.orientation))
     expect(right.y).toBeLessThan(0)
   })
-  it('loses speed in a climb and gives airbrake priority over acceleration', () => {
+  it('loses speed in a climb and lets airbrake oppose engine acceleration', () => {
     const straight = run(60, 2).snapshot().aircraft[0], climb = run(60, 2, () => ({ pitch: 0.6 })).snapshot().aircraft[0]
     const magnitude = (s: typeof straight) => new Vector3().copy(s.velocity).length()
     expect(magnitude(climb)).toBeLessThan(magnitude(straight))
     const brake = run(60, 2, () => ({ airbrake: true, afterburner: true, speedAdjust: 1 })).snapshot().aircraft[0]
-    expect(magnitude(brake)).toBeLessThan(100); expect(brake.enginePower).toBe(0)
+    const powered = run(60, 2, () => ({ afterburner: true, speedAdjust: 1 })).snapshot().aircraft[0]
+    expect(magnitude(brake)).toBeLessThan(magnitude(powered)); expect(brake.enginePower).toBeGreaterThan(0)
+    const idleBrake = run(60, 2, () => ({ airbrake: true })).snapshot().aircraft[0]
+    expect(magnitude(idleBrake)).toBeLessThan(100)
   })
   it('is finite at zero speed, stops on ground/boundary, and resets safely', () => {
     const runtime = make(), state = runtime.snapshot().aircraft[0]

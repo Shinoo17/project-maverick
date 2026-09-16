@@ -57,7 +57,7 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
     state.rates.pitch = input.pitch * profile.flight.pitchRate
     state.rates.roll = input.roll * profile.flight.rollRate
     state.rates.yaw = input.yaw * profile.flight.yawRate
-    stepThrustVectoring(state, { pitch: input.pitch, roll: input.roll }, dt, 180, 0)
+    stepThrustVectoring(state, { pitch: input.pitch, roll: input.roll, yaw: input.yaw }, dt, 180, 0)
     rig(state, dt)
     // Local +X is the nose: +Z pitches up, +X rolls, -Y yaws right.
     axis.set(input.roll, -input.yaw, input.pitch)

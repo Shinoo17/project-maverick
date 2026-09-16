@@ -1,5 +1,8 @@
 # P2 — Playground & maneuver
 
+> Historical milestone/design notes. Current PSM uses held C, thrust-dependent control, independent airbrake and no active timer/cooldown. Both aircraft now use simulation TVC. See [current flight rules](flight-profiles.md).
+
+
 Implementation: 7 กันยายน 2026 · ต่อจาก [P1](phase-1-flight-slice.md)
 
 เข้า `#/flight` แล้วเลือกบทฝึก ระบบเลือกจุดเกิดที่เหมาะกับบทให้อัตโนมัติ เปลี่ยนจุดเกิดเองได้ เลือก Keyboard-only หาก browser ไม่อนุญาต pointer lock ปุ่มในเกมดู [02 Controls](game-design/02-controls.md)

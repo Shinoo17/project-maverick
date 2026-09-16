@@ -1,5 +1,8 @@
 # 04 — High-G, Airbrake, Cobra และ Thrust Vectoring
 
+> Historical milestone/design notes. Current PSM uses held C, thrust-dependent control, independent airbrake and no active timer/cooldown. Both aircraft now use simulation TVC. See [current flight rules](../flight-profiles.md).
+
+
 [กลับ Master Plan](../../MASTER_PLAN.md) · P2 · พึ่ง flight ใน 03 และ input ใน 02
 
 ## P2 implementation override · 7 กันยายน 2026

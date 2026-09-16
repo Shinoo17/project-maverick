@@ -99,7 +99,7 @@ function frame(now: number) {
   state.rates.yaw = scenario === 'yaw' ? flightProfile.yawRate : 0
   actuatorTime += dt
   while (actuatorTime >= FLIGHT_STEP) {
-    stepThrustVectoring(state, { pitch, roll }, FLIGHT_STEP, speed, aoa)
+    stepThrustVectoring(state, { pitch, roll, yaw: scenario === 'yaw' ? 1 : 0 }, FLIGHT_STEP, speed, aoa)
     actuatorTime -= FLIGHT_STEP
   }
   updateRig?.(state, dt); jet.updateMatrixWorld(true)

@@ -1,5 +1,8 @@
 # P3 — Aircraft profiles และอาวุธประจำเครื่อง
 
+> Historical milestone/design notes. Current PSM uses held C, thrust-dependent control, independent airbrake and no active timer/cooldown. Both aircraft now use simulation TVC. See [current flight rules](flight-profiles.md).
+
+
 สถานะ 14 กันยายน 2026: ส่งมอบ foundation สำหรับ Phase 3; **ยังไม่ปิด Phase 3 ทั้งหมด**
 
 ## สิ่งที่ใช้งานได้

@@ -77,7 +77,7 @@ describe('aircraft flight configuration', () => {
     }
   })
 
-  it('supports a narrower PSM envelope and smaller maneuver budgets', () => {
+  it('supports a narrower PSM envelope and lower powered rates', () => {
     const profile = getFlightProfile('su57')
     const previous = profile.maneuver
     profile.maneuver = {
@@ -88,8 +88,8 @@ describe('aircraft flight configuration', () => {
       minAltitude: 400,
       pitchRate: 1,
       yawRate: 0.8,
-      activeSeconds: 0.5,
-      cooldown: 8,
+      exitSpeed: 115,
+      fullControlThrust: 30,
     }
     try {
       validateFlightProfile(profile)
@@ -113,11 +113,12 @@ describe('aircraft flight configuration', () => {
       const assist = stepManeuvers(state, command, 1 / 60, 100)
       expect(assist.pitch).toBe(1)
       expect(assist.yaw).toBe(0.8)
-      for (let tick = 0; tick < 30; tick++) stepManeuvers(state, command, 1 / 60, 100)
+      for (let tick = 0; tick < 600; tick++) stepManeuvers(state, command, 1 / 60, 100)
+      expect(state.maneuver.phase).toBe('active')
+      stepManeuvers(state, command, 1 / 60, 116)
       expect(state.maneuver.phase).toBe('recovery')
-      for (let tick = 0; tick < 20; tick++) stepManeuvers(state, command, 1 / 60, 100)
-      expect(state.maneuver.phase).toBe('cooldown')
-      expect(state.maneuver.cooldown).toBeGreaterThan(7.9)
+      for (let tick = 0; tick < 60; tick++) stepManeuvers(state, { ...command, psmArm: false }, 1 / 60, 100)
+      expect(state.maneuver.phase).toBe('normal')
     } finally {
       profile.maneuver = previous
     }
@@ -129,8 +130,7 @@ describe('aircraft flight configuration', () => {
       psmEnabled: false,
       entryMin: 0,
       entryMax: 0,
-      activeSeconds: 0,
-      maxRotation: 0,
+
     })
     expect(() => validateFlightProfile(profile)).not.toThrow()
     profile.maneuver.psmEnabled = true

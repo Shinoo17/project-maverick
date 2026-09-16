@@ -5,8 +5,8 @@ These are arcade game settings, not real aircraft specifications.
 
 - `flight`: normal-flight speed, energy and handling.
 - `stall`: low-speed/high-incidence envelope and gradual loss/recovery of control.
-- `maneuver`: PSM capability, entry conditions, maneuver limits, high-G and afterburner.
-- `thrustVectoring`: physical twin-engine pitch-vectoring settings, or `null`.
+- `maneuver`: PSM capability, entry/exit conditions, powered control rates, high-G and afterburner.
+- `thrustVectoring`: twin-engine TVC geometry/actuators (vertical or canted planes), or `null`.
 
 `src/game/flight/profileTypes.ts` documents the fields and units. Top speeds use
 displayed ARCADE km/h. The minimum powered speed and PSM entry speeds still use
@@ -33,6 +33,8 @@ afterburner limit of 1400 on the HUD.
 - Releasing or exhausting afterburner sheds excess speed gradually toward the
   normal limit. Velocity is never snapped down to a cap.
 - Climbing, turning and PSM still consume energy. A dive can exceed a powered limit.
+- X adds braking without cutting engine thrust. W + X and Shift + X work together,
+  including during PSM. More thrust can outweigh the brake; X does not promise deceleration.
 - S still decelerates toward `minPoweredMps`; airbrake and flight energy losses
   can take the aircraft below that value.
 
@@ -132,8 +134,10 @@ rotation or triggers a scripted spin. The default retains enough control to
 align the nose with the flight path and regain speed with W. At zero speed,
 gravity still makes the aircraft fall; the normal energy correction cannot freeze it.
 
-PSM capability is independent of stall. Active PSM retains its authored pitch,
-yaw and roll control, allowing Cobra, pedal turns and mixed-axis maneuvers.
+PSM capability is independent of stall. Active PSM blends toward its authored pitch,
+yaw and roll rates in proportion to actual engine thrust, allowing Cobra, pedal
+turns and mixed-axis maneuvers. No thrust means no powered rate assistance;
+remaining surface control and damping still work.
 Recovery assist follows the pilot's chosen nose and blends back into normal
 control, including roll. Stall still costs energy and height during PSM. Physical
 TVC continues to apply actual actuator torque and still needs engine thrust.
@@ -154,10 +158,14 @@ No aircraft-name branches or automatic maneuver selection are involved.
   for easier handling in stall, increase `controlAuthority`; for less energy loss,
   lower `dragMultiplier` toward 1. Tune PSM rates/grip separately.
 - The existing recovery practice spawn plus X enters low-speed stall; release X
-  and hold W to recover. Use the Cobra spawn with C and pitch/yaw/roll to test PSM.
+  and hold W to recover. Use the Cobra spawn with C + W and pitch/yaw/roll to test PSM.
+- Flight Lab also shows **PSM thrust authority** (`maneuver.controlAuthority`,
+  actual thrust / `fullControlThrust`, capped at 100%) and actual left/right nozzle
+  angles. Authority is available power, not a timer or remaining charge.
+  `maneuver.blend` is the continuous entry/release blend in snapshots.
 - Pause/single-step freezes/advances stall with the simulation. Reset clears it;
-  exported replays reproduce it. The physics version is `p3-stall-1`, so previous
-  speed-model replays are rejected instead of running under different rules.
+  exported replays reproduce it. The physics version is `p3-powered-psm-1`;
+  replays from previous physics versions are rejected.
 - `hud-preview.html?t=4&lab&stall&lang=th` shows the warning and debug layout without
   WebGL; replace `stall` with `recovering` to inspect recovery text. These are
   explicit visual fixtures, not simulation tests.
@@ -166,7 +174,7 @@ No aircraft-name branches or automatic maneuver selection are involved.
 
 Use the existing fields to define the limitation rather than adding an aircraft-name
 check or a separate difficulty system. For example, this maneuver block gives an
-aircraft a narrow entry window, reduced rotation rates and a short active period:
+aircraft a narrow entry window and reduced powered rotation rates:
 
 ```ts
 maneuver: {
@@ -178,9 +186,9 @@ maneuver: {
   pitchRate: 1.0,        // rad/s
   yawRate: 0.8,          // rad/s
   rollRate: 1.2,         // rad/s
-  maxRotation: Math.PI,  // radians; accumulated pitch/yaw rotation budget
-  activeSeconds: 1.0,
-  cooldown: 8,           // seconds after recovery
+  exitSpeed: 120,        // m/s; must exceed entryMax (hysteresis)
+  blendSeconds: 0.6,     // seconds to enter/release, not an active duration
+  fullControlThrust: 30, // m/s² of actual thrust for full rate assistance
 },
 ```
 
@@ -190,8 +198,62 @@ thresholds once the maneuver is active. `activeGrip`, `recoveryGrip` and
 `recoveryAcceleration` control airflow alignment during PSM and recovery.
 
 PSM and physical thrust vectoring are independent: `thrustVectoring: null` does
-not disable PSM. The current TVC solver models two pitch-vectoring engines; a
-single-engine or multi-axis solver needs a separate implementation.
+not disable the explicitly enabled arcade PSM assist. Conversely, `psmEnabled: false`
+does not disable TVC or stall handling.
+
+## Hold C, manage thrust, release to recover
+
+- `normal → armed`: hold C inside the per-aircraft entry speed/altitude envelope.
+- `armed → active`: steer any axis (pitch/yaw/roll magnitude > 0.35).
+  C alone never supplies thrust, applies brakes or chooses a maneuver.
+- Hold C to continue. There is no active time limit, rotation cap or cooldown.
+  Low speed/altitude do not cut active control off; energy loss and terrain still apply.
+- Release C, or exceed `exitSpeed`, to enter recovery. `blendSeconds` smoothly
+  returns control/path grip to normal. The aircraft does not snap its nose back.
+- Press C again during recovery inside the entry envelope to continue the same
+  maneuver. Blend and peak/rotation history are preserved; speed, thrust and stall
+  are never reset. Overspeed cannot chatter between states because `exitSpeed`
+  exceeds `entryMax`.
+- Recovery finishes when nose/path separation is < 0.3 radians and speed > 60 m/s
+  for 0.3 seconds, with the control blend returned to zero. Only a recovered maneuver
+  that reached 70° nose/path separation increments the completion count.
+- Use W for powered control; Shift adds thrust while its existing resource lasts.
+  X adds drag independently. These are arcade speed controls, not a persistent
+  throttle lever: releasing W returns to speed-hold thrust, which is weak at low speed.
+- PSM authority uses **this step's thrust**, not yesterday's engine readout or a
+  minimum magical control floor. Normal surface authority remains speed/stall-dependent.
+  Direction-changing forces cannot add speed for free when switching modes.
+
+## Twin-engine thrust vectoring
+
+The same solver handles both profiles, summing nozzle thrust vectors and `r × F`
+moments at the engine mounts. TVC acts continuously outside PSM, including at full
+stall; it needs engine thrust and does not replace lift or guarantee altitude hold.
+At zero speed, W/Shift can provide thrust and rotate the aircraft while it falls.
+The remaining surface controls and rate damping keep recovery approachable.
+
+| Field | Meaning |
+| --- | --- |
+| `maxAngle` | Maximum signed nozzle deflection in degrees. |
+| `rollGain`, `yawGain` | Differential left/right nozzle demand at full stick, degrees. |
+| `cantDeg` | Mirrored outward tilt of each deflection plane; 0 = vertical. |
+| `actuatorRate` | Maximum actual nozzle travel per second, degrees/s. |
+| `actuatorResponse`, `authorityResponse` | Response rates (1/s). |
+| `pivotX`, `height`, `spacing` | Engine mount relative to aircraft center in metres; spacing is half separation. |
+| `inertia` | Mass-normalized arcade inertia for pitch/yaw/roll, m². |
+
+F-22 uses vertical deflection planes (`cantDeg: 0`, `yawGain: 0`), with the existing
+arcade differential roll allocation. Su-57 uses mirrored 30° planes, 18° maximum
+travel and a yaw allocation. Pitch moves both nozzles together; yaw and roll share
+differential travel and create coupled moments. Simultaneous axis requests cannot
+exceed either nozzle's travel. These are **game tuning approximations**, not measured
+real aircraft performance or exact flight-control laws.
+
+Actual actuator angles drive both forces and nozzle rendering. Su-57 rendering no
+longer invents nozzle angles from body rates or applies a second actuator delay.
+The arcade rate controller allocates the requested TVC contribution once, then
+integrates actual actuator torque, including lag and release. A future single-engine
+or independently gimballed nozzle layout would require extending this geometry.
 
 ## Add a flight profile
 
