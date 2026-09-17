@@ -10,7 +10,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "postinstall": "node scripts/prepare-assets.mjs",
-    "assets:prepare": "node scripts/prepare-assets.mjs"
+    "assets:prepare": "node scripts/prepare-assets.mjs",
+    "flight:bench": "vitest run --config vitest.bench.config.ts"
   },
   "dependencies": {
     "@react-three/drei": "10.7.6",

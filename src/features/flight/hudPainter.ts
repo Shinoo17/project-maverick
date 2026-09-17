@@ -118,6 +118,27 @@ export function projectPoint(camera: Camera, point: Vec3Like, width: number, hei
   return { x: (projected.x * 0.5 + 0.5) * width, y: (-projected.y * 0.5 + 0.5) * height }
 }
 
+/** Flight-path marker in CSS pixels; angle points outward from screen centre.
+ * A directly aft vector has no unique edge direction, so it uses the bottom edge.
+ */
+export function projectVelocityMarker(camera: Camera, position: Vec3Like, velocity: Vec3Like, width: number, height: number, inset: number) {
+  const path = new Vector3().copy(velocity)
+  if (path.length() < 1) return null
+  const point = path.normalize().multiplyScalar(4000).add(position)
+  const view = point.clone().applyMatrix4(camera.matrixWorldInverse)
+  const front = projectPoint(camera, point, width, height)
+  const margin = Math.max(0, Math.min(inset, width / 2, height / 2))
+  const cx = width / 2, cy = height / 2
+  const onScreen = !!front && front.x >= margin && front.x <= width - margin && front.y >= margin && front.y <= height - margin
+  let dx = front ? front.x - cx : view.x
+  let dy = front ? front.y - cy : -view.y
+  if (Math.hypot(dx, dy) < 1e-9) { dx = 0; dy = 1 }
+  const angle = Math.atan2(dy, dx)
+  if (onScreen) return { ...front!, onScreen: true, angle }
+  const scale = Math.min(dx === 0 ? Infinity : (cx - margin) / Math.abs(dx), dy === 0 ? Infinity : (cy - margin) / Math.abs(dy))
+  return { x: MathUtils.clamp(cx + dx * scale, margin, width - margin), y: MathUtils.clamp(cy + dy * scale, margin, height - margin), onScreen: false, angle }
+}
+
 // One rung's screen endpoints. The rung plane follows the nose's ground track, not its
 // pitch, so it banks and slides with the world rather than with the airframe.
 export function projectRung(camera: Camera, position: Vec3Like, forward: Vec3Like, angle: number, width: number, height: number) {
@@ -254,8 +275,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     ctx.restore()
   }
 
-  // Where the nose points. A bare line with no bloom pass under it, so the small ring stays
-  // crisp beside the mouse reticle, the one other mark in the middle of the frame.
+  // Nose cross and winged flight-path circle remain distinct during high incidence.
   function drawNosePipper(state: GlassState, camera: Camera) {
     const point = projectPoint(camera, scratch.set(state.forward.x, state.forward.y, state.forward.z).multiplyScalar(4000).add(state.position), width, height)
     if (!point) return
@@ -264,11 +284,32 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     ctx.lineWidth = 1.6
     ctx.strokeStyle = HUD_GREEN
     ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.moveTo(cx - r, cy); ctx.lineTo(cx - r * 2.6, cy)
-    ctx.moveTo(cx + r, cy); ctx.lineTo(cx + r * 2.6, cy)
-    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy - r * 2.2)
+    ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy)
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r)
     ctx.stroke()
+  }
+
+  function drawVelocityMarker(state: GlassState, camera: Camera) {
+    const point = projectVelocityMarker(camera, state.position, state.velocity, width, height, 24)
+    if (!point) return
+    const { x, y, onScreen, angle } = point
+    const r = Math.max(layout.half * 0.018, 6)
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.lineWidth = 1.6
+    ctx.strokeStyle = HUD_GREEN
+    ctx.beginPath()
+    if (onScreen) {
+      ctx.arc(0, 0, r, 0, Math.PI * 2)
+      ctx.moveTo(-r, 0); ctx.lineTo(-r * 2.6, 0)
+      ctx.moveTo(r, 0); ctx.lineTo(r * 2.6, 0)
+      ctx.moveTo(0, -r); ctx.lineTo(0, -r * 2.2)
+    } else {
+      ctx.rotate(angle)
+      ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)
+    }
+    ctx.stroke()
+    ctx.restore()
   }
 
   // --- Tapes ------------------------------------------------------------------
@@ -461,6 +502,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     if (state.live && state.camera) {
       drawLadder(state, state.camera)
       drawNosePipper(state, state.camera)
+      drawVelocityMarker(state, state.camera)
     }
     drawTape({
       x: layout.cx - layout.half * layout.tapeOffset, value: state.speed, side: 'left', tape: SPEED_TAPE, band: speedBand,

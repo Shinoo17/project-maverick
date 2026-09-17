@@ -1,0 +1,2982 @@
+{
+  "scenario": "kulbitC",
+  "aircraftId": "su57",
+  "initialState": {
+    "id": "aircraft-1",
+    "aircraftId": "su57",
+    "speedLimits": {
+      "topSpeedMps": 200,
+      "afterburnerTopSpeedMps": 259.25925925925924
+    },
+    "stores": [
+      {
+        "stationId": "gun",
+        "weaponId": "su57-cannon",
+        "count": 1
+      },
+      {
+        "stationId": "short-range",
+        "weaponId": "training-ir",
+        "count": 2
+      },
+      {
+        "stationId": "medium-range",
+        "weaponId": "training-radar",
+        "count": 4
+      }
+    ],
+    "position": {
+      "x": 0,
+      "y": 2000,
+      "z": 0
+    },
+    "orientation": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "velocity": {
+      "x": 83.33333333333333,
+      "y": 0,
+      "z": 0
+    },
+    "alive": true,
+    "maneuver": {
+      "phase": "normal",
+      "timer": 0,
+      "rotation": 0,
+      "stable": 0,
+      "blend": 0,
+      "controlAuthority": 0,
+      "blocked": "none",
+      "entrySpeed": 0,
+      "exitSpeed": 0,
+      "peakAlpha": 0,
+      "completed": 0,
+      "highG": 0,
+      "airbrake": 0,
+      "burner": 1,
+      "burnerActive": false,
+      "burnerLocked": false,
+      "burnerRest": 0,
+      "alpha": 0,
+      "g": 1,
+      "pathRate": 0,
+      "drag": 0
+    },
+    "stall": {
+      "severity": 0,
+      "cause": "none",
+      "aoaDeg": 0
+    },
+    "thrustVectoring": {
+      "left": 0,
+      "right": 0,
+      "authority": 0
+    },
+    "speedDrive": 0,
+    "enginePower": 0.048611111111111105,
+    "rates": {
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    }
+  },
+  "commands": [
+    {
+      "startStep": 0,
+      "steps": 960,
+      "command": {
+        "tick": 0,
+        "entityId": "aircraft-1",
+        "pitch": 1,
+        "roll": 0,
+        "yaw": 0,
+        "speedAdjust": 1,
+        "airbrake": false,
+        "afterburner": true,
+        "highG": false,
+        "psmArm": true,
+        "gunHeld": false,
+        "actions": []
+      }
+    }
+  ],
+  "samples": [
+    {
+      "step": 0,
+      "time": 0,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 0,
+          "y": 2000,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "velocity": {
+          "x": 83.33333333333333,
+          "y": 0,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 0,
+          "rotation": 0,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 0,
+          "blocked": "none",
+          "entrySpeed": 0,
+          "exitSpeed": 0,
+          "peakAlpha": 0,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 0,
+          "g": 1,
+          "pathRate": 0,
+          "drag": 0
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": 0
+        },
+        "thrustVectoring": {
+          "left": 0,
+          "right": 0,
+          "authority": 0
+        },
+        "speedDrive": 0,
+        "enginePower": 0.048611111111111105,
+        "rates": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 0
+    },
+    {
+      "step": 30,
+      "time": 0.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 22.370756872670434,
+          "y": 2000.5544978413604,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.05894068321364252,
+          "w": 0.9982614867169369
+        },
+        "velocity": {
+          "x": 95.76530629357418,
+          "y": 5.963737719967537,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.24999999999999997,
+          "rotation": 0.11794972674155967,
+          "stable": 0,
+          "blend": 0.4166666666666668,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 2.9766867679845266,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.9583333333333335,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 3.194556580336191,
+          "g": 4.104492980894856,
+          "pathRate": 23.432274969032317,
+          "drag": 4.549883150109333
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": 2.976686767984504
+        },
+        "thrustVectoring": {
+          "left": 7.674389188711142,
+          "right": 7.674389188711142,
+          "authority": 0.7134952031398102
+        },
+        "speedDrive": 0.8646647167633871,
+        "enginePower": 1.2181128279319644,
+        "rates": {
+          "pitch": 0.8652758173926383,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 6.758021536971595
+    },
+    {
+      "step": 60,
+      "time": 0.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 47.94658319122317,
+          "y": 2003.6064887132668,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.215398932527003,
+          "w": 0.9765261388545765
+        },
+        "velocity": {
+          "x": 108.14658616864423,
+          "y": 17.636232912324367,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.5000000000000007,
+          "rotation": 0.4342006671347148,
+          "stable": 0,
+          "blend": 0.8333333333333323,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 14.949642938168497,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.916666666666667,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 15.61576701416778,
+          "g": 2.903661039982271,
+          "pathRate": 14.038381672058255,
+          "drag": 10.811930902683507
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": 14.949642938168493
+        },
+        "thrustVectoring": {
+          "left": 14.211717467088015,
+          "right": 14.211717467088015,
+          "authority": 0.9179150013761014
+        },
+        "speedDrive": 0.9816843611112657,
+        "enginePower": 1.291037104071494,
+        "rates": {
+          "pitch": 1.6401429841905786,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 24.877865688533362
+    },
+    {
+      "step": 90,
+      "time": 0.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 76.29942700548548,
+          "y": 2008.9189707136636,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.4509610083685865,
+          "w": 0.8925436509948338
+        },
+        "velocity": {
+          "x": 117.13844049614384,
+          "y": 25.00682840868615,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.7499999999999998,
+          "rotation": 0.9356835079215416,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 40.611669566586926,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.8750000000000004,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 41.56005008811925,
+          "g": 3.635610947507625,
+          "pathRate": 16.431948677690784,
+          "drag": 30.09823183995106
+        },
+        "stall": {
+          "severity": 0.25,
+          "cause": "aoa",
+          "aoaDeg": 40.61166956658693
+        },
+        "thrustVectoring": {
+          "left": 16.770669203042747,
+          "right": 16.770669203042747,
+          "authority": 0.9764822541439909
+        },
+        "speedDrive": 0.9975212478233336,
+        "enginePower": 1.3149368232758698,
+        "rates": {
+          "pitch": 2.2730751264476905,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 53.610715963843845
+    },
+    {
+      "step": 120,
+      "time": 1,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 105.57063492043005,
+          "y": 2016.6548345670096,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.695413112265232,
+          "w": 0.7186101886903525
+        },
+        "velocity": {
+          "x": 114.8962040750426,
+          "y": 36.954721637905486,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.9999999999999989,
+          "rotation": 1.537989235458364,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 69.33197008294066,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.8333333333333339,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 70.2906472936197,
+          "g": 6.098151863646482,
+          "pathRate": 27.981631712802006,
+          "drag": 51.43936493573558
+        },
+        "stall": {
+          "severity": 0.8750000000000004,
+          "cause": "aoa",
+          "aoaDeg": 69.33197008294066
+        },
+        "thrustVectoring": {
+          "left": 17.622772650814323,
+          "right": 17.622772650814323,
+          "authority": 0.9932620530009145
+        },
+        "speedDrive": 0.9996645373720976,
+        "enginePower": 1.31805700873417,
+        "rates": {
+          "pitch": 2.4962204582898697,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 88.12029212825759
+    },
+    {
+      "step": 150,
+      "time": 1.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 132.68057580273296,
+          "y": 2027.4725066332803,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.8849708986140336,
+          "w": 0.4656463342562358
+        },
+        "velocity": {
+          "x": 100.83681421171397,
+          "y": 48.779862872822584,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 1.249999999999998,
+          "rotation": 2.1728630211591327,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 97.7466805883531,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.7916666666666674,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 98.6804800504595,
+          "g": 7.077879041805605,
+          "pathRate": 35.03153763477947,
+          "drag": 52.10748666080095
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "aoa",
+          "aoaDeg": 97.7466805883531
+        },
+        "thrustVectoring": {
+          "left": 17.88757504734093,
+          "right": 17.88757504734093,
+          "authority": 0.9980695458637723
+        },
+        "speedDrive": 0.9999546000702375,
+        "enginePower": 1.3044526162291945,
+        "rates": {
+          "pitch": 2.5671606938181837,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 124.49588057239986
+    },
+    {
+      "step": 180,
+      "time": 1.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 155.24514404264272,
+          "y": 2040.6816897659169,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9869466639446758,
+          "w": 0.16104745427505282
+        },
+        "velocity": {
+          "x": 79.7360153925025,
+          "y": 55.437610420782136,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 1.4999999999999971,
+          "rotation": 2.8180889152877193,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 125.71526992294194,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.7500000000000009,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 126.65508816033439,
+          "g": 6.266740604564112,
+          "pathRate": 35.599284109312265,
+          "drag": 38.92281843240531
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "aoa",
+          "aoaDeg": 125.71526992294194
+        },
+        "thrustVectoring": {
+          "left": 17.967034228234734,
+          "right": 17.967034228234734,
+          "authority": 0.9994469156298522
+        },
+        "speedDrive": 0.9999938557876467,
+        "enginePower": 1.2827824207851493,
+        "rates": {
+          "pitch": 2.5896754325971685,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 161.4646011385163
+    },
+    {
+      "step": 210,
+      "time": 1.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 172.30355819218417,
+          "y": 2054.4833067089107,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9868259123270222,
+          "w": -0.1617857186526069
+        },
+        "velocity": {
+          "x": 57.79855780007363,
+          "y": 53.43550275885445,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 1.7499999999999962,
+          "rotation": 3.466592540641727,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 154.8450795588485,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.7083333333333344,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 155.8673453175097,
+          "g": 3.8206048060998445,
+          "pathRate": 26.112498774764024,
+          "drag": 24.199650911345884
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "aoa",
+          "aoaDeg": 154.8450795588485
+        },
+        "thrustVectoring": {
+          "left": 17.990423864902812,
+          "right": 17.990423864902812,
+          "authority": 0.9998415386748842
+        },
+        "speedDrive": 0.999999168471281,
+        "enginePower": 1.260098568422984,
+        "rates": {
+          "pitch": 2.596777477824076,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.6211218702306
+    },
+    {
+      "step": 240,
+      "time": 2,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 184.33214582373267,
+          "y": 2066.5399245713684,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.8836157312014271,
+          "w": -0.4682128144053379
+        },
+        "velocity": {
+          "x": 40.03520431903638,
+          "y": 41.91827406625331,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 1.9999999999999953,
+          "rotation": 4.116126872133035,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.6666666666666679,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 170.4795730508359,
+          "g": 1.0044618999736408,
+          "pathRate": 0.9059001971658478,
+          "drag": 17.4571822350487
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": -171.72805383564904
+        },
+        "thrustVectoring": {
+          "left": 17.9972335777331,
+          "right": 17.9972335777331,
+          "authority": 0.9999546000702374
+        },
+        "speedDrive": 0.9999998874648253,
+        "enginePower": 1.2401011254000425,
+        "rates": {
+          "pitch": 2.5990011001230116,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 235.83669771352842
+    },
+    {
+      "step": 270,
+      "time": 2.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 192.8261599141802,
+          "y": 2074.728541945688,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.6879068708691095,
+          "w": -0.7257989645976842
+        },
+        "velocity": {
+          "x": 29.671387981155572,
+          "y": 23.4720883399446,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 2.2499999999999947,
+          "rotation": 4.765982907108609,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.6250000000000013,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 125.27569092341086,
+          "g": 4.952629238006374,
+          "pathRate": 70.97861430198843,
+          "drag": 15.87458427779218
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": -127.10844098851611
+        },
+        "thrustVectoring": {
+          "left": 17.999203442336604,
+          "right": 17.999203442336604,
+          "authority": 0.9999869927023459
+        },
+        "speedDrive": 0.9999999847700202,
+        "enginePower": 1.2263281112339819,
+        "rates": {
+          "pitch": 2.599692242192544,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 273.0707058087305
+    },
+    {
+      "step": 300,
+      "time": 2.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 199.85755303625172,
+          "y": 2078.0597755185254,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.4201615403850105,
+          "w": -0.9074493263986122
+        },
+        "velocity": {
+          "x": 28.128295368479936,
+          "y": 4.352292073250373,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 2.499999999999994,
+          "rotation": 5.415938649961332,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.5833333333333348,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 58.485200559386975,
+          "g": 7.102442659952911,
+          "pathRate": 138.8568141277203,
+          "drag": 13.767098763691912
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": -60.883704188546126
+        },
+        "thrustVectoring": {
+          "left": 17.999771093496648,
+          "right": 17.999771093496648,
+          "authority": 0.9999962733468278
+        },
+        "speedDrive": 0.9999999979388464,
+        "enginePower": 1.2216710898451422,
+        "rates": {
+          "pitch": 2.5999056586246625,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 310.3104267444762
+    },
+    {
+      "step": 330,
+      "time": 2.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 207.6407086496485,
+          "y": 2077.291750325389,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.10841657765986003,
+          "w": -0.9941055505772634
+        },
+        "velocity": {
+          "x": 35.15640048086519,
+          "y": -8.689808680215329,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 2.749999999999993,
+          "rotation": 6.065925107457637,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.5416666666666683,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 1.4357496311060793,
+          "g": 2.6891084010317643,
+          "pathRate": 39.17974279492713,
+          "drag": 12.519398504449814
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed",
+          "aoaDeg": -0.13214302983952836
+        },
+        "thrustVectoring": {
+          "left": 17.999934297473835,
+          "right": 17.999934297473835,
+          "authority": 0.99999893229599
+        },
+        "speedDrive": 0.9999999997210532,
+        "enginePower": 1.224977121246578,
+        "rates": {
+          "pitch": 2.5999711983080793,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 347.55190749967153
+    },
+    {
+      "step": 360,
+      "time": 3,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 217.89470524019123,
+          "y": 2074.4369949185593,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.21468357175997896,
+          "w": -0.9766836560608445
+        },
+        "velocity": {
+          "x": 46.66072780895877,
+          "y": -12.305143482655764,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 2.999999999999992,
+          "rotation": 6.7159209791317,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.5000000000000018,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 39.56734990313399,
+          "g": 2.0119584940892024,
+          "pathRate": 20.486182866185505,
+          "drag": 15.379639567539018
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 38.49666372160015
+        },
+        "thrustVectoring": {
+          "left": 17.999981155107754,
+          "right": 17.999981155107754,
+          "authority": 0.9999996940976797
+        },
+        "speedDrive": 0.9999999999622488,
+        "enginePower": 1.232060938235139,
+        "rates": {
+          "pitch": 2.5999912369826794,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 384.793927647518
+    },
+    {
+      "step": 390,
+      "time": 3.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 230.8327025415602,
+          "y": 2071.9870815774075,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.5153081775832635,
+          "w": -0.8570049487113921
+        },
+        "velocity": {
+          "x": 55.547833010344405,
+          "y": -6.047664323480995,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 3.249999999999991,
+          "rotation": 7.365919724698631,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.45833333333333526,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 68.24960799748787,
+          "g": 4.47241580533941,
+          "pathRate": 43.965911776068815,
+          "drag": 20.28347292104382
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 67.37458330865076
+        },
+        "thrustVectoring": {
+          "left": 17.999994597232906,
+          "right": 17.999994597232906,
+          "authority": 0.9999999123575181
+        },
+        "speedDrive": 0.999999999994891,
+        "enginePower": 1.2377400212486473,
+        "rates": {
+          "pitch": 2.599997341907742,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 422.0361124572979
+    },
+    {
+      "step": 420,
+      "time": 3.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 245.0214921801119,
+          "y": 2072.003166097915,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.7619812554030636,
+          "w": -0.6475990784539236
+        },
+        "velocity": {
+          "x": 56.34161112338312,
+          "y": 6.265422782979688,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 3.4999999999999902,
+          "rotation": 8.015919344655776,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.41666666666666874,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 92.93288813069745,
+          "g": 5.633077536172902,
+          "pathRate": 54.88475723548379,
+          "drag": 21.909300081261865
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 92.14885293539896
+        },
+        "thrustVectoring": {
+          "left": 17.9999984514531,
+          "right": 17.9999984514531,
+          "authority": 0.9999999748900085
+        },
+        "speedDrive": 0.9999999999993086,
+        "enginePower": 1.2385612140891633,
+        "rates": {
+          "pitch": 2.5999991960553936,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 459.2783473659466
+    },
+    {
+      "step": 450,
+      "time": 3.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 258.1611760133293,
+          "y": 2075.1829665958685,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.9288761443986687,
+          "w": -0.3703904809347344
+        },
+        "velocity": {
+          "x": 47.5862787074406,
+          "y": 18.15037744933917,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 3.7499999999999893,
+          "rotation": 8.665919229848528,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.3750000000000022,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 115.64272597487512,
+          "g": 5.616058816197641,
+          "pathRate": 60.647514007422764,
+          "drag": 19.863857965968197
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 114.90671348458943
+        },
+        "thrustVectoring": {
+          "left": 17.99999955622472,
+          "right": 17.99999955622472,
+          "authority": 0.9999999928058669
+        },
+        "speedDrive": 0.9999999999999064,
+        "enginePower": 1.2343622545618274,
+        "rates": {
+          "pitch": 2.5999997575344826,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 496.5205974714753
+    },
+    {
+      "step": 480,
+      "time": 4,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 268.12911863069587,
+          "y": 2080.612228885918,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.9985190868082878,
+          "w": -0.05440251170252337
+        },
+        "velocity": {
+          "x": 31.9054573594573,
+          "y": 23.669348006492672,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 3.9999999999999885,
+          "rotation": 9.315919195263193,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.3333333333333357,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 137.1926507820736,
+          "g": 4.73719279659516,
+          "pathRate": 64.78273466155808,
+          "drag": 15.811697190654023
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 136.4910983829567
+        },
+        "thrustVectoring": {
+          "left": 17.999999872837282,
+          "right": 17.999999872837282,
+          "authority": 0.9999999979388464
+        },
+        "speedDrive": 0.9999999999999872,
+        "enginePower": 1.2272981598094455,
+        "rates": {
+          "pitch": 2.5999999270724063,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 533.7628521733797
+    },
+    {
+      "step": 510,
+      "time": 4.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 273.8194933488072,
+          "y": 2086.2106332539965,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.9636185393009294,
+          "w": 0.26728133252351044
+        },
+        "velocity": {
+          "x": 14.376809306075195,
+          "y": 19.556304712202195,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 4.250000000000001,
+          "rotation": 9.965919184871945,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.2916666666666692,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 157.3265588173017,
+          "g": 3.4189851124398016,
+          "pathRate": 73.97220767353348,
+          "drag": 12.908722300993428
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 156.7015853355782
+        },
+        "thrustVectoring": {
+          "left": 17.99999996356398,
+          "right": 17.99999996356398,
+          "authority": 0.9999999994094696
+        },
+        "speedDrive": 0.9999999999999982,
+        "enginePower": 1.2203201606120702,
+        "rates": {
+          "pitch": 2.599999978120265,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 571.005108261506
+    },
+    {
+      "step": 540,
+      "time": 4.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 275.5212740040954,
+          "y": 2089.516484804642,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.8278285318586004,
+          "w": 0.5609812134473261
+        },
+        "velocity": {
+          "x": 0.8437760970162399,
+          "y": 5.951582574831202,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 4.500000000000013,
+          "rotation": 10.615919181757349,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.25000000000000266,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 166.31660589566545,
+          "g": 3.078787257526634,
+          "pathRate": 246.66901141920778,
+          "drag": 11.787813977621648
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 167.13077243783596
+        },
+        "thrustVectoring": {
+          "left": 17.999999989560326,
+          "right": 17.999999989560326,
+          "authority": 0.9999999998308101
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 1.2163081720397506,
+        "rates": {
+          "pitch": 2.599999993450243,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 608.2473647665526
+    },
+    {
+      "step": 570,
+      "time": 4.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 275.14957000769607,
+          "y": 2088.8616163462334,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.605366079779011,
+          "w": 0.7959471775519981
+        },
+        "velocity": {
+          "x": -2.2603466793562164,
+          "y": -9.818002832914638,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 4.750000000000026,
+          "rotation": 11.265919180825753,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.20833333333333615,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 28.45461240615607,
+          "g": 1.8856367967120682,
+          "pathRate": 93.53311054193374,
+          "drag": 11.820669538800475
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 27.992646438822756
+        },
+        "thrustVectoring": {
+          "left": 17.99999999700888,
+          "right": 17.99999999700888,
+          "authority": 0.9999999999515264
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 1.216646022857408,
+        "rates": {
+          "pitch": 2.5999999980430313,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 645.4896213966763
+    },
+    {
+      "step": 600,
+      "time": 5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 275.06378241252287,
+          "y": 2084.6090244000557,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.31952267851081934,
+          "w": 0.9475786288837839
+        },
+        "velocity": {
+          "x": 2.7766192161613614,
+          "y": -23.18462901806997,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 5.000000000000038,
+          "rotation": 11.915919180547599,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.16666666666666963,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 45.90259249311408,
+          "g": 3.1957999610072445,
+          "pathRate": 74.3584925120928,
+          "drag": 12.707813965634596
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 45.28083804154293
+        },
+        "thrustVectoring": {
+          "left": 17.999999999143014,
+          "right": 17.999999999143014,
+          "authority": 0.9999999999861121
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 1.2196849170322848,
+        "rates": {
+          "pitch": 2.599999999416239,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 682.7318780642397
+    },
+    {
+      "step": 630,
+      "time": 5.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 277.1644409450425,
+          "y": 2077.69665289227,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.00022571694532344354,
+          "w": 0.9999999745259299
+        },
+        "velocity": {
+          "x": 14.374845513618427,
+          "y": -30.477437855357746,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 5.250000000000051,
+          "rotation": 12.565919180464679,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.1250000000000031,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 64.72297729636776,
+          "g": 4.4917049322413245,
+          "pathRate": 73.64893781946915,
+          "drag": 14.674536416937165
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 64.09530988882908
+        },
+        "thrustVectoring": {
+          "left": 17.99999999975447,
+          "right": 17.99999999975447,
+          "authority": 0.9999999999960211
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 1.223817953359209,
+        "rates": {
+          "pitch": 2.5999999998261165,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 719.9741347429878
+    },
+    {
+      "step": 660,
+      "time": 5.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 282.46858033569396,
+          "y": 2070.1358099946674,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.31909487688400906,
+          "w": 0.9477227756819919
+        },
+        "velocity": {
+          "x": 27.322272621813408,
+          "y": -28.47778301975754,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 5.500000000000063,
+          "rotation": 13.215919180439997,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.08333333333333659,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 83.40270579563696,
+          "g": 5.345167487105214,
+          "pathRate": 74.98856047699799,
+          "drag": 16.498912644595116
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 82.78620191018638
+        },
+        "thrustVectoring": {
+          "left": 17.99999999992966,
+          "right": 17.99999999992966,
+          "authority": 0.9999999999988602
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 1.2268427862816893,
+        "rates": {
+          "pitch": 2.599999999948275,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 757.2163914250747
+    },
+    {
+      "step": 690,
+      "time": 5.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 290.51086087136565,
+          "y": 2064.2086448325463,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.6050067007034996,
+          "w": 0.7962203791061029
+        },
+        "velocity": {
+          "x": 35.50530136039735,
+          "y": -18.211927769446927,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 5.7500000000000755,
+          "rotation": 13.865919180432657,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.04166666666666997,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 101.61354378022223,
+          "g": 5.595782273298516,
+          "pathRate": 77.41039874345608,
+          "drag": 16.873323788735394
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 101.01722188030827
+        },
+        "thrustVectoring": {
+          "left": 17.99999999997985,
+          "right": 17.99999999997985,
+          "authority": 0.9999999999996735
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 1.227186866807835,
+        "rates": {
+          "pitch": 2.5999999999846324,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 794.4586481081534
+    },
+    {
+      "step": 720,
+      "time": 6,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 299.49877774550174,
+          "y": 2061.428241340214,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.8275752019338612,
+          "w": 0.5613548656100957
+        },
+        "velocity": {
+          "x": 34.785387237543915,
+          "y": -4.422425173191861,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 6.000000000000088,
+          "rotation": 14.515919180430483,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 3.2998777321768813e-15,
+          "burnerActive": true,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 118.94630949801768,
+          "g": 5.273460023683153,
+          "pathRate": 82.43115005120733,
+          "drag": 15.501329915486316
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 118.39182719232977
+        },
+        "thrustVectoring": {
+          "left": 17.999999999994223,
+          "right": 17.999999999994223,
+          "authority": 0.9999999999999064
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 1.2247254007355308,
+        "rates": {
+          "pitch": 2.59999999999544,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 831.7009047915285
+    },
+    {
+      "step": 750,
+      "time": 6.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 307.47811669841195,
+          "y": 2060.8526298987285,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.962369711699222,
+          "w": 0.27174351510929684
+        },
+        "velocity": {
+          "x": 28.83899241770733,
+          "y": -0.9561130075264849,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 6.2500000000001,
+          "rotation": 15.157554750342129,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.9623446622316522,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 0.24166666666666664,
+          "alpha": 150.36277400233377,
+          "g": 1.2291992506542697,
+          "pathRate": 13.808976046382037,
+          "drag": 13.004959425881076
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 149.26433296143682
+        },
+        "thrustVectoring": {
+          "left": 17.999999999998348,
+          "right": 17.999999999998348,
+          "authority": 0.9999999999999734
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.46192543787119306,
+        "rates": {
+          "pitch": 2.5415816346647784,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 868.4639149329319
+    },
+    {
+      "step": 780,
+      "time": 6.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 313.6867346368662,
+          "y": 2060.7256216729843,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9991798681732204,
+          "w": -0.04049186384134774
+        },
+        "velocity": {
+          "x": 20.87234524474417,
+          "y": -0.6245070134147642,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 6.500000000000113,
+          "rotation": 15.788969142007847,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.9565315755970832,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 0.49166666666666736,
+          "alpha": 173.64490917826592,
+          "g": 1.1835053576577468,
+          "pathRate": 16.811736228258532,
+          "drag": 11.681500954574854
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": -174.98507268695693
+        },
+        "thrustVectoring": {
+          "left": 17.99999999999953,
+          "right": 17.99999999999953,
+          "authority": 0.9999999999999922
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.45913515628659995,
+        "rates": {
+          "pitch": 2.5134117388424886,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 904.6412946991929
+    },
+    {
+      "step": 810,
+      "time": 6.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 317.81129400255304,
+          "y": 2060.2556534329183,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9381670651672804,
+          "w": -0.34618283873613914
+        },
+        "velocity": {
+          "x": 12.506825186430834,
+          "y": -3.5138112812925786,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 6.750000000000125,
+          "rotation": 16.414961847615913,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.9525442124143892,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 0.7416666666666665,
+          "alpha": 123.79917783255358,
+          "g": 2.6879110477608132,
+          "pathRate": 106.17159798294361,
+          "drag": 11.295835951865403
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": -125.87590433921274
+        },
+        "thrustVectoring": {
+          "left": 17.999999999999865,
+          "right": 17.999999999999865,
+          "authority": 0.9999999999999977
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.45722122195890685,
+        "rates": {
+          "pitch": 2.4964418676511593,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 940.5080347365064
+    },
+    {
+      "step": 840,
+      "time": 7,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 320.04117013086795,
+          "y": 2058.7793101504362,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.7869860921724665,
+          "w": -0.6169707373345273
+        },
+        "velocity": {
+          "x": 6.121839977013371,
+          "y": -8.296227360127869,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 7.000000000000138,
+          "rotation": 17.03773861522167,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.9515360857339052,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 0.9916666666666656,
+          "alpha": 50.23334160251073,
+          "g": 2.907773988676921,
+          "pathRate": 149.53418694659717,
+          "drag": 10.952294861496489
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": -52.6671169411603
+        },
+        "thrustVectoring": {
+          "left": 17.999999999999947,
+          "right": 17.999999999999947,
+          "authority": 0.9999999999999987
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.4567373211522745,
+        "rates": {
+          "pitch": 2.487423243082258,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 976.1905150991118
+    },
+    {
+      "step": 870,
+      "time": 7.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 321.1987227203284,
+          "y": 2056.010642018306,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.5606312268276796,
+          "w": -0.8280655937217116
+        },
+        "velocity": {
+          "x": 3.9368997934156926,
+          "y": -13.723915760587571,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 7.25000000000015,
+          "rotation": 17.65926013289823,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.9529008793695781,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.020138888888888887,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 1.2416666666666647,
+          "alpha": 5.794786035153643,
+          "g": 1.2060874122047915,
+          "pathRate": 26.871523987533102,
+          "drag": 10.834656554210486
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed",
+          "aoaDeg": 4.383921045129123
+        },
+        "thrustVectoring": {
+          "left": 17.999999999999947,
+          "right": 17.999999999999947,
+          "authority": 0.9999999999999987
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.4573924220973975,
+        "rates": {
+          "pitch": 2.485912156633629,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 1011.8010749385412
+    },
+    {
+      "step": 900,
+      "time": 7.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 322.32553404230976,
+          "y": 2051.9214587224455,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.2803967536732752,
+          "w": -0.9598841912071939
+        },
+        "velocity": {
+          "x": 5.553132636956235,
+          "y": -18.565816706592127,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 7.5000000000001625,
+          "rotation": 18.2811410831219,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.9553894628048645,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.0409722222222222,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 1.4916666666666638,
+          "alpha": 40.78003029197687,
+          "g": 1.237057992592025,
+          "pathRate": 21.291841482750936,
+          "drag": 11.34925310737312
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 39.768758174058384
+        },
+        "thrustVectoring": {
+          "left": 17.999999999999947,
+          "right": 17.999999999999947,
+          "authority": 0.9999999999999987
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.45858694214633494,
+        "rates": {
+          "pitch": 2.4896161086400723,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 1047.4322287459368
+    },
+    {
+      "step": 930,
+      "time": 7.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 324.1941056431366,
+          "y": 2046.9038550099096,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.027352638174631377,
+          "w": -0.9996258465970596
+        },
+        "velocity": {
+          "x": 9.492040859918289,
+          "y": -20.968748922423206,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 7.750000000000175,
+          "rotation": 18.90426802163104,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.957668909938183,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.06180555555555546,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 1.741666666666663,
+          "alpha": 68.77967025456262,
+          "g": 1.8122012282038809,
+          "pathRate": 37.04317813347834,
+          "drag": 12.246850169453166
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 67.89696935348691
+        },
+        "thrustVectoring": {
+          "left": 17.999999999999947,
+          "right": 17.999999999999947,
+          "authority": 0.9999999999999987
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.4596810767703278,
+        "rates": {
+          "pitch": 2.495249867922824,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 1083.1347724234174
+    },
+    {
+      "step": 960,
+      "time": 8,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "su57",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "su57-cannon",
+            "count": 1
+          },
+          {
+            "stationId": "short-range",
+            "weaponId": "training-ir",
+            "count": 2
+          },
+          {
+            "stationId": "medium-range",
+            "weaponId": "training-radar",
+            "count": 4
+          }
+        ],
+        "position": {
+          "x": 327.126371660858,
+          "y": 2041.7161736020205,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": -0.33308194891524073,
+          "w": -0.9428978816960111
+        },
+        "velocity": {
+          "x": 13.679938571917141,
+          "y": -20.00424301376161,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 8.000000000000187,
+          "rotation": 19.528696498693463,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 0.9585669132886011,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 179.83456993912316,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 0.08263888888888872,
+          "burnerActive": false,
+          "burnerLocked": true,
+          "burnerRest": 1.991666666666662,
+          "alpha": 94.54554412336148,
+          "g": 2.055597889795376,
+          "pathRate": 41.649060854377126,
+          "drag": 12.695029863420048
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 93.69915528039178
+        },
+        "thrustVectoring": {
+          "left": 17.999999999999947,
+          "right": 17.999999999999947,
+          "authority": 0.9999999999999987
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.46011211837852856,
+        "rates": {
+          "pitch": 2.499585889706977,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 1118.911888766871
+    }
+  ],
+  "recordedWithProfileVersion": "p3-powered-psm-1",
+  "flightStep": 0.008333333333333333,
+  "totalSteps": 960
+}

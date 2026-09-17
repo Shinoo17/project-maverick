@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import { flightAttitude, burnerStatus, flightWarning } from '../src/features/flight/telemetry'
-import { glassLayout, projectRung } from '../src/features/flight/hudPainter'
+import { glassLayout, projectRung, projectVelocityMarker } from '../src/features/flight/hudPainter'
 import { glassState } from '../src/features/flight/FlightInstruments'
 import { arcadeSpeed } from '../src/game/flight/speed'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
@@ -13,6 +13,47 @@ const pose = (heading: number, pitch = 0, bank = 0) => new Quaternion()
   .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), pitch * Math.PI / 180))
   .multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), bank * Math.PI / 180))
 const aircraft = () => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'] }).snapshot().aircraft[0]
+
+describe('velocity marker projection', () => {
+  const camera = new PerspectiveCamera(60, 16 / 9, .5, 14000)
+  camera.lookAt(1, 0, 0); camera.updateMatrixWorld()
+  const position = { x: 0, y: 0, z: 0 }
+  it('projects forward flight at the sightline and hides speeds below 1 m/s', () => {
+    const marker = projectVelocityMarker(camera, position, { x: 100, y: 0, z: 0 }, 1600, 900, 24)!
+    expect(marker.onScreen).toBe(true)
+    expect(marker.x).toBeCloseTo(800)
+    expect(marker.y).toBeCloseTo(450)
+    expect(projectVelocityMarker(camera, position, { x: .99, y: 0, z: 0 }, 1600, 900, 24)).toBeNull()
+    expect(projectVelocityMarker(camera, position, { x: 0, y: 0, z: 0 }, 1600, 900, 24)).toBeNull()
+    expect(projectVelocityMarker(camera, position, { x: 1, y: 0, z: 0 }, 1600, 900, 24)).not.toBeNull()
+  })
+  it('clamps side, aft and camera-plane directions to an inset edge with finite outward angles', () => {
+    for (const x of [-100, 0, 1, 100]) for (const y of [-300, 0, 300]) for (const z of [-300, 0, 300]) {
+      if (Math.hypot(x, y, z) < 1) continue
+      const marker = projectVelocityMarker(camera, position, { x, y, z }, 1600, 900, 24)!
+      expect(marker.x).toBeGreaterThanOrEqual(24)
+      expect(marker.x).toBeLessThanOrEqual(1576)
+      expect(marker.y).toBeGreaterThanOrEqual(24)
+      expect(marker.y).toBeLessThanOrEqual(876)
+      expect(Number.isFinite(marker.angle)).toBe(true)
+      if (x <= 0) expect(marker.onScreen).toBe(false)
+      if (!marker.onScreen) expect(Math.min(Math.abs(marker.x - 24), Math.abs(marker.x - 1576), Math.abs(marker.y - 24), Math.abs(marker.y - 876))).toBeLessThan(1e-9)
+    }
+    const aftUp = projectVelocityMarker(camera, position, { x: -100, y: 100, z: 0 }, 1600, 900, 24)!
+    expect(aftUp.y).toBe(24)
+    expect(aftUp.angle).toBeCloseTo(-Math.PI / 2)
+  })
+  it('uses world position and camera pose without mutating either vector or camera', () => {
+    const moved = camera.clone()
+    moved.position.set(900, 2000, -500); moved.updateMatrixWorld()
+    const velocity = new Vector3(100, 0, 0), before = moved.matrixWorldInverse.clone()
+    const point = projectVelocityMarker(moved, moved.position, velocity, 1600, 900, 24)!
+    expect(point.x).toBeCloseTo(800)
+    expect(point.y).toBeCloseTo(450)
+    expect(velocity.toArray()).toEqual([100, 0, 0])
+    expect(moved.matrixWorldInverse).toEqual(before)
+  })
+})
 
 describe('stall advisories', () => {
   it('shows recovery advice, suppresses it during active PSM, and keeps terrain/boundary priority', () => {

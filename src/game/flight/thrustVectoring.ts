@@ -71,5 +71,22 @@ export function thrustForces(tvc: ThrustVectoringState, thrust: number, p: Thrus
   } }
 }
 
+/** Full-travel geometry capacity (rad/s²), independent of input and actuator position.
+ * Opposed travel couples yaw and roll: these ceilings are not additive budgets.
+ * Observation only in Phase 0; the flight step does not consume this helper.
+ */
+export function tvcCapacity(profile: ThrustVectoringProfile | null, thrust: number) {
+  if (!profile) return { pitch: 0, yaw: 0, roll: 0 }
+  const at = (left: number, right: number) => thrustForces({ left, right, authority: 1 }, thrust, profile).angularAcceleration
+  const a = profile.maxAngle
+  const together = [at(a, a), at(-a, -a)]
+  const opposed = [at(a, -a), at(-a, a)]
+  return {
+    pitch: Math.max(...together.map(value => Math.abs(value.pitch))),
+    yaw: Math.max(...opposed.map(value => Math.abs(value.yaw))),
+    roll: Math.max(...opposed.map(value => Math.abs(value.roll))),
+  }
+}
+
 // Compatibility exports for the original F-22 fixtures. Runtime uses explicit profiles.
 export { tvcAuthority as f22TvcAuthority, tvcTargets as f22TvcTargets, thrustForces as f22ThrustForces }
