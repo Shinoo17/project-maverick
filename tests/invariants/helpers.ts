@@ -1,6 +1,6 @@
 import { Quaternion } from 'three'
 import { GameRuntime } from '../../src/game/runtime/GameRuntime'
-import { FixedClock, FLIGHT_STEP } from '../../src/game/runtime/clock'
+import { FixedClock, FLIGHT_STEP, WORLD_STEP } from '../../src/game/runtime/clock'
 import type { PilotCommand } from '../../src/game/runtime/commands'
 import type { AircraftState } from '../../src/game/state/WorldState'
 import { getFlightProfile } from '../../src/game/flight/profile'
@@ -53,7 +53,7 @@ export function goldenAtFps(golden: Golden, fps: number) {
   let step = 0, runIndex = 0
   const frames = Math.ceil(golden.totalSteps * FLIGHT_STEP * fps) + 1
   for (let frame = 0; frame < frames && step < golden.totalSteps; frame++) clock.advance(1 / fps, () => {
-    for (let substep = 0; substep < 2 && step < golden.totalSteps; substep++) {
+    for (let substep = 0; substep < WORLD_STEP / FLIGHT_STEP && step < golden.totalSteps; substep++) {
       while (step >= golden.commands[runIndex].startStep + golden.commands[runIndex].steps) runIndex++
       stepFlight(state, { ...golden.commands[runIndex].command, tick: step }, FLIGHT_STEP)
       samples.push(structuredClone(state))

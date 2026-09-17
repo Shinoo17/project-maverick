@@ -119,6 +119,7 @@ export function projectPoint(camera: Camera, point: Vec3Like, width: number, hei
 }
 
 /** Flight-path marker in CSS pixels; angle points outward from screen centre.
+ * Angle is returned in both cases; the painter only uses it for an edge chevron.
  * A directly aft vector has no unique edge direction, so it uses the bottom edge.
  */
 export function projectVelocityMarker(camera: Camera, position: Vec3Like, velocity: Vec3Like, width: number, height: number, inset: number) {
@@ -275,7 +276,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     ctx.restore()
   }
 
-  // Nose cross and winged flight-path circle remain distinct during high incidence.
+  // Preserve the original winged-circle nose pipper. FPM uses a distinct diamond.
   function drawNosePipper(state: GlassState, camera: Camera) {
     const point = projectPoint(camera, scratch.set(state.forward.x, state.forward.y, state.forward.z).multiplyScalar(4000).add(state.position), width, height)
     if (!point) return
@@ -284,8 +285,10 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     ctx.lineWidth = 1.6
     ctx.strokeStyle = HUD_GREEN
     ctx.beginPath()
-    ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy)
-    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r)
+    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+    ctx.moveTo(cx - r, cy); ctx.lineTo(cx - r * 2.6, cy)
+    ctx.moveTo(cx + r, cy); ctx.lineTo(cx + r * 2.6, cy)
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy - r * 2.2)
     ctx.stroke()
   }
 
@@ -300,10 +303,10 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     ctx.strokeStyle = HUD_GREEN
     ctx.beginPath()
     if (onScreen) {
-      ctx.arc(0, 0, r, 0, Math.PI * 2)
-      ctx.moveTo(-r, 0); ctx.lineTo(-r * 2.6, 0)
-      ctx.moveTo(r, 0); ctx.lineTo(r * 2.6, 0)
-      ctx.moveTo(0, -r); ctx.lineTo(0, -r * 2.2)
+      ctx.moveTo(0, -r); ctx.lineTo(r, 0)
+      ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.closePath()
+      ctx.moveTo(-r, 0); ctx.lineTo(-r * 1.8, 0)
+      ctx.moveTo(r, 0); ctx.lineTo(r * 1.8, 0)
     } else {
       ctx.rotate(angle)
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)

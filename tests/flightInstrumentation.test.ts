@@ -6,6 +6,8 @@ import { stepSpeed } from '../src/game/flight/speed'
 import { angleOfAttack } from '../src/game/flight/stall'
 import { tvcCapacity, thrustForces } from '../src/game/flight/thrustVectoring'
 import { neutralCommand } from '../src/game/runtime/commands'
+import { FLIGHT_STEP } from '../src/game/runtime/clock'
+import { stepFlight } from '../src/game/flight/stepFlight'
 import { aircraftIds, createAircraft } from '../benchmarks/flight/harness'
 
 function freeze(value: object) {
@@ -76,6 +78,23 @@ describe('read-only end-of-step flight observations', () => {
 })
 
 describe('full-travel TVC capacity', () => {
+  it.each([
+    { aircraftId: 'f22', thrust: 27.5, noseUp: 1.45774, noseDown: 1.54376, tablePitch: 1.46 },
+    { aircraftId: 'f22', thrust: 65, noseUp: 3.44557, noseDown: 3.64888, tablePitch: 3.45 },
+    { aircraftId: 'su57', thrust: 27.5, noseUp: 1.30219, noseDown: 1.34722, tablePitch: 1.30 },
+    { aircraftId: 'su57', thrust: 65, noseUp: 3.07790, noseDown: 3.18433, tablePitch: 3.08 },
+  ])('$aircraftId at thrust $thrust matches independent signed pitch references', ({ aircraftId, thrust, noseUp, noseDown, tablePitch }) => {
+    const p = getFlightProfile(aircraftId).thrustVectoring!
+    // Independently reviewed 0.5° full-grid sweep, rounded to 5 decimal places.
+    // The nose-UP column (not max absolute pitch) is the plan's §3 table.
+    const up = thrustForces({ left: p.maxAngle, right: p.maxAngle, authority: 1 }, thrust, p).angularAcceleration.pitch
+    const down = thrustForces({ left: -p.maxAngle, right: -p.maxAngle, authority: 1 }, thrust, p).angularAcceleration.pitch
+    expect(up).toBeCloseTo(noseUp, 5)
+    expect(down).toBeCloseTo(-noseDown, 5)
+    expect(up).toBeCloseTo(tablePitch, 2)
+    expect(tvcCapacity(p, thrust).pitch).toBeCloseTo(noseDown, 5)
+    expect(Math.abs(down)).toBeGreaterThan(up)
+  })
   it.each(aircraftIds)('%s takes geometry extrema at both travel signs, independent of mixer gains', aircraftId => {
     const profile = getFlightProfile(aircraftId).thrustVectoring!
     const before = structuredClone(profile)
@@ -87,8 +106,8 @@ describe('full-travel TVC capacity', () => {
       expect(capacity.yaw).toBe(Math.max(Math.abs(forces(a, -a).yaw), Math.abs(forces(-a, a).yaw)))
       expect(capacity.roll).toBe(Math.max(Math.abs(forces(a, -a).roll), Math.abs(forces(-a, a).roll)))
       expect(tvcCapacity({ ...profile, rollGain: 0, yawGain: 0 }, thrust)).toEqual(capacity)
-      // Analytical r × F reference includes the height × axial thrust moment
-      // omitted by the approximate pitch column in the plan's §3 table.
+      // Absolute maximum includes the height × axial-thrust term with the
+      // nose-DOWN sign. §3 uses nose-up; signed references above distinguish them.
       const angle = a * Math.PI / 180, cant = profile.cantDeg * Math.PI / 180
       expect(capacity.pitch).toBeCloseTo(thrust * (Math.abs(profile.pivotX * Math.sin(angle) * Math.cos(cant)) + Math.abs(profile.height * (1 - Math.cos(angle)))) / profile.inertia.pitch, 12)
     }
@@ -100,5 +119,64 @@ describe('full-travel TVC capacity', () => {
     for (const thrust of [0, -1]) expect(tvcCapacity(profile, thrust)).toEqual({ pitch: 0, yaw: 0, roll: 0 })
     const unit = tvcCapacity(profile, 1), ten = tvcCapacity(profile, 10)
     for (const axis of ['pitch', 'yaw', 'roll'] as const) expect(ten[axis]).toBeCloseTo(unit[axis] * 10, 12)
+  })
+})
+
+describe.each(aircraftIds)('%s legacy overlay versus the actual flight controller', aircraftId => {
+  it.each([
+    { speed: 0, powered: false, speedAdjust: 0, axes: ['pitch', 'yaw', 'roll'] as const },
+    { speed: 70, powered: false, speedAdjust: 0, axes: ['pitch', 'yaw', 'roll'] as const },
+    { speed: 120, powered: false, speedAdjust: 0, axes: ['pitch', 'yaw', 'roll'] as const },
+    { speed: 200, powered: false, speedAdjust: 0, axes: ['yaw', 'roll'] as const },
+    { speed: 300, powered: false, speedAdjust: 0, axes: ['roll'] as const },
+    { speed: 70, powered: true, speedAdjust: 0, axes: ['pitch', 'yaw', 'roll'] as const },
+    { speed: 70, powered: true, speedAdjust: 1, axes: ['pitch', 'yaw', 'roll'] as const },
+  ])('converges to the overlay at $speed m/s, PSM=$powered, W=$speedAdjust', ({ speed, powered, speedAdjust, axes }) => {
+    const profile = getFlightProfile(aircraftId)
+    const tolerance = 1e-9
+    // Two numerical settling windows for the slowest controller/actuator/input
+    // response. This is a convergence tolerance, not a maneuver-time target.
+    const response = Math.min(profile.flight.rateResponse, profile.flight.driveResponse,
+      profile.thrustVectoring!.actuatorResponse, profile.thrustVectoring!.authorityResponse)
+    const steps = Math.ceil(2 * Math.log(1 / tolerance) / (response * FLIGHT_STEP))
+    for (const axis of axes) {
+      const state = createAircraft(aircraftId)
+      const command = { ...neutralCommand(0, state.id), [axis]: 1, psmArm: powered, speedAdjust }
+      state.stall.severity = speed === 0 ? 1 : 0
+      // Test-only fixed-flow rig: hold pose/velocity/position at the solver entry,
+      // but evolve rates, engine output, PSM, stall and actuators via stepFlight.
+      // No profile mutation, solver mock or copied authority-curve expectation.
+      const holdFlow = () => {
+        state.orientation = { x: 0, y: 0, z: 0, w: 1 }
+        state.velocity = { x: speed, y: 0, z: 0 }
+        state.position = { x: 0, y: 2000, z: 0 }
+      }
+      for (let step = 0; step < steps; step++) {
+        holdFlow()
+        stepFlight(state, command, FLIGHT_STEP)
+      }
+      holdFlow() // Observe the same fixed flow as the last controller update.
+      const { legacy, actualThrust } = flightInstrumentation(state)
+      const expected = legacy.aeroRate[axis] + legacy.floorRate[axis] + legacy.poweredRate[axis]
+      expect(state.alive).toBe(true)
+      expect(state.maneuver.highG).toBe(0)
+      if (speed === 0) {
+        // Floor with no TVC moment. At low nonzero speed stall can leave a TVC
+        // residual, so the pre-TVC overlay is not the complete resulting rate.
+        expect(actualThrust).toBe(0)
+        expect(legacy.floorRate[axis]).toBeGreaterThan(0)
+      } else {
+        // At attached flow, settled actual/requested TVC moments cancel in the
+        // existing double-count guard, leaving the controller ceiling to measure.
+        expect(legacy.surfaceControl).toBe(1)
+        expect(legacy.aeroRate[axis]).toBeGreaterThanOrEqual(0)
+      }
+      expect(legacy.poweredRate[axis] > 0).toBe(powered)
+      // The chosen pitch/yaw speeds leave turn-budget headroom. Roll has no
+      // turn-budget clamp and also exercises both branches of high-speed scaling.
+      // A clamped fixture or drift in stepFlight's authority curve fails here.
+      expect(Math.abs(state.rates[axis] - expected), `${axis}: ${state.rates[axis]} vs overlay ${expected}`)
+        .toBeLessThanOrEqual(tolerance * Math.max(1, Math.abs(expected)))
+    }
   })
 })
