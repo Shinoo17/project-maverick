@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#171c20">
+<meta name="description" content="Project Maverick — rain and water droplets streaming across a fighter canopy, rendered with Three.js.">
+<title>Maverick · Canopy rain</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font:14px system-ui,sans-serif;color:#edf0ed;background:#1b2026;overflow:hidden}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#view{position:fixed;inset:0}
+header{position:fixed;left:28px;top:22px;pointer-events:none;text-shadow:0 1px 8px rgba(0,0,0,.7)}
+h1{font-size:24px;font-weight:500;margin:0 0 5px}
+header p{margin:0;opacity:.8}
+aside{position:fixed;right:20px;top:20px;background:rgba(28,34,39,.92);width:272px;padding:20px;max-height:calc(100dvh - 40px);overflow:auto;border:1px solid #3b474e;border-radius:3px;backdrop-filter:blur(6px)}
+h2{font-size:16px;margin:0 0 15px;font-weight:500}
+label{display:block;margin-top:14px;color:#adb8be}
+output{float:right;color:#edf0ed;font-variant-numeric:tabular-nums}
+input[type=range]{display:block;width:100%;height:28px;accent-color:#cfb88a;margin:0}
+button,select{min-height:40px;background:#293239;color:#edf0ed;border:1px solid #3b474e;border-radius:3px;padding:8px;font:inherit}
+select{width:100%;margin-top:6px}
+button{cursor:pointer}
+button:hover{background:#3b474e}
+button[aria-pressed=true]{background:#cfb88a;color:#1b2026;border-color:#cfb88a}
+:focus-visible{outline:2px solid #cfb88a;outline-offset:3px}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.row button{flex:1}
+small{display:block;color:#adb8be;line-height:1.6;margin-top:15px}
+details{margin-top:18px}
+summary{cursor:pointer;min-height:30px;color:#adb8be}
+#status{position:fixed;bottom:22px;left:28px;font-size:12px;color:#adb8be;font-variant-numeric:tabular-nums;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+#error{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);max-width:420px;background:#1c2227;border:1px solid #3b474e;border-radius:3px;padding:20px;color:#ffd1be;display:none}
+#hud{position:fixed;left:50%;transform:translateX(-50%);pointer-events:none;font:600 15px "SF Mono",Menlo,Consolas,monospace;color:#8ef0a0;text-shadow:0 0 6px rgba(120,255,150,.75),0 0 1px rgba(120,255,150,.9);letter-spacing:.06em;opacity:.9}
+#hud .top{display:flex;justify-content:space-between;align-items:flex-start}
+#hud .box{border:1.5px solid rgba(142,240,160,.85);padding:3px 6px;font-variant-numeric:tabular-nums;min-width:3.6em;text-align:right}
+#hud .hdg{text-align:center;font-size:13px;margin-top:2px;font-variant-numeric:tabular-nums}
+#hud .cross{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)}
+#hud .cross::before,#hud .cross::after{content:"";position:absolute;background:rgba(142,240,160,.9);box-shadow:0 0 5px rgba(120,255,150,.7)}
+#hud .cross::before{left:50%;top:0;width:1.5px;height:100%;transform:translateX(-50%)}
+#hud .cross::after{top:50%;left:0;height:1.5px;width:100%;transform:translateY(-50%)}
+#hud .lad{position:absolute;left:50%;transform:translateX(-50%);width:44%;border-top:1.5px solid rgba(142,240,160,.8);font-size:11px}
+#hud .lad span{position:absolute;top:-1.6em}
+#hud .lad span:first-child{left:-2.6em}#hud .lad span:last-child{right:-2.6em}
+@media(max-width:700px){aside{top:auto;bottom:12px;right:12px;width:230px;max-height:48dvh;padding:14px}header{left:16px;top:16px}h1{font-size:19px}#status{left:16px;bottom:auto;top:84px;max-width:220px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
+</head>
+<body>
+<canvas id="view" aria-label="Rain on a fighter canopy"></canvas>
+<header><h1>Canopy / Rain</h1><p>Water on the glass, pushed by the slipstream</p></header>
+<div id="hud" aria-hidden="true">
+  <div class="top"><div class="box" id="hudSpd">000</div><div class="box" id="hudAlt">0000</div></div>
+  <div class="hdg" id="hudHdg">092</div>
+  <div class="lad" style="top:38%"><span>5</span><span>5</span></div>
+  <div class="cross"></div>
+  <div class="lad" style="top:78%"><span>-5</span><span>-5</span></div>
+</div>
+<aside aria-label="Rain controls">
+  <h2>Flight conditions</h2>
+  <label for="speed">Aircraft speed <output id="speedValue"></output></label><input id="speed" type="range" min="0" max="650" value="250" step="1">
+  <label for="rain">Rain intensity <output id="rainValue"></output></label><input id="rain" type="range" min="0" max="1" value="0.55" step="0.01">
+  <label for="density">Droplet density <output id="densityValue"></output></label><input id="density" type="range" min="0.2" max="2" value="1" step="0.05">
+  <label for="airflow">Airflow strength <output id="airflowValue"></output></label><input id="airflow" type="range" min="0" max="2" value="1" step="0.05">
+  <div class="row"><button id="pParked">Parked</button><button id="pApproach">Approach</button></div>
+  <div class="row"><button id="pCruise">Cruise</button><button id="pStorm">Storm dash</button></div>
+  <details><summary>Rendering</summary>
+    <label for="scale">Render scale</label><select id="scale"><option value="0.6">Fast (0.6×)</option><option value="1" selected>Balanced (1×)</option><option value="1.5">Sharp (1.5×)</option></select>
+    <div class="row"><button id="lightning" aria-pressed="true">Lightning</button><button id="pause" aria-pressed="false">Pause</button></div>
+    <div class="row"><button id="clear">Dry the canopy</button></div>
+  </details>
+  <small>Drops spawn from the rainfall, pool, merge, then break loose and stream when the slipstream beats surface tension. Faster air pushes them up and out; slow taxi lets gravity win.</small>
+</aside>
+<div id="status" role="status">Loading…</div>
+<div id="error" role="alert"></div>
+
+<script type="module">
+import * as THREE from 'three';
+
+const $ = id => document.getElementById(id);
+const status = $('status');
+const errorBox = $('error');
+function fail(msg) { errorBox.textContent = msg; errorBox.style.display = 'block'; status.textContent = ''; }
+
+// ---------------------------------------------------------------------------
+// Parameters and UI
+// ---------------------------------------------------------------------------
+const params = { speed: 250, rain: 0.55, density: 1, airflow: 1, lightning: true, paused: false, scale: 1 };
+const sliders = {
+  speed: ['speed', v => `${v.toFixed(0)} kts`],
+  rain: ['rain', v => v < 0.05 ? 'dry' : v < 0.3 ? 'drizzle' : v < 0.6 ? 'steady' : v < 0.85 ? 'heavy' : 'torrential'],
+  density: ['density', v => `${v.toFixed(2)}×`],
+  airflow: ['airflow', v => `${v.toFixed(2)}×`],
+};
+for (const key in sliders) {
+  const [id, fmt] = sliders[key];
+  const el = $(id), out = $(id + 'Value');
+  const apply = () => { params[key] = parseFloat(el.value); out.textContent = fmt(params[key]); };
+  el.addEventListener('input', apply); apply();
+}
+function preset(p) {
+  for (const key in p) { params[key] = p[key]; const el = $(sliders[key][0]); el.value = p[key]; $(sliders[key][0] + 'Value').textContent = sliders[key][1](p[key]); }
+}
+$('pParked').onclick = () => preset({ speed: 0, rain: 0.5, density: 1, airflow: 0.6 });
+$('pApproach').onclick = () => preset({ speed: 145, rain: 0.7, density: 1.2, airflow: 1 });
+$('pCruise').onclick = () => preset({ speed: 320, rain: 0.45, density: 1, airflow: 1 });
+$('pStorm').onclick = () => preset({ speed: 560, rain: 1, density: 1.6, airflow: 1.7 });
+$('lightning').onclick = e => { params.lightning = !params.lightning; e.currentTarget.setAttribute('aria-pressed', params.lightning); };
+$('pause').onclick = e => { params.paused = !params.paused; e.currentTarget.setAttribute('aria-pressed', params.paused); };
+$('scale').onchange = e => { params.scale = parseFloat(e.target.value); resize(); };
+
+// ---------------------------------------------------------------------------
+// Renderer
+// ---------------------------------------------------------------------------
+const canvas = $('view');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, premultipliedAlpha: false, powerPreference: 'high-performance' });
+} catch (e) {
+  fail('WebGL is not available in this browser, so the canopy cannot be rendered.');
+  throw e;
+}
+if (!renderer.capabilities.isWebGL2) fail('This demo needs WebGL 2. The page will still try to run, but some passes may fail.');
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.autoClear = true;
+
+// ---------------------------------------------------------------------------
+// Shared GLSL
+// ---------------------------------------------------------------------------
+const NOISE = /* glsl */`
+float hash1(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x*p.y); }
+vec2 hash2(vec2 p){ float h = hash1(p); return vec2(h, hash1(p + h + 17.17)); }
+float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+  float a = hash1(i), b = hash1(i+vec2(1,0)), c = hash1(i+vec2(0,1)), d = hash1(i+vec2(1,1));
+  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y); }
+float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a*vnoise(p); p = p*2.03 + 11.7; a *= 0.5; } return v; }
+`;
+const FS_VERT = /* glsl */`varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
+
+// ---------------------------------------------------------------------------
+// Background world: sky dome, ground, 3D rain, aircraft nose
+// ---------------------------------------------------------------------------
+const world = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 6000);
+camera.position.set(0, 0, 0);
+
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false,
+  uniforms: { uTime: { value: 0 }, uTravel: { value: 0 }, uFlash: { value: 0 } },
+  vertexShader: /* glsl */`varying vec3 vDir; void main(){ vDir = (modelMatrix*vec4(position,1.0)).xyz - cameraPosition; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform float uTime, uTravel, uFlash; varying vec3 vDir; ${NOISE}
+    void main(){
+      vec3 d = normalize(vDir);
+      float h = clamp(d.y, -0.2, 1.0);
+      vec3 zenith = vec3(0.022, 0.030, 0.052), horizon = vec3(0.17, 0.162, 0.16), low = vec3(0.052, 0.050, 0.052);
+      vec3 c = mix(horizon, zenith, pow(smoothstep(0.0, 0.7, h), 0.55));
+      c = mix(low, c, smoothstep(-0.005, 0.06, d.y));
+      vec3 sunDir = normalize(vec3(-0.55, 0.0, -1.0));
+      float sun = pow(max(dot(normalize(vec3(d.x, 0.0, d.z)), sunDir), 0.0), 5.0) * smoothstep(-0.05, 0.2, d.y) * (1.0 - smoothstep(0.08, 0.55, d.y));
+      c += vec3(0.62, 0.34, 0.16) * sun * 0.45;
+      if (d.y > 0.005) {
+        vec2 p = d.xz / (d.y + 0.12) * 1.1;
+        p.y -= uTravel * 0.00025; p.x += uTime * 0.01;
+        float n = fbm(p * 0.9);
+        float cov = smoothstep(0.32, 0.72, n);
+        float shade = fbm(p * 2.1 + 5.0);
+        vec3 cloud = mix(vec3(0.035, 0.04, 0.058), vec3(0.21, 0.20, 0.21), shade) + sun * 0.2 * vec3(0.5, 0.3, 0.15);
+        c = mix(c, cloud, cov * smoothstep(0.0, 0.18, d.y) * 0.92);
+        c += uFlash * cov * 0.8 * vec3(0.8, 0.85, 1.0) * shade;
+      }
+      c += uFlash * vec3(0.30, 0.33, 0.42) * (0.4 + 0.6 * smoothstep(0.0, 0.5, d.y));
+      gl_FragColor = vec4(c, 1.0);
+    }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(3500, 48, 32), skyMat);
+sky.frustumCulled = false;
+world.add(sky);
+
+const groundMat = new THREE.ShaderMaterial({
+  uniforms: { uTravel: { value: 0 }, uFlash: { value: 0 } },
+  vertexShader: /* glsl */`varying vec3 vWorld; void main(){ vWorld = (modelMatrix*vec4(position,1.0)).xyz; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform float uTravel, uFlash; varying vec3 vWorld; ${NOISE}
+    void main(){
+      vec2 p = vWorld.xz; p.y -= uTravel;
+      float n = fbm(p * 0.0012);
+      float n2 = fbm(p * 0.006 + 3.0);
+      vec3 col = mix(vec3(0.014, 0.016, 0.019), vec3(0.055, 0.060, 0.055), n) * (0.7 + 0.6 * n2);
+      // water bodies reflecting the sky
+      float water = smoothstep(0.55, 0.62, fbm(p * 0.0007 + 40.0));
+      col = mix(col, vec3(0.115, 0.113, 0.12) * (0.8 + 0.4 * n2), water);
+      // sparse lights on the ground
+      vec2 cell = floor(p * 0.008), f = fract(p * 0.008);
+      float hs = hash1(cell);
+      if (hs > 0.90) {
+        vec2 lp = hash2(cell + 2.0) * 0.6 + 0.2;
+        float dl = length(f - lp);
+        float glow = exp(-dl * dl * 400.0) * 2.2 + exp(-dl * dl * 40.0) * 0.1;
+        col += mix(vec3(1.0, 0.72, 0.38), vec3(0.65, 0.8, 1.0), step(0.5, hash1(cell + 7.0))) * glow * (1.0 - water * 0.5);
+      }
+      col += uFlash * vec3(0.5, 0.55, 0.7) * (0.15 + 0.4 * n + water * 0.6);
+      float dist = length(vWorld - cameraPosition);
+      float fog = 1.0 - exp(-dist * 0.00085);
+      vec3 fogCol = vec3(0.052, 0.050, 0.052) + uFlash * vec3(0.3, 0.33, 0.42);
+      gl_FragColor = vec4(mix(col, fogCol, fog), 1.0);
+    }`
+});
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(24000, 24000, 1, 1), groundMat);
+ground.rotation.x = -Math.PI / 2; ground.position.y = -120; ground.frustumCulled = false;
+world.add(ground);
+
+// Volumetric rain streaks in camera space (approach the viewer faster with airspeed).
+const RAIN_MAX = 7000;
+const rainGeo = new THREE.InstancedBufferGeometry();
+rainGeo.setAttribute('position', new THREE.Float32BufferAttribute([-1,0,0, 1,0,0, 1,1,0, -1,1,0], 3));
+rainGeo.setIndex([0,1,2, 0,2,3]);
+{
+  const seeds = new Float32Array(RAIN_MAX * 4);
+  for (let i = 0; i < seeds.length; i++) seeds[i] = Math.random();
+  rainGeo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds, 4));
+}
+const rainMat = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending,
+  uniforms: { uTravel: { value: 0 }, uFallT: { value: 0 }, uWindT: { value: 0 }, uVel: { value: new THREE.Vector3(0, -9, 60) }, uFlash: { value: 0 } },
+  vertexShader: /* glsl */`
+    attribute vec4 aSeed; uniform float uTravel, uFallT, uWindT; uniform vec3 uVel;
+    varying float vAlpha; varying float vAcross;
+    void main(){
+      const float W = 26.0, H = 20.0, D = 48.0;
+      vec3 base = vec3((aSeed.x*2.0-1.0)*W, (aSeed.y*2.0-1.0)*H, aSeed.z*D);
+      float px = mod(base.x + W + uWindT * (0.6 + aSeed.w*0.8), 2.0*W) - W;
+      float py = mod(base.y + H - uFallT * (0.75 + aSeed.w*0.5), 2.0*H) - H;
+      float zc = mod(base.z + uTravel, D);
+      vec3 p = vec3(px, py, zc - D);
+      vec3 dir = normalize(uVel);
+      float len = clamp(length(uVel) * 0.011, 0.22, 3.2) * (0.7 + aSeed.w*0.6);
+      float dist = length(p);
+      float width = 0.018 + dist * 0.0028;
+      vec3 across = normalize(cross(dir, normalize(p + vec3(0.0001, 0.0002, 0.0)))) ;
+      vec3 pos = p - dir * len * position.y + across * width * position.x;
+      vAcross = position.x;
+      vAlpha = (0.15 + 0.55 * (1.0 - zc / D)) * smoothstep(0.6, 2.5, dist) * (0.5 + 0.5 * aSeed.w);
+      gl_Position = projectionMatrix * vec4(pos, 1.0);
+    }`,
+  fragmentShader: /* glsl */`
+    uniform float uFlash; varying float vAlpha; varying float vAcross;
+    void main(){ float a = vAlpha * (1.0 - vAcross*vAcross) * 0.28; gl_FragColor = vec4(vec3(0.72, 0.78, 0.9) * a * (1.0 + uFlash * 3.0), a); }`
+});
+const rain = new THREE.Mesh(rainGeo, rainMat);
+rain.frustumCulled = false;
+world.add(rain);
+
+// Aircraft nose below the windscreen.
+const nose = new THREE.Group();
+{
+  const pts = [];
+  const prof = [[0.0, 0], [0.14, 0.2], [0.42, 0.9], [0.80, 2.2], [1.18, 3.8], [1.52, 5.6], [1.82, 7.6], [2.06, 9.8], [2.22, 12.0]];
+  for (const [r, y] of prof) pts.push(new THREE.Vector2(r, y));
+  const geo = new THREE.LatheGeometry(pts, 64);
+  const mat = new THREE.MeshPhysicalMaterial({ color: 0x5a6066, roughness: 0.42, metalness: 0.25, clearcoat: 0.9, clearcoatRoughness: 0.2, envMapIntensity: 1.0 });
+  const cone = new THREE.Mesh(geo, mat);
+  cone.rotation.x = Math.PI / 2;
+  nose.add(cone);
+  const pitot = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.045, 2.4, 12), new THREE.MeshStandardMaterial({ color: 0x1c1e20, roughness: 0.5, metalness: 0.7 }));
+  pitot.rotation.x = Math.PI / 2; pitot.position.z = -1.15;
+  nose.add(pitot);
+  const stripe = new THREE.Mesh(new THREE.TorusGeometry(1.58, 0.035, 8, 64), new THREE.MeshStandardMaterial({ color: 0x8a8f94, roughness: 0.6, metalness: 0.3 }));
+  stripe.position.z = 6.0;
+  nose.add(stripe);
+  nose.position.set(0, -4.3, -13.0);
+  world.add(nose);
+}
+const hemi = new THREE.HemisphereLight(0x9aa4b2, 0x1a1c1f, 2.0);
+const key = new THREE.DirectionalLight(0xc9c3b8, 1.6); key.position.set(-0.6, 0.9, 0.35);
+const flashLight = new THREE.DirectionalLight(0xdde6ff, 0); flashLight.position.set(0.2, 1, -0.3);
+world.add(hemi, key, flashLight);
+// Reflections on the radome come from the same procedural sky.
+{
+  const envScene = new THREE.Scene();
+  const envSky = new THREE.Mesh(new THREE.SphereGeometry(100, 32, 16), skyMat); envSky.frustumCulled = false; envScene.add(envSky);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  world.environment = pmrem.fromScene(envScene, 0.0).texture;
+  pmrem.dispose();
+}
+
+// ---------------------------------------------------------------------------
+// Droplet simulation (CPU, SoA) — spawn, accumulate, merge, slide, trail
+// ---------------------------------------------------------------------------
+const MAX = 7000;
+const D = {
+  x: new Float32Array(MAX), y: new Float32Array(MAX), r: new Float32Array(MAX),
+  vx: new Float32Array(MAX), vy: new Float32Array(MAX),
+  dx: new Float32Array(MAX), dy: new Float32Array(MAX), st: new Float32Array(MAX),
+  age: new Float32Array(MAX), trail: new Float32Array(MAX), seed: new Float32Array(MAX),
+  alive: new Uint8Array(MAX), moving: new Uint8Array(MAX), kind: new Uint8Array(MAX),
+};
+const free = []; for (let i = MAX - 1; i >= 0; i--) free.push(i);
+let dropCount = 0;
+let aspect = 1.78;
+
+function spawn(x, y, r, kind, vx = 0, vy = 0) {
+  if (!free.length) return -1;
+  const i = free.pop();
+  D.x[i] = x; D.y[i] = y; D.r[i] = r; D.vx[i] = vx; D.vy[i] = vy; D.dx[i] = 0; D.dy[i] = -1; D.st[i] = 0;
+  D.age[i] = 0; D.trail[i] = 0; D.seed[i] = Math.random(); D.alive[i] = 1; D.moving[i] = 0; D.kind[i] = kind;
+  dropCount++; return i;
+}
+function kill(i) { if (!D.alive[i]) return; D.alive[i] = 0; free.push(i); dropCount--; }
+function clearDrops() { for (let i = 0; i < MAX; i++) kill(i); }
+
+// Spatial hash for merging
+const CELL = 0.09;
+let gridW = 0, gridH = 0, head = new Int32Array(1);
+const next = new Int32Array(MAX);
+function cellOf(x, y) {
+  const cx = Math.min(gridW - 1, Math.max(0, ((x + aspect) / CELL + 1) | 0));
+  const cy = Math.min(gridH - 1, Math.max(0, ((y + 1) / CELL + 1) | 0));
+  return cy * gridW + cx;
+}
+function buildGrid() {
+  gridW = Math.ceil(2 * aspect / CELL) + 3; gridH = Math.ceil(2 / CELL) + 3;
+  const n = gridW * gridH;
+  if (head.length < n) head = new Int32Array(n);
+  head.fill(-1, 0, n);
+  for (let i = 0; i < MAX; i++) if (D.alive[i]) { const c = cellOf(D.x[i], D.y[i]); next[i] = head[c]; head[c] = i; }
+}
+// Visit every live drop within one cell of (x,y); returns first j for which fn(j) is true.
+function nearby(x, y, fn) {
+  const c = cellOf(x, y);
+  const cx = c % gridW, cy = (c / gridW) | 0;
+  for (let oy = -1; oy <= 1; oy++) {
+    const yy = cy + oy; if (yy < 0 || yy >= gridH) continue;
+    for (let ox = -1; ox <= 1; ox++) {
+      const xx = cx + ox; if (xx < 0 || xx >= gridW) continue;
+      for (let j = head[yy * gridW + xx]; j !== -1; j = next[j]) if (D.alive[j] && fn(j)) return j;
+    }
+  }
+  return -1;
+}
+
+const F = [0, 0];
+const THRESH = 0.014;
+let gustPhase = 0, crossWind = 0;
+function field(x, y, t) {
+  const sN = params.speed / 300, air = params.airflow;
+  // slipstream fans up and outward from a stagnation point below the windscreen
+  let fx = x * 0.55, fy = y + 1.45; const l = Math.hypot(fx, fy); fx /= l; fy /= l;
+  const gust = 1 + air * (0.35 * Math.sin(t * 1.7 + x * 3.0 + y * 2.0) + 0.2 * Math.sin(t * 4.3 + y * 7.0 + gustPhase));
+  const mag = (sN * 1.2 + sN * sN * 3.0) * (0.4 + 0.6 * air) * gust;
+  F[0] = fx * mag + crossWind * sN * air * 0.8;
+  F[1] = fy * mag - 0.9;
+}
+function tryMergeAt(x, y, r) {
+  const j = nearby(x, y, j => { const dx = D.x[j] - x, dy = D.y[j] - y; const rr = (D.r[j] + r) * 0.8; return dx * dx + dy * dy < rr * rr; });
+  if (j < 0) return false;
+  D.r[j] = Math.min(0.075, Math.sqrt(D.r[j] * D.r[j] + r * r));
+  if (r > D.r[j] * 0.45) D.age[j] = 0; // visible impact ring on a real hit
+  return true;
+}
+
+function stepSim(dt, t) {
+  const rain = params.rain, dens = params.density, sN = params.speed / 300;
+  gustPhase += dt * 0.3;
+  crossWind += ((0.45 * Math.sin(t * 0.23) + 0.3 * Math.sin(t * 0.71 + 2.0)) - crossWind) * Math.min(1, dt * 2);
+  buildGrid();
+
+  // --- rainfall spawns ---
+  const areaScale = aspect / 1.78;
+  const cap = Math.min(MAX - 300, 500 + dens * 2800 * areaScale);
+  const smallRate = (12 + 1150 * rain * rain) * dens * areaScale;
+  const bigRate = (0.4 + 26 * rain * rain) * dens * areaScale;
+  const poisson = rate => { const n = rate * dt; return (n | 0) + (Math.random() < n - (n | 0) ? 1 : 0); };
+  let nSmall = dropCount < cap ? poisson(smallRate) : 0, nBig = poisson(bigRate);
+  for (; nSmall > 0; nSmall--) {
+    const x = (Math.random() * 2 - 1) * aspect, y = Math.random() * 2 - 1;
+    const r = 0.0035 + 0.0085 * Math.pow(Math.random(), 2.2);
+    if (!tryMergeAt(x, y, r)) spawn(x, y, r, 0);
+  }
+  for (; nBig > 0; nBig--) {
+    const x = (Math.random() * 2 - 1) * aspect, y = Math.random() * 2 - 1;
+    const r = 0.013 + 0.024 * Math.pow(Math.random(), 1.6);
+    if (!tryMergeAt(x, y, r)) { const i = spawn(x, y, r, 0); if (i >= 0) { field(x, y, t); D.vx[i] = F[0] * 0.05; D.vy[i] = F[1] * 0.05; } }
+  }
+
+  // --- motion ---
+  const evapBase = 0.0011 * (1 + sN * 1.6) * Math.max(0.15, 1.15 - rain);
+  const drag = Math.exp(-3.2 * dt);
+  const stLerp = Math.min(1, dt * 9);
+  for (let i = 0; i < MAX; i++) {
+    if (!D.alive[i]) continue;
+    D.age[i] += dt;
+    let x = D.x[i], y = D.y[i], r = D.r[i];
+    field(x, y, t);
+    const fmag = Math.hypot(F[0], F[1]);
+    const hold = THRESH * (0.4 + 1.2 * D.seed[i]);
+    if (!D.moving[i]) {
+      if (fmag * r > hold) { D.moving[i] = 1; }
+      else {
+        r -= evapBase * (D.kind[i] === 1 ? 2.6 : 1) * dt;
+        if (r < 0.0022) { kill(i); continue; }
+        D.r[i] = r; D.st[i] *= 0.85;
+        continue;
+      }
+    }
+    const k = r * 45;
+    let vx = D.vx[i] + F[0] * dt * k, vy = D.vy[i] + F[1] * dt * k;
+    // meander across the flow like real drops on glass
+    let sp = Math.hypot(vx, vy);
+    const wob = Math.sin(t * 9 + D.seed[i] * 40) * 0.35 * sp;
+    vx += -D.dy[i] * wob * dt; vy += D.dx[i] * wob * dt;
+    vx *= drag; vy *= drag;
+    x += vx * dt; y += vy * dt;
+    sp = Math.hypot(vx, vy);
+    if (sp > 1e-4) { D.dx[i] = vx / sp; D.dy[i] = vy / sp; }
+    D.st[i] += (Math.min(3.5, sp * 3.0) - D.st[i]) * stLerp;
+    if (sp < 0.03 && fmag * r < hold * 0.7) { D.moving[i] = 0; vx = 0; vy = 0; }
+    // leave water behind
+    D.trail[i] += sp * dt;
+    if (D.trail[i] > r * 3.0 && r > 0.0055) {
+      D.trail[i] = 0;
+      const rt = r * (0.2 + 0.2 * Math.random());
+      spawn(x - D.dx[i] * r * 1.25 + (Math.random() - 0.5) * r * 0.7, y - D.dy[i] * r * 1.25 + (Math.random() - 0.5) * r * 0.7, rt, 1);
+      r = Math.sqrt(r * r - rt * rt * 0.55);
+    }
+    // absorb drops in the path
+    if (D.moving[i]) {
+      const j = nearby(x, y, j => { if (j === i) return false; const ddx = D.x[j] - x, ddy = D.y[j] - y; const rr = (D.r[j] + r) * 0.8; return ddx * ddx + ddy * ddy < rr * rr; });
+      if (j >= 0) {
+        const m1 = r * r, m2 = D.r[j] * D.r[j], m = m1 + m2;
+        x = (x * m1 + D.x[j] * m2) / m; y = (y * m1 + D.y[j] * m2) / m;
+        vx = (vx * m1 + D.vx[j] * m2) / m; vy = (vy * m1 + D.vy[j] * m2) / m;
+        r = Math.min(0.075, Math.sqrt(m));
+        kill(j);
+      }
+    }
+    D.x[i] = x; D.y[i] = y; D.r[i] = r; D.vx[i] = vx; D.vy[i] = vy;
+    if (x < -aspect - 0.15 || x > aspect + 0.15 || y < -1.15 || y > 1.15) kill(i);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Droplet rendering: instanced quads → normal/thickness buffer and wet map
+// ---------------------------------------------------------------------------
+const dropGeo = new THREE.InstancedBufferGeometry();
+dropGeo.setAttribute('position', new THREE.Float32BufferAttribute([-1,-1,0, 1,-1,0, 1,1,0, -1,1,0], 3));
+dropGeo.setIndex([0,1,2, 0,2,3]);
+const inst = {
+  pos: new THREE.InstancedBufferAttribute(new Float32Array(MAX * 2), 2),
+  size: new THREE.InstancedBufferAttribute(new Float32Array(MAX), 1),
+  dir: new THREE.InstancedBufferAttribute(new Float32Array(MAX * 2), 2),
+  st: new THREE.InstancedBufferAttribute(new Float32Array(MAX), 1),
+  age: new THREE.InstancedBufferAttribute(new Float32Array(MAX), 1),
+  wet: new THREE.InstancedBufferAttribute(new Float32Array(MAX), 1),
+};
+for (const k in inst) inst[k].setUsage(THREE.DynamicDrawUsage);
+dropGeo.setAttribute('aPos', inst.pos); dropGeo.setAttribute('aSize', inst.size); dropGeo.setAttribute('aDir', inst.dir);
+dropGeo.setAttribute('aStretch', inst.st); dropGeo.setAttribute('aAge', inst.age); dropGeo.setAttribute('aWet', inst.wet);
+dropGeo.instanceCount = 0;
+
+const DROP_VERT = /* glsl */`
+  attribute vec2 aPos; attribute float aSize; attribute vec2 aDir; attribute float aStretch; attribute float aAge; attribute float aWet;
+  uniform float uPxPerUnit, uExt;
+  varying vec2 vP; varying float vStretch, vAge, vSizePx, vWet;
+  void main(){
+    vec2 d = aDir; vec2 n = vec2(-d.y, d.x);
+    float along = position.x * (uExt + aStretch * 0.5) - aStretch * 0.5;
+    float across = position.y * uExt;
+    vec2 pos = aPos + (d * along + n * across) * aSize;
+    vP = vec2(along, across); vStretch = aStretch; vAge = aAge; vSizePx = aSize * uPxPerUnit; vWet = aWet;
+    gl_Position = projectionMatrix * vec4(pos, 0.0, 1.0);
+  }`;
+const DROP_SHAPE = /* glsl */`
+  // teardrop: round leading edge, tapered tail scaled by stretch
+  vec2 shape(vec2 p, float s){ float a = p.x, c = p.y; float ta = a < 0.0 ? a / (1.0 + s) : a; float taper = a < 0.0 ? 1.0 + (-ta) * s * 0.9 : 1.0; return vec2(ta, c * taper); }`;
+const dropMat = new THREE.ShaderMaterial({
+  transparent: true, depthTest: false, depthWrite: false, blending: THREE.NormalBlending,
+  uniforms: { uPxPerUnit: { value: 500 }, uExt: { value: 1.7 } },
+  vertexShader: DROP_VERT,
+  fragmentShader: /* glsl */`
+    varying vec2 vP; varying float vStretch, vAge, vSizePx, vWet; ${DROP_SHAPE}
+    void main(){
+      vec2 q = shape(vP, vStretch);
+      float d = length(q);
+      float aa = 1.2 / max(vSizePx, 1.0);
+      float mask = 1.0 - smoothstep(1.0 - aa, 1.0 + aa * 0.4, d);
+      float h = sqrt(max(1.0 - d * d, 0.0));
+      // thinner film in the tail
+      h *= vP.x < 0.0 ? 1.0 / (1.0 + vStretch * 0.35 * (-q.x)) : 1.0;
+      vec2 nrm = q * (0.85 + 0.15 * d);
+      float ring = 0.0;
+      if (vAge < 0.32) { float t = vAge / 0.32; float rr = 1.05 + t * 0.55; ring = exp(-pow((d - rr) * 12.0, 2.0)) * (1.0 - t) * 0.45 * step(0.02, vSizePx / 6.0); }
+      vec3 val = vec3(nrm * 0.5 + 0.5, h);
+      vec3 ringVal = vec3(normalize(q + 1e-5) * 0.22 * 0.5 + 0.5, 0.12);
+      float alpha = max(mask, ring);
+      val = mix(ringVal, val, mask / max(alpha, 1e-4));
+      gl_FragColor = vec4(val, alpha);
+    }`
+});
+const wetMat = new THREE.ShaderMaterial({
+  transparent: true, depthTest: false, depthWrite: false, blending: THREE.AdditiveBlending,
+  uniforms: { uPxPerUnit: { value: 500 }, uExt: { value: 1.9 } },
+  vertexShader: DROP_VERT,
+  fragmentShader: /* glsl */`
+    varying vec2 vP; varying float vStretch, vAge, vSizePx, vWet; ${DROP_SHAPE}
+    void main(){ vec2 q = shape(vP, vStretch); float d = length(q); float v = smoothstep(1.35, 0.35, d) * vWet; gl_FragColor = vec4(v, v, v, v); }`
+});
+const dropScene = new THREE.Scene(); const dropMesh = new THREE.Mesh(dropGeo, dropMat); dropMesh.frustumCulled = false; dropScene.add(dropMesh);
+const wetScene = new THREE.Scene(); const wetMesh = new THREE.Mesh(dropGeo, wetMat); wetMesh.frustumCulled = false; wetScene.add(wetMesh);
+const dropCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+function uploadInstances(dt) {
+  const P = inst.pos.array, S = inst.size.array, Dr = inst.dir.array, St = inst.st.array, Ag = inst.age.array, Wt = inst.wet.array;
+  let n = 0;
+  const frameScale = Math.min(2.5, dt * 60);
+  const write = i => {
+    P[n * 2] = D.x[i]; P[n * 2 + 1] = D.y[i]; S[n] = D.r[i];
+    Dr[n * 2] = D.dx[i]; Dr[n * 2 + 1] = D.dy[i];
+    St[n] = D.st[i] * (1 + 0.12 * Math.sin(D.age[i] * 25 + D.seed[i] * 30) * Math.min(1, D.st[i]));
+    Ag[n] = D.age[i];
+    const sp = Math.hypot(D.vx[i], D.vy[i]);
+    Wt[n] = (D.moving[i] ? Math.min(1, 0.35 + sp * 0.6) : (D.r[i] > 0.008 ? 0.05 : 0.0)) * frameScale;
+    n++;
+  };
+  for (let i = 0; i < MAX; i++) if (D.alive[i] && D.r[i] < 0.012) write(i); // small first, large on top
+  for (let i = 0; i < MAX; i++) if (D.alive[i] && D.r[i] >= 0.012) write(i);
+  for (const k in inst) { const a = inst[k]; a.clearUpdateRanges(); a.addUpdateRange(0, n * a.itemSize); a.needsUpdate = true; }
+  dropGeo.instanceCount = n;
+}
+
+// ---------------------------------------------------------------------------
+// Post passes: blur, wet fade, composite
+// ---------------------------------------------------------------------------
+function fsPass(fragmentShader, uniforms) {
+  const material = new THREE.ShaderMaterial({ uniforms, vertexShader: FS_VERT, fragmentShader, depthTest: false, depthWrite: false });
+  const scene = new THREE.Scene(); const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material); mesh.frustumCulled = false; scene.add(mesh);
+  return { scene, material, u: uniforms };
+}
+const orthoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+const blurPass = fsPass(/* glsl */`
+  uniform sampler2D tex; uniform vec2 uDir; varying vec2 vUv;
+  void main(){
+    vec3 c = texture2D(tex, vUv).rgb * 0.2270270270;
+    c += (texture2D(tex, vUv + uDir * 1.3846153846).rgb + texture2D(tex, vUv - uDir * 1.3846153846).rgb) * 0.3162162162;
+    c += (texture2D(tex, vUv + uDir * 3.2307692308).rgb + texture2D(tex, vUv - uDir * 3.2307692308).rgb) * 0.0702702703;
+    gl_FragColor = vec4(c, 1.0);
+  }`, { tex: { value: null }, uDir: { value: new THREE.Vector2() } });
+
+const wetFade = fsPass(/* glsl */`
+  uniform sampler2D tPrev; uniform float uDecay; varying vec2 vUv;
+  void main(){ float v = texture2D(tPrev, vUv).r; v = max(v * uDecay - 0.0025, 0.0); gl_FragColor = vec4(v, v, v, 1.0); }`,
+  { tPrev: { value: null }, uDecay: { value: 0.98 } });
+
+const composite = fsPass(/* glsl */`
+  uniform sampler2D tBg, tBlur, tDrops, tWet;
+  uniform vec2 uRes; uniform float uAspect, uTime, uMist, uMicro, uFlash, uSpeedN, uWetGlobal;
+  varying vec2 vUv; ${NOISE}
+  vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
+  void main(){
+    vec2 uv = vUv;
+    vec2 px = 1.0 / uRes;
+    vec2 p = (uv - 0.5) * vec2(2.0 * uAspect, 2.0);      // canopy units, y up
+    vec4 dr = texture2D(tDrops, uv);
+    vec2 n = (dr.rg - 0.5) * 2.0;
+    float h = dr.b, m = dr.a;
+    float wet = texture2D(tWet, uv).r;
+    float wx = texture2D(tWet, uv + vec2(px.x * 3.0, 0.0)).r - texture2D(tWet, uv - vec2(px.x * 3.0, 0.0)).r;
+    float wy = texture2D(tWet, uv + vec2(0.0, px.y * 3.0)).r - texture2D(tWet, uv - vec2(0.0, px.y * 3.0)).r;
+    vec2 wetN = vec2(wx, wy);
+
+    // fine spray film: tiny droplets, drawn out into streaks with airspeed, cleared by trails
+    vec2 mg = uv * vec2(uAspect, 1.0) * vec2(170.0, 170.0 / (1.0 + uSpeedN * 1.6));
+    vec2 id = floor(mg); vec2 f = fract(mg) - 0.5;
+    vec2 cpos = (hash2(id) - 0.5) * 0.65;
+    float rad = 0.13 + hash1(id + 1.3) * 0.22;
+    vec2 dv = (f - cpos) / rad; float dd = dot(dv, dv);
+    float microOn = step(hash1(id + 5.1), uMicro) * (1.0 - smoothstep(0.6, 1.0, dd)) * (1.0 - wet * 0.9);
+    vec2 microN = dv * microOn;
+
+    float mist = clamp(uMist * (1.0 - wet * 0.85), 0.0, 1.0);
+    vec2 baseUv = uv + microN * 0.0016 + wetN * 0.012;
+    vec3 col = mix(texture2D(tBg, baseUv).rgb, texture2D(tBlur, baseUv).rgb, mist);
+    col += microOn * pow(max(1.0 - dd, 0.0), 3.0) * 0.045 * vec3(0.9, 0.95, 1.0) * (1.0 + uFlash * 4.0);
+    col *= 1.0 - wet * 0.06;
+
+    // main droplets: inverted refraction, dispersion, lens shading, specular
+    float refr = 0.052 * (0.65 + 0.6 * h);
+    vec2 ruv = uv - n * refr * vec2(1.0 / uAspect, 1.0);
+    vec2 ca = n * 0.0035 * vec2(1.0 / uAspect, 1.0);
+    vec3 dcol = vec3(texture2D(tBg, ruv + ca).r, texture2D(tBg, ruv).g, texture2D(tBg, ruv - ca).b);
+    vec3 N = normalize(vec3(n, max(h, 0.12) * 1.15));
+    vec3 V = vec3(0.0, 0.0, 1.0);
+    vec3 L1 = normalize(vec3(-0.45, 0.85, 0.55));
+    vec3 L2 = normalize(vec3(0.6, 0.25, 0.7));
+    float spec = pow(max(dot(N, normalize(L1 + V)), 0.0), 70.0) * 1.3 + pow(max(dot(N, normalize(L2 + V)), 0.0), 26.0) * 0.22;
+    float fres = pow(1.0 - max(N.z, 0.0), 2.6);
+    vec3 skyCol = vec3(0.50, 0.53, 0.58);
+    dcol = dcol * (0.86 + 0.14 * h) + fres * skyCol * 0.4 + spec * vec3(1.0, 0.98, 0.95) * (1.0 + uFlash * 3.0);
+    dcol *= 1.0 - 0.32 * smoothstep(0.5, 1.0, length(n));
+    col = mix(col, dcol, m);
+
+    // sheen of the water film and the general wetness of the surface
+    col += wet * 0.035 * skyCol + uWetGlobal * 0.012;
+    col *= vec3(0.965, 1.0, 0.985);
+
+    // faint reflection of the instrument glare shield and interior at the bottom edge
+    float glare = smoothstep(-0.5, -1.0, p.y) * 0.05;
+    col = mix(col, vec3(0.05, 0.055, 0.06), glare);
+
+    // HUD combiner glass
+    float inHud = step(abs(p.x), 0.42) * step(-0.86, p.y) * step(p.y, -0.24);
+    col *= mix(vec3(1.0), vec3(0.955, 1.0, 0.965), inHud);
+    float hudEdge = inHud * (1.0 - step(abs(p.x), 0.405) * step(-0.845, p.y) * step(p.y, -0.255));
+    col += hudEdge * vec3(0.02, 0.035, 0.025);
+
+    // canopy bow and side rails
+    vec2 e = (p - vec2(0.0, -1.0)) / vec2(uAspect * 1.3, 2.2);
+    float ed = length(e);
+    float fw = fwidth(ed) * 1.5;
+    float frame = smoothstep(1.0 - fw, 1.0 + fw, ed);
+    float bow = smoothstep(1.0 - fw, 1.0 + fw, ed) * (1.0 - smoothstep(1.05 - fw, 1.05 + fw, ed));
+    vec3 bowCol = mix(vec3(0.16, 0.165, 0.17), vec3(0.05, 0.05, 0.055), smoothstep(1.0, 1.05, ed)) + fres * 0.0;
+    bowCol += smoothstep(1.0, 1.012, ed) * (1.0 - smoothstep(1.012, 1.03, ed)) * 0.14 * (0.6 + 0.4 * uFlash);
+    col = mix(col, bowCol, frame);
+    col = mix(col, vec3(0.018, 0.018, 0.02), smoothstep(1.05 - fw, 1.05 + fw, ed));
+
+    // grade
+    float vig = smoothstep(1.7, 0.35, length((uv - 0.5) * vec2(1.6, 1.0)));
+    col *= 0.55 + 0.45 * vig;
+    col = aces(col * 1.0);
+    col = pow(col, vec3(1.0 / 2.2));
+    col += (hash1(uv * uRes + fract(uTime) * 100.0) - 0.5) * 0.028;
+    gl_FragColor = vec4(col, 1.0);
+  }`, {
+    tBg: { value: null }, tBlur: { value: null }, tDrops: { value: null }, tWet: { value: null },
+    uRes: { value: new THREE.Vector2(1, 1) }, uAspect: { value: 1 }, uTime: { value: 0 }, uMist: { value: 0.3 },
+    uMicro: { value: 0.3 }, uFlash: { value: 0 }, uSpeedN: { value: 0 }, uWetGlobal: { value: 0 },
+  });
+
+// ---------------------------------------------------------------------------
+// Render targets and resize
+// ---------------------------------------------------------------------------
+const rtOpts = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, type: THREE.UnsignedByteType, depthBuffer: false, stencilBuffer: false };
+let rtBg = new THREE.WebGLRenderTarget(1, 1, { ...rtOpts, depthBuffer: true, samples: 4 });
+let rtBlurA = new THREE.WebGLRenderTarget(1, 1, rtOpts), rtBlurB = new THREE.WebGLRenderTarget(1, 1, rtOpts);
+let rtDrops = new THREE.WebGLRenderTarget(1, 1, rtOpts);
+let rtWetA = new THREE.WebGLRenderTarget(1, 1, rtOpts), rtWetB = new THREE.WebGLRenderTarget(1, 1, rtOpts);
+let W = 1, H = 1;
+const neutral = new THREE.Color(0.5, 0.5, 0.0), black = new THREE.Color(0, 0, 0);
+
+function resize() {
+  const cw = canvas.clientWidth || window.innerWidth, ch = canvas.clientHeight || window.innerHeight;
+  const pr = Math.min(window.devicePixelRatio || 1, 2) * params.scale;
+  W = Math.max(2, Math.round(cw * pr)); H = Math.max(2, Math.round(ch * pr));
+  renderer.setPixelRatio(1);
+  renderer.setSize(W, H, false);
+  aspect = W / H;
+  camera.aspect = aspect; camera.updateProjectionMatrix();
+  dropCam.left = -aspect; dropCam.right = aspect; dropCam.top = 1; dropCam.bottom = -1; dropCam.updateProjectionMatrix();
+  rtBg.setSize(W, H); rtDrops.setSize(W, H);
+  const bw = Math.max(1, W >> 2), bh = Math.max(1, H >> 2); rtBlurA.setSize(bw, bh); rtBlurB.setSize(bw, bh);
+  const ww = Math.max(1, W >> 1), wh = Math.max(1, H >> 1); rtWetA.setSize(ww, wh); rtWetB.setSize(ww, wh);
+  for (const rt of [rtWetA, rtWetB]) { renderer.setRenderTarget(rt); renderer.setClearColor(black, 1); renderer.clear(); }
+  renderer.setRenderTarget(null);
+  dropMat.uniforms.uPxPerUnit.value = H / 2; wetMat.uniforms.uPxPerUnit.value = H / 4;
+  composite.u.uRes.value.set(W, H); composite.u.uAspect.value = aspect;
+  const hud = $('hud');
+  hud.style.width = `${(0.40 / aspect) * 100}%`; hud.style.top = '62.5%'; hud.style.height = '30%';
+  hud.style.fontSize = `${Math.max(11, Math.min(17, ch * 0.016))}px`;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---------------------------------------------------------------------------
+// Frame loop
+// ---------------------------------------------------------------------------
+const clock = new THREE.Clock();
+let simTime = 0, travel = 0, fallT = 0, windT = 0, flash = 0, flashHold = 0;
+let smoothSpeed = params.speed, fpsAcc = 0, fpsN = 0, fpsShown = 0, statusT = 0;
+let hudAlt = 1240, hudHdg = 92;
+const hudSpd = $('hudSpd'), hudAltEl = $('hudAlt'), hudHdgEl = $('hudHdg');
+
+function frame() {
+  requestAnimationFrame(frame);
+  let dt = Math.min(clock.getDelta(), 1 / 20);
+  if (params.paused) dt = 0;
+  simTime += dt;
+  const t = simTime;
+  const sN = params.speed / 300;
+  smoothSpeed += (params.speed - smoothSpeed) * Math.min(1, dt * 1.5);
+  const mps = smoothSpeed * 0.5144;
+  travel += mps * dt; fallT += 9 * dt; windT += (crossWind * 6 * params.airflow) * dt;
+
+  // lightning
+  if (dt > 0) {
+    flash *= Math.exp(-dt * 7);
+    if (flashHold > 0) { flashHold -= dt; if (Math.random() < dt * 25) flash = Math.max(flash, 0.4 + Math.random() * 0.5); }
+    else if (params.lightning && Math.random() < dt * (0.02 + params.rain * params.rain * 0.14)) { flash = 0.5 + Math.random() * 0.6; flashHold = 0.12 + Math.random() * 0.25; }
+  }
+  const fl = Math.min(1.5, flash);
+
+  // camera turbulence
+  const shakeAmp = (0.0006 + sN * sN * 0.0028) * (0.4 + 0.6 * params.airflow);
+  const sx = Math.sin(t * 13.1) * 0.5 + Math.sin(t * 7.7 + 1.0) * 0.3 + Math.sin(t * 23.3) * 0.2;
+  const sy = Math.sin(t * 11.3 + 2.0) * 0.5 + Math.sin(t * 5.1) * 0.35 + Math.sin(t * 27.7 + 1.0) * 0.15;
+  camera.rotation.set(-0.035 + shakeAmp * sx, shakeAmp * sy * 0.7, shakeAmp * sy * 0.4);
+  nose.rotation.z = shakeAmp * sy * 0.4; nose.position.y = -4.3 + shakeAmp * sx * 6;
+
+  if (dt > 0) { stepSim(dt, t); }
+  uploadInstances(dt || 1 / 60);
+
+  // uniforms
+  skyMat.uniforms.uTime.value = t; skyMat.uniforms.uTravel.value = travel; skyMat.uniforms.uFlash.value = fl;
+  groundMat.uniforms.uTravel.value = travel; groundMat.uniforms.uFlash.value = fl;
+  rainMat.uniforms.uTravel.value = travel; rainMat.uniforms.uFallT.value = fallT; rainMat.uniforms.uWindT.value = windT; rainMat.uniforms.uFlash.value = fl;
+  rainMat.uniforms.uVel.value.set(crossWind * 6 * params.airflow, -9, mps + 0.5);
+  rainGeo.instanceCount = Math.min(RAIN_MAX, Math.floor(60 + params.rain * params.rain * 6200));
+  flashLight.intensity = fl * 5; key.intensity = 1.6 + fl * 2;
+
+  // 1. background world
+  renderer.setRenderTarget(rtBg); renderer.setClearColor(black, 1); renderer.clear();
+  renderer.render(world, camera);
+
+  // 2. blurred background (two separable passes at quarter resolution)
+  const bw = rtBlurA.width, bh = rtBlurA.height;
+  blurPass.u.tex.value = rtBg.texture; blurPass.u.uDir.value.set(1 / bw, 0); renderer.setRenderTarget(rtBlurA); renderer.render(blurPass.scene, orthoCam);
+  blurPass.u.tex.value = rtBlurA.texture; blurPass.u.uDir.value.set(0, 1 / bh); renderer.setRenderTarget(rtBlurB); renderer.render(blurPass.scene, orthoCam);
+  blurPass.u.tex.value = rtBlurB.texture; blurPass.u.uDir.value.set(1.5 / bw, 0); renderer.setRenderTarget(rtBlurA); renderer.render(blurPass.scene, orthoCam);
+  blurPass.u.tex.value = rtBlurA.texture; blurPass.u.uDir.value.set(0, 1.5 / bh); renderer.setRenderTarget(rtBlurB); renderer.render(blurPass.scene, orthoCam);
+
+  // 3. wet map: fade previous, add this frame's trails
+  const dryRate = 0.25 + sN * 0.35 + (1 - params.rain) * 0.2;
+  wetFade.u.uDecay.value = Math.exp(-dryRate * (dt || 0));
+  wetFade.u.tPrev.value = rtWetA.texture;
+  renderer.setRenderTarget(rtWetB); renderer.render(wetFade.scene, orthoCam);
+  renderer.autoClear = false; renderer.render(wetScene, dropCam); renderer.autoClear = true;
+  [rtWetA, rtWetB] = [rtWetB, rtWetA];
+
+  // 4. droplet normal/thickness buffer
+  renderer.setRenderTarget(rtDrops); renderer.setClearColor(neutral, 0); renderer.clear();
+  renderer.render(dropScene, dropCam);
+
+  // 5. composite through the canopy
+  composite.u.tBg.value = rtBg.texture; composite.u.tBlur.value = rtBlurB.texture; composite.u.tDrops.value = rtDrops.texture; composite.u.tWet.value = rtWetA.texture;
+  composite.u.uTime.value = t; composite.u.uFlash.value = fl; composite.u.uSpeedN.value = sN;
+  composite.u.uMist.value = 0.04 + params.rain * 0.22;
+  composite.u.uMicro.value = Math.min(0.8, params.rain * 0.75 * (0.4 + 0.6 * params.density));
+  composite.u.uWetGlobal.value = params.rain;
+  renderer.setRenderTarget(null); renderer.render(composite.scene, orthoCam);
+
+  // HUD + status
+  hudAlt += (Math.sin(t * 0.21) * 4 + sx * shakeAmp * 400) * dt * 10;
+  hudHdg += crossWind * params.airflow * dt * 0.4;
+  hudSpd.textContent = String(Math.round(smoothSpeed)).padStart(3, '0');
+  hudAltEl.textContent = String(Math.round(hudAlt)).padStart(4, '0');
+  hudHdgEl.textContent = String(((Math.round(hudHdg) % 360) + 360) % 360).padStart(3, '0');
+  if (dt > 0) { fpsAcc += dt; fpsN++; }
+  statusT += dt || 1 / 60;
+  if (statusT > 0.5) { if (fpsN) fpsShown = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; statusT = 0;
+    status.textContent = `${dropCount} droplets · ${fpsShown} fps · ${W}×${H}${params.paused ? ' · paused' : ''}`; }
+}
+$('clear').onclick = () => { clearDrops(); for (const rt of [rtWetA, rtWetB]) { renderer.setRenderTarget(rt); renderer.setClearColor(black, 1); renderer.clear(); } renderer.setRenderTarget(null); };
+status.textContent = 'Starting…';
+frame();
+</script>
+</body>
+</html>

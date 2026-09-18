@@ -87,6 +87,10 @@ Heat refraction only samples the opaque background in the outer exhaust shear la
 
 Open `/exhaust-preview.html` for both real models, throttle/afterburner, nozzle/side/front views, F-22 vectoring, flow pause, light/dark backgrounds and simultaneous condensation. Placement and response live in `src/render/exhaust/profile.ts`; layered GLSL lives in `src/render/exhaust/shaders.ts`. See [implementation and validation](docs/exhaust-effects.md).
 
+## Canopy rain study
+
+`canopy-rain.html` is a standalone single-file Three.js study of rain on a fighter canopy: it loads Three.js from a CDN import map and needs no build, so open it directly in a browser or serve it from any static server. Droplets are simulated on the CPU (rainfall spawns, pooling, merging, break-away, streaming, trail droplets) and drawn as instanced teardrops into a normal/thickness buffer plus a fading wet map; a composite pass refracts a procedural dusk world through them with dispersion, specular highlights, a fine spray film and the canopy bow. Aircraft speed, rain intensity, droplet density and airflow strength are live sliders, with Parked, Approach, Cruise and Storm presets, lightning, pause, render scale and a dry-the-canopy reset.
+
 ## Asset presentation
 
 Source GLBs are unchanged. The registry excludes F-22's two detached bay fittings and Su-57's oversized `Nozzles_ORIG_backup`. Su-57 displays the stowed gear/probe variant and omits the prototype antenna. Both models are oriented to +X forward and normalized to a studio display length; this display scale is not the physical flight scale.
