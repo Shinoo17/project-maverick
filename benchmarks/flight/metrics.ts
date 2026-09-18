@@ -1,11 +1,12 @@
 import { Vector3 } from 'three'
-import { flightInstrumentation } from '../../src/game/flight/instrumentation'
+import { observeAirflow } from '../../src/game/flight/airflow'
+import { getFlightProfile } from '../../src/game/flight/profile'
 import { arcadeSpeed } from '../../src/game/flight/speedLimits'
 import type { Trace, Sample } from './harness'
 import { targets, targetStatus } from './targets'
 
 const speed = (sample: Sample) => new Vector3().copy(sample.state.velocity).length()
-const incidence = (sample: Sample) => flightInstrumentation(sample.state).incidenceDeg
+const incidence = (sample: Sample) => observeAirflow(sample.state, getFlightProfile(sample.state.aircraftId)).incidenceDeg
 const peak = (samples: Sample[], read: (sample: Sample) => number) => Math.max(...samples.map(read))
 export const firstTime = (samples: Sample[], test: (sample: Sample) => boolean) => samples.find(test)?.time ?? null
 export function measure(trace: Trace) {

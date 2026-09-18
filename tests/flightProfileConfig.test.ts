@@ -1,3 +1,4 @@
+import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { flightDefaults, maneuverDefaults, stallDefaults } from '../src/content/flight-profiles/defaults'
 import { flightProfiles, getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
@@ -102,22 +103,26 @@ describe('aircraft flight configuration', () => {
       ] as const) {
         const state = createState()
         state.position.y = altitude
+        state.velocity.x = speed
         const command = { ...neutralCommand(0, state.id), psmArm: true, pitch: 1 }
-        stepManeuvers(state, command, 1 / 60, speed)
+        stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
         expect(state.maneuver.blocked).toBe(blocked)
         expect(state.maneuver.phase).toBe(blocked === 'none' ? 'active' : 'normal')
       }
 
       const state = createState()
       const command = { ...neutralCommand(0, state.id), psmArm: true, pitch: 1, yaw: 1 }
-      const assist = stepManeuvers(state, command, 1 / 60, 100)
+      state.velocity.x = 100
+      const assist = stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
       expect(assist.pitch).toBe(1)
       expect(assist.yaw).toBe(0.8)
-      for (let tick = 0; tick < 600; tick++) stepManeuvers(state, command, 1 / 60, 100)
+      for (let tick = 0; tick < 600; tick++) stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
       expect(state.maneuver.phase).toBe('active')
-      stepManeuvers(state, command, 1 / 60, 116)
+      state.velocity.x = 116
+      stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
       expect(state.maneuver.phase).toBe('recovery')
-      for (let tick = 0; tick < 60; tick++) stepManeuvers(state, { ...command, psmArm: false }, 1 / 60, 100)
+      state.velocity.x = 100
+      for (let tick = 0; tick < 60; tick++) stepManeuvers(state, { ...command, psmArm: false }, 1 / 60, observeAirflow(state, profile))
       expect(state.maneuver.phase).toBe('normal')
     } finally {
       profile.maneuver = previous

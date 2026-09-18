@@ -7,7 +7,7 @@ import { stepFlight } from '../../src/game/flight/stepFlight'
 import { flightProfileVersion, getFlightProfile } from '../../src/game/flight/profile'
 import { dryThrustLimit } from '../../src/game/flight/speed'
 import { simulationSpeed } from '../../src/game/flight/speedLimits'
-import { flightInstrumentation } from '../../src/game/flight/instrumentation'
+import { observeAirflow } from '../../src/game/flight/airflow'
 
 export const aircraftIds = ['f22', 'su57'] as const
 export const scenarioNames = ['hardTurn900', 'fullStick500', 'cobraC', 'kulbitC', 'reversal180C', 'tailSlide', 'pedalC', 'release45', 'sideslip60'] as const
@@ -71,7 +71,7 @@ export function scenarioSetup(name: ScenarioName, aircraftId: string) {
         reversalReleased ||= rotation >= 180
         return { psmArm: !reversalReleased, pitch: reversalReleased ? 0 : 1, speedAdjust: 1 }
       case 'cobraC': {
-        const incidence = flightInstrumentation(current).incidenceDeg
+        const incidence = observeAirflow(current, getFlightProfile(current.aircraftId)).incidenceDeg
         if (cobraStage === 0 && (incidence >= 90 || time >= 2.5)) cobraStage = 1
         if (cobraStage === 1 && (incidence <= 25 || time >= 5)) cobraStage = 2
         return { psmArm: cobraStage < 2, pitch: cobraStage === 0 ? 1 : cobraStage === 1 ? -1 : 0, speedAdjust: 1 }
@@ -139,12 +139,16 @@ export function replayGolden(golden: Golden, observer?: StepObserver) {
   }, observer, golden.scenario)
 }
 
-/** Only recorded numeric leaves are compared. New fields are intentionally ignored. */
-export function compareNumericLeaves(actual: unknown, expected: unknown, path = 'state'): string[] {
+/** Recorded numbers use relative tolerance; other recorded leaves must match exactly.
+ * New fields are intentionally ignored, so later phases can add state explicitly.
+ */
+export function compareRecordedLeaves(actual: unknown, expected: unknown, path = 'state'): string[] {
   if (typeof expected === 'number') {
     return typeof actual !== 'number' || !Number.isFinite(actual) || Math.abs(actual - expected) > 1e-9 * Math.max(1, Math.abs(expected))
       ? [`${path}: expected ${expected}, received ${actual}`] : []
   }
-  if (!expected || typeof expected !== 'object') return []
-  return Object.entries(expected).flatMap(([key, value]) => compareNumericLeaves((actual as Record<string, unknown> | undefined)?.[key], value, `${path}.${key}`))
+  if (!expected || typeof expected !== 'object') {
+    return actual === expected ? [] : [`${path}: expected ${expected}, received ${actual}`]
+  }
+  return Object.entries(expected).flatMap(([key, value]) => compareRecordedLeaves((actual as Record<string, unknown> | undefined)?.[key], value, `${path}.${key}`))
 }

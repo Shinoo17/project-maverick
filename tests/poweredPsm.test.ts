@@ -1,3 +1,4 @@
+import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
@@ -41,23 +42,27 @@ describe('held, thrust-powered PSM', () => {
 
   it('retains entry history and blend when chaining, and uses a separate overspeed exit', () => {
     const s = aircraft(), input = { ...neutralCommand(0, s.id), psmArm: true, roll: 1 }
-    for (let i = 0; i < 120; i++) stepManeuvers(s, input, dt, 100)
+    for (let i = 0; i < 120; i++) stepManeuvers(s, input, dt, observeAirflow(s, getFlightProfile(s.aircraftId)))
     s.maneuver.peakAlpha = 120; s.maneuver.rotation = 7
-    stepManeuvers(s, { ...input, psmArm: false }, dt, 100)
+    stepManeuvers(s, { ...input, psmArm: false }, dt, observeAirflow(s, getFlightProfile(s.aircraftId)))
     const before = s.maneuver.blend
-    stepManeuvers(s, input, dt, 100)
+    stepManeuvers(s, input, dt, observeAirflow(s, getFlightProfile(s.aircraftId)))
     expect(s.maneuver.phase).toBe('active')
     expect(s.maneuver.blend - before).toBeLessThan(0.02)
     expect(s.maneuver.peakAlpha).toBe(120)
     expect(s.maneuver.rotation).toBe(7)
     expect(s.maneuver.entrySpeed).toBe(100)
-    stepManeuvers(s, input, dt, 125)
+    s.velocity.x = 125
+    stepManeuvers(s, input, dt, observeAirflow(s, getFlightProfile(s.aircraftId)))
     expect(s.maneuver.phase).toBe('active')
-    stepManeuvers(s, input, dt, 136)
+    s.velocity.x = 136
+    stepManeuvers(s, input, dt, observeAirflow(s, getFlightProfile(s.aircraftId)))
     expect(s.maneuver.phase).toBe('recovery')
-    stepManeuvers(s, input, dt, 125)
+    s.velocity.x = 125
+    stepManeuvers(s, input, dt, observeAirflow(s, getFlightProfile(s.aircraftId)))
     expect(s.maneuver.phase).toBe('recovery')
-    stepManeuvers(s, input, dt, 100)
+    s.velocity.x = 100
+    stepManeuvers(s, input, dt, observeAirflow(s, getFlightProfile(s.aircraftId)))
     expect(s.maneuver.phase).toBe('active')
   })
 

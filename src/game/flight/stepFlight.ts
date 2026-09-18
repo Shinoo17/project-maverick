@@ -7,7 +7,7 @@ import { stepManeuvers } from './maneuvers'
 import { thrustForces, tvcTargets, stepThrustVectoring } from './thrustVectoring'
 import { clamp, stepSpeed } from './speed'
 import { stepStall } from './stall'
-import { observeAirflow } from './airflow'
+import { legacyTelemetryIncidenceDeg, observeAirflow } from './airflow'
 
 // Canonical body axes: +X forward, +Y up, +Z right. Positive pitch raises nose;
 // positive roll banks right; positive yaw turns right. Only this module maps signs.
@@ -20,7 +20,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const speed = airflowStart.airspeed
   stepStall(state, stallProfile, speed, dt, airflowStart)
   const surfaceControl = 1 - state.stall.severity * (1 - stallProfile.controlAuthority)
-  const assist = stepManeuvers(state, command, dt, speed, airflowStart)
+  const assist = stepManeuvers(state, command, dt, airflowStart)
   const m = state.maneuver
   const { thrust, braking } = stepSpeed(state, { ...command, airbrake: assist.brake }, dt, speed)
   stepThrustVectoring(state, command, dt, speed, assist.alpha * 180 / Math.PI)
@@ -119,8 +119,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const gravityBlend = Math.max(state.stall.severity, 0.5 * (1 - grip))
   velocity.addScaledVector(path, p.gravity * path.y * gravityBlend * dt)
   velocity.y -= p.gravity * gravityBlend * dt
-  const airflowEnd = observeAirflow({ orientation: state.orientation, velocity }, profile)
-  m.alpha = airflowEnd.legacy.telemetryIncidenceDeg
+  m.alpha = legacyTelemetryIncidenceDeg(forward, velocity)
   m.pathRate = speed > 1 && velocity.length() > 1 ? path.angleTo(velocity) / dt * 180 / Math.PI : 0
   m.g = Math.sqrt(1 + (speed * m.pathRate * Math.PI / 180 / p.gravity) ** 2)
   m.drag = drag + braking

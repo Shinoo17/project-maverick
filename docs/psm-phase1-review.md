@@ -22,8 +22,9 @@ There is no stored airflow cache to become stale on spawn, reset, replay or rend
 Physics reads `airflowStart` before integration. `stall.aoaDeg` is signed alpha
 from that observation. PSM and its existing TVC/drag inputs consume the same
 start observation, preserving their unsigned incidence convention.
-After velocity integration, `airflowEnd` supplies the existing `maneuver.alpha`
-telemetry. That legacy field remains unsigned incidence, not signed alpha.
+After velocity integration, the narrow `legacyTelemetryIncidenceDeg` helper reads
+the integrated forward/velocity vectors to supply `maneuver.alpha` without constructing
+a second complete airflow observation. That legacy field remains unsigned incidence, not signed alpha.
 
 Instrumentation keeps every Phase 0 field and adds `airflow` and `envelope`.
 Vapor reads the same observer; its public sideslip remains radians.
@@ -78,8 +79,11 @@ response rates, velocity-look share and reduced-motion behavior remain in place.
 No Phase 7 camera polish or input changes were added.
 
 Vapor now shares alpha's pitch-plane cutoff (`hypot(body.x, body.y) < 0.001`)
-and beta's airspeed cutoff (`airspeed < 0.001`), so otherwise ill-defined near-rest
-angles follow the observation convention. Speed uses world-space magnitude instead
+and beta's airspeed cutoff (`airspeed < 0.001`). The alpha cutoff means a negligible
+**pitch-plane component at any airspeed**, matching `angleOfAttack`'s existing
+convention. It also applies to pure body-Z sideslip at 100 m/s; body-X/Y residues
+can previously have produced arbitrary ±90°, ±180° or other angles. Pure body-Y
+flow at ordinary speed does not enter this cutoff (its alpha remains ±90°). Speed uses world-space magnitude instead
 of recomputing magnitude after rotation. Outside the pitch-plane cutoff, the largest alpha difference across the captured
 traces is **2.842e-14°**. Maximum speed and sideslip differences are **1.421e-13 m/s**
 and **2.220e-16 rad**, respectively, from floating-point arithmetic.
@@ -87,8 +91,9 @@ and **2.220e-16 rad**, respectively, from floating-point arithmetic.
 At the near-rest portion of both `tailSlide` tracks (from substep 717), the old
 vapor formula reported approximately **90°** from residual velocity below
 **9e-16 m/s**. The shared observer reports **0°**, matching stall's existing cutoff.
-This is an explicit change to a presentation reading, not a physics discrepancy;
-vapor activation is already zero at that speed. These readings do not feed physics.
+This captured example is not the full applicability of the cutoff. At high-speed
+sideways flow the convention can change condensation/vortex shaping. At the
+near-rest speed above, vapor activation is already zero. These readings do not feed physics.
 
 Camera coverage is automated: real decoupling without C, phase fallback, reduced
 motion, low-speed confidence, finite vertical-flight motion and non-mutation.
@@ -139,3 +144,51 @@ Phase 1 is ready for review. Phase 2 has not started. Natural restoring,
 new separation physics, engine spool, Aero/TVC allocation, automatic breakout,
 new recovery assistance and legacy-gate removal remain deferred. The Phase 3
 capacity/geometry questions in the plan's errata remain unresolved by design.
+
+## Review follow-up — 19 September 2026
+
+Approved Phase 1 was committed separately as `c4a108c`. The follow-up retains
+Phase 1 scope and the same flight profile version.
+
+| Finding | Disposition |
+|---|---|
+| M1 | Corrected the disclosure to negligible pitch-plane flow **at any airspeed**. Added a 100 m/s sideslip test with tiny X/Y residues and a body-Y counterexample. Pure body-Y flow itself is not inside the cutoff. |
+| M2 | Kept the Final Baseline field name; explicitly documented dimensionless normalized q in both its JSDoc and the plan contract. It is not Pa or `½ρv²`; future authority coefficients and energy thresholds must use this normalization. |
+| M3 | Replaced the full end-of-step observation with `legacyTelemetryIncidenceDeg(forward, velocity)`. It reuses the integrator's vectors without allocation and preserves exact arithmetic. Start-of-step observation is unchanged. |
+| M4 | Architecture decision remains pending; see below. No envelope physics consumer was added. |
+| M5 | Added an explicit Phase 2 migration item for retiring compatibility fields and the 90°-at-rest quirk. Those differences belong to a versioned physics change, with explicit trace attribution. |
+| M6 | Renamed the comparator to `compareRecordedLeaves`; recorded strings, booleans and null now require strict equality. Numbers retain the same tolerance. Tests catch changed/missing phase, cause, stopReason and flags. |
+| M7 | Named the existing camera band `DECOUPLING_START_DEG` / `DECOUPLING_FULL_DEG`, with a presentation-only comment; no new aircraft tuning knobs. |
+| M8 | `stepManeuvers` requires `airflowStart` and derives speed from it. Removed the redundant positional speed and implicit observation. Unit fixtures now set their actual velocity before observing. The caller still owns the start-of-step timing contract. |
+| O1 | Deferred. Adding a redundant `betaRad` field solely for ~1e-16 rounding adds synchronization/API cost without useful precision benefit. |
+| O2 | Deferred. Making profile optional would require an arbitrary reference speed for q. A separate profile-free geometry API can be considered when profiling justifies it; the full observation currently keeps its explicit normalization contract. |
+| O3 | Cobra's controller and benchmark metrics now call the airflow observer directly, avoiding unused envelope and TVC instrumentation. The debug instrumentation API still returns its full documented observation. |
+
+**M4 decision before a physics consumer is added:** `highAoa` currently measures
+unsigned incidence using the numeric stall threshold pair. Thus a 90° pure sideslip
+can read `highAoa = 1` while signed pitch alpha and stall severity remain zero.
+This is acceptable only as the documented Phase 1 observation. The recommendation
+is to retain incidence as required by §2, author separately named incidence thresholds,
+and keep the stall alpha pair independent. The alternative is to change the contract
+to `abs(alphaDeg)`. The owner has been asked; neither option is implemented here.
+Resolve it before Phase 2 uses `highAoa` for damping, not merely before Phase 4 breakout.
+
+I4 remains a refactor gate, not an expectation that deliberate Phase 2 physics will
+match Phase 0. Its version check still requires explicit retirement/replacement
+when physics changes; the stricter categorical checks do not weaken that policy.
+
+Follow-up validation:
+
+- Full suite: **328 tests / 24 files passed**.
+- Dedicated determinism/invariants/stall run: **96 tests passed**, including exact
+  30/60/144 FPS replay checks. Typecheck and production build passed (same bundle-size warning).
+- `flight:bench` passed; its report remains byte-identical to the pre-Phase-1
+  capture, including all **38 metrics** and their statuses.
+- All **18** pre-Phase-1 complete traces, including commands and **12,018** samples,
+  still match exactly after JSON serialization; no golden files changed.
+- Timing check: live level-flight Su-57 at 100 m/s, neutral command, 120 Hz;
+  position X reset each step to prevent boundary shutdown; 20,000 warm-up steps,
+  best of 7 runs of 300,000 live substeps. Before: **643.003 ms / 2.143 µs**;
+  after: **543.113 ms / 1.810 µs**, about **15.5% lower**. This is an informational
+  same-session measurement, not a CI threshold or a reproduction of the reviewer's
+  different timing fixture. Remaining full start-observation cost is intentional.

@@ -10,7 +10,9 @@ export interface AirflowState {
   alphaDeg: number
   betaDeg: number
   incidenceDeg: number
-  /** Dimensionless (airspeed / referenceSpeedMps)², deliberately unclamped. */
+  /** Dimensionless normalized q = (airspeed / referenceSpeedMps)², unclamped.
+   * Not pressure in Pa (½ρv²). Authority/energy coefficients must use this normalization.
+   */
   dynamicPressure: number
   forwardFlow: number
   reverseFlow: number
@@ -35,6 +37,14 @@ export function angleOfAttack(state: FlowState) {
     .applyQuaternion(new Quaternion().copy(state.orientation).invert()))
 }
 
+/** Exact legacy end-of-step geometry, including 90° for a zero velocity vector.
+ * Reuse the integrator's existing vectors without allocating a full observation.
+ * Retire with AirflowState.legacy in Phase 2; neither input is mutated.
+ */
+export function legacyTelemetryIncidenceDeg(forward: Vector3, velocity: Vector3) {
+  return forward.angleTo(velocity) * 180 / Math.PI
+}
+
 /** Observe exactly the supplied pose. Call before integration for physics and
  * after integration for telemetry; never cache across those two boundaries.
  */
@@ -57,7 +67,7 @@ export function observeAirflow(state: FlowState, profile: Pick<AircraftFlightPro
     confidence: MathUtils.smoothstep(airspeed, 2, 10),
     legacy: {
       psmIncidenceRad: forward.angleTo(legacyPath),
-      telemetryIncidenceDeg: forward.angleTo(velocity) * 180 / Math.PI,
+      telemetryIncidenceDeg: legacyTelemetryIncidenceDeg(forward, velocity),
     },
   }
 }

@@ -1,3 +1,5 @@
+import { getFlightProfile } from '../src/game/flight/profile'
+import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
@@ -74,16 +76,17 @@ describe('P2 maneuvers', () => {
       expect(s.maneuver.phase).toBe('active')
     }
     const safe = make().snapshot().aircraft[0]
+    safe.velocity.x = 105
     const held = { ...neutralCommand(0, safe.id), psmArm: true, pitch: 1 }
     for (let i = 0; i < 1800; i++) {
       safe.maneuver.rotation += 0.1
-      stepManeuvers(safe, held, 1 / 120, 105)
+      stepManeuvers(safe, held, 1 / 120, observeAirflow(safe, getFlightProfile(safe.aircraftId)))
     }
     expect(safe.maneuver.phase).toBe('active')
     expect(safe.maneuver.timer).toBeGreaterThan(14)
-    stepManeuvers(safe, neutralCommand(0, safe.id), 1 / 120, 105)
+    stepManeuvers(safe, neutralCommand(0, safe.id), 1 / 120, observeAirflow(safe, getFlightProfile(safe.aircraftId)))
     expect(safe.maneuver.phase).toBe('recovery')
-    stepManeuvers(safe, held, 1 / 120, 105)
+    stepManeuvers(safe, held, 1 / 120, observeAirflow(safe, getFlightProfile(safe.aircraftId)))
     expect(safe.maneuver.phase).toBe('active')
   })
   it('releases armed mode immediately and freezes maneuver timers while paused', () => {

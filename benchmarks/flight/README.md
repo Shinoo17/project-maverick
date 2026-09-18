@@ -69,7 +69,9 @@ regenerate or retire the baseline, never skip silently. The public replay versio
 is unchanged and separately tested.
 
 Numeric state leaves present in a golden are checked with
-`1e-9 * max(1, abs(recorded))`; added fields are ignored. No global tolerance relaxation
+`1e-9 * max(1, abs(recorded))`; recorded strings, booleans and null must match
+exactly. Only added fields are ignored. `compareRecordedLeaves` reports field paths
+for both numeric and categorical mismatches. No global tolerance relaxation
 is allowed for long rotation tracks. I2 also compares **every** substep state exactly at
 30/60/144 rendered FPS, delivering the recorded commands through the fixed clock.
 The actual `GameRuntime` snapshot/public replay path has its own exact FPS checks.

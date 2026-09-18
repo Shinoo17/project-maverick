@@ -49,6 +49,24 @@ describe('shared airflow observation', () => {
     }
   })
 
+  it('uses the pitch-plane cutoff for vapor at full sideslip speed, not just near rest', () => {
+    const state = createAircraft('f22'), profile = getFlightProfile('f22')
+    for (const [x, y] of [[0, 0], [0, -1e-14], [0, 1e-14], [-1e-14, 0], [1e-14, -1e-14]]) {
+      state.velocity = { x, y, z: 100 }
+      const flow = observeAirflow(state, profile)
+      expect(flow.airspeed).toBe(100)
+      expect(flow.confidence).toBe(1)
+      expect(flow.alphaDeg).toBe(0)
+      expect(flow.betaDeg).toBeCloseTo(90)
+      expect(flightVaporConditions(state).aoa).toBe(0)
+    }
+    // Body-Y flow has a nonzero pitch-plane component and keeps its ±90° alpha.
+    for (const y of [-100, 100]) {
+      state.velocity = { x: 0, y, z: 0 }
+      expect(flightVaporConditions(state).aoa).toBe(y < 0 ? 90 : -90)
+    }
+  })
+
   it('uses an unclamped per-aircraft pressure reference and smooth low-speed confidence', () => {
     const state = createAircraft('f22'), profile = structuredClone(getFlightProfile('f22'))
     profile.aero.referenceSpeedMps = 50

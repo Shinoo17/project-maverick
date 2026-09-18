@@ -1,3 +1,4 @@
+import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { createAircraft } from '../benchmarks/flight/harness'
 import { getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
@@ -77,7 +78,7 @@ describe('Phase 1 profile constants', () => {
       for (const [speed, target] of [[90, 0], [110, 0.5], [150, 1], [190, 0.5], [210, 0]]) {
         const state = createAircraft('f22')
         state.velocity.x = speed
-        stepManeuvers(state, { ...neutralCommand(0, state.id), pitch: 1, highG: true }, FLIGHT_STEP, speed)
+        stepManeuvers(state, { ...neutralCommand(0, state.id), pitch: 1, highG: true }, FLIGHT_STEP, observeAirflow(state, profile))
         expect(state.maneuver.highG).toBe(target * (1 - Math.exp(-6 * FLIGHT_STEP)))
       }
     } finally { profile.maneuver = original }
@@ -94,7 +95,7 @@ describe('Phase 1 profile constants', () => {
         const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), angle)
         state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
         state.maneuver.phase = 'recovery'
-        stepManeuvers(state, neutralCommand(0, state.id), FLIGHT_STEP, speed)
+        stepManeuvers(state, neutralCommand(0, state.id), FLIGHT_STEP, observeAirflow(state, profile))
         expect(state.maneuver.stable).toBe(stable ? FLIGHT_STEP : 0)
       }
     } finally { profile.maneuver = original }

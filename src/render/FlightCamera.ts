@@ -2,6 +2,9 @@ import { MathUtils, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'thre
 import type { AircraftState } from '../game/state/WorldState'
 import { observeAirflow } from '../game/flight/airflow'
 import { getFlightProfile } from '../game/flight/profile'
+// Shared presentation band in degrees; per-aircraft camera tuning waits for Phase 7.
+const DECOUPLING_START_DEG = 20
+const DECOUPLING_FULL_DEG = 60
 export type CameraRollMode = 'horizon' | 'aircraft'
 export class FlightCamera {
   private up = new Vector3(0, 1, 0)
@@ -16,7 +19,7 @@ export class FlightCamera {
     const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
     // Presentation only: reveal real nose/path separation without requiring C.
     // Keep the legacy phase fallback and ignore unreliable angles near rest.
-    const decoupling = MathUtils.smoothstep(airflow.incidenceDeg, 20, 60) * airflow.confidence
+    const decoupling = MathUtils.smoothstep(airflow.incidenceDeg, DECOUPLING_START_DEG, DECOUPLING_FULL_DEG) * airflow.confidence
     const cinematicTarget = Math.max(decoupling, maneuvering ? 1 : 0)
     this.cinematic = reducedMotion ? 0 : this.cinematic + (cinematicTarget - this.cinematic) * (1 - Math.exp(-4 * dt))
     const path = new Vector3().copy(state.velocity).normalize()

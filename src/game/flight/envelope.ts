@@ -5,6 +5,10 @@ import type { AirflowState } from './airflow'
 
 /** Observe-only interpretation. These factors never feed the Phase 1 solver. */
 export interface EnvelopeFactors {
+  /** Unsigned incidence, including sideslip. Phase 1 temporarily reuses stall's
+   * numeric alpha thresholds; resolve independent incidence thresholds before
+   * any physics consumer (Phase 2 damping / Phase 4 breakout) uses this factor.
+   */
   highAoa: number
   separation: number
   intent: number

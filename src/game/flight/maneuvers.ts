@@ -1,4 +1,4 @@
-import { observeAirflow } from './airflow'
+import type { AirflowState } from './airflow'
 import type { AircraftState } from '../state/WorldState'
 import type { PilotCommand } from '../runtime/commands'
 import { clamp } from './speed'
@@ -22,12 +22,11 @@ export function createManeuverState(): ManeuverState {
     airbrake: 0, burner: 1, burnerActive: false, burnerLocked: false, burnerRest: 0,
     alpha: 0, g: 1, pathRate: 0, drag: 0 }
 }
-export function stepManeuvers(
-  state: AircraftState, command: PilotCommand, dt: number, speed: number,
-  airflow = observeAirflow(state, getFlightProfile(state.aircraftId)),
-) {
+/** Caller supplies flow from the start of this step, before pose/velocity integration. */
+export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: number, airflowStart: AirflowState) {
   const m = state.maneuver, p = getFlightProfile(state.aircraftId).maneuver
-  const alpha = airflow.legacy.psmIncidenceRad
+  const speed = airflowStart.airspeed
+  const alpha = airflowStart.legacy.psmIncidenceRad
   // C is an envelope modifier, never a maneuver trigger. No automatic braking,
   // pitch-up, target pose, or nose alignment: the pilot owns all three axes.
   const eligible = p.psmEnabled && state.position.y >= p.minAltitude && speed >= p.entryMin && speed <= p.entryMax

@@ -73,7 +73,7 @@ interface AirflowState {
   alphaDeg: number          // signed pitch-plane incidence (same as angleOfAttack())
   betaDeg: number           // signed sideslip
   incidenceDeg: number      // nose↔velocity angle 0..180
-  dynamicPressure: number   // (airspeed / profile.aero.referenceSpeedMps)², unclamped
+  dynamicPressure: number   // dimensionless normalized q = (airspeed / profile.aero.referenceSpeedMps)², unclamped; NOT Pa or ½ρv²
   forwardFlow: number       // 0..1 body-x velocity share (cos incidence, ≥0)
   reverseFlow: number       // 0..1 (−cos incidence, ≥0)
   confidence: number        // 0..1 smoothstep(airspeed, 2, 10) — angles meaningless near zero speed
@@ -348,7 +348,7 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
   - `samples`: state ทุก 0.25 s
 - **Replay path ของตัวเอง** (`harness.replayGolden`) — ไม่ใช้ `runFlightReplay` เพราะมัน reject เมื่อ `profileVersion` ต่าง ([replay.ts:7](../src/game/playground/replay.ts#L7)) ซึ่งจะทำให้ golden ใช้ไม่ได้ทันทีที่ Phase 2 bump version
   - initial state deep-merge ลงบน aircraft ใหม่ (รองรับ field ที่ Phase 1+ เพิ่ม)
-  - เปรียบเทียบเฉพาะ numeric leaf ที่มีใน golden, tolerance `1e-9 · max(1, |x|)`
+  - เปรียบเทียบ recorded numeric leaf ด้วย tolerance `1e-9 · max(1, |x|)`; Phase 1 review เพิ่ม strict equality สำหรับ recorded strings / booleans / null (รวม phase, cause, alive และ burner flags); ignore เฉพาะ field ใหม่
 - Open-loop replay ทำให้ Phase 1 เทียบได้โดยไม่ขึ้นกับว่า controller closed-loop ข้าม threshold ต่างกันเพราะ float noise
 - **ความเสี่ยงที่ต้องรู้:** scenario ที่หมุนหลายรอบ (Kulbit) อาจขยาย noise ระดับ 1e-16 เกิน 1e-9 ใน 8 s — ถ้าเกิดใน Phase 1 ให้ตัด comparison window หรือผ่อน tolerance **เฉพาะ track นั้น** พร้อมบันทึกเหตุผล ห้ามผ่อนทั้งชุด
 - Test `tests/invariants/goldenTracks.test.ts`: replay ทุก golden ต้องตรง samples; ถ้า `flightProfileVersion` ≠ `recordedWithProfileVersion` → **fail พร้อมข้อความให้ regenerate หรือ retire โดยตั้งใจ** (ไม่ skip เงียบ) — Phase 2 ต้องตัดสินใจ retire I4 หรือบันทึกชุดใหม่ใน PR นั้น
@@ -388,6 +388,8 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **ไฟล์:** `airflow.ts`, `envelope.ts` (ใหม่), `stall.ts`, `stepFlight.ts`, `maneuvers.ts`, `speed.ts`, `profileTypes.ts`, `validateProfile.ts`, `content/flight-profiles/*`, `vapor/conditions.ts`, `FlightCamera.ts`, `FlightProfilePanel.tsx`
 
 ### Phase 2 — Natural aerodynamics
+- Phase 1 review M4: before `highAoa` drives damping, resolve incidence-vs-pitch-alpha semantics with the owner. Recommendation: retain §2's unsigned incidence and author independent incidence thresholds rather than borrowing `stall.recoveryAoaDeg` / `criticalAoaDeg`. Phase 1's reuse is an observe-only proxy, not an approved physics contract.
+- Phase 1 review follow-up: retire `AirflowState.legacy` when `maneuvers.ts` and `maneuver.alpha` move to canonical `incidenceDeg`; remove the 0.01 m/s PSM convention and 90°-at-rest telemetry quirk as an explicit, versioned Phase 2 behavior change. Compare/attribute those differences before deliberately retiring I4; do not update goldens to hide them.
 - `aerodynamics.ts`: restoring curves, damping attached/separated, α-drag, β-drag
 - `stall.ts` → continuous `separation` (hysteresis ผ่าน time smoothing ไม่ใช่ threshold คู่)
 - Neutral damper จางตาม highAoa; ลบ `neutralDampingDuringPsm`
