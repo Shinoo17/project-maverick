@@ -135,6 +135,14 @@ Stick เต็ม = **"ต้องการ authority เพิ่ม"** ร�
 | `H` | already-high incidence = `smoothstep(alphaNormal, alphaCritical, incidence)` | AirflowState |
 | `T` | sustained saturation (leaky integrator ~0.4 s) | ใหม่ (น้ำหนักต่ำ ดู §6 D4) |
 
+**M4 owner decision (19 ก.ย. 2026):** `alphaNormal` / `alphaCritical` ใน §2 หมายถึง
+`profile.aero.alphaNormalDeg` / `profile.aero.alphaCriticalDeg` ซึ่งเป็น threshold ของ
+**unsigned incidence** (รวม sideslip) ไม่ใช่ signed pitch-plane alpha ของ stall.
+กำหนด `0 ≤ alphaNormalDeg < alphaCriticalDeg ≤ 180`, ค่าต้อง finite และปรับแยกต่อลำจาก playtest.
+ห้าม derive หรือ fallback จาก `stall.recoveryAoaDeg` / `stall.criticalAoaDeg`.
+Phase 1 ใช้ 20° / 30° เป็นค่าเริ่มต้นชั่วคราวเพื่อคง highAoa observation เดิม ยังไม่ใช่ผล playtest.
+`alphaLimitDeg` แบบ observe-only อ่าน `aero.alphaNormalDeg`; การเปิด limiter ตามสูตรด้านล่างยังรอ Phase 4.
+
 ### 2.3 สูตร (โครง — ค่าน้ำหนักเป็น profile)
 
 ```
@@ -388,7 +396,7 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **ไฟล์:** `airflow.ts`, `envelope.ts` (ใหม่), `stall.ts`, `stepFlight.ts`, `maneuvers.ts`, `speed.ts`, `profileTypes.ts`, `validateProfile.ts`, `content/flight-profiles/*`, `vapor/conditions.ts`, `FlightCamera.ts`, `FlightProfilePanel.tsx`
 
 ### Phase 2 — Natural aerodynamics
-- Phase 1 review M4: before `highAoa` drives damping, resolve incidence-vs-pitch-alpha semantics with the owner. Recommendation: retain §2's unsigned incidence and author independent incidence thresholds rather than borrowing `stall.recoveryAoaDeg` / `criticalAoaDeg`. Phase 1's reuse is an observe-only proxy, not an approved physics contract.
+- Phase 1 review M4 resolved: `highAoa` uses unsigned incidence and independent `aero.alphaNormalDeg` / `aero.alphaCriticalDeg` (§2). Tune the provisional 20°/30° band per aircraft through Phase 2 playtest before treating it as settled handling tuning; stall retains its separate pitch-alpha thresholds.
 - Phase 1 review follow-up: retire `AirflowState.legacy` when `maneuvers.ts` and `maneuver.alpha` move to canonical `incidenceDeg`; remove the 0.01 m/s PSM convention and 90°-at-rest telemetry quirk as an explicit, versioned Phase 2 behavior change. Compare/attribute those differences before deliberately retiring I4; do not update goldens to hide them.
 - `aerodynamics.ts`: restoring curves, damping attached/separated, α-drag, β-drag
 - `stall.ts` → continuous `separation` (hysteresis ผ่าน time smoothing ไม่ใช่ threshold คู่)

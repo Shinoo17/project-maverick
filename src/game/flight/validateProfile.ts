@@ -31,6 +31,14 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   if (aero.highSpeedMps < aero.referenceSpeedMps) {
     throw new Error(`${path}.aero.highSpeedMps: must not be below referenceSpeedMps`)
   }
+  for (const key of ['alphaNormalDeg', 'alphaCriticalDeg'] as const) {
+    if (!Number.isFinite(aero[key])) throw new Error(`${path}.aero.${key}: expected finite number`)
+    nonnegative(aero[key], `${path}.aero.${key}`)
+    if (aero[key] > 180) throw new Error(`${path}.aero.${key}: must not exceed 180`)
+  }
+  if (aero.alphaCriticalDeg <= aero.alphaNormalDeg) {
+    throw new Error(`${path}.aero.alphaCriticalDeg: must exceed alphaNormalDeg`)
+  }
   for (const key of ['afterburnerAcceleration', 'airbrakeDeceleration'] as const) {
     if (!Number.isFinite(flight[key])) throw new Error(`${path}.flight.${key}: expected finite number`)
     nonnegative(flight[key], `${path}.flight.${key}`)

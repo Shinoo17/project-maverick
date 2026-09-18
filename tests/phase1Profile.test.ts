@@ -12,7 +12,7 @@ import { Quaternion, Vector3 } from 'three'
 
 describe('Phase 1 profile constants', () => {
   const fields = {
-    aero: ['referenceSpeedMps', 'highSpeedMps'],
+    aero: ['referenceSpeedMps', 'highSpeedMps', 'alphaNormalDeg', 'alphaCriticalDeg'],
     flight: ['afterburnerAcceleration', 'airbrakeDeceleration'],
     maneuver: ['lateralAcceleration', 'psmDrag', 'recoveryIncidenceRad', 'recoverySpeedMps',
       'highGMinSpeedMps', 'highGMaxSpeedMps', 'highGSpeedFadeMps'],
@@ -28,6 +28,8 @@ describe('Phase 1 profile constants', () => {
   }
   it.each([
     ['aero', 'referenceSpeedMps', 0], ['aero', 'highSpeedMps', 89],
+    ['aero', 'alphaNormalDeg', 181], ['aero', 'alphaCriticalDeg', 181],
+    ['aero', 'alphaCriticalDeg', 20], ['aero', 'alphaCriticalDeg', 19],
     ['maneuver', 'highGSpeedFadeMps', 0], ['maneuver', 'highGMaxSpeedMps', 75],
     ['maneuver', 'recoveryIncidenceRad', Math.PI + 0.01],
   ] as const)('rejects invalid ranges: %s.%s', (group, key, value) => {
@@ -39,7 +41,7 @@ describe('Phase 1 profile constants', () => {
   it('shares the authored surface speed curve between controller and legacy observation', () => {
     const profile = getFlightProfile('f22'), original = profile.aero
     const other = structuredClone(getFlightProfile('su57').aero)
-    profile.aero = { referenceSpeedMps: 120, highSpeedMps: 180 }
+    profile.aero = { ...original, referenceSpeedMps: 120, highSpeedMps: 180 }
     try {
       for (const speed of [60, 240]) {
         const state = createAircraft('f22')

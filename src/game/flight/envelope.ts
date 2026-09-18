@@ -5,10 +5,7 @@ import type { AirflowState } from './airflow'
 
 /** Observe-only interpretation. These factors never feed the Phase 1 solver. */
 export interface EnvelopeFactors {
-  /** Unsigned incidence, including sideslip. Phase 1 temporarily reuses stall's
-   * numeric alpha thresholds; resolve independent incidence thresholds before
-   * any physics consumer (Phase 2 damping / Phase 4 breakout) uses this factor.
-   */
+  /** Unsigned incidence, including sideslip, interpreted using the aero band. */
   highAoa: number
   separation: number
   intent: number
@@ -22,7 +19,7 @@ export interface EnvelopeFactors {
 /** Transitional readings, not the future breakout/separation/recovery models.
  * Reuse existing smoothed stall severity and maneuver blend instead of adding a
  * second simulation clock. Intent is inactive, and alphaLimitDeg reports the
- * current stall threshold (no max-controllable-alpha capability exists yet).
+ * aero's normal incidence threshold (no max-controllable-alpha capability exists yet).
  * Assist fields describe legacy blend weights, not available authority.
  */
 export function interpretEnvelope(
@@ -32,11 +29,11 @@ export function interpretEnvelope(
 ): EnvelopeFactors {
   const { stall, maneuver } = state
   return {
-    highAoa: MathUtils.smoothstep(airflow.incidenceDeg, profile.stall.recoveryAoaDeg, profile.stall.criticalAoaDeg) * airflow.confidence,
+    highAoa: MathUtils.smoothstep(airflow.incidenceDeg, profile.aero.alphaNormalDeg, profile.aero.alphaCriticalDeg) * airflow.confidence,
     separation: stall.severity,
     intent: 0,
     limiterOpen: maneuver.blend,
-    alphaLimitDeg: profile.stall.criticalAoaDeg,
+    alphaLimitDeg: profile.aero.alphaNormalDeg,
     gAllowance: 1 + maneuver.highG * 0.6,
     stabilityAssist: 1 - maneuver.blend,
     recoveryAssist: maneuver.phase === 'recovery' ? 1 - maneuver.blend : 0,

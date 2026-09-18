@@ -45,10 +45,15 @@ export interface FlightProfile {
   gravity: number
 }
 
-/** Flow reference and the unchanged legacy surface-authority speed curve. */
+/** Flow reference, legacy surface speed curve and independent incidence envelope. */
 export interface AeroProfile {
   referenceSpeedMps: number
   highSpeedMps: number
+  /** Unsigned nose/velocity incidence thresholds (degrees), including sideslip.
+   * Independent of stall's pitch-plane alpha thresholds; tune per aircraft by playtest.
+   */
+  alphaNormalDeg: number
+  alphaCriticalDeg: number
 }
 
 /** Session overrides deliberately support only speed limits for now. */

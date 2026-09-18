@@ -1,6 +1,13 @@
 import type { AeroProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
 
-export const aeroDefaults: AeroProfile = { referenceSpeedMps: 90, highSpeedMps: 160 }
+export const aeroDefaults: AeroProfile = {
+  referenceSpeedMps: 90,
+  highSpeedMps: 160,
+  // Provisional incidence band preserves Phase 1 highAoa; per-aircraft playtest
+  // will author these independently. Never derive them from stall thresholds.
+  alphaNormalDeg: 20,
+  alphaCriticalDeg: 30,
+}
 
 // Shared control responses. Airframe performance belongs in each aircraft file.
 // Changing these defaults affects every aircraft that does not override them.

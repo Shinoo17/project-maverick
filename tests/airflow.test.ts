@@ -124,7 +124,7 @@ describe('observe-only envelope', () => {
     const flow = observeAirflow(state, profile)
     expect(interpretEnvelope(state, flow, profile)).toEqual({
       highAoa: 1, separation: 0.4, intent: 0, limiterOpen: 0.6,
-      alphaLimitDeg: 30, gAllowance: 1.3, stabilityAssist: 0.4, recoveryAssist: 0.4,
+      alphaLimitDeg: 20, gAllowance: 1.3, stabilityAssist: 0.4, recoveryAssist: 0.4,
     })
     state.velocity = { x: 0, y: 0, z: 0 }
     expect(interpretEnvelope(state, observeAirflow(state, profile), profile).highAoa).toBe(0)
