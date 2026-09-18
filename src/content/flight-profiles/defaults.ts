@@ -1,8 +1,12 @@
-import type { FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
+import type { AeroProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
+
+export const aeroDefaults: AeroProfile = { referenceSpeedMps: 90, highSpeedMps: 160 }
 
 // Shared control responses. Airframe performance belongs in each aircraft file.
 // Changing these defaults affects every aircraft that does not override them.
 export const flightDefaults = {
+  afterburnerAcceleration: 38,
+  airbrakeDeceleration: 30,
   driveResponse: 8,
   releaseResponse: 6,
   rateResponse: 5,
@@ -42,6 +46,13 @@ export const maneuverDefaults: ManeuverProfile = {
   activeGrip: 0.08,
   recoveryGrip: 2.5,
   recoveryAcceleration: 70,
+  lateralAcceleration: 55,
+  psmDrag: 0.0025,
+  recoveryIncidenceRad: 0.3,
+  recoverySpeedMps: 60,
+  highGMinSpeedMps: 75,
+  highGMaxSpeedMps: 190,
+  highGSpeedFadeMps: 15,
 
   highGRate: 1.4,
   highGDrag: 2,

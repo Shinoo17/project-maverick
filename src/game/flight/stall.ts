@@ -1,4 +1,5 @@
-import { Quaternion, Vector3 } from 'three'
+import { angleOfAttack, type AirflowState } from './airflow'
+export { angleOfAttack } from './airflow'
 import type { StallProfile } from './profileTypes'
 import type { AircraftState } from '../state/WorldState'
 import { arcadeSpeed } from './speedLimits'
@@ -9,24 +10,16 @@ export interface StallState {
   severity: number
   /** Unmet thresholds; none with nonzero severity means recovery is underway. */
   cause: StallCause
-  /** Signed incidence sampled at the start of the flight step, in degrees. */
+  /** Signed pitch-plane alpha sampled at the START of the flight step, in degrees. */
   aoaDeg: number
 }
 export const createStallState = (): StallState => ({ severity: 0, cause: 'none', aoaDeg: 0 })
 
-/** Body +X forward, +Y up. Sideways flow is not pitch AoA; reverse flow is ±180°. */
-export function angleOfAttack(state: Pick<AircraftState, 'velocity' | 'orientation'>) {
-  const bodyVelocity = new Vector3().copy(state.velocity)
-    .applyQuaternion(new Quaternion().copy(state.orientation).invert())
-  return Math.hypot(bodyVelocity.x, bodyVelocity.y) < 0.001
-    ? 0 : Math.atan2(-bodyVelocity.y, bodyVelocity.x) * 180 / Math.PI || 0
-}
-
 /** Fixed-step, deterministic, no maneuver/aircraft-name special cases. */
-export function stepStall(state: AircraftState, profile: StallProfile, speed: number, dt: number) {
+export function stepStall(state: AircraftState, profile: StallProfile, speed: number, dt: number, airflow?: AirflowState) {
   if (dt <= 0 || !state.alive) return
   const stall = state.stall
-  stall.aoaDeg = angleOfAttack(state)
+  stall.aoaDeg = airflow?.alphaDeg ?? angleOfAttack(state)
   const speedKph = arcadeSpeed(speed)
   const recovering = stall.severity > 0
   const lowSpeed = speedKph < (recovering ? profile.recoverySpeedKph : profile.stallSpeedKph)

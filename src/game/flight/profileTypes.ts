@@ -16,6 +16,8 @@ export interface FlightProfile {
   releaseResponse: number
   /** Dry thrust budget (m/s²); raised automatically for higher configured speeds. */
   maxThrust: number
+  afterburnerAcceleration: number
+  airbrakeDeceleration: number
   /** Speed-squared drag coefficient; drag * speed² gives deceleration. */
   drag: number
   /** Pitch/yaw rate-squared drag coefficient. */
@@ -41,6 +43,12 @@ export interface FlightProfile {
   turnAnticipation: number
   /** Gravity used for climb/descent energy cost (m/s²). */
   gravity: number
+}
+
+/** Flow reference and the unchanged legacy surface-authority speed curve. */
+export interface AeroProfile {
+  referenceSpeedMps: number
+  highSpeedMps: number
 }
 
 /** Session overrides deliberately support only speed limits for now. */
@@ -91,6 +99,16 @@ export interface ManeuverProfile {
   recoveryGrip: number
   /** Recovery lateral acceleration budget (m/s²). */
   recoveryAcceleration: number
+  /** Legacy active-PSM lateral budget (m/s²) and speed-squared drag coefficient. */
+  lateralAcceleration: number
+  psmDrag: number
+  /** Keep the original 0.3 radians exactly; 17° was a rounded design label. */
+  recoveryIncidenceRad: number
+  recoverySpeedMps: number
+  /** High-G speed band and edge transition width, all in simulation m/s. */
+  highGMinSpeedMps: number
+  highGMaxSpeedMps: number
+  highGSpeedFadeMps: number
 
   // High-G rate/drag multipliers and afterburner time budgets (s).
   highGRate: number
@@ -125,6 +143,7 @@ export interface ThrustVectoringProfile {
 }
 
 export interface AircraftFlightProfile {
+  aero: AeroProfile
   flight: FlightProfile
   stall: StallProfile
   maneuver: ManeuverProfile

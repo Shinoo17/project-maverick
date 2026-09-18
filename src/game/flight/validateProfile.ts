@@ -22,7 +22,31 @@ function nonnegative(value: number, path: string) {
 
 export function validateFlightProfile(profile: AircraftFlightProfile, path = 'flightProfile') {
   validateFinite(profile, path)
-  const { flight, stall, maneuver, thrustVectoring } = profile
+  const { aero, flight, stall, maneuver, thrustVectoring } = profile
+
+  for (const key of ['referenceSpeedMps', 'highSpeedMps'] as const) {
+    if (!Number.isFinite(aero?.[key])) throw new Error(`${path}.aero.${key}: expected finite number`)
+    positive(aero[key], `${path}.aero.${key}`)
+  }
+  if (aero.highSpeedMps < aero.referenceSpeedMps) {
+    throw new Error(`${path}.aero.highSpeedMps: must not be below referenceSpeedMps`)
+  }
+  for (const key of ['afterburnerAcceleration', 'airbrakeDeceleration'] as const) {
+    if (!Number.isFinite(flight[key])) throw new Error(`${path}.flight.${key}: expected finite number`)
+    nonnegative(flight[key], `${path}.flight.${key}`)
+  }
+  for (const key of ['lateralAcceleration', 'psmDrag', 'recoveryIncidenceRad', 'recoverySpeedMps',
+    'highGMinSpeedMps', 'highGMaxSpeedMps', 'highGSpeedFadeMps'] as const) {
+    if (!Number.isFinite(maneuver[key])) throw new Error(`${path}.maneuver.${key}: expected finite number`)
+    nonnegative(maneuver[key], `${path}.maneuver.${key}`)
+  }
+  positive(maneuver.highGSpeedFadeMps, `${path}.maneuver.highGSpeedFadeMps`)
+  if (maneuver.highGMaxSpeedMps <= maneuver.highGMinSpeedMps) {
+    throw new Error(`${path}.maneuver.highGMaxSpeedMps: must exceed highGMinSpeedMps`)
+  }
+  if (maneuver.recoveryIncidenceRad > Math.PI) {
+    throw new Error(`${path}.maneuver.recoveryIncidenceRad: must not exceed PI`)
+  }
 
   for (const key of ['minPoweredMps', 'maxThrust', 'gravity', 'pitchRate', 'yawRate', 'rollRate'] as const) {
     positive(flight[key], `${path}.flight.${key}`)

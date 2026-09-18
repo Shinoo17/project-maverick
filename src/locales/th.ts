@@ -7,6 +7,7 @@ export const th: Translation = {
   weaponsPreview: 'สำหรับสำรวจข้อมูลเท่านั้น ยังไม่เปิดใช้ยิงอาวุธ',
   armamentCapacityNote: 'ติดตั้งอาวุธเต็มความจุทุกจุดตามค่าของเกม อาวุธยังไม่มีผลต่อการบิน',
   gameProfile: 'สมรรถนะในเกม', profileExperimental: 'ค่าทดลองสำหรับเกม ไม่ใช่สเปกเครื่องบินจริง',
+  profileRecoveryCondition: 'มุมหัวกับทิศการบิน / ความเร็วฟื้นตัว',
   profileSpeed: 'ช่วงความเร็วใช้แรงขับ', profileAcceleration: 'อัตราเร่ง', profileYaw: 'อัตรา Yaw ปกติ',
   profilePsm: 'อัตรา Yaw ขณะ PSM', profileRecovery: 'อัตราเร่งฟื้นตัว', profilePsmControl: 'การควบคุม PSM', profileHoldC: 'ค้าง C · ใช้แรงขับ', profileUnsupported: 'ไม่รองรับ',
 

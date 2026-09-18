@@ -6,6 +6,7 @@ export const en = {
   weaponsPreview: 'Inspection only. Weapon firing is not available yet.',
   armamentCapacityNote: 'Every station carries its full game capacity. Weapons do not affect flight handling yet.',
   gameProfile: 'Flight profile', profileExperimental: 'Experimental game tuning · not real-world specifications.',
+  profileRecoveryCondition: 'Recovery nose–path angle / speed',
   profileSpeed: 'Powered speed band', profileAcceleration: 'Acceleration', profileYaw: 'Normal yaw rate',
   profilePsm: 'PSM yaw rate', profileRecovery: 'Recovery acceleration', profilePsmControl: 'PSM control', profileHoldC: 'Hold C · thrust-powered', profileUnsupported: 'Unavailable',
 

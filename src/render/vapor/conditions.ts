@@ -1,10 +1,11 @@
-import { MathUtils, Quaternion, Vector3 } from 'three'
+import { MathUtils } from 'three'
+import { observeAirflow } from '../../game/flight/airflow'
+import { getFlightProfile } from '../../game/flight/profile'
 import type { AircraftState } from '../../game/state/WorldState'
 
 export interface VaporConditions { speed: number; aoa: number; g: number; sideslip: number; humidity: number }
 export interface VaporSettings { density: number; noise: number; turbulence: number; fade: number; airflow: number }
 export const defaultVaporSettings: VaporSettings = { density: 1, noise: 1, turbulence: 1, fade: 0.45, airflow: 1 }
-const inverse = new Quaternion(), velocity = new Vector3()
 
 // The flight sandbox has no weather entity yet. Until it does, use a stable
 // atmospheric lapse approximation: the low-level range is humid, while dry air
@@ -17,12 +18,11 @@ export function ambientHumidity(altitude: number) {
 // Use signed aerodynamic incidence, not maneuver.alpha (which also counts yaw).
 // Velocity is in simulation metres/second, not the HUD's scaled arcade speed.
 export function flightVaporConditions(state: AircraftState): VaporConditions {
-  inverse.copy(state.orientation).invert()
-  velocity.copy(state.velocity).applyQuaternion(inverse)
+  const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
   return {
-    speed: velocity.length(),
-    aoa: Math.atan2(-velocity.y, velocity.x) * MathUtils.RAD2DEG,
-    sideslip: Math.atan2(velocity.z, Math.hypot(velocity.x, velocity.y)),
+    speed: airflow.airspeed,
+    aoa: airflow.alphaDeg,
+    sideslip: airflow.betaDeg * Math.PI / 180,
     g: state.maneuver.g,
     humidity: ambientHumidity(state.position.y),
   }

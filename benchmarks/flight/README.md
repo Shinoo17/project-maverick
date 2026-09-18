@@ -1,8 +1,11 @@
 # Phase 0 flight instrumentation
 
-Implements only Phase 0 of [the final implementation plan](../../docs/psm-implementation-plan.md).
-The runtime flight step, input, camera, profiles, replay schema and `flightProfileVersion`
-remain unchanged (`p3-powered-psm-1`). No Phase 1–3 airflow, engine, allocation or physics is installed.
+Captures Phase 0 of [the final implementation plan](../../docs/psm-implementation-plan.md).
+Phase 1 now consumes shared airflow observations and authored legacy constants;
+these golden tracks, replay schema and `flightProfileVersion` remain unchanged
+(`p3-powered-psm-1`). See the [Phase 1 review](../../docs/psm-phase1-review.md)
+for observation semantics and regression results. Engine/allocation and new physics
+remain deferred.
 
 ```sh
 npm test                         # Hard invariants and the existing handling tests
@@ -27,10 +30,12 @@ Directly aft flow has no unique edge direction and deterministically uses the bo
 The marker reads the existing interpolated pose/velocity and scene camera.
 
 `flightInstrumentation` samples the current (normally end-of-step) state. Its alpha
-uses `angleOfAttack`; beta is `atan2(body.z, hypot(body.x, body.y))`, signed toward body
+uses the shared `observeAirflow` source (also behind `angleOfAttack`); beta is
+`atan2(body.z, hypot(body.x, body.y))`, signed toward body
 +Z. Incidence is the unsigned nose/velocity angle. Zero-speed angles report zero.
 `stall.aoaDeg` remains the runtime's **start-of-step** reading, intentionally separate.
-q is a dimensionless `(v / 90)²` proxy. Thrust is acceleration (F/m), in m/s², recovered
+q is a dimensionless `(v / profile.aero.referenceSpeedMps)²` proxy (default 90 m/s).
+Thrust is acceleration (F/m), in m/s², recovered
 from the last engine output; it is not a new engine model.
 
 Legacy aero/floor/PSM are full-stick **rate ceilings before turn budget and High-G**,

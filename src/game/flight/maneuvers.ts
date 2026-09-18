@@ -1,4 +1,4 @@
-import { Quaternion, Vector3 } from 'three'
+import { observeAirflow } from './airflow'
 import type { AircraftState } from '../state/WorldState'
 import type { PilotCommand } from '../runtime/commands'
 import { clamp } from './speed'
@@ -12,7 +12,9 @@ export interface ManeuverState {
   blocked: PsmBlock; entrySpeed: number; exitSpeed: number
   peakAlpha: number; completed: number; highG: number; airbrake: number
   burner: number; burnerActive: boolean; burnerLocked: boolean; burnerRest: number
-  alpha: number; g: number; pathRate: number; drag: number
+  /** Legacy unsigned nose/path incidence at END of step, not signed pitch alpha. */
+  alpha: number
+  g: number; pathRate: number; drag: number
 }
 export function createManeuverState(): ManeuverState {
   return { phase: 'normal', timer: 0, rotation: 0, stable: 0, blend: 0, controlAuthority: 0,
@@ -20,12 +22,12 @@ export function createManeuverState(): ManeuverState {
     airbrake: 0, burner: 1, burnerActive: false, burnerLocked: false, burnerRest: 0,
     alpha: 0, g: 1, pathRate: 0, drag: 0 }
 }
-export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: number, speed: number) {
+export function stepManeuvers(
+  state: AircraftState, command: PilotCommand, dt: number, speed: number,
+  airflow = observeAirflow(state, getFlightProfile(state.aircraftId)),
+) {
   const m = state.maneuver, p = getFlightProfile(state.aircraftId).maneuver
-  const q = new Quaternion().copy(state.orientation)
-  const forward = new Vector3(1, 0, 0).applyQuaternion(q)
-  const path = speed > 0.01 ? new Vector3().copy(state.velocity).normalize() : forward.clone()
-  const alpha = forward.angleTo(path)
+  const alpha = airflow.legacy.psmIncidenceRad
   // C is an envelope modifier, never a maneuver trigger. No automatic braking,
   // pitch-up, target pose, or nose alignment: the pilot owns all three axes.
   const eligible = p.psmEnabled && state.position.y >= p.minAltitude && speed >= p.entryMin && speed <= p.entryMax
@@ -50,7 +52,7 @@ export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: n
   m.blend += clamp(targetBlend - m.blend, -dt / p.blendSeconds, dt / p.blendSeconds)
   if (m.phase === 'recovery') {
     m.timer += dt
-    m.stable = alpha < 0.3 && speed > 60 ? m.stable + dt : 0
+    m.stable = alpha < p.recoveryIncidenceRad && speed > p.recoverySpeedMps ? m.stable + dt : 0
     if (m.stable >= 0.3 && m.blend === 0) {
       if (m.peakAlpha >= 70) m.completed++
       m.phase = 'normal'
@@ -58,7 +60,7 @@ export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: n
   }
   const assisted = m.phase === 'active' || m.phase === 'recovery'
   const highGTarget = !assisted && m.phase !== 'armed' && command.highG && Math.hypot(command.pitch, command.yaw) > 0.35
-    ? clamp((speed - 75) / 15, 0, 1) * clamp((190 - speed) / 15, 0, 1) : 0
+    ? clamp((speed - p.highGMinSpeedMps) / p.highGSpeedFadeMps, 0, 1) * clamp((p.highGMaxSpeedMps - speed) / p.highGSpeedFadeMps, 0, 1) : 0
   m.highG += (highGTarget - m.highG) * (1 - Math.exp(-6 * dt))
   const brake = command.airbrake
   m.airbrake += (+brake - m.airbrake) * (1 - Math.exp(-12 * dt))

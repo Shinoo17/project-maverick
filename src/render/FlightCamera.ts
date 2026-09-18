@@ -1,5 +1,7 @@
-import { Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
+import { MathUtils, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../game/state/WorldState'
+import { observeAirflow } from '../game/flight/airflow'
+import { getFlightProfile } from '../game/flight/profile'
 export type CameraRollMode = 'horizon' | 'aircraft'
 export class FlightCamera {
   private up = new Vector3(0, 1, 0)
@@ -11,7 +13,12 @@ export class FlightCamera {
     const q = new Quaternion().copy(state.orientation), position = new Vector3().copy(state.position)
     const forward = new Vector3(1, 0, 0).applyQuaternion(q)
     const maneuvering = state.maneuver.phase === 'active' || state.maneuver.phase === 'recovery'
-    this.cinematic = reducedMotion ? 0 : this.cinematic + ((maneuvering ? 1 : 0) - this.cinematic) * (1 - Math.exp(-4 * dt))
+    const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
+    // Presentation only: reveal real nose/path separation without requiring C.
+    // Keep the legacy phase fallback and ignore unreliable angles near rest.
+    const decoupling = MathUtils.smoothstep(airflow.incidenceDeg, 20, 60) * airflow.confidence
+    const cinematicTarget = Math.max(decoupling, maneuvering ? 1 : 0)
+    this.cinematic = reducedMotion ? 0 : this.cinematic + (cinematicTarget - this.cinematic) * (1 - Math.exp(-4 * dt))
     const path = new Vector3().copy(state.velocity).normalize()
     forward.lerp(path, this.cinematic * 0.88).normalize()
     const bodyUp = new Vector3(0, 1, 0).applyQuaternion(q)
@@ -32,7 +39,7 @@ export class FlightCamera {
     this.up.copy(transported).applyAxisAngle(forward, angle * (reducedMotion ? 1 : 1 - Math.exp(-3 * dt))).normalize()
     // Chase offset sized so the whole airframe (normalised to 18.9 units long) stays in frame
     // even at rest, with speed only easing the camera back a few units.
-    const speed = new Vector3().copy(state.velocity).length()
+    const speed = airflow.airspeed
     const back = 26 + Math.min(3, speed / 70) + this.cinematic * 6
     const desiredOffset = forward.clone().multiplyScalar(-back).addScaledVector(this.up, 6.5 + this.cinematic * 3.5)
     desiredOffset.y = Math.max(5, position.y + desiredOffset.y) - position.y

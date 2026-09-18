@@ -6,7 +6,6 @@ import { getFlightProfile } from './profile'
 
 export { arcadeSpeed } from './speedLimits'
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
-const AFTERBURNER_ACCELERATION = 38
 
 /** Higher configured speeds need enough thrust to overcome their base drag. */
 export function dryThrustLimit(p: FlightProfile, limits: SpeedLimits) {
@@ -28,12 +27,12 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
   const drive = state.speedDrive >= 0
     ? Math.min(state.speedDrive * p.acceleration, Math.max(0, limits.topSpeedMps - speed) / dt)
     : -Math.min(-state.speedDrive * p.deceleration, Math.max(0, speed - p.minPoweredMps) / dt)
-  const boost = m.burnerActive ? AFTERBURNER_ACCELERATION : 0
+  const boost = m.burnerActive ? p.afterburnerAcceleration : 0
   const acceleration = Math.min(Math.max(0, drive) + boost, Math.max(0, topSpeed - speed) / dt)
   const trim = p.drag * speed * speed
   const dryThrust = dryThrustLimit(p, limits)
   const maxThrust = m.burnerActive
-    ? Math.max(dryThrust * 1.6, p.drag * topSpeed ** 2 + AFTERBURNER_ACCELERATION)
+    ? Math.max(dryThrust * 1.6, p.drag * topSpeed ** 2 + p.afterburnerAcceleration)
     : dryThrust
   const thrust = clamp(trim + acceleration, 0, maxThrust)
 
@@ -42,5 +41,5 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
   const excess = Math.max(0, speed - topSpeed)
   const overspeedBraking = Math.min(excess * p.releaseResponse, p.deceleration, excess / dt)
   state.enginePower = thrust / dryThrust
-  return { thrust, braking: Math.max(m.airbrake * 30, Math.max(0, -drive), overspeedBraking) }
+  return { thrust, braking: Math.max(m.airbrake * p.airbrakeDeceleration, Math.max(0, -drive), overspeedBraking) }
 }

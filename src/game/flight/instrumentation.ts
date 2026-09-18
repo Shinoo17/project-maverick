@@ -1,7 +1,7 @@
-import { Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
 import { getFlightProfile } from './profile'
-import { angleOfAttack } from './stall'
+import { observeAirflow } from './airflow'
+import { interpretEnvelope } from './envelope'
 import { clamp, dryThrustLimit } from './speed'
 import { tvcCapacity } from './thrustVectoring'
 
@@ -12,26 +12,25 @@ import { tvcCapacity } from './thrustVectoring'
  */
 export function flightInstrumentation(state: AircraftState) {
   const p = getFlightProfile(state.aircraftId)
-  const body = new Vector3().copy(state.velocity)
-  const airspeed = body.length()
-  body.applyQuaternion(new Quaternion().copy(state.orientation).invert())
+  const airflow = observeAirflow(state, p)
+  const { airspeed, alphaDeg, betaDeg, incidenceDeg } = airflow
   const actualThrust = state.enginePower * dryThrustLimit(p.flight, state.speedLimits)
   const surfaceControl = 1 - state.stall.severity * (1 - p.stall.controlAuthority)
   const poweredBlend = state.maneuver.blend * state.maneuver.controlAuthority
-  const surface = clamp(160 / Math.max(airspeed, 1), 0.6, 1) * surfaceControl * (1 - poweredBlend)
+  const surface = clamp(p.aero.highSpeedMps / Math.max(airspeed, 1), 0.6, 1) * surfaceControl * (1 - poweredBlend)
   const rates = (pitch: number, yaw: number, roll: number, factor: number) => ({ pitch: pitch * factor, yaw: yaw * factor, roll: roll * factor })
   const surfaceRates = (factor: number) => rates(p.flight.pitchRate, p.flight.yawRate, p.flight.rollRate, factor * surface)
   return {
     airspeed,
-    alphaDeg: angleOfAttack(state),
-    betaDeg: airspeed < 0.001 ? 0 : Math.atan2(body.z, Math.hypot(body.x, body.y)) * 180 / Math.PI,
-    incidenceDeg: airspeed < 0.001 ? 0 : Math.acos(clamp(body.x / airspeed, -1, 1)) * 180 / Math.PI,
-    dynamicPressureProxy: (airspeed / 90) ** 2,
+    alphaDeg, betaDeg, incidenceDeg,
+    dynamicPressureProxy: airflow.dynamicPressure,
+    airflow,
+    envelope: interpretEnvelope(state, airflow, p),
     actualThrust,
     tvcCapacity: tvcCapacity(p.thrustVectoring, actualThrust),
     legacy: {
-      aeroRate: surfaceRates(Math.min(airspeed / 90, 1)),
-      floorRate: surfaceRates(Math.max(0, 0.12 - airspeed / 90)),
+      aeroRate: surfaceRates(Math.min(airspeed / p.aero.referenceSpeedMps, 1)),
+      floorRate: surfaceRates(Math.max(0, 0.12 - airspeed / p.aero.referenceSpeedMps)),
       poweredRate: rates(p.maneuver.pitchRate, p.maneuver.yawRate, p.maneuver.rollRate, poweredBlend),
       surfaceControl, poweredBlend,
       separationProxy: state.stall.severity,

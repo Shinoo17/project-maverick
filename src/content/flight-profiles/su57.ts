@@ -1,5 +1,5 @@
 import type { AircraftFlightProfile, ThrustVectoringProfile } from '../../game/flight/profileTypes'
-import { flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
+import { aeroDefaults, flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
 
 // Arcade approximation of canted twin nozzles, not measured Su-57 performance.
 // Pitch uses both together; yaw and roll share differential nozzle travel.
@@ -19,6 +19,7 @@ export const su57TvcProfile: ThrustVectoringProfile = {
 }
 
 export const su57Profile: AircraftFlightProfile = {
+  aero: { ...aeroDefaults },
   flight: {
     ...flightDefaults,
     neutralDampingDuringPsm: false,

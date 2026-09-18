@@ -1,5 +1,5 @@
 import type { AircraftFlightProfile, ThrustVectoringProfile } from '../../game/flight/profileTypes'
-import { flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
+import { aeroDefaults, flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
 
 export const f22TvcProfile: ThrustVectoringProfile = {
   maxAngle: 20,
@@ -18,6 +18,7 @@ export const f22TvcProfile: ThrustVectoringProfile = {
 }
 
 export const f22Profile: AircraftFlightProfile = {
+  aero: { ...aeroDefaults },
   flight: {
     ...flightDefaults,
     neutralDampingDuringPsm: true,

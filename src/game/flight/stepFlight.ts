@@ -7,23 +7,26 @@ import { stepManeuvers } from './maneuvers'
 import { thrustForces, tvcTargets, stepThrustVectoring } from './thrustVectoring'
 import { clamp, stepSpeed } from './speed'
 import { stepStall } from './stall'
+import { observeAirflow } from './airflow'
 
 // Canonical body axes: +X forward, +Y up, +Z right. Positive pitch raises nose;
 // positive roll banks right; positive yaw turns right. Only this module maps signs.
 export function stepFlight(state: AircraftState, command: PilotCommand, dt: number) {
   if (!state.alive || dt <= 0) return
-  const { flight: p, stall: stallProfile, maneuver: maneuverProfile, thrustVectoring: tvc } = getFlightProfile(state.aircraftId)
+  const profile = getFlightProfile(state.aircraftId)
+  const { aero, flight: p, stall: stallProfile, maneuver: maneuverProfile, thrustVectoring: tvc } = profile
   const velocity = new Vector3().copy(state.velocity)
-  const speed = velocity.length()
-  stepStall(state, stallProfile, speed, dt)
+  const airflowStart = observeAirflow(state, profile)
+  const speed = airflowStart.airspeed
+  stepStall(state, stallProfile, speed, dt, airflowStart)
   const surfaceControl = 1 - state.stall.severity * (1 - stallProfile.controlAuthority)
-  const assist = stepManeuvers(state, command, dt, speed)
+  const assist = stepManeuvers(state, command, dt, speed, airflowStart)
   const m = state.maneuver
   const { thrust, braking } = stepSpeed(state, { ...command, airbrake: assist.brake }, dt, speed)
   stepThrustVectoring(state, command, dt, speed, assist.alpha * 180 / Math.PI)
   const vectoredThrust = tvc ? thrustForces(state.thrustVectoring, thrust, tvc) : null
   const allocatedThrust = tvc ? thrustForces({ ...state.thrustVectoring, ...tvcTargets(command, state.thrustVectoring.authority, tvc) }, thrust, tvc) : null
-  const authority = clamp(speed / 90, 0.12, 1) * clamp(160 / Math.max(speed, 1), 0.6, 1)
+  const authority = clamp(speed / aero.referenceSpeedMps, 0.12, 1) * clamp(aero.highSpeedMps / Math.max(speed, 1), 0.6, 1)
   const blend = 1 - Math.exp(-p.rateResponse * dt)
   const rates = state.rates
   const normalLimit = p.turnAcceleration * authority * (1 + m.highG * 0.6)
@@ -92,11 +95,11 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   anticipation.addScaledVector(path, -anticipation.dot(path))
   normalLateral.add(anticipation).clampLength(0, normalLimit).multiplyScalar(surfaceControl)
   lateral.multiplyScalar(speed * maneuverProfile.pathResponse * authority * (m.phase === 'active' ? maneuverProfile.activeGrip : maneuverProfile.recoveryGrip))
-  const lateralLimit = m.phase === 'recovery' ? maneuverProfile.recoveryAcceleration : 55 * (1 + m.highG * 0.6)
+  const lateralLimit = m.phase === 'recovery' ? maneuverProfile.recoveryAcceleration : maneuverProfile.lateralAcceleration * (1 + m.highG * 0.6)
   if (lateral.length() > lateralLimit) lateral.setLength(lateralLimit)
   lateral.lerp(normalLateral, grip)
   const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + m.highG * (maneuverProfile.highGDrag - 1)) * (assist.assisted ? 0.55 : 1)
-  const psmDrag = assist.assisted ? speed * speed * (Math.sin(assist.alpha) ** 2 + Math.max(0, -Math.cos(assist.alpha)) * 0.4) * 0.0025 : 0
+  const psmDrag = assist.assisted ? speed * speed * (Math.sin(assist.alpha) ** 2 + Math.max(0, -Math.cos(assist.alpha)) * 0.4) * maneuverProfile.psmDrag : 0
   const stallDrag = 1 + state.stall.severity * (stallProfile.dragMultiplier - 1)
   const drag = p.drag * speed * speed * stallDrag + turnLoss + psmDrag
   const engineForce = vectoredThrust
@@ -116,7 +119,8 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const gravityBlend = Math.max(state.stall.severity, 0.5 * (1 - grip))
   velocity.addScaledVector(path, p.gravity * path.y * gravityBlend * dt)
   velocity.y -= p.gravity * gravityBlend * dt
-  m.alpha = forward.angleTo(velocity) * 180 / Math.PI
+  const airflowEnd = observeAirflow({ orientation: state.orientation, velocity }, profile)
+  m.alpha = airflowEnd.legacy.telemetryIncidenceDeg
   m.pathRate = speed > 1 && velocity.length() > 1 ? path.angleTo(velocity) / dt * 180 / Math.PI : 0
   m.g = Math.sqrt(1 + (speed * m.pathRate * Math.PI / 180 / p.gravity) ** 2)
   m.drag = drag + braking
