@@ -12,7 +12,7 @@ export interface ManeuverState {
   blocked: PsmBlock; entrySpeed: number; exitSpeed: number
   peakAlpha: number; completed: number; highG: number; airbrake: number
   burner: number; burnerActive: boolean; burnerLocked: boolean; burnerRest: number
-  /** Legacy unsigned nose/path incidence at END of step, not signed pitch alpha. */
+  /** Canonical unsigned nose/path incidence at END of step, not signed pitch alpha. */
   alpha: number
   g: number; pathRate: number; drag: number
 }
@@ -26,7 +26,7 @@ export function createManeuverState(): ManeuverState {
 export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: number, airflowStart: AirflowState) {
   const m = state.maneuver, p = getFlightProfile(state.aircraftId).maneuver
   const speed = airflowStart.airspeed
-  const alpha = airflowStart.legacy.psmIncidenceRad
+  const alpha = airflowStart.incidenceDeg * Math.PI / 180
   // C is an envelope modifier, never a maneuver trigger. No automatic braking,
   // pitch-up, target pose, or nose alignment: the pilot owns all three axes.
   const eligible = p.psmEnabled && state.position.y >= p.minAltitude && speed >= p.entryMin && speed <= p.entryMax

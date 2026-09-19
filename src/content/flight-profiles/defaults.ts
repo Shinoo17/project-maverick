@@ -1,10 +1,10 @@
 import type { AeroProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
 
-export const aeroDefaults: AeroProfile = {
+export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg'> = {
   referenceSpeedMps: 90,
   highSpeedMps: 160,
-  // Provisional incidence band preserves Phase 1 highAoa; per-aircraft playtest
-  // will author these independently. Never derive them from stall thresholds.
+  // Neutral-assist fade band. Retained 20–30° starting tune; human playtest
+  // remains pending. Independent of the continuous separation band.
   alphaNormalDeg: 20,
   alphaCriticalDeg: 30,
 }
@@ -54,7 +54,6 @@ export const maneuverDefaults: ManeuverProfile = {
   recoveryGrip: 2.5,
   recoveryAcceleration: 70,
   lateralAcceleration: 55,
-  psmDrag: 0.0025,
   recoveryIncidenceRad: 0.3,
   recoverySpeedMps: 60,
   highGMinSpeedMps: 75,

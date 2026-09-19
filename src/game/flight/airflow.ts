@@ -18,12 +18,7 @@ export interface AirflowState {
   reverseFlow: number
   /** Angles lose meaning near rest: smoothstep from 2 to 10 m/s. */
   confidence: number
-  /** Phase 1 compatibility only. Preserve the old arithmetic and zero-speed
-   * conventions until a deliberate physics change; new consumers use the fields above.
-   * PSM used a normalized path above 0.01 m/s; telemetry used the raw velocity
-   * (Vector3.angleTo returns 90° for a zero vector). These are not signed alpha.
-   */
-  legacy: { psmIncidenceRad: number; telemetryIncidenceDeg: number }
+
 }
 
 function pitchIncidence(body: Vector3) {
@@ -37,14 +32,6 @@ export function angleOfAttack(state: FlowState) {
     .applyQuaternion(new Quaternion().copy(state.orientation).invert()))
 }
 
-/** Exact legacy end-of-step geometry, including 90° for a zero velocity vector.
- * Reuse the integrator's existing vectors without allocating a full observation.
- * Retire with AirflowState.legacy in Phase 2; neither input is mutated.
- */
-export function legacyTelemetryIncidenceDeg(forward: Vector3, velocity: Vector3) {
-  return forward.angleTo(velocity) * 180 / Math.PI
-}
-
 /** Observe exactly the supplied pose. Call before integration for physics and
  * after integration for telemetry; never cache across those two boundaries.
  */
@@ -52,10 +39,8 @@ export function observeAirflow(state: FlowState, profile: Pick<AircraftFlightPro
   const velocity = new Vector3().copy(state.velocity)
   const airspeed = velocity.length()
   const orientation = new Quaternion().copy(state.orientation)
-  const forward = new Vector3(1, 0, 0).applyQuaternion(orientation)
   const body = velocity.clone().applyQuaternion(orientation.invert())
   const flow = airspeed < 0.001 ? 0 : MathUtils.clamp(body.x / airspeed, -1, 1)
-  const legacyPath = airspeed > 0.01 ? velocity.clone().normalize() : forward.clone()
   return {
     airspeed,
     alphaDeg: pitchIncidence(body),
@@ -65,9 +50,5 @@ export function observeAirflow(state: FlowState, profile: Pick<AircraftFlightPro
     forwardFlow: Math.max(0, flow),
     reverseFlow: Math.max(0, -flow),
     confidence: MathUtils.smoothstep(airspeed, 2, 10),
-    legacy: {
-      psmIncidenceRad: forward.angleTo(legacyPath),
-      telemetryIncidenceDeg: legacyTelemetryIncidenceDeg(forward, velocity),
-    },
   }
 }

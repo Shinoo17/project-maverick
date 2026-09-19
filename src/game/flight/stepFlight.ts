@@ -7,10 +7,12 @@ import { stepManeuvers } from './maneuvers'
 import { thrustForces, tvcTargets, stepThrustVectoring } from './thrustVectoring'
 import { clamp, stepSpeed } from './speed'
 import { stepStall } from './stall'
-import { legacyTelemetryIncidenceDeg, observeAirflow } from './airflow'
+import { observeAirflow } from './airflow'
+import { interpretEnvelope } from './envelope'
+import { naturalAerodynamics, naturalRateStep } from './aerodynamics'
 
 // Canonical body axes: +X forward, +Y up, +Z right. Positive pitch raises nose;
-// positive roll banks right; positive yaw turns right. Only this module maps signs.
+// positive roll banks right; positive yaw turns right. This module maps these rates to quaternion axes.
 export function stepFlight(state: AircraftState, command: PilotCommand, dt: number) {
   if (!state.alive || dt <= 0) return
   const profile = getFlightProfile(state.aircraftId)
@@ -18,7 +20,9 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const velocity = new Vector3().copy(state.velocity)
   const airflowStart = observeAirflow(state, profile)
   const speed = airflowStart.airspeed
-  stepStall(state, stallProfile, speed, dt, airflowStart)
+  stepStall(state, stallProfile, airflowStart, dt)
+  const envelope = interpretEnvelope(state, airflowStart, profile)
+  const natural = naturalAerodynamics(airflowStart, envelope.separation, state.rates, aero)
   const surfaceControl = 1 - state.stall.severity * (1 - stallProfile.controlAuthority)
   const assist = stepManeuvers(state, command, dt, airflowStart)
   const m = state.maneuver
@@ -27,8 +31,11 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const vectoredThrust = tvc ? thrustForces(state.thrustVectoring, thrust, tvc) : null
   const allocatedThrust = tvc ? thrustForces({ ...state.thrustVectoring, ...tvcTargets(command, state.thrustVectoring.authority, tvc) }, thrust, tvc) : null
   const authority = clamp(speed / aero.referenceSpeedMps, 0.12, 1) * clamp(aero.highSpeedMps / Math.max(speed, 1), 0.6, 1)
-  const blend = 1 - Math.exp(-p.rateResponse * dt)
   const rates = state.rates
+  const ratesBefore = { ...rates }
+  // highAoa includes airflow confidence: the arcade damper returns near rest,
+  // where natural q-damping vanishes. Low-speed separation must not suppress it.
+  const neutralWeight = 1 - envelope.highAoa
   const normalLimit = p.turnAcceleration * authority * (1 + m.highG * 0.6)
   let pitchTarget = command.pitch * p.pitchRate * authority * surfaceControl * (1 + m.highG * (maneuverProfile.highGRate - 1))
   let yawTarget = command.yaw * p.yawRate * authority * surfaceControl * (1 + m.highG * 0.4)
@@ -44,10 +51,10 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   pitchTarget += ((assist.pitch ?? pitchTarget) - pitchTarget) * poweredBlend
   yawTarget += ((assist.yaw ?? yawTarget) - yawTarget) * poweredBlend
   const response = (target: number, rate: number) => {
-    // The profile-controlled rate damper remains active when the stick is released, even
-    // while TVC actuators are still traveling back during post-stall flight.
-    if (p.neutralDampingDuringPsm && target === 0) return 1 - Math.exp(-p.neutralResponse * dt)
-    const normal = target === 0 ? p.neutralResponse : target * rate < 0 ? p.counterResponse : p.rateResponse
+    // Fade the whole zero-target response, including the legacy PSM rateResponse.
+    // Otherwise a hidden 5/s damper survives after neutralResponse has faded.
+    if (target === 0) return 1 - Math.exp(-p.neutralResponse * neutralWeight * dt)
+    const normal = target * rate < 0 ? p.counterResponse : p.rateResponse
     return 1 - Math.exp(-(p.rateResponse + (normal - p.rateResponse) * grip) * dt)
   }
   rates.pitch += (pitchTarget - rates.pitch) * response(pitchTarget, rates.pitch)
@@ -55,8 +62,17 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const normalRoll = command.roll * p.rollRate * authority * surfaceControl
   const rollTarget = normalRoll + ((assist.roll ?? normalRoll) - normalRoll) * poweredBlend
   const reversing = rollTarget * rates.roll < 0
-  const rollBlend = p.neutralDampingDuringPsm && command.roll === 0 ? 1 - Math.exp(-p.neutralResponse * dt) : blend
+  // Preserve each airframe's attached-flight roll feel; no phase-specific flag.
+  const rollResponse = rollTarget === 0 ? p.neutralRollResponse * neutralWeight : p.rateResponse
+  const rollBlend = 1 - Math.exp(-rollResponse * dt)
   rates.roll += (rollTarget - rates.roll) * (reversing ? 1 - Math.exp(-p.rollReversalResponse * dt) : rollBlend)
+  const controller = { pitch: (rates.pitch - ratesBefore.pitch) / dt, yaw: (rates.yaw - ratesBefore.yaw) / dt, roll: (rates.roll - ratesBefore.roll) / dt }
+  const legacyNeutralDamping = {
+    pitch: pitchTarget === 0 ? controller.pitch : 0,
+    yaw: yawTarget === 0 ? controller.yaw : 0,
+    roll: rollTarget === 0 ? controller.roll : 0,
+  }
+  const beforeTvc = { ...rates }
   if (allocatedThrust) {
     // Allocate part of the requested control moment to TVC instead of counting
     // it twice in the aerodynamic rate controller. This is surface demand only.
@@ -70,6 +86,15 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
     rates.pitch += vectoredThrust.angularAcceleration.pitch * dt
     rates.roll += vectoredThrust.angularAcceleration.roll * dt
     rates.yaw += vectoredThrust.angularAcceleration.yaw * dt
+  }
+  const tvcContribution = { pitch: (rates.pitch - beforeTvc.pitch) / dt, yaw: (rates.yaw - beforeTvc.yaw) / dt, roll: (rates.roll - beforeTvc.roll) / dt }
+  const damping = naturalRateStep(natural, ratesBefore, dt)
+  for (const axis of ['pitch', 'yaw', 'roll'] as const) rates[axis] += (natural.restoring[axis] + damping[axis]) * dt
+  state.flightForces = {
+    dt, airflowStart, separation: envelope.separation, highAoa: envelope.highAoa,
+    ratesBefore, ratesAfter: { ...rates }, controller, legacyNeutralDamping, neutralWeight,
+    naturalRestoring: natural.restoring, naturalDamping: damping,
+    alphaDrag: natural.alphaDrag, betaDrag: natural.betaDrag, tvc: tvcContribution,
   }
   if (m.phase === 'active') m.rotation += Math.hypot(rates.pitch, rates.yaw) * dt
   const angular = new Vector3(rates.roll, -rates.yaw, rates.pitch)
@@ -98,10 +123,9 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const lateralLimit = m.phase === 'recovery' ? maneuverProfile.recoveryAcceleration : maneuverProfile.lateralAcceleration * (1 + m.highG * 0.6)
   if (lateral.length() > lateralLimit) lateral.setLength(lateralLimit)
   lateral.lerp(normalLateral, grip)
-  const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + m.highG * (maneuverProfile.highGDrag - 1)) * (assist.assisted ? 0.55 : 1)
-  const psmDrag = assist.assisted ? speed * speed * (Math.sin(assist.alpha) ** 2 + Math.max(0, -Math.cos(assist.alpha)) * 0.4) * maneuverProfile.psmDrag : 0
+  const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + m.highG * (maneuverProfile.highGDrag - 1))
   const stallDrag = 1 + state.stall.severity * (stallProfile.dragMultiplier - 1)
-  const drag = p.drag * speed * speed * stallDrag + turnLoss + psmDrag
+  const drag = p.drag * speed * speed * stallDrag + turnLoss + natural.alphaDrag + natural.betaDrag
   const engineForce = vectoredThrust
     ? new Vector3().copy(vectoredThrust.acceleration).applyQuaternion(orientation)
     : forward.clone().multiplyScalar(thrust)
@@ -113,13 +137,19 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   // Direction changes must not create energy, including repeated PSM entry/release.
   const poweredSpeed = Math.max(0, speed + force.dot(path) * dt)
   if (velocity.lengthSq() > 0) velocity.setLength(poweredSpeed)
+  // Drag may stop the aircraft, but gravity must be able to carry it through
+  // zero into a tail slide. Preserve only gravity's overshoot; the old guard
+  // discarded it and held an exactly vertical aircraft at its apex forever.
+  const beforeGravity = Math.max(0, speed + (force.dot(path) + p.gravity * path.y) * dt)
+  const gravityOvershoot = Math.min(0, beforeGravity - p.gravity * path.y * dt)
+  velocity.addScaledVector(path, gravityOvershoot)
   // Restore cross-path gravity as lift support fades. Apply AFTER the speed
   // correction so a stopped aircraft can fall; longitudinal gravity is above.
   // PSM already loses half its support, and stall can take the remaining half.
   const gravityBlend = Math.max(state.stall.severity, 0.5 * (1 - grip))
   velocity.addScaledVector(path, p.gravity * path.y * gravityBlend * dt)
   velocity.y -= p.gravity * gravityBlend * dt
-  m.alpha = legacyTelemetryIncidenceDeg(forward, velocity)
+  m.alpha = observeAirflow({ orientation: state.orientation, velocity }, profile).incidenceDeg
   m.pathRate = speed > 1 && velocity.length() > 1 ? path.angleTo(velocity) / dt * 180 / Math.PI : 0
   m.g = Math.sqrt(1 + (speed * m.pathRate * Math.PI / 180 / p.gravity) ** 2)
   m.drag = drag + braking

@@ -58,7 +58,8 @@ describe('configured arcade top speeds', () => {
   it('still allows gravity to carry a dive above the powered limit', () => {
     const state = make().snapshot().aircraft[0]
     const orientation = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -Math.PI / 6)
-    Object.assign(state.orientation, orientation)
+    // Quaternion stores _x/_y/_z/_w; explicitly copy the serializable components.
+    state.orientation = { x: orientation.x, y: orientation.y, z: orientation.z, w: orientation.w }
     Object.assign(state.velocity, new Vector3(state.speedLimits.topSpeedMps, 0, 0).applyQuaternion(orientation))
     for (let tick = 0; tick < 120; tick++) stepFlight(state, neutralCommand(tick, state.id), 1 / 120)
     expect(speedOf(state)).toBeGreaterThan(state.speedLimits.topSpeedMps)

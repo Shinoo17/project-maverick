@@ -157,7 +157,12 @@ describe.each(aircraftIds)('%s legacy overlay versus the actual flight controlle
       }
       holdFlow() // Observe the same fixed flow as the last controller update.
       const { legacy, actualThrust } = flightInstrumentation(state)
-      const expected = legacy.aeroRate[axis] + legacy.floorRate[axis] + legacy.poweredRate[axis]
+      const ceiling = legacy.aeroRate[axis] + legacy.floorRate[axis] + legacy.poweredRate[axis]
+      // Phase 2 natural damping acts alongside the legacy target controller.
+      // At fixed aligned flow the equilibrium balances their exact step factors.
+      const controlStep = 1 - Math.exp(-profile.flight.rateResponse * FLIGHT_STEP)
+      const dampingStep = 1 - Math.exp(-profile.aero.damping.attached[axis] * (speed / profile.aero.referenceSpeedMps) ** 2 * FLIGHT_STEP)
+      const expected = ceiling * controlStep / (controlStep + dampingStep)
       expect(state.alive).toBe(true)
       expect(state.maneuver.highG).toBe(0)
       if (speed === 0) {

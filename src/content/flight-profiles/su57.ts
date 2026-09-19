@@ -19,10 +19,16 @@ export const su57TvcProfile: ThrustVectoringProfile = {
 }
 
 export const su57Profile: AircraftFlightProfile = {
-  aero: { ...aeroDefaults },
+  aero: {
+    ...aeroDefaults,
+    // Arcade stability: more relaxed high-incidence stability; no powered authority.
+    restoring: { pitch: [{ incidenceDeg: 0, stiffness: 1.2 }, { incidenceDeg: 20, stiffness: 1.1 }, { incidenceDeg: 45, stiffness: 0.6 }, { incidenceDeg: 90, stiffness: 0.3 }, { incidenceDeg: 180, stiffness: 0.25 }], yaw: [{ incidenceDeg: 0, stiffness: 0.9 }, { incidenceDeg: 20, stiffness: 0.85 }, { incidenceDeg: 45, stiffness: 0.45 }, { incidenceDeg: 90, stiffness: 0.25 }, { incidenceDeg: 180, stiffness: 0.2 }] },
+    damping: { attached: { pitch: 0.1, yaw: 0.12, roll: 0.08 }, separated: { pitch: 0.45, yaw: 0.4, roll: 0.3 } },
+    alphaDrag: 0.0027, betaDrag: 0.0032, reverseDrag: 0.4,
+  },
   flight: {
     ...flightDefaults,
-    neutralDampingDuringPsm: false,
+    neutralRollResponse: 5,
 
     // Speed and energy.
     minPoweredMps: 65,

@@ -1,3 +1,4 @@
+// Superseded Phase 2 feel fixtures are retained in benchmarks/flight/legacyFlightHandling.report.ts.
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { stepFlight } from '../src/game/flight/stepFlight'
@@ -58,29 +59,6 @@ describe('normal flight grip', () => {
       expect(reversed.rates[axis]).toBeLessThan(-0.1)
       expect(reversed.maneuver.alpha).toBeLessThan(5)
     }
-  })
-
-  it('stalls during backward flight without forcing the nose, then recovers with power', () => {
-    const state = aircraft(130, 0)
-    const q = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI)
-    state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
-    const orientation = { ...state.orientation }
-    let lastSpeed = speedOf(state)
-    let peakStall = 0
-    for (let tick = 0; tick < 6 * 120; tick++) {
-      const before = new Vector3().copy(state.velocity)
-      stepFlight(state, neutralCommand(tick, state.id), 1 / 120)
-      expect(before.angleTo(new Vector3().copy(state.velocity))).toBeLessThan(0.025)
-      expect(speedOf(state)).toBeLessThanOrEqual(lastSpeed + 1e-8)
-      lastSpeed = speedOf(state)
-      peakStall = Math.max(peakStall, state.stall.severity)
-    }
-    expect(state.orientation).toEqual(orientation)
-    expect(peakStall).toBe(1)
-    fly(state, 12, { speedAdjust: 1 })
-    expect(state.stall.severity).toBe(0)
-    expect(state.maneuver.alpha).toBeLessThan(10)
-    expect(state.velocity.x).toBeLessThan(-150)
   })
 
   it('does not silently replay old flight tuning with the new model', () => {

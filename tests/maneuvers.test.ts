@@ -1,7 +1,7 @@
+// Superseded Phase 2 feel fixtures are retained in benchmarks/flight/legacyManeuvers.report.ts.
 import { getFlightProfile } from '../src/game/flight/profile'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
-import { Quaternion, Vector3 } from 'three'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
 import { stepManeuvers } from '../src/game/flight/maneuvers'
@@ -22,48 +22,7 @@ describe('P2 maneuvers', () => {
       expect(armed.maneuver.phase).toBe(entry === 105 ? 'armed' : 'normal')
     }
   })
-  it('lets player input produce a Cobra OR a 180° reversal and retain the chosen heading', () => {
-    for (const kind of ['cobra', 'reverse'] as const) {
-      const s = make().snapshot().aircraft[0]; s.velocity.x = 105; s.position.y = 700
-      let lowered = false, peak = 0, minimum = 105, activePathAngle = 0
-      for (let i = 0; i < 1440; i++) {
-        const nose = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(s.orientation))
-        let pitchAngle = Math.atan2(nose.y, nose.x)
-        if (kind === 'reverse' && pitchAngle < -0.1) pitchAngle += Math.PI * 2
-        if (kind === 'cobra' && pitchAngle > 1.6) lowered = true
-        // A test pilot changes the stick based on the heading they want. The
-        // simulation receives only axes; it has no Cobra/reversal selection.
-        const target = kind === 'cobra' ? lowered ? 0 : 1.8 : Math.PI
-        const stick = Math.max(-1, Math.min(1, (target - pitchAngle) * 2 - s.rates.pitch * 0.8))
-        const held = i < 300 && !(kind === 'cobra' && lowered && Math.abs(pitchAngle) < 0.15 && Math.abs(s.rates.pitch) < 0.3)
-        const before = new Quaternion().copy(s.orientation)
-        stepFlight(s, { ...neutralCommand(i, s.id), psmArm: held, pitch: held ? stick : 0, speedAdjust: 1 }, 1 / 120)
-        expect(before.angleTo(new Quaternion().copy(s.orientation))).toBeLessThan(0.03)
-        peak = Math.max(peak, s.maneuver.alpha); minimum = Math.min(minimum, speed(s.velocity))
-        if (s.maneuver.phase === 'active') activePathAngle = Math.max(activePathAngle, new Vector3(1, 0, 0).angleTo(new Vector3().copy(s.velocity)))
-      }
-      expect(peak).toBeGreaterThan(kind === 'cobra' ? 70 : 120)
-      // Powered TVC also bends the path; it must still lag the post-stall nose.
-      expect(activePathAngle).toBeLessThan(0.7); expect(minimum).toBeLessThan(100)
-      expect(s.maneuver.completed).toBe(1); expect(s.maneuver.phase).toBe('normal'); expect(s.alive).toBe(true)
-      expect(s.maneuver.alpha).toBeLessThan(10)
-      expect(s.velocity.x * (kind === 'cobra' ? 1 : -1)).toBeGreaterThan(150)
-      expect(Math.abs(s.orientation.y)).toBeLessThan(0.001)
-    }
-  })
-  it('keeps neutral and opposite-axis commands effective during active PSM and recovery', () => {
-    const s = make().snapshot().aircraft[0]; s.velocity.x = 105
-    for (let i = 0; i < 120; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true, pitch: 1, speedAdjust: 1 }, 1 / 120)
-    expect(s.rates.pitch).toBeGreaterThan(2)
-    for (let i = 0; i < 60; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true }, 1 / 120)
-    expect(Math.abs(s.rates.pitch)).toBeLessThan(0.2)
-    for (let i = 0; i < 30; i++) stepFlight(s, { ...neutralCommand(i, s.id), psmArm: true, pitch: -1, yaw: 1, roll: -1, speedAdjust: 1 }, 1 / 120)
-    expect(s.maneuver.phase).toBe('active'); expect(s.rates.pitch).toBeLessThan(-1)
-    expect(s.rates.yaw).toBeGreaterThan(0.5); expect(s.rates.roll).toBeLessThan(-1)
-    stepFlight(s, neutralCommand(0, s.id), 1 / 120); expect(s.maneuver.phase).toBe('recovery')
-    for (let i = 0; i < 60; i++) stepFlight(s, { ...neutralCommand(i, s.id), yaw: -1, speedAdjust: 1 }, 1 / 120)
-    expect(s.rates.yaw).toBeLessThan(-0.3)
-  })
+
   it('enforces entry speed/altitude and keeps a held maneuver active beyond old budgets', () => {
     for (const [entry, altitude] of [[64, 400], [116, 400], [105, 149]]) {
       const s = make().snapshot().aircraft[0]; s.velocity.x = entry; s.position.y = altitude
@@ -154,20 +113,4 @@ describe('P2 playground lifecycle', () => {
   })
 })
 
-describe('manual PSM turn plane', () => {
-  it('also permits a yaw-led 180° reversal with no forced pitch or roll', () => {
-    const s = make().snapshot().aircraft[0]; s.velocity.x = 105; s.position.y = 700
-    for (let i = 0; i < 1440; i++) {
-      const nose = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(s.orientation))
-      let heading = Math.atan2(nose.z, nose.x); if (heading < -0.1) heading += Math.PI * 2
-      const active = i < 355
-      const yaw = Math.max(-1, Math.min(1, (Math.PI - heading) * 2 - s.rates.yaw * 0.6))
-      stepFlight(s, { ...neutralCommand(i, s.id), psmArm: active, yaw: active ? yaw : 0, speedAdjust: 1 }, 1 / 120)
-    }
-    expect(s.velocity.x).toBeLessThan(-150)
-    expect(s.maneuver.peakAlpha).toBeGreaterThan(90)
-    expect(s.maneuver.completed).toBe(1)
-    expect(Math.abs(s.orientation.x) + Math.abs(s.orientation.z)).toBeLessThan(0.001)
-    expect(s.alive).toBe(true)
-  })
-})
+// Manual PSM turn-plane feel fixture moved to benchmarks/flight/legacyManeuvers.report.ts.

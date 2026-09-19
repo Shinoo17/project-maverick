@@ -3,7 +3,7 @@ import type { AircraftState } from '../state/WorldState'
 import type { AircraftFlightProfile } from './profileTypes'
 import type { AirflowState } from './airflow'
 
-/** Observe-only interpretation. These factors never feed the Phase 1 solver. */
+/** Continuous flow factors; intent/limiter/recovery remain legacy observations. */
 export interface EnvelopeFactors {
   /** Unsigned incidence, including sideslip, interpreted using the aero band. */
   highAoa: number
@@ -16,8 +16,8 @@ export interface EnvelopeFactors {
   recoveryAssist: number
 }
 
-/** Transitional readings, not the future breakout/separation/recovery models.
- * Reuse existing smoothed stall severity and maneuver blend instead of adding a
+/** Separation and highAoa feed Phase 2 aero/neutral damping.
+ * Reuse separation memory in stall.severity and legacy maneuver blend instead of adding a
  * second simulation clock. Intent is inactive, and alphaLimitDeg reports the
  * aero's normal incidence threshold (no max-controllable-alpha capability exists yet).
  * Assist fields describe legacy blend weights, not available authority.

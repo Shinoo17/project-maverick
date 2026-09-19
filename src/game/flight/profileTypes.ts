@@ -1,8 +1,5 @@
 /** Serializable arcade tuning, not measured aircraft specifications. */
 export interface FlightProfile {
-  /** Keep neutral-stick rate damping active during PSM. */
-  neutralDampingDuringPsm: boolean
-
   /** Lower limit for S deceleration (m/s), not a stall speed. */
   minPoweredMps: number
   /** Level-flight powered limits in displayed ARCADE km/h. Converted internally. */
@@ -32,6 +29,8 @@ export interface FlightProfile {
   rollReversalResponse: number
   counterResponse: number
   neutralResponse: number
+  /** Attached-flight neutral roll damping (1/s); fades with high incidence/separation. */
+  neutralRollResponse: number
 
   /** Normal-flight lateral acceleration budget (m/s²). */
   turnAcceleration: number
@@ -45,35 +44,47 @@ export interface FlightProfile {
   gravity: number
 }
 
+export interface AeroAxes { pitch: number; yaw: number; roll: number }
+/** Strictly increasing incidence (degrees), nonnegative stiffness at q=1 (rad/s²). */
+export type RestoringCurve = { incidenceDeg: number; stiffness: number }[]
+
 /** Flow reference, legacy surface speed curve and independent incidence envelope. */
 export interface AeroProfile {
   referenceSpeedMps: number
   highSpeedMps: number
   /** Unsigned nose/velocity incidence thresholds (degrees), including sideslip.
-   * Independent of stall's pitch-plane alpha thresholds; tune per aircraft by playtest.
+   * Independent of the separation band in StallProfile; tune per aircraft by playtest.
    */
   alphaNormalDeg: number
   alphaCriticalDeg: number
+  restoring: { pitch: RestoringCurve; yaw: RestoringCurve }
+  /** Rate damping coefficients (1/s at q=1), interpolated by separation. */
+  damping: { attached: AeroAxes; separated: AeroAxes }
+  /** Speed-squared drag coefficients (1/m); never included in governor trim. */
+  alphaDrag: number
+  betaDrag: number
+  /** Residual axial drag in reverse flow, as a fraction of alphaDrag. */
+  reverseDrag: number
 }
 
 /** Session overrides deliberately support only speed limits for now. */
 export type FlightSpeedOverride = Partial<Pick<FlightProfile, 'topSpeedKph' | 'afterburnerTopSpeedKph'>>
 
-/** Arcade stall envelope; independent of PSM capability and physical TVC. */
+/** Continuous arcade separation; independent of PSM capability and physical TVC. */
 export interface StallProfile {
   /** Displayed ARCADE km/h, using the same scale as topSpeedKph. */
   stallSpeedKph: number
-  /** Must exceed stallSpeedKph to prevent threshold chatter. */
+  /** Upper edge of the continuous low-speed separation band. */
   recoverySpeedKph: number
-  /** Absolute body-plane incidence in degrees, including backward flight. */
+  /** Full-separation absolute pitch-plane alpha (degrees), independent of sideslip. */
   criticalAoaDeg: number
-  /** Must be below criticalAoaDeg. Both speed and AoA must recover. */
+  /** Attached-flow edge of the continuous pitch-alpha band; below criticalAoaDeg. */
   recoveryAoaDeg: number
   /** Remaining surface control/path authority at full stall (0–1). Not TVC/PSM. */
   controlAuthority: number
-  /** Multiplier on base drag at full stall (>= 1). PSM drag stays separate. */
+  /** Multiplier on base drag at full stall (>= 1). Alpha/beta drag stays separate. */
   dragMultiplier: number
-  /** Seconds for severity to move from 0 to 1, or 1 to 0. */
+  /** Exponential separation/reattachment time constants (seconds), not deadlines. */
   entrySeconds: number
   recoverySeconds: number
 }
@@ -104,9 +115,8 @@ export interface ManeuverProfile {
   recoveryGrip: number
   /** Recovery lateral acceleration budget (m/s²). */
   recoveryAcceleration: number
-  /** Legacy active-PSM lateral budget (m/s²) and speed-squared drag coefficient. */
+  /** Legacy active-PSM lateral budget (m/s²). */
   lateralAcceleration: number
-  psmDrag: number
   /** Keep the original 0.3 radians exactly; 17° was a rounded design label. */
   recoveryIncidenceRad: number
   recoverySpeedMps: number

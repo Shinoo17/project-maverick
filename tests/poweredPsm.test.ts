@@ -1,6 +1,7 @@
+// Superseded Phase 2 feel fixtures are retained in benchmarks/flight/legacyPoweredPsm.report.ts.
 import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
-import { Quaternion, Vector3 } from 'three'
+import { Vector3 } from 'three'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
 import { FLIGHT_STEP as dt } from '../src/game/runtime/clock'
@@ -23,22 +24,6 @@ function fly(s: ReturnType<typeof aircraft>, seconds: number, input: Partial<Pil
 const speedOf = (s: ReturnType<typeof aircraft>) => Math.hypot(s.velocity.x, s.velocity.y, s.velocity.z)
 
 describe('held, thrust-powered PSM', () => {
-  it.each(['f22', 'su57'])('continues beyond 3 seconds / one rotation and recovers on release: %s', id => {
-    const s = aircraft(id)
-    fly(s, 5, { psmArm: true, pitch: 1, speedAdjust: 1 })
-    expect(s.alive).toBe(true)
-    expect(s.maneuver.phase).toBe('active')
-    expect(s.maneuver.rotation).toBeGreaterThan(2 * Math.PI)
-    expect(s.maneuver.timer).toBeGreaterThan(4.9)
-    const before = new Quaternion().copy(s.orientation)
-    fly(s, dt, { speedAdjust: 1 })
-    expect(s.maneuver.phase).toBe('recovery')
-    expect(before.angleTo(new Quaternion().copy(s.orientation))).toBeLessThan(0.04)
-    fly(s, 14, { speedAdjust: 1 })
-    expect(s.maneuver.phase).toBe('normal')
-    expect(s.stall.severity).toBe(0)
-    expect(s.alive).toBe(true)
-  })
 
   it('retains entry history and blend when chaining, and uses a separate overspeed exit', () => {
     const s = aircraft(), input = { ...neutralCommand(0, s.id), psmArm: true, roll: 1 }

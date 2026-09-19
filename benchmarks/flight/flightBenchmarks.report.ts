@@ -1,3 +1,4 @@
+import { phase2Playtest } from './targets'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
@@ -18,15 +19,15 @@ it('reports flight feel without asserting target ranges', () => {
     return { scenario, duration: trace.samples.at(-1)!.time, alive: trace.samples.at(-1)!.state.alive, metrics: measure(trace) }
   }) }))
   const capacity = aircraftIds.map(aircraftId => ({ aircraftId, values: [3.5, 27.5, 65].map(thrust => ({ thrust, ...tvcCapacity(getFlightProfile(aircraftId).thrustVectoring, thrust) })) }))
-  const report = { flightProfileVersion, sampleHz: 120, results, capacity }
+  const report = { flightProfileVersion, sampleHz: 120, phase2Playtest, results, capacity }
   writeFileSync(`${directory}out/report.json`, JSON.stringify(report, null, 2) + '\n')
-  const markdown = [`# Phase 0 flight baseline — ${flightProfileVersion}`, '',
+  const markdown = [`# Flight tuning report — ${flightProfileVersion}`, '',
     'Feel targets are informational; unreached thresholds are null (—). Samples use 120 Hz simulation time.',
-    'Legacy rates/labels are not Phase 3 authority. B9 is report-only. See ../README.md for metric windows.', '']
+    'Phase 2 acceptance is PENDING owner playtest/B9 targets. Legacy rates/labels are not Phase 3 authority. See ../README.md for metric windows.', '']
   for (const aircraft of results) {
     markdown.push(`## ${aircraft.aircraftId}`, '', '| Benchmark / metric | Value | Target | Status |', '|---|---:|---|---|')
     for (const scenario of aircraft.scenarios) for (const metric of scenario.metrics) {
-      const target = metric.target ? `${metric.target.min ?? '−∞'} … ${metric.target.max ?? '∞'}` : '—'
+      const target = metric.target ? `${metric.target.minExclusive ? '> ' : ''}${metric.target.min ?? '−∞'} … ${metric.target.max ?? '∞'}` : '—'
       markdown.push(`| ${metric.id} | ${metric.value === null ? '—' : metric.value.toFixed(3)} ${metric.unit} | ${target} | ${metric.status} |`)
     }
     markdown.push('')

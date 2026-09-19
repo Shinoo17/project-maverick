@@ -39,11 +39,29 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   if (aero.alphaCriticalDeg <= aero.alphaNormalDeg) {
     throw new Error(`${path}.aero.alphaCriticalDeg: must exceed alphaNormalDeg`)
   }
-  for (const key of ['afterburnerAcceleration', 'airbrakeDeceleration'] as const) {
+  for (const axis of ['pitch', 'yaw'] as const) {
+    const curve = aero.restoring?.[axis], curvePath = `${path}.aero.restoring.${axis}`
+    if (!Array.isArray(curve) || curve.length < 2) throw new Error(`${curvePath}: expected at least two knots`)
+    let previous = -1
+    for (const [i, knot] of curve.entries()) {
+      if (!Number.isFinite(knot?.incidenceDeg) || knot.incidenceDeg <= previous || knot.incidenceDeg > 180
+        || !Number.isFinite(knot?.stiffness) || knot.stiffness < 0) throw new Error(`${curvePath}.${i}: invalid incidence/stiffness`)
+      previous = knot.incidenceDeg
+    }
+    if (curve[0].incidenceDeg !== 0 || curve.at(-1)!.incidenceDeg !== 180) throw new Error(`${curvePath}: must span 0..180 degrees`)
+  }
+  for (const regime of ['attached', 'separated'] as const) for (const axis of ['pitch', 'yaw', 'roll'] as const) {
+    const value = aero.damping?.[regime]?.[axis]
+    if (!Number.isFinite(value) || value < 0) throw new Error(`${path}.aero.damping.${regime}.${axis}: expected finite nonnegative number`)
+  }
+  for (const key of ['alphaDrag', 'betaDrag', 'reverseDrag'] as const) {
+    if (!Number.isFinite(aero[key]) || aero[key] < 0) throw new Error(`${path}.aero.${key}: expected finite nonnegative number`)
+  }
+  for (const key of ['afterburnerAcceleration', 'airbrakeDeceleration', 'neutralRollResponse'] as const) {
     if (!Number.isFinite(flight[key])) throw new Error(`${path}.flight.${key}: expected finite number`)
     nonnegative(flight[key], `${path}.flight.${key}`)
   }
-  for (const key of ['lateralAcceleration', 'psmDrag', 'recoveryIncidenceRad', 'recoverySpeedMps',
+  for (const key of ['lateralAcceleration', 'recoveryIncidenceRad', 'recoverySpeedMps',
     'highGMinSpeedMps', 'highGMaxSpeedMps', 'highGSpeedFadeMps'] as const) {
     if (!Number.isFinite(maneuver[key])) throw new Error(`${path}.maneuver.${key}: expected finite number`)
     nonnegative(maneuver[key], `${path}.maneuver.${key}`)

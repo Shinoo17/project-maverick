@@ -1,24 +1,42 @@
-# Phase 0 flight instrumentation
+# Flight instrumentation and Phase 2 tuning
 
-Captures Phase 0 of [the final implementation plan](../../docs/psm-implementation-plan.md).
-Phase 1 now consumes shared airflow observations and authored legacy constants;
-these golden tracks, replay schema and `flightProfileVersion` remain unchanged
-(`p3-powered-psm-1`). See the [Phase 1 review](../../docs/psm-phase1-review.md)
-for observation semantics and regression results. Engine/allocation and new physics
-remain deferred.
+Phase 0 archives are preserved unchanged (`p3-powered-psm-1`). Phase 1 passed all
+339 tests including output equivalence before Phase 2 edits. Current physics is
+`p3-natural-aero-2.1`; see the [Phase 2 review fixes](../../docs/psm-phase2-review-fixes.md) for
+files, architecture, invariant results, migrated tests, deltas and review risks.
+Engine/allocation and automatic breakout remain deferred.
 
 ```sh
 npm test                         # Hard invariants and the existing handling tests
 npm run typecheck
 npm run flight:bench             # Informational report; does not overwrite goldens
-FLIGHT_GOLDEN=update npm run flight:bench  # Deliberate baseline capture/replacement
+FLIGHT_GOLDEN=update npm run flight:bench  # Overwrites archives: do not use for Phase 2 comparison
 ```
 
 Reports are written to `out/report.json` and `out/report.md` (ignored by git).
-Targets in `targets.ts` produce `ok`, `⚠ out` or `report`; feel never fails the build.
+Phase 2 also writes `out/phase2.json` / `.md`, exact 120 Hz applied-force ledgers
+under `out/traces/`, and `out/legacy-*.json` for migrated old feel expectations.
+`phase1-metrics.json` is the captured pre-edit benchmark run. `phase2.report.ts`
+compares closed-loop pilots and open-loop archive inputs separately, runs restoring
+ablations/curve swaps, audits canonical incidence migration, and extends tail slide
+to 30 s without altering the original golden setup. `releaseSafety.ts` shares the review's
+C+pull+W for 5 s then neutral reproduction between CI and the report. Reports run W=0/1
+for up to 40 s; CI's unpowered window is 14 s to avoid a legitimate long-descent terrain
+collision. The 40 s powered case remains a hard lifecycle check.
+
+`flightInstrumentation(...).lastStep` reports start-of-step flow and the **applied**
+controller, neutral subcomponent, natural restoring/damping, alpha/beta drag and
+legacy TVC correction. Main airflow fields still observe the end pose. The ledger
+is diagnostics only, not Phase 3 allocation; neutral is included in controller.
+Numeric feel targets produce `ok`, `⚠ out` or `report`. B9 explicitly reports
+`pending playtest`; Phase 2 acceptance is not complete. `reportExpect` accepts only
+finite numeric feel values. Every migrated integration uses `stepLegacyFlight` for
+hard finite/quaternion/alive checks; phase/completion assertions are also hard.
 Unreached thresholds are JSON `null`, rendered as `—`, not zero or the track timeout.
-Future-phase targets (including B9) remain report-only. Phase 0 reports legacy recovery,
-not the continuous NORMAL label or recovery assist that do not exist yet.
+B8 reports incidence reduction over a benchmark-only 0.2 s no-assist window (>0).
+B10 warns for a missing or >4 s head drop. B20 compares against each aircraft's archived
+sideslip loss ×1.3 with a strict lower bound. B9 ranges must come from owner playtest;
+do not derive them from this automated run. Recovery labels are still legacy.
 
 ## Observer and HUD
 
@@ -63,17 +81,15 @@ replay expands it for each substep. Each golden file contains:
 
 `replayGolden` merges recorded initial fields onto a fresh spawn so newly added fields
 survive. Arrays are replaced. It ignores profile versions by design; it does not use
-the public replay reader. The **CI test** requires the recorded/current versions to
-match and fails explicitly after a version bump. A physics-changing PR must deliberately
-regenerate or retire the baseline, never skip silently. The public replay version rejection
-is unchanged and separately tested.
+the public replay reader. **I4 output equivalence was explicitly retired in Phase 2**:
+natural aero is an intentional physics change. `goldenPolicy.ts` records the archive
+version and each reviewed retirement with a reason. An unknown physics/archive version
+fails with explicit regenerate/retire instructions; equality still enables output-leaf
+comparison. Every current-physics substep is compared exactly at 30/60/144 FPS. Old numeric/categorical outputs remain preserved for benchmark comparison;
+`compareRecordedLeaves` and its strict leaf tests remain available. No golden was
+regenerated and no numerical tolerance was widened. Public replay version rejection
+remains unchanged.
 
-Numeric state leaves present in a golden are checked with
-`1e-9 * max(1, abs(recorded))`; recorded strings, booleans and null must match
-exactly. Only added fields are ignored. `compareRecordedLeaves` reports field paths
-for both numeric and categorical mismatches. No global tolerance relaxation
-is allowed for long rotation tracks. I2 also compares **every** substep state exactly at
-30/60/144 rendered FPS, delivering the recorded commands through the fixed clock.
 The actual `GameRuntime` snapshot/public replay path has its own exact FPS checks.
 
 ## Metric windows
@@ -92,7 +108,7 @@ The actual `GameRuntime` snapshot/public replay path has its own exact FPS check
   minus the minimum altitude over the whole track. Heading uses a 3D velocity angle
   and is unavailable below 1 m/s.
 - Legacy back-to-normal is measured after C release. Pedal yaw rate is sampled at 2 s.
-  Release45 reports incidence at 0.2/0.5/1.5 s and maximum body-rate vector magnitude.
+  Release45 reports incidence at 0/0.2/0.5/1/1.5 s, maximum body-rate vector magnitude and maximum attitude step.
   Tail slide reports the first nose-below-horizon sample; sideslip reports 1 s speed loss.
 - Tracks stop on `alive = false`; reports include actual duration/alive status.
   Speed loss uses the existing arcade km/h conversion (5.4 × simulation m/s).

@@ -1,3 +1,4 @@
+import { goldenComparisonPolicy, phase0ArchiveVersion } from '../../benchmarks/flight/goldenPolicy'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { aircraftIds, scenarioNames, replayGolden, compareRecordedLeaves, createAircraft, type Golden } from '../../benchmarks/flight/harness'
@@ -5,13 +6,15 @@ import { flightProfileVersion } from '../../src/game/flight/profile'
 import { goldenAtFps } from './helpers'
 
 describe.each(aircraftIds)('%s Phase 0 golden tracks', aircraftId => {
-  it.each(scenarioNames)('%s reproduces all recorded leaves and is exact at 30/60/144 FPS', scenario => {
+  it.each(scenarioNames)('%s preserves archived commands and is exact at 30/60/144 FPS', scenario => {
     const golden: Golden = JSON.parse(readFileSync(new URL(`../../benchmarks/flight/golden/${scenario}.${aircraftId}.json`, import.meta.url), 'utf8'))
-    expect(flightProfileVersion, 'Physics version changed: deliberately regenerate goldens (FLIGHT_GOLDEN=update npm run flight:bench) or retire I4 in the physics-change PR; never silently skip.').toBe(golden.recordedWithProfileVersion)
+    // I4 deliberately retired in Phase 2: natural aero changes physics. Preserve
+    // Phase 0 outputs for benchmark deltas; never silently replace the archive.
+    const policy = goldenComparisonPolicy(flightProfileVersion, golden.recordedWithProfileVersion)
     const replay = replayGolden(golden)
     expect(replay.samples.at(-1)!.step).toBe(golden.totalSteps)
-    for (const sample of golden.samples) {
-      expect(compareRecordedLeaves(replay.samples[sample.step].state, sample.state), `${scenario}/${aircraftId} step ${sample.step}`).toEqual([])
+    if (policy === 'equivalence') for (const sample of golden.samples) {
+      expect(compareRecordedLeaves(replay.samples[sample.step].state, sample.state)).toEqual([])
     }
     const at60 = goldenAtFps(golden, 60)
     expect(goldenAtFps(golden, 30)).toEqual(at60)
@@ -47,4 +50,11 @@ it('golden replay ignores recorded profile version and merges fields introduced 
   const replay = replayGolden(recorded)
   expect(replay.initialState.stall.cause).toBe(createAircraft('f22').stall.cause)
   expect(replay.samples.at(-1)!.step).toBe(recorded.totalSteps)
+})
+
+it('requires an explicit regenerate/retire decision for unknown physics or archive versions', () => {
+  expect(goldenComparisonPolicy(phase0ArchiveVersion, phase0ArchiveVersion)).toBe('equivalence')
+  expect(goldenComparisonPolicy(flightProfileVersion, phase0ArchiveVersion)).toBe('archived-inputs')
+  expect(() => goldenComparisonPolicy('future-physics', phase0ArchiveVersion)).toThrow(/regenerate goldens.*retire I4/)
+  expect(() => goldenComparisonPolicy(flightProfileVersion, 'unexpected-archive')).toThrow(/never silently skip/)
 })

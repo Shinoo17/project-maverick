@@ -1,3 +1,5 @@
+import { stepStall } from '../src/game/flight/stall'
+import { naturalAerodynamics, naturalRateStep } from '../src/game/flight/aerodynamics'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { createAircraft } from '../benchmarks/flight/harness'
@@ -14,7 +16,7 @@ describe('Phase 1 profile constants', () => {
   const fields = {
     aero: ['referenceSpeedMps', 'highSpeedMps', 'alphaNormalDeg', 'alphaCriticalDeg'],
     flight: ['afterburnerAcceleration', 'airbrakeDeceleration'],
-    maneuver: ['lateralAcceleration', 'psmDrag', 'recoveryIncidenceRad', 'recoverySpeedMps',
+    maneuver: ['lateralAcceleration', 'recoveryIncidenceRad', 'recoverySpeedMps',
       'highGMinSpeedMps', 'highGMaxSpeedMps', 'highGSpeedFadeMps'],
   } as const
   for (const group of ['aero', 'flight', 'maneuver'] as const) {
@@ -51,9 +53,15 @@ describe('Phase 1 profile constants', () => {
         const tvc = profile.thrustVectoring
         profile.thrustVectoring = null
         try {
-          const ceiling = flightInstrumentation(state).legacy.aeroRate.roll
+          state.rates.roll = 0.2
+          const observed = structuredClone(state), flow = observeAirflow(state, profile)
+          stepStall(observed, profile.stall, flow, FLIGHT_STEP)
+          const ceiling = flightInstrumentation(observed).legacy.aeroRate.roll
+          const natural = naturalAerodynamics(flow, observed.stall.severity, state.rates, profile.aero)
+          const damping = naturalRateStep(natural, state.rates, FLIGHT_STEP).roll
+          const expected = state.rates.roll + (ceiling - state.rates.roll) * (1 - Math.exp(-profile.flight.rateResponse * FLIGHT_STEP)) + damping * FLIGHT_STEP
           stepFlight(state, { ...neutralCommand(0, state.id), roll: 1 }, FLIGHT_STEP)
-          expect(state.rates.roll).toBeCloseTo(ceiling * (1 - Math.exp(-profile.flight.rateResponse * FLIGHT_STEP)), 14)
+          expect(state.rates.roll).toBeCloseTo(expected, 14)
         } finally { profile.thrustVectoring = tvc }
       }
       expect(getFlightProfile('su57').aero).toEqual(other)
@@ -103,7 +111,7 @@ describe('Phase 1 profile constants', () => {
     } finally { profile.maneuver = original }
   })
 
-  it.each(['psmDrag', 'lateralAcceleration'] as const)('reads legacy %s from the aircraft profile', key => {
+  it.each(['lateralAcceleration'] as const)('reads legacy %s from the aircraft profile', key => {
     const profile = getFlightProfile('f22'), original = profile.maneuver
     const state = createAircraft('f22')
     state.position.y = 2000
@@ -119,8 +127,7 @@ describe('Phase 1 profile constants', () => {
     try {
       stepFlight(state, command, FLIGHT_STEP)
       expect(state.velocity).not.toEqual(reference.velocity)
-      if (key === 'psmDrag') expect(state.maneuver.drag).toBeLessThan(reference.maneuver.drag)
-      else expect(state.maneuver.drag).toBe(reference.maneuver.drag)
+      expect(state.maneuver.drag).toBe(reference.maneuver.drag)
     } finally { profile.maneuver = original }
   })
 })

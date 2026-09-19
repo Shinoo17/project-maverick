@@ -5,6 +5,7 @@ import type { WeaponStore } from '../../content/weapons'
 import type { AircraftId } from '../../content/schemas'
 import type { SpeedLimits } from '../flight/speedLimits'
 import type { StallState } from '../flight/stall'
+import type { FlightForces } from '../flight/flightForces'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -24,6 +25,8 @@ export interface AircraftState {
   enginePower: number
   thrustVectoring: ThrustVectoringState
   rates: { pitch: number; yaw: number; roll: number }
+  /** Read-only diagnostics, populated after the first integrated flight substep. */
+  flightForces?: FlightForces
   stopReason?: 'terrain' | 'boundary'
   alive: boolean
 }

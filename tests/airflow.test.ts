@@ -79,14 +79,13 @@ describe('shared airflow observation', () => {
     }
   })
 
-  it('documents near-rest compatibility instead of changing legacy physics', () => {
+  it('retires the legacy near-rest conventions in versioned Phase 2 physics', () => {
     const state = createAircraft('f22'), profile = getFlightProfile('f22')
     for (const speed of [0, 0.0001, 0.001, 0.01, 0.0101]) {
       state.velocity = { x: -speed, y: 0, z: 0 }
       const flow = observeAirflow(state, profile)
       expect(flow.incidenceDeg).toBe(speed < 0.001 ? 0 : 180)
-      expect(flow.legacy.psmIncidenceRad).toBe(speed > 0.01 ? Math.PI : 0)
-      expect(flow.legacy.telemetryIncidenceDeg).toBe(speed === 0 ? 90 : 180)
+      expect(flow).not.toHaveProperty('legacy')
     }
     // Tail-slide residual flow used to produce a meaningless vapor AoA of 90°.
     state.velocity = { x: 0, y: -1e-16, z: 0 }
@@ -105,7 +104,7 @@ describe('shared airflow observation', () => {
     expect(state.stall.aoaDeg).toBe(start.alphaDeg)
     expect(end.alphaDeg).not.toBe(start.alphaDeg)
     expect(telemetry.airflow).toEqual(end)
-    expect(state.maneuver.alpha).toBe(end.legacy.telemetryIncidenceDeg)
+    expect(state.maneuver.alpha).toBe(end.incidenceDeg)
     const vapor = flightVaporConditions(state)
     expect(vapor.speed).toBe(end.airspeed)
     expect(vapor.aoa).toBe(end.alphaDeg)

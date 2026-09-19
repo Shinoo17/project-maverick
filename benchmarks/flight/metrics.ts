@@ -3,7 +3,7 @@ import { observeAirflow } from '../../src/game/flight/airflow'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { arcadeSpeed } from '../../src/game/flight/speedLimits'
 import type { Trace, Sample } from './harness'
-import { targets, targetStatus } from './targets'
+import { benchmarkTarget, naturalObservationWindowSeconds, targetStatus } from './targets'
 
 const speed = (sample: Sample) => new Vector3().copy(sample.state.velocity).length()
 const incidence = (sample: Sample) => observeAirflow(sample.state, getFlightProfile(sample.state.aircraftId)).incidenceDeg
@@ -37,15 +37,23 @@ export function measure(trace: Trace) {
     add('B15.reversal.altitudeLoss', initialState.position.y - Math.min(...samples.map(sample => sample.state.position.y)), 'm')
   }
   if (scenario === 'release45') {
-    for (const seconds of [0.2, 0.5, 1.5]) add(`B9.natural.release45.incidence${seconds}s`, incidence(samples[Math.round(seconds * 120)]), 'deg')
+    // Incidence response with neutral input and no C/assist during a documented
+    // 0.2 s observation window; this does not implement a recovery-delay system.
+    add('B8.recovery.naturalDuringDelay', incidence(entry) - incidence(samples[Math.round(naturalObservationWindowSeconds * 120)]), 'deg reduction / 0.2 s without assist')
+    for (const seconds of [0, 0.2, 0.5, 1, 1.5]) add(`B9.natural.release45.incidence${seconds}s`, incidence(samples[Math.round(seconds * 120)]), 'deg')
+    add('B9.natural.release45.maxAttitudeStep', peak(samples.slice(1), sample => sample.noseRotationDeg - samples[sample.step - 1].noseRotationDeg), 'deg/substep')
     add('B9.natural.release45.maxRate', peak(samples, sample => Math.hypot(...Object.values(sample.state.rates))) * 180 / Math.PI, 'deg/s')
   }
   if (scenario === 'fullStick500') add('baseline.fullStick500.peakAoa', peak(samples, incidence), 'deg')
   if (scenario === 'pedalC') add('baseline.pedal.yawRate', samples[Math.min(240, samples.length - 1)].state.rates.yaw * 180 / Math.PI, 'deg/s at 2 s')
-  if (scenario === 'tailSlide') add('baseline.tailSlide.flipTime', firstTime(samples, sample => {
+  if (scenario === 'tailSlide') add('B10.tailSlide.flipTime', firstTime(samples, sample => {
     const q = sample.state.orientation
     return 2 * (q.x * q.y + q.z * q.w) < 0
   }), 's')
-  if (scenario === 'sideslip60') add('baseline.sideslip60.speedLoss1s', arcadeSpeed(speed(entry) - speed(samples.at(-1)!)), 'arcade km/h')
-  return rows.map(row => ({ ...row, target: targets[row.id] ?? null, status: targetStatus(row.value, targets[row.id]) }))
+  if (scenario === 'sideslip60') add('B20.sideslip60.speedLoss1s', arcadeSpeed(speed(entry) - speed(samples.at(-1)!)), 'arcade km/h')
+  return rows.map(row => {
+    const target = benchmarkTarget(row.id, trace.aircraftId)
+    return { ...row, target: target ?? null,
+      status: row.id.startsWith('B9.') && !target ? 'pending playtest' as const : targetStatus(row.value, target) }
+  })
 }

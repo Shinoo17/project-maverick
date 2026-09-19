@@ -25,6 +25,7 @@ export function flightInstrumentation(state: AircraftState) {
     alphaDeg, betaDeg, incidenceDeg,
     dynamicPressureProxy: airflow.dynamicPressure,
     airflow,
+    lastStep: state.flightForces ?? null,
     envelope: interpretEnvelope(state, airflow, p),
     actualThrust,
     tvcCapacity: tvcCapacity(p.thrustVectoring, actualThrust),

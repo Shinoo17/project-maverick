@@ -18,10 +18,16 @@ export const f22TvcProfile: ThrustVectoringProfile = {
 }
 
 export const f22Profile: AircraftFlightProfile = {
-  aero: { ...aeroDefaults },
+  aero: {
+    ...aeroDefaults,
+    // Arcade stability: predictable high-incidence return; no powered authority.
+    restoring: { pitch: [{ incidenceDeg: 0, stiffness: 1.2 }, { incidenceDeg: 20, stiffness: 1.2 }, { incidenceDeg: 45, stiffness: 1.0 }, { incidenceDeg: 90, stiffness: 0.65 }, { incidenceDeg: 180, stiffness: 0.45 }], yaw: [{ incidenceDeg: 0, stiffness: 0.9 }, { incidenceDeg: 20, stiffness: 0.9 }, { incidenceDeg: 45, stiffness: 0.75 }, { incidenceDeg: 90, stiffness: 0.5 }, { incidenceDeg: 180, stiffness: 0.35 }] },
+    damping: { attached: { pitch: 0.1, yaw: 0.12, roll: 0.08 }, separated: { pitch: 0.65, yaw: 0.55, roll: 0.35 } },
+    alphaDrag: 0.0025, betaDrag: 0.003, reverseDrag: 0.4,
+  },
   flight: {
     ...flightDefaults,
-    neutralDampingDuringPsm: true,
+    neutralRollResponse: 9,
 
     // Speed and energy.
     minPoweredMps: 65,
