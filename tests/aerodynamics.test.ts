@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { aircraftIds, scenarioNames, createAircraft, runScenario, runTrack, scenarioSetup } from '../benchmarks/flight/harness'
-import { aeroFlowEffectiveness, naturalAerodynamics, naturalRateStep, restoringStiffness } from '../src/game/flight/aerodynamics'
+import { aeroFlowEffectiveness, controlEffectivenessAt, naturalAerodynamics, naturalRateStep, restoringStiffness } from '../src/game/flight/aerodynamics'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
 import { separationTarget, stepStall } from '../src/game/flight/stall'
@@ -154,6 +154,15 @@ it('I6: validates required curves/damping/drag and keeps independent nested airc
       expect(() => validateFlightProfile(bad)).toThrow(`aero.restoring.${axis}`)
     }
   }
+  for (const axis of axes) {
+    const curve = p.aero.controlEffectiveness[axis]
+    for (const knot of curve) expect(controlEffectivenessAt(curve, knot.incidenceDeg)).toBeCloseTo(knot.effectiveness, 12)
+    for (const invalid of [undefined, [], [{ incidenceDeg: 0, effectiveness: 1 }], [{ incidenceDeg: 0, effectiveness: 1.01 }, { incidenceDeg: 180, effectiveness: 0.1 }], [{ incidenceDeg: 0, effectiveness: -0.01 }, { incidenceDeg: 180, effectiveness: 0.1 }], [{ incidenceDeg: 0, effectiveness: 1 }, { incidenceDeg: 0, effectiveness: 1 }], [{ incidenceDeg: 1, effectiveness: 1 }, { incidenceDeg: 180, effectiveness: 0.1 }], [{ incidenceDeg: 0, effectiveness: 1 }, { incidenceDeg: 90, effectiveness: 0.1 }], [{ incidenceDeg: 0, effectiveness: NaN }, { incidenceDeg: 180, effectiveness: 0.1 }]]) {
+      const bad = structuredClone(p)
+      Object.assign(bad.aero.controlEffectiveness, { [axis]: invalid })
+      expect(() => validateFlightProfile(bad)).toThrow(`aero.controlEffectiveness.${axis}`)
+    }
+  }
   for (const key of ['alphaDrag', 'betaDrag', 'reverseDrag'] as const) for (const value of [undefined, -1, Infinity, NaN]) {
     const bad = structuredClone(p); Object.assign(bad.aero, { [key]: value })
     expect(() => validateFlightProfile(bad)).toThrow(`aero.${key}`)
@@ -176,4 +185,57 @@ it('separation responds continuously to incidence and speed, independent of diag
     stepStall(s, p.stall, flow, dt); stepStall(copy, p.stall, flow, dt)
     expect(copy.stall).toEqual(s.stall)
   }
+})
+
+describe.each(aircraftIds)('%s flow effectiveness', id => {
+  it('is measured from flow geometry alone and fades to attached flow near rest', () => {
+    const state = createAircraft(id), profile = getFlightProfile(id)
+    let previous = Infinity
+    for (const incidence of [0, 10, 25, 25.001, 45, 60, 90, 120, 179.999, 180]) {
+      state.velocity = { x: 100 * Math.cos(incidence * Math.PI / 180), y: -100 * Math.sin(incidence * Math.PI / 180), z: 0 }
+      const effectiveness = aeroFlowEffectiveness(observeAirflow(state, profile), profile.aero)
+      for (const axis of axes) {
+        expect(effectiveness[axis]).toBeGreaterThan(0)
+        expect(effectiveness[axis]).toBeLessThanOrEqual(1)
+      }
+      expect(effectiveness.pitch).toBeLessThanOrEqual(previous + epsilon)
+      previous = effectiveness.pitch
+      // Identical geometry reached through sideslip instead of alpha reads the same.
+      state.velocity = { x: 100 * Math.cos(incidence * Math.PI / 180), y: 0, z: 100 * Math.sin(incidence * Math.PI / 180) }
+      expect(aeroFlowEffectiveness(observeAirflow(state, profile), profile.aero)).toEqual(effectiveness)
+    }
+    // Angles carry no meaning near rest, so the curve fades back to attached flow.
+    state.velocity = { x: 0, y: -1, z: 0 }
+    for (const value of Object.values(aeroFlowEffectiveness(observeAirflow(state, profile), profile.aero))) expect(value).toBe(1)
+  })
+
+  it('restoringSeparationIndependence: separation scales damping, never the static restoring moment', () => {
+    const state = createAircraft(id), profile = getFlightProfile(id)
+    state.rates = { pitch: 0.4, yaw: -0.3, roll: 0.2 }
+    state.velocity = { x: 80, y: -30, z: 10 }
+    const flow = observeAirflow(state, profile), effectiveness = aeroFlowEffectiveness(flow, profile.aero)
+    const attached = naturalAerodynamics(flow, 0, effectiveness, state.rates, profile.aero)
+    const separated = naturalAerodynamics(flow, 1, effectiveness, state.rates, profile.aero)
+    expect(separated.restoring).toEqual(attached.restoring)
+    expect(separated.alphaDrag).toEqual(attached.alphaDrag)
+    expect(separated.betaDrag).toEqual(attached.betaDrag)
+    for (const axis of axes) expect(Math.abs(separated.damping[axis])).toBeGreaterThan(Math.abs(attached.damping[axis]))
+  })
+
+  it('crossflow damps as separated flow even when the pitch-alpha band reports none', () => {
+    const state = createAircraft(id), profile = getFlightProfile(id)
+    state.rates = { pitch: 0.4, yaw: -0.3, roll: 0.2 }
+    // Pure sideslip: alpha stays zero, so separationTarget is speed-driven only.
+    state.velocity = { x: 0, y: 0, z: 150 }
+    const flow = observeAirflow(state, profile)
+    expect(Math.abs(flow.alphaDeg)).toBeLessThan(epsilon)
+    expect(separationTarget(flow, profile.stall).target).toBe(0)
+    const effectiveness = aeroFlowEffectiveness(flow, profile.aero)
+    const crossflow = naturalAerodynamics(flow, 0, effectiveness, state.rates, profile.aero)
+    const pretendAttached = naturalAerodynamics(flow, 0, { pitch: 1, yaw: 1, roll: 1 }, state.rates, profile.aero)
+    for (const axis of axes) {
+      expect(effectiveness[axis]).toBeLessThan(0.2)
+      expect(Math.abs(crossflow.damping[axis])).toBeGreaterThan(Math.abs(pretendAttached.damping[axis]))
+    }
+  })
 })

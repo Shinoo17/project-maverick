@@ -45,6 +45,7 @@ PSM = ผลลัพธ์ของ `Player Intent + Flight Condition + Availab
 | AD13 | **`powerIntent` (ผู้เล่น) ≠ `poweredControlAvailable` (เครื่อง)**: intent ช่วยเปิด breakout permission, capability เท่านั้นที่ให้ authority | ใหม่ (Rev. 3) |
 | AD14 | **Allocation strategy เป็น function แยก**: Phase 3 = aero-first (`tvcParticipation = 0`); รองรับ participation blending ภายหลังโดยไม่แก้ controller | ใหม่ (Rev. 3) |
 | AD15 | **Tests แบ่ง Hard Invariants (CI fail) กับ Tuning Benchmarks (report + target range)** | ใหม่ (Rev. 3) |
+| AD16 | **`AeroFlowEffectiveness` จาก `AirflowState` ล้วน** คุม physical aero authority + damping blend; separation memory ไม่แตะ angular authority อีกต่อไป | ใหม่ (20 ก.ย. 2026) |
 | AD12 | Maneuver detection = observer pure function ภายหลัง | คงเดิม |
 
 ### Pipeline
@@ -53,8 +54,10 @@ PSM = ผลลัพธ์ของ `Player Intent + Flight Condition + Availab
 AircraftState
   ↓ observeAirflow()              airflow.ts        (pure)
 AirflowState
+  ├─ stepStall()                  stall.ts          separation memory (ไม่ให้ angular authority)
+  ├─ aeroFlowEffectiveness()      aerodynamics.ts   AirflowState → AeroFlowEffectiveness (pure)
   ├─ readIntent()                 intent.ts         PilotCommand → PilotIntent      (ไม่อ่าน capability)
-  ├─ computeBudget()              authority.ts      state + profile → AuthorityBudget (ไม่อ่าน command)
+  ├─ computeBudget()              authority.ts      flow + effectiveness + profile → AuthorityBudget (ไม่อ่าน command/separation)
   ↓ interpretEnvelope()           envelope.ts       (pure + smoothed memory: separation, limiterOpen)
 EnvelopeFactors                                     permission เท่านั้น
   ↓ controller                    controller.ts     demand × permission → requested body-rate change
@@ -89,8 +92,10 @@ interface PilotIntent {
 }
 
 /** What the AIRCRAFT can do right now. Never reads PilotCommand. */
+interface AeroFlowEffectiveness { pitch: number; yaw: number; roll: number }   // 0..1 จาก AirflowState เท่านั้น
+
 interface AuthorityBudget {
-  physicalAero: Axes            // rad/s² — q · surface authority · separation loss
+  physicalAero: Axes            // rad/s² — q · confidence · flow effectiveness · surface authority
   tvc: Axes                     // rad/s² — geometry × max deflection × ACTUAL thrust × gain (0 if thrustVectoring null)
   arcadeFloor: { acceleration: Axes; maxRate: Axes }   // §3.2 gap-fill only
   poweredControlAvailable: number  // 0..1 normalized TVC capacity — HUD/debug/benchmarks; 0 for non-TVC
@@ -197,8 +202,9 @@ Capability cap: `maxControllableAlpha` ต่อลำ — F-16 ≈ `alphaNormal
 | **Airflow** | สังเกต §1 | tuning ใดๆ |
 | **Envelope** | ตีความ, breakout, limits, assist weights | เขียน rates/velocity |
 | **Controller** | demand × limits → requested Δrate ต่อแกน (body axes) | สร้าง authority เอง |
-| **Authority budget** | `physicalAero`, `tvc` (actual thrust), `arcadeFloor`, `poweredControlAvailable` | อ่าน `PilotCommand` / intent |
-| **Aerodynamics (natural)** | restoring curve, q-damping, lift/path force ตาม separation, α/β drag | ขึ้นกับ input หรือเวลา; ให้ floor |
+| **Authority budget** | `physicalAero`, `tvc` (actual thrust), `arcadeFloor`, `poweredControlAvailable` | อ่าน `PilotCommand` / intent / `EnvelopeFactors` / separation memory |
+| **Aero flow effectiveness** | `AirflowState` + `aero.controlEffectiveness` → 0..1 ต่อแกน | อ่าน `highAoa`, separation memory, command หรือ capability |
+| **Aerodynamics (natural)** | restoring curve, q-damping (blend ด้วย `max(separation, 1 − effectiveness)`), lift/path force ตาม separation, α/β drag | ขึ้นกับ input หรือเวลา; ให้ floor; คูณ restoring ด้วย separation |
 | **Allocation** | request → `{aero, tvc, floor}` ตาม strategy (§3.3), แต่ละส่วน ≤ budget ของตัวเอง; บันทึก `AllocationRecord` | เพิ่มเกิน budget; ใช้ floor แทน TVC |
 | **Arcade Control Floor** | gap-fill authority เล็กๆ เมื่อ aero + TVC ต่ำกว่า floor, จำกัดด้วย `maxRate` | เป็น TVC / powered / aero; ทำงานเมื่อ budget จริงพออยู่แล้ว |
 | **TVC** | actuator travel; `thrustForces()` จาก **actual angle + actual thrust** → moment + vectored thrust | ตัดสินว่าจะ vector เมื่อไร |
@@ -254,6 +260,26 @@ aero.damping: { attached: Axes; separated: Axes }   // lerp ด้วย separat
 - Moment = `−stiffness(incidence) · q · sin(alpha|beta)` → ศูนย์ที่ 0° และ 180° (180° เป็น unstable equilibrium ⇒ tail slide flip เกิดเอง)
 - Stiffness curve ต่อลำ เช่น F-22 ลดลงน้อยใน high AoA (predictable), Su-57 ลดลงมาก (freestyle), Su-35 ลดลงมาก + `alphaDrag` สูง
 - Validation: stiffness ≥ 0, knots เรียง incidence
+- **Restoring ไม่คูณ separation โดยตั้งใจ** (owner decision 20 ก.ย. 2026): การเสีย static stability หลัง stall
+  encode ด้วย stiffness curve ตาม incidence ตาม AD7 เท่านั้น การคูณ `(1 − separation)` เพิ่มจะ double-count
+  และทำให้ natural recovery กับ tail-slide flip หายไปเมื่อ `separation → 1`
+  separation ยังมีผลกับ control effectiveness, damping, lift/path force และ drag ได้ตามเดิม
+
+### Aero flow effectiveness (AD16)
+
+```ts
+aero.controlEffectiveness: { pitch: Curve; yaw: Curve; roll: Curve }   // incidenceDeg → 0..1
+```
+
+- `physicalAero = q · confidence · effectiveness(incidence) · controlAcceleration` — **ไม่มี** พจน์ separation
+- q รับผิดชอบการเสีย authority จากความเร็วต่ำเพียงผู้เดียว; `confidence` gate เฉพาะความหมายของมุมใกล้ศูนย์ความเร็ว
+  (effectiveness จาง กลับไปหา attached ตาม confidence จึงไม่นับ confidence ซ้ำ)
+- ใช้ unsigned incidence เป็นตัววัด crossflow ตัวเดียว: β = 90° ที่ α = 0 เสีย effectiveness เท่ากับ α = 90°
+  การแยก α กับ β ต่อแกน (rudder broadside ≠ stabilator) เลื่อนไว้อย่างตั้งใจ ยังไม่ทำ
+- Damping blend ใช้ `max(separation, 1 − effectiveness)` — crossflow จึง damp แบบ separated แม้ pitch-alpha band ปิดอยู่
+- **ห้าม** ให้ `AuthorityBudget` อ่าน `EnvelopeFactors.highAoa`: `highAoa` เป็น gameplay interpretation
+  ส่วน effectiveness เป็น physical observation
+- Validation: knots เรียง incidence, span 0..180, effectiveness ∈ [0,1]
 
 ### Neutral stick (สำคัญ)
 
@@ -416,6 +442,12 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **ไฟล์:** `engine.ts`, `allocation.ts` (ใหม่), `speed.ts`, `thrustVectoring.ts`, `maneuvers.ts`, `stepFlight.ts`, `WorldState.ts`, `GameRuntime.ts`, `content/aircraft/index.ts`, `content/flight-profiles/*`, `su57Rig.ts`/`flightRig.ts` (อ่าน actual power), tests
 
 ### Phase 4 — Automatic breakout + minimal continuous recovery
+- **Assumption changed by AD16:** `arcadeControlFloor` is now a near-rest feature, not a low-speed one.
+  With `physicalAero` no longer zeroed by the separation band, floor share is available only below
+  the per-axis crossover where `q · controlAcceleration < floor.acceleration`: F-22 20.6 / 26.3 / 15.2 m/s
+  and Su-57 20.6 / 24.6 / 15.2 m/s (pitch / yaw / roll). Automatic breakout at low speed must not assume
+  floor authority between those speeds and the old 55.6 m/s band edge. Do not retune the floor to restore
+  the old window without an explicit owner decision.
 - **Hard ordering constraint (Phase 3 review):** port legacy path/gravity weights below **before** enabling automatic breakout. Add per-substep `limiterOpen` continuity tests with bounds derived from authored exponential open/close rates in the same change; Phase 3's explicit C debug step is not that invariant.
 - Envelope §2 ขับ `alphaLimitDeg` + `gAllowance`; High-G key ยังอยู่แต่ map เข้า `gAllowance` path เดียวกัน
 - Port `activeGrip/recoveryGrip/recoveryAcceleration` ([stepFlight.ts:94-97](../src/game/flight/stepFlight.ts#L94-L97)) และ `gravityBlend` ([stepFlight.ts:116](../src/game/flight/stepFlight.ts#L116)) จาก phase → `separation` / lift ตาม q (ไม่งั้นไม่มี path alignment เลยเมื่อไม่มี phase)
@@ -533,6 +565,9 @@ Kulbit 360° Time                    4.3 s     3.0–4.5 s   ok
 | B19 `notvc.maxRotation3s` | `f22-notvc` full pull + brake + Shift | 3 | < 180° |
 | B20 `sideslip60.speedLoss1s` | β 60° ที่ 100 m/s | 2 | > golden +30% |
 | B21 `camera.pipperOnScreen` / `upRate` | incidence 60° / Kulbit | 7 | pipper in frame; up rate ≤ limit |
+| B23 `crossflow.authorityFraction` | `physicalAero` ที่ β 30/60/90 เทียบ β = 0 ต่อแกน (100 และ 45 m/s) | 3 | report (ตั้ง target ใน Phase 8) |
+| B24 `crossflow.dampingFraction` | damping coefficient ที่ β 30/60/90 เทียบ β = 0 | 3 | report |
+| B25 `crossflow.rateFraction` | rate ที่ทำได้จาก full stick 1 s ที่ β 30/60/90 เทียบ β = 0; ที่ 100 m/s authority ยังเกิน demand (≈1) ที่ 45 m/s request อิ่มตัวจึงเห็นผลจริง | 3 | report |
 | B22 `personality.matrix` | Cobra/Kulbit/pedal/speed loss/time-to-normal ลำดับตามตาราง personality | 8 | ลำดับถูก |
 
 B1–B5, B13, B15 มี golden ของ physics เดิม (ผ่าน C) ตั้งแต่ Phase 0 เพื่อเทียบก่อน-หลังทุก phase
@@ -697,3 +732,37 @@ phase weights remain until the Phase 4 port, and a signed longitudinal speed
 zero crossing is distinguished from the capped transverse path rotation. The
 manual debug limiter may step to 1; automatic smoothed limiter opening remains Phase 4.
 No automatic breakout, input remapping, full recovery assist or maneuver detector was added.
+
+
+## Aero flow effectiveness resolution — 20 September 2026
+
+Owner decisions on the four review findings, and what was implemented for each.
+
+1. **Hard-zero `physicalAero` — model corrected.** `computeBudget` no longer multiplies by
+   `(1 − separation)`. Angular authority is `q · confidence · aeroFlowEffectiveness · controlAcceleration`
+   (AD16). Dynamic pressure alone carries the low-speed loss, so the 300–350 arcade km/h band can no
+   longer zero the control surfaces as a side effect, and no magic floor was added inside `physicalAero`.
+   `stall.severity` now reaches angular authority through no path at all.
+2. **Restoring — physics unchanged, contract documented.** `naturalAerodynamics` keeps restoring free of
+   any separation factor; the AD7 stiffness curve remains the only representation of post-stall static
+   stability loss. Pinned by `restoringSeparationIndependence` in `tests/aerodynamics.test.ts`.
+3. **Crossflow — airflow-derived effectiveness, not `highAoa`.** `aeroFlowEffectiveness` reads
+   `AirflowState` and `AeroProfile` only. `AuthorityBudget` still never sees `EnvelopeFactors`; the
+   Phase 3 import check in `tests/invariants/phase3.test.ts` is unchanged and a second check forbids a
+   stall import in `authority.ts`. Damping blends with `max(separation, 1 − effectiveness)`, so pure
+   sideslip damps as separated flow while the owner's pitch-alpha stall decision stands untouched.
+   B23–B25 in `benchmarks/flight/crossflow.report.ts` measure authority, damping and achieved rate at
+   β = 30/60/90, which B20's speed loss cannot see. They run at 100 m/s, where authority still exceeds
+   the full-stick request and only the budget moves, and at 45 m/s, where the request saturates: yaw
+   rate there falls to 0.156 (F-22) and 0.080 (Su-57) of the β = 0 value at β = 90.
+4. **Naming — renamed before Phase 4.** `stall.recoveryAoaDeg` → `separationAttachedAoaDeg`,
+   `recoverySpeedKph` → `separationAttachedSpeedKph`, `entrySeconds` → `separationEntrySeconds`,
+   `recoverySeconds` → `separationRecoverySeconds`. `entrySeconds` was renamed for symmetry with the
+   pair the owner named. `stallSpeedKph` and `criticalAoaDeg` are the opposite edges of the same two
+   bands and are equally misleading; they were left alone pending an owner decision.
+
+`flightProfileVersion` is `p3-flow-effectiveness-4`. I4 stays retired against the Phase 0 archive
+(`benchmarks/flight/goldenPolicy.ts`); goldens were not regenerated, so the Phase 0 comparison baseline
+is preserved. Out of scope and unchanged: automatic breakout, recovery assist, the legacy
+`surfaceControl` / `gravityBlend` path-grip weights that still read `stall.severity`, and all
+`arcadeControlFloor` tuning.

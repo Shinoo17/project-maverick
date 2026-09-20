@@ -89,3 +89,26 @@ it('no-TVC validation variant has independent aero data and reuses F-22 presenta
   expect(() => new GameRuntime({ mode: 'playground', aircraftIds: [variant.id] })).not.toThrow()
   expect(() => new GameRuntime({ mode: 'offline', aircraftIds: [variant.id] })).toThrow('Playground')
 })
+
+it('angular authority comes from measured flow, never from the separation memory', () => {
+  const profile = getFlightProfile('f22'), state = createAircraft('f22')
+  const axes = ['pitch', 'yaw', 'roll'] as const
+  for (const speed of [12, 40, 55, 55.6, 64.8, 90, 200]) {
+    state.velocity = { x: speed, y: 0, z: 0 }
+    const flow = observeAirflow(state, profile), effectiveness = aeroFlowEffectiveness(flow, profile.aero)
+    const budget = computeBudget(flow, effectiveness, 25, profile)
+    // Regression for the low-speed hard zero: the arcade band below 300 arcade km/h
+    // must not remove surface authority that dynamic pressure already scales.
+    for (const axis of axes) {
+      expect(budget.physicalAero[axis]).toBeGreaterThan(0)
+      expect(budget.physicalAero[axis]).toBeCloseTo(flow.dynamicPressure * flow.confidence * effectiveness[axis] * profile.aero.controlAcceleration[axis], 12)
+    }
+    // Same flow, any separation memory: the capability layer cannot observe it.
+    for (const severity of [0, 0.5, 1]) {
+      state.stall.severity = severity
+      expect(computeBudget(flow, aeroFlowEffectiveness(flow, profile.aero), 25, profile)).toEqual(budget)
+    }
+  }
+  const source = readFileSync(new URL('../src/game/flight/authority.ts', import.meta.url), 'utf8')
+  expect(source).not.toMatch(/from ['"].*stall['"]/)
+})

@@ -98,22 +98,29 @@ the same forgiving arcade baseline; these are not measured aircraft specificatio
 stall: {
   ...stallDefaults,
   stallSpeedKph: 300,
-  recoverySpeedKph: 350,
+  separationAttachedSpeedKph: 350,
   criticalAoaDeg: 30,
-  recoveryAoaDeg: 20,
+  separationAttachedAoaDeg: 20,
 },
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `stallSpeedKph` | Below this displayed ARCADE speed, stall starts. |
-| `recoverySpeedKph` | Speed needed for recovery; must exceed stall speed and be <= normal top speed. |
-| `criticalAoaDeg` | Stall starts above this absolute body-plane incidence (degrees). |
-| `recoveryAoaDeg` | Incidence must fall to this or below for recovery; lower than the critical angle. |
-| `controlAuthority` | Remaining normal surface/path control at full stall, 0–1; default 0.25. |
-| `dragMultiplier` | Base drag multiplier at full stall, >= 1; default 1.8. |
-| `entrySeconds` | Severity ramps from 0 to 1 in this time; default 0.4 s. |
-| `recoverySeconds` | Severity ramps from 1 to 0 in this time; default 1.2 s. |
+| `stallSpeedKph` | Fully separated edge of the low-speed band, in displayed ARCADE speed. |
+| `separationAttachedSpeedKph` | Attached edge of that band; must exceed stall speed and be <= normal top speed. |
+| `criticalAoaDeg` | Fully separated edge of the pitch-alpha band (absolute degrees). |
+| `separationAttachedAoaDeg` | Attached edge of that band; below the critical angle. |
+| `controlAuthority` | Remaining legacy path grip at full separation, 0–1; default 0.25. Angular authority is budgeted separately. |
+| `dragMultiplier` | Base drag multiplier at full separation, >= 1; default 1.8. |
+| `separationEntrySeconds` | Exponential time constant toward more separation; default 0.4 s. |
+| `separationRecoverySeconds` | Exponential time constant toward reattached flow; default 1.2 s. |
+
+These are the edges of two continuous bands and the memory constants between
+them, not switches: nothing in the simulation asks whether the aircraft "is
+stalled". Separation scales drag, damping and legacy path grip. It does not
+scale angular control authority, which comes from `aero.controlEffectiveness`
+versus measured incidence, nor the natural restoring moment, which comes from
+`aero.restoring`.
 
 Speed uses the same conversion as `topSpeedKph`: 300 on the HUD is about 55.56
 simulation m/s. `minPoweredMps: 65` still limits S to 351 on the HUD, so holding S
@@ -154,7 +161,7 @@ No aircraft-name branches or automatic maneuver selection are involved.
   PSM metric. Use the separate **Stall AoA** reading when tuning stall.
 - Player advisories explain recovery after leaving active PSM. Active PSM hides
   stall/low-energy advice, but never hides low-altitude or boundary warnings.
-- Start with the four envelope values. For gentler onset, increase `entrySeconds`;
+- Start with the four envelope values. For gentler onset, increase `separationEntrySeconds`;
   for easier handling in stall, increase `controlAuthority`; for less energy loss,
   lower `dragMultiplier` toward 1. Tune PSM rates/grip separately.
 - The existing recovery practice spawn plus X enters low-speed stall; release X

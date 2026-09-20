@@ -1,6 +1,6 @@
 # Flight instrumentation and Phase 3 allocation
 
-Current physics: `p3-engine-allocation-3`. Phase 0 archives (`p3-powered-psm-1`)
+Current physics: `p3-flow-effectiveness-4`. Phase 0 archives (`p3-powered-psm-1`)
 remain unchanged. See [the Phase 3 report](../../docs/psm-phase3-implementation.md)
 for ownership contracts, signed capacity, gain calibration, regressions and discrepancies.
 Automatic breakout/recovery migration remains deferred. Phase 2 B9/playtest acceptance
@@ -24,6 +24,12 @@ older baseline. `phase2.report.ts` continues archived-input replay, natural abla
 and the extended tail-slide and neutral-release traces; its name denotes the harness,
 not the physics version being executed. Reports have a 30 s timeout because their
 120 Hz diagnostic JSONL traces now include allocation, engine and work ledgers.
+
+`crossflow.json`/`.md` report B23–B25: physical aero authority, damping coefficient
+and achieved full-stick rate at beta 30/60/90 with alpha held at zero, each as a
+fraction of the same airframe at beta 0. They exist because B20's one-second speed
+loss cannot show whether a broadside aircraft still commands attached-flow authority.
+Report only; target ranges wait for the Phase 8 playtest.
 
 `releaseSafety.ts` shares the five-second C+pull+W reproduction. Powered CI requires
 recovery before any terminal collision; it permits a recovered, unattended nose-down
