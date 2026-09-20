@@ -3,6 +3,7 @@
  */
 export const phase0ArchiveVersion = 'p3-powered-psm-1'
 const retiredI4: Record<string, { archiveVersion: string; reason: string }> = {
+  'p3-engine-allocation-3': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 3 engine spool, allocated body control, physical TVC and work/path guards intentionally change physics. Preserve Phase 0 archives for calibration.' },
   'p3-natural-aero-2': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 2 natural aerodynamics replaces Phase 1 output neutrality.' },
   'p3-natural-aero-2.1': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 2 review: restore low-q neutral damping and pitch-alpha stall contract.' },
 }

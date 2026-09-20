@@ -8,7 +8,7 @@ export { maneuverProfile } from './profile'
 export type PsmPhase = 'normal' | 'armed' | 'active' | 'recovery'
 export type PsmBlock = 'none' | 'altitude' | 'speed' | 'unsupported'
 export interface ManeuverState {
-  phase: PsmPhase; timer: number; rotation: number; stable: number; blend: number; controlAuthority: number
+  phase: PsmPhase; timer: number; rotation: number; stable: number; blend: number
   blocked: PsmBlock; entrySpeed: number; exitSpeed: number
   peakAlpha: number; completed: number; highG: number; airbrake: number
   burner: number; burnerActive: boolean; burnerLocked: boolean; burnerRest: number
@@ -17,7 +17,7 @@ export interface ManeuverState {
   g: number; pathRate: number; drag: number
 }
 export function createManeuverState(): ManeuverState {
-  return { phase: 'normal', timer: 0, rotation: 0, stable: 0, blend: 0, controlAuthority: 0,
+  return { phase: 'normal', timer: 0, rotation: 0, stable: 0, blend: 0,
     blocked: 'none', entrySpeed: 0, exitSpeed: 0, peakAlpha: 0, completed: 0, highG: 0,
     airbrake: 0, burner: 1, burnerActive: false, burnerLocked: false, burnerRest: 0,
     alpha: 0, g: 1, pathRate: 0, drag: 0 }
@@ -48,7 +48,8 @@ export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: n
     }
   }
   const targetBlend = m.phase === 'active' ? 1 : 0
-  m.blend += clamp(targetBlend - m.blend, -dt / p.blendSeconds, dt / p.blendSeconds)
+  m.blend += (targetBlend - m.blend) * (1 - Math.exp(-Math.log(100) * dt / p.blendSeconds))
+  if (targetBlend === 0 && m.blend < 1e-9) m.blend = 0
   if (m.phase === 'recovery') {
     m.timer += dt
     m.stable = alpha < p.recoveryIncidenceRad && speed > p.recoverySpeedMps ? m.stable + dt : 0
@@ -63,20 +64,6 @@ export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: n
   m.highG += (highGTarget - m.highG) * (1 - Math.exp(-6 * dt))
   const brake = command.airbrake
   m.airbrake += (+brake - m.airbrake) * (1 - Math.exp(-12 * dt))
-  // Airbrake and PSM do not switch off the engine or afterburner.
-  m.burnerActive = command.afterburner && !m.burnerLocked && m.burner > 0
-  if (m.burnerActive) {
-    m.burner = Math.max(0, m.burner - dt / p.burnerSeconds); m.burnerRest = 0
-    if (m.burner === 0) m.burnerLocked = true
-  } else {
-    m.burnerRest += dt
-    if (m.burnerRest > 1) m.burner = Math.min(1, m.burner + dt / p.burnerRecharge)
-    if (m.burner >= 0.25) m.burnerLocked = false
-  }
-  // These are rate ceilings. stepFlight scales assistance by CURRENT thrust,
-  // after stepSpeed has resolved W/S and afterburner for this fixed step.
-  return { alpha, assisted, brake,
-    pitch: assisted ? command.pitch * p.pitchRate : null,
-    yaw: assisted ? command.yaw * p.yawRate : null,
-    roll: assisted ? command.roll * p.rollRate : null }
+  // Legacy labels/path grip remain until Phase 4. No rate or thrust authority.
+  return { alpha, assisted, brake }
 }

@@ -45,7 +45,18 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
   })
 
   it.each([0, 1])('released five-second C pull remains recoverable (speedAdjust=%s)', speedAdjust => {
-    const { held, trace } = runPsmNeutralRelease(id, speedAdjust, speedAdjust === 1 ? 40 : 14, valid)
+    let sawRecovery = false, recovered = false
+    const { held, trace } = runPsmNeutralRelease(id, speedAdjust, speedAdjust === 1 ? 40 : 14, (state, previous) => {
+      assertAircraftValid(state); assertActuatorStep(state, previous)
+      sawRecovery ||= state.maneuver.phase === 'recovery'
+      recovered ||= sawRecovery && state.maneuver.phase === 'normal'
+      if (!state.alive) {
+        // A recovered, nose-down aircraft can later hit terrain without pilot
+        // input. Phase 3 has no attitude-leveling recovery/autopilot (Phase 5).
+        expect(speedAdjust).toBe(1); expect(recovered).toBe(true)
+        expect(['terrain', 'boundary']).toContain(state.stopReason)
+      }
+    })
     const release = held.samples.at(-1)!.state
     expect(release.maneuver.phase).toBe('active')
     expect(release.maneuver.peakAlpha).toBeGreaterThan(70) // Existing completion gate, not a new feel target.

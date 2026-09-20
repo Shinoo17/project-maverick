@@ -10,7 +10,7 @@ export const su57TvcProfile: ThrustVectoringProfile = {
   cantDeg: 30,
   actuatorRate: 36,
   actuatorResponse: 7,
-  authorityResponse: 5,
+  gain: 2,
   pivotX: -7.2,
   height: -0.6691,
   spacing: 1.3903,
@@ -19,8 +19,13 @@ export const su57TvcProfile: ThrustVectoringProfile = {
 }
 
 export const su57Profile: AircraftFlightProfile = {
+  arcadeControlFloor: { acceleration: { pitch: 0.25, yaw: 0.18, roll: 0.3 }, maxRate: { pitch: 0.2, yaw: 0.15, roll: 0.3 } },
+  engine: { spoolUpResponse: 4, spoolDownResponse: 6 },
   aero: {
     ...aeroDefaults,
+    maxControllableAlphaDeg: 180,
+    controlAcceleration: { pitch: 4.75, yaw: 2.4, roll: 10.5 },
+    pathRateFloorMps: 40,
     // Arcade stability: more relaxed high-incidence stability; no powered authority.
     restoring: { pitch: [{ incidenceDeg: 0, stiffness: 1.2 }, { incidenceDeg: 20, stiffness: 1.1 }, { incidenceDeg: 45, stiffness: 0.6 }, { incidenceDeg: 90, stiffness: 0.3 }, { incidenceDeg: 180, stiffness: 0.25 }], yaw: [{ incidenceDeg: 0, stiffness: 0.9 }, { incidenceDeg: 20, stiffness: 0.85 }, { incidenceDeg: 45, stiffness: 0.45 }, { incidenceDeg: 90, stiffness: 0.25 }, { incidenceDeg: 180, stiffness: 0.2 }] },
     damping: { attached: { pitch: 0.1, yaw: 0.12, roll: 0.08 }, separated: { pitch: 0.45, yaw: 0.4, roll: 0.3 } },
@@ -59,9 +64,6 @@ export const su57Profile: AircraftFlightProfile = {
     entryMin: 65,
     entryMax: 115,
     minAltitude: 150,
-    pitchRate: 2.6,
-    yawRate: 1.85,
-    rollRate: 2.1,
     recoveryAcceleration: 66.5,
   },
   thrustVectoring: su57TvcProfile,

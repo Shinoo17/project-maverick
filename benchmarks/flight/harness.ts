@@ -121,6 +121,11 @@ function mergeState(base: unknown, recorded: unknown): unknown {
   return result
 }
 
+/** Upgrade an archived spawn without rewriting the archive or its recorded fields. */
+export function hydrateGoldenState(golden: Golden): AircraftState {
+  return mergeState(createAircraft(golden.aircraftId), golden.initialState) as AircraftState
+}
+
 /** Intentionally bypasses public replay version rejection; the golden CI test owns policy. */
 export function replayGolden(golden: Golden, observer?: StepObserver) {
   if (golden.flightStep !== FLIGHT_STEP) throw new Error('Unsupported golden flight step')
@@ -130,7 +135,7 @@ export function replayGolden(golden: Golden, observer?: StepObserver) {
     expectedStep += run.steps
   }
   if (expectedStep !== golden.totalSteps) throw new Error('Incomplete golden command track')
-  const initial = mergeState(createAircraft(golden.aircraftId), golden.initialState) as AircraftState
+  const initial = hydrateGoldenState(golden)
   let runIndex = 0
   return runTrack(initial, golden.totalSteps * FLIGHT_STEP, (_state, time) => {
     const step = Math.round(time / FLIGHT_STEP)

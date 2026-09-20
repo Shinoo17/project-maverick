@@ -1,16 +1,18 @@
 import type { AircraftDefinition } from '../../content/schemas'
 import { getFlightProfile } from '../../game/flight/profile'
+import { tvcMomentCapacity } from '../../game/flight/thrustVectoring'
 import { arcadeSpeed } from '../../game/flight/speed'
 import { useTexts } from '../../locales'
 
 export function FlightProfilePanel({ aircraft }: { aircraft: AircraftDefinition }) {
-  const { flight, maneuver } = getFlightProfile(aircraft.id)
+  const { flight, maneuver, thrustVectoring } = getFlightProfile(aircraft.id)
   const text = useTexts()
+  const dryYawCapacity = tvcMomentCapacity(thrustVectoring, flight.maxThrust).commanded.positive.yaw
   const rows = [
     [text.profileSpeed, `${Math.round(arcadeSpeed(flight.minPoweredMps))}–${Math.round(flight.topSpeedKph)} ${text.arcadeUnit}`],
     [text.profileAcceleration, `${flight.acceleration.toFixed(1)} m/s²`],
     [text.profileYaw, `${Math.round(flight.yawRate * 180 / Math.PI)} °/s`],
-    [text.profilePsm, maneuver.psmEnabled ? `${Math.round(maneuver.yawRate * 180 / Math.PI)} °/s` : text.profileUnsupported],
+    [text.profilePsm, thrustVectoring ? `${dryYawCapacity.toFixed(2)} rad/s²` : text.profileUnsupported],
     [text.profileRecovery, `${maneuver.recoveryAcceleration.toFixed(1)} m/s²`],
     [text.profileRecoveryCondition, `< ${(maneuver.recoveryIncidenceRad * 180 / Math.PI).toFixed(2)}° · > ${Math.round(arcadeSpeed(maneuver.recoverySpeedMps))} ${text.arcadeUnit}`],
     [text.profilePsmControl, maneuver.psmEnabled ? text.profileHoldC : text.profileUnsupported],

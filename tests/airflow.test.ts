@@ -113,7 +113,7 @@ describe('shared airflow observation', () => {
 })
 
 describe('observe-only envelope', () => {
-  it('reads legacy smoothing without inventing breakout or recovery authority', () => {
+  it('keeps debug limiter permission independent of legacy path smoothing', () => {
     const state = createAircraft('f22'), profile = getFlightProfile('f22')
     state.velocity = { x: 0, y: -100, z: 0 }
     state.stall.severity = 0.4
@@ -122,7 +122,7 @@ describe('observe-only envelope', () => {
     state.maneuver.phase = 'recovery'
     const flow = observeAirflow(state, profile)
     expect(interpretEnvelope(state, flow, profile)).toEqual({
-      highAoa: 1, separation: 0.4, intent: 0, limiterOpen: 0.6,
+      highAoa: 1, separation: 0.4, intent: 0, limiterOpen: 0,
       alphaLimitDeg: 20, gAllowance: 1.3, stabilityAssist: 0.4, recoveryAssist: 0.4,
     })
     state.velocity = { x: 0, y: 0, z: 0 }

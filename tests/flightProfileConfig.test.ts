@@ -78,7 +78,7 @@ describe('aircraft flight configuration', () => {
     }
   })
 
-  it('supports a narrower PSM envelope and lower powered rates', () => {
+  it('supports narrower legacy presentation gates without returning generic powered rates', () => {
     const profile = getFlightProfile('su57')
     const previous = profile.maneuver
     profile.maneuver = {
@@ -87,10 +87,7 @@ describe('aircraft flight configuration', () => {
       entryMin: 95,
       entryMax: 105,
       minAltitude: 400,
-      pitchRate: 1,
-      yawRate: 0.8,
       exitSpeed: 115,
-      fullControlThrust: 30,
     }
     try {
       validateFlightProfile(profile)
@@ -114,15 +111,15 @@ describe('aircraft flight configuration', () => {
       const command = { ...neutralCommand(0, state.id), psmArm: true, pitch: 1, yaw: 1 }
       state.velocity.x = 100
       const assist = stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
-      expect(assist.pitch).toBe(1)
-      expect(assist.yaw).toBe(0.8)
+      expect(assist).not.toHaveProperty('pitch')
+      expect(assist).not.toHaveProperty('yaw')
       for (let tick = 0; tick < 600; tick++) stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
       expect(state.maneuver.phase).toBe('active')
       state.velocity.x = 116
       stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
       expect(state.maneuver.phase).toBe('recovery')
       state.velocity.x = 100
-      for (let tick = 0; tick < 60; tick++) stepManeuvers(state, { ...command, psmArm: false }, 1 / 60, observeAirflow(state, profile))
+      for (let tick = 0; tick < Math.ceil(Math.log(1e9) * profile.maneuver.blendSeconds * 60) + 2; tick++) stepManeuvers(state, { ...command, psmArm: false }, 1 / 60, observeAirflow(state, profile))
       expect(state.maneuver.phase).toBe('normal')
     } finally {
       profile.maneuver = previous

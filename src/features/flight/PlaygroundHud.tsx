@@ -37,7 +37,7 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
       <div><dt>{t('bodyRates')}</dt><dd>{[state.rates.pitch, state.rates.roll, state.rates.yaw].map(v => (v * 180 / Math.PI).toFixed(0)).join(' / ')} °/s</dd></div>
       <div><dt>{t('dragForce')}</dt><dd>{m!.drag.toFixed(1)} m/s²</dd></div>
       <div><dt>{t('engineOutput')}</dt><dd>{Math.round(state.enginePower * 100)}%</dd></div>
-      <div><dt>{t('psmAuthority')}</dt><dd>{Math.round(m!.controlAuthority * 100)}%</dd></div>
+      <div><dt>{t('psmAuthority')}</dt><dd>{Math.round(instrumentation.budget.poweredControlAvailable * 100)}%</dd></div>
       <div><dt>{t('tvcAngles')}</dt><dd>{state.thrustVectoring.left.toFixed(1)}° / {state.thrustVectoring.right.toFixed(1)}°</dd></div>
       <div><dt>{t('stallSeverity')}</dt><dd>{Math.round(state.stall.severity * 100)}%</dd></div>
       <div><dt>{t('stallAoa')}</dt><dd>{state.stall.aoaDeg.toFixed(1)}°</dd></div>
@@ -45,14 +45,26 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
       <div><dt>{t('labAngles')}</dt><dd>{[instrumentation.alphaDeg, instrumentation.betaDeg, instrumentation.incidenceDeg].map(v => v.toFixed(1)).join(' / ')}°</dd></div>
       <div><dt>{t('labQ')}</dt><dd>{instrumentation.dynamicPressureProxy.toFixed(3)}</dd></div>
       <div><dt>{t('labThrust')}</dt><dd>{instrumentation.actualThrust.toFixed(2)} m/s²</dd></div>
-      <div><dt>{t('labCapacity')}</dt><dd>{axes(instrumentation.tvcCapacity)} rad/s²</dd></div>
-      <div><dt>{t('labAeroRate')}</dt><dd>{axes(instrumentation.legacy.aeroRate, 180 / Math.PI)} °/s</dd></div>
-      <div><dt>{t('labFloorRate')}</dt><dd>{axes(instrumentation.legacy.floorRate, 180 / Math.PI)} °/s</dd></div>
-      <div><dt>{t('labPoweredRate')}</dt><dd>{axes(instrumentation.legacy.poweredRate, 180 / Math.PI)} °/s</dd></div>
-      <div><dt>{t('labSurfaceControl')}</dt><dd>{instrumentation.legacy.surfaceControl.toFixed(3)}</dd></div>
-      <div><dt>{t('labPoweredBlend')}</dt><dd>{instrumentation.legacy.poweredBlend.toFixed(3)}</dd></div>
-      <div><dt>{t('labSeparation')}</dt><dd>{instrumentation.legacy.separationProxy.toFixed(3)}</dd></div>
-      <div><dt>{t('labLimiter')}</dt><dd>{instrumentation.legacy.limiterProxy.toFixed(3)}</dd></div>
+      <div><dt>{t('labCapacity')}</dt><dd>{axes(instrumentation.budget.tvc.positive)} / −{axes(instrumentation.budget.tvc.negative)} rad/s²</dd></div>
+      <div><dt>{t('labPhysicalAero')}</dt><dd>{axes(instrumentation.budget.physicalAero)} rad/s²</dd></div>
+      <div><dt>{t('labFloorBudget')}</dt><dd>{axes(instrumentation.budget.arcadeFloor.acceleration)} rad/s² · {axes(instrumentation.budget.arcadeFloor.maxRate)} rad/s</dd></div>
+      {instrumentation.lastStep && <>
+        <div><dt>{t('labRequestedResponse')}</dt><dd>{axes(instrumentation.lastStep.allocation.request)} rad/s²</dd></div>
+        <div><dt>{t('labNozzleTargets')}</dt><dd>{instrumentation.lastStep.nozzleTargets.left.toFixed(1)}° / {instrumentation.lastStep.nozzleTargets.right.toFixed(1)}°</dd></div>
+        <div><dt>{t('labPathCap')}</dt><dd>{instrumentation.lastStep.translation.controlPathRate.toFixed(3)} / {instrumentation.lastStep.translation.controlPathCap.toFixed(3)} rad/s · {instrumentation.lastStep.translation.pathCapActive ? t('labCapActive') : '—'}</dd></div>
+        <div><dt>{t('labDamping')}</dt><dd>{axes(instrumentation.lastStep.stabilityDamping)} rad/s²</dd></div>
+        <div><dt>{t('labAllocatedAero')}</dt><dd>{axes(instrumentation.lastStep.allocation.aero)} rad/s²</dd></div>
+        <div><dt>{t('labAllocatedTvc')}</dt><dd>{axes(instrumentation.lastStep.allocation.tvc)} rad/s²</dd></div>
+        <div><dt>{t('labAllocatedFloor')}</dt><dd>{axes(instrumentation.lastStep.allocation.floor)} rad/s²</dd></div>
+        <div><dt>{t('labUnmet')}</dt><dd>{axes(instrumentation.lastStep.allocation.unmet)} rad/s²</dd></div>
+        <div><dt>{t('labActualTorque')}</dt><dd>{axes(instrumentation.lastStep.tvc)} rad/s²</dd></div>
+        <div><dt>{t('labActuatorLag')}</dt><dd>{axes(instrumentation.lastStep.actuatorLag)} rad/s²</dd></div>
+        <div><dt>{t('labCoupledTorque')}</dt><dd>{axes(instrumentation.lastStep.coupledTarget)} rad/s²</dd></div>
+      </>}
+      <div><dt>{t('labRequestedPower')}</dt><dd>{(state.engine.requestedPower * 100).toFixed(1)}%</dd></div>
+      <div><dt>{t('labPowerIntent')}</dt><dd>{state.intent.powerIntent.toFixed(2)}</dd></div>
+      <div><dt>{t('labSeparation')}</dt><dd>{instrumentation.envelope.separation.toFixed(3)}</dd></div>
+      <div><dt>{t('labLimiter')}</dt><dd>{instrumentation.envelope.limiterOpen.toFixed(3)}</dd></div>
       <div><dt>{t('lastCobra')}</dt><dd>{m!.peakAlpha.toFixed(0)}° · {m!.entrySpeed.toFixed(0)} → {m!.exitSpeed.toFixed(0)} m/s</dd></div>
     </dl>}
   </>

@@ -67,7 +67,10 @@ describe('legacy maneuvers tuning expectations (report only)', () => {
     }
     feel(s.velocity.x).toBeLessThan(-150)
     feel(s.maneuver.peakAlpha).toBeGreaterThan(90)
-    expect(s.maneuver.completed).toBe(1)
+    // Phase 3 removed generic powered yaw. Preserve the old desired completion
+    // as feel, while enforcing the actual detector gate/lifecycle contract.
+    expect(s.maneuver.completed).toBe(s.maneuver.phase === 'normal' && s.maneuver.peakAlpha >= 70 ? 1 : 0)
+    feel(s.maneuver.completed).toBe(1)
     feel(Math.abs(s.orientation.x) + Math.abs(s.orientation.z)).toBeLessThan(0.001)
     expect(s.alive).toBe(true)
   })

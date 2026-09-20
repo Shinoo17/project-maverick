@@ -50,11 +50,16 @@ export type RestoringCurve = { incidenceDeg: number; stiffness: number }[]
 
 /** Flow reference, legacy surface speed curve and independent incidence envelope. */
 export interface AeroProfile {
+  /** Surface angular acceleration at q=1, before separation loss (rad/s²). */
+  controlAcceleration: AeroAxes
+  /** Minimum denominator for transverse engine-force path rotation (m/s). */
+  pathRateFloorMps: number
   referenceSpeedMps: number
   highSpeedMps: number
   /** Unsigned nose/velocity incidence thresholds (degrees), including sideslip.
    * Independent of the separation band in StallProfile; tune per aircraft by playtest.
    */
+  maxControllableAlphaDeg: number
   alphaNormalDeg: number
   alphaCriticalDeg: number
   restoring: { pitch: RestoringCurve; yaw: RestoringCurve }
@@ -80,7 +85,7 @@ export interface StallProfile {
   criticalAoaDeg: number
   /** Attached-flow edge of the continuous pitch-alpha band; below criticalAoaDeg. */
   recoveryAoaDeg: number
-  /** Remaining surface control/path authority at full stall (0–1). Not TVC/PSM. */
+  /** Legacy path-grip fraction at full stall (0–1). Angular aero authority is budgeted separately. */
   controlAuthority: number
   /** Multiplier on base drag at full stall (>= 1). Alpha/beta drag stays separate. */
   dragMultiplier: number
@@ -99,15 +104,8 @@ export interface ManeuverProfile {
 
   /** Leave PSM above this speed (m/s); must exceed entryMax for hysteresis. */
   exitSpeed: number
-  /** Seconds to blend manual PSM control in/out. Not a duration limit. */
+  /** Seconds for 99% of the legacy path-grip blend. Not angular authority or a duration limit. */
   blendSeconds: number
-  /** Thrust (m/s²) needed for full PSM rate assistance. */
-  fullControlThrust: number
-  // PSM angular rates at full control thrust (rad/s).
-  pitchRate: number
-  yawRate: number
-  rollRate: number
-
   /** PSM airflow alignment response (1/s), independent of normal flight. */
   pathResponse: number
   /** Dimensionless airflow grip during PSM and recovery. */
@@ -143,9 +141,10 @@ export interface ThrustVectoringProfile {
   cantDeg: number
   /** Actuator travel speed (degrees/s). */
   actuatorRate: number
-  /** Actuator and authority response rates (1/s). */
+  /** Scalar arcade moment gain, preserving geometry ratios. */
+  gain: number
+  /** Actuator response rate (1/s). */
   actuatorResponse: number
-  authorityResponse: number
 
   // Metres in the displayed aircraft's centered +X-forward frame.
   pivotX: number
@@ -157,7 +156,11 @@ export interface ThrustVectoringProfile {
   inertia: { roll: number; yaw: number; pitch: number }
 }
 
+export interface EngineProfile { spoolUpResponse: number; spoolDownResponse: number }
+
 export interface AircraftFlightProfile {
+  arcadeControlFloor: { acceleration: AeroAxes; maxRate: AeroAxes }
+  engine: EngineProfile
   aero: AeroProfile
   flight: FlightProfile
   stall: StallProfile

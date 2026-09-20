@@ -41,7 +41,7 @@ function fly(state: AircraftState, t: number) {
   state.stall = { severity: 0, cause: 'none', aoaDeg: angleOfAttack(state) }
   // Explicit visual fixtures; the flight runtime remains the only physics owner.
   if (params.has('psm')) {
-    m.phase = 'active'; m.blend = 1; m.controlAuthority = 0.85
+    m.phase = 'active'; m.blend = 1
     state.thrustVectoring = { left: 12, right: 18, authority: 1 }
   }
   if (params.has('stall')) state.stall = { severity: 0.8, cause: 'aoa', aoaDeg: 42 }

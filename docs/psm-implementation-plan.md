@@ -677,3 +677,22 @@ Phase 0 รอบนี้เพียงเปิดเผยข้อขัด
 สีเดียวกับ pipper; off-screen chevron, projection, low-speed hiding คงเดิม
 นี่เป็นข้อยกเว้นด้าน presentation ที่ owner อนุมัติแทนรูปวงกลมของ FPM ใน §0.3
 ไม่ใช่การเปลี่ยน physics, control หรือ capability
+
+
+## Phase 3 contract resolution — 20 September 2026
+
+The owner authorized the proposed E1/E3 contract: **positive/negative command
+capacity, separate coupled physical moments, and bounds on actual actuator torque
+throughout travel**. Implemented in `tvcMomentCapacity`, `computeBudget`, the
+reachable two-nozzle solve and per-step force ledger. The raw geometry solver and
+its signed reference tables remain unchanged; one scalar gain scales all angular axes.
+F-22 commanded yaw is zero while its small asymmetric axial-thrust yaw is retained
+and bounded as coupled physics. Independent pitch/yaw/roll capacities are not a
+simultaneously reachable actuator box.
+
+[Phase 3 implementation report](psm-phase3-implementation.md) records tests,
+benchmark deltas, calibration and two scope qualifications: legacy path/gravity
+phase weights remain until the Phase 4 port, and a signed longitudinal speed
+zero crossing is distinguished from the capped transverse path rotation. The
+manual debug limiter may step to 1; automatic smoothed limiter opening remains Phase 4.
+No automatic breakout, input remapping, full recovery assist or maneuver detector was added.

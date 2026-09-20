@@ -36,7 +36,7 @@ describe('aircraft profiles', () => {
     for (let tick = 0; tick < 120; tick++) runtime.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), speedAdjust: 1 }))
     const [f22, su57] = runtime.snapshot().aircraft
     expect(f22.velocity.x).toBeGreaterThan(su57.velocity.x)
-    expect(getFlightProfile('su57').maneuver.yawRate).toBeGreaterThan(getFlightProfile('f22').maneuver.yawRate)
+    expect(getFlightProfile('su57').flight.yawRate).toBeGreaterThan(getFlightProfile('f22').flight.yawRate)
   })
   it('disables PSM through capability data', () => {
     const profile = flightProfiles['felon-agility'], previous = profile.maneuver

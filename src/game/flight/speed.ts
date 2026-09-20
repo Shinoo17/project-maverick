@@ -4,6 +4,8 @@ import type { FlightProfile } from './profileTypes'
 import type { SpeedLimits } from './speedLimits'
 import { getFlightProfile } from './profile'
 
+import { stepBurner, stepEngine } from './engine'
+
 export { arcadeSpeed } from './speedLimits'
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 
@@ -13,7 +15,9 @@ export function dryThrustLimit(p: FlightProfile, limits: SpeedLimits) {
 }
 
 export function stepSpeed(state: AircraftState, command: PilotCommand, dt: number, speed: number) {
-  const p = getFlightProfile(state.aircraftId).flight
+  const profile = getFlightProfile(state.aircraftId)
+  const p = profile.flight
+  stepBurner(state.maneuver, command.afterburner, profile.maneuver, dt)
   const m = state.maneuver
   const limits = state.speedLimits
   const topSpeed = m.burnerActive ? limits.afterburnerTopSpeedMps : limits.topSpeedMps
@@ -34,12 +38,12 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
   const maxThrust = m.burnerActive
     ? Math.max(dryThrust * 1.6, p.drag * topSpeed ** 2 + p.afterburnerAcceleration)
     : dryThrust
-  const thrust = clamp(trim + acceleration, 0, maxThrust)
+  const requestedPower = clamp(trim + acceleration, 0, maxThrust) / dryThrust
+  const thrust = stepEngine(state, requestedPower, dryThrust, profile.engine, dt)
 
   // Shed overspeed gradually (including after burner cutoff), never clamp velocity.
   // Gravity, turning losses and PSM still act independently in stepFlight.
   const excess = Math.max(0, speed - topSpeed)
   const overspeedBraking = Math.min(excess * p.releaseResponse, p.deceleration, excess / dt)
-  state.enginePower = thrust / dryThrust
   return { thrust, braking: Math.max(m.airbrake * p.airbrakeDeceleration, Math.max(0, -drive), overspeedBraking) }
 }

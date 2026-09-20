@@ -1,5 +1,3 @@
-import { stepStall } from '../src/game/flight/stall'
-import { naturalAerodynamics, naturalRateStep } from '../src/game/flight/aerodynamics'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { createAircraft } from '../benchmarks/flight/harness'
@@ -40,30 +38,14 @@ describe('Phase 1 profile constants', () => {
     expect(() => validateFlightProfile(profile, 'plane')).toThrow(`plane.${group}.${key}`)
   })
 
-  it('shares the authored surface speed curve between controller and legacy observation', () => {
+  it('uses authored q reference for physical surface budgets with no shared tuning mutation', () => {
     const profile = getFlightProfile('f22'), original = profile.aero
     const other = structuredClone(getFlightProfile('su57').aero)
     profile.aero = { ...original, referenceSpeedMps: 120, highSpeedMps: 180 }
     try {
-      for (const speed of [60, 240]) {
-        const state = createAircraft('f22')
-        state.position.y = 2000
-        state.velocity = { x: speed, y: 0, z: 0 }
-        // Remove TVC so the measured roll response is the surface controller alone.
-        const tvc = profile.thrustVectoring
-        profile.thrustVectoring = null
-        try {
-          state.rates.roll = 0.2
-          const observed = structuredClone(state), flow = observeAirflow(state, profile)
-          stepStall(observed, profile.stall, flow, FLIGHT_STEP)
-          const ceiling = flightInstrumentation(observed).legacy.aeroRate.roll
-          const natural = naturalAerodynamics(flow, observed.stall.severity, state.rates, profile.aero)
-          const damping = naturalRateStep(natural, state.rates, FLIGHT_STEP).roll
-          const expected = state.rates.roll + (ceiling - state.rates.roll) * (1 - Math.exp(-profile.flight.rateResponse * FLIGHT_STEP)) + damping * FLIGHT_STEP
-          stepFlight(state, { ...neutralCommand(0, state.id), roll: 1 }, FLIGHT_STEP)
-          expect(state.rates.roll).toBeCloseTo(expected, 14)
-        } finally { profile.thrustVectoring = tvc }
-      }
+      const state = createAircraft('f22'); state.velocity.x = 60
+      const observation = flightInstrumentation(state)
+      expect(observation.budget.physicalAero.roll).toBeCloseTo(profile.aero.controlAcceleration.roll * (60 / 120) ** 2)
       expect(getFlightProfile('su57').aero).toEqual(other)
     } finally { profile.aero = original }
   })
@@ -75,8 +57,9 @@ describe('Phase 1 profile constants', () => {
       const state = createAircraft('f22')
       state.maneuver.burnerActive = true
       state.maneuver.airbrake = 1
-      const force = stepSpeed(state, neutralCommand(0, state.id), FLIGHT_STEP, 100)
-      expect(force.thrust).toBe(original.drag * 100 * 100 + 12)
+      const force = stepSpeed(state, { ...neutralCommand(0, state.id), afterburner: true }, FLIGHT_STEP, 100)
+      expect(state.engine.requestedPower * 50).toBe(original.drag * 100 * 100 + 12)
+      expect(force.thrust).toBe(state.engine.actualThrust)
       expect(force.braking).toBe(18)
     } finally { profile.flight = original }
   })

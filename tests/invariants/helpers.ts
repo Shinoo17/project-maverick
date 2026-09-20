@@ -5,7 +5,7 @@ import type { PilotCommand } from '../../src/game/runtime/commands'
 import type { AircraftState } from '../../src/game/state/WorldState'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { stepFlight } from '../../src/game/flight/stepFlight'
-import type { Golden } from '../../benchmarks/flight/harness'
+import { hydrateGoldenState, type Golden } from '../../benchmarks/flight/harness'
 
 export function assertAircraftValid(state: AircraftState) {
   const visit = (value: unknown, path: string) => {
@@ -47,7 +47,7 @@ export function runAtFps(fps: number, aircraftId: string, command: (tick: number
 
 /** Every recorded substep is delivered even when a frame contains multiple world ticks. */
 export function goldenAtFps(golden: Golden, fps: number) {
-  const state = structuredClone(golden.initialState)
+  const state = hydrateGoldenState(golden)
   const samples = [structuredClone(state)]
   const clock = new FixedClock()
   let step = 0, runIndex = 0

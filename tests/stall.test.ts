@@ -103,12 +103,13 @@ describe('forgiving stall flight', () => {
     const p = getFlightProfile('f22')
     for (const speed of [0, 230]) {
       const s = pose(speed)
+      if (speed === 0) { s.enginePower = 0; s.engine.actualThrust = 0 }
       s.stall = { severity: 1, cause: 'speed', aoaDeg: 0 }
       s.thrustVectoring = { left: 15, right: 15, authority: 1 }
       stepFlight(s, neutralCommand(0, s.id), dt)
       const thrust = s.enginePower * dryThrustLimit(p.flight, s.speedLimits)
       const torque = thrustForces(s.thrustVectoring, thrust, p.thrustVectoring!)
-      expect(s.rates.pitch).toBeCloseTo(torque.angularAcceleration.pitch * dt, 10)
+      expect(s.rates.pitch).toBeCloseTo(torque.angularAcceleration.pitch * p.thrustVectoring!.gain * dt, 10)
       if (speed === 0) expect(s.rates.pitch).toBe(0)
       else expect(s.rates.pitch).toBeGreaterThan(0)
     }

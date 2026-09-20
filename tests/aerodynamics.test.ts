@@ -54,7 +54,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     for (const group of [n.restoring, n.damping]) for (const value of Object.values(group)) expect(Math.abs(value)).toBe(0)
   })
 
-  it('I7: separation and legacy limiter memory obey authored substep bounds on every trace', () => {
+  it('I7: separation and legacy path-grip memory obey authored substep bounds on every trace', () => {
     const profile = getFlightProfile(id)
     for (const scenario of scenarioNames) runScenario(scenario, id, (state, previous) => {
       const flow = observeAirflow(previous, profile)
@@ -63,8 +63,8 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
       expect(Math.abs(state.stall.severity - previous.stall.severity)).toBeLessThanOrEqual(1 - Math.exp(-dt / tau) + epsilon)
       expect(state.stall.severity).toBeGreaterThanOrEqual(0)
       expect(state.stall.severity).toBeLessThanOrEqual(1)
-      // Limiter is still the legacy linear blend, intentionally not Phase 4 breakout.
-      expect(Math.abs(state.maneuver.blend - previous.maneuver.blend)).toBeLessThanOrEqual(dt / profile.maneuver.blendSeconds + epsilon)
+      // Legacy path grip has an exponential 99%-response time; debug limiter permission is separate.
+      expect(Math.abs(state.maneuver.blend - previous.maneuver.blend)).toBeLessThanOrEqual(1 - Math.exp(-Math.log(100) * dt / profile.maneuver.blendSeconds) + 1e-9)
     })
   })
 
@@ -89,7 +89,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
       const f = sample.state.flightForces!
       for (const axis of axes) {
         expect(f.ratesAfter[axis]).toBeCloseTo(f.ratesBefore[axis] + dt * (f.controller[axis] + f.tvc[axis] + f.naturalRestoring[axis] + f.naturalDamping[axis]), 12)
-        if (f.highAoa === 1) expect(Math.abs(f.legacyNeutralDamping[axis])).toBe(0)
+        if (f.highAoa === 1) expect(Math.abs(f.stabilityDamping[axis])).toBe(0)
       }
     }
     const first = trace.samples[1].state.flightForces!

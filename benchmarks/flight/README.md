@@ -1,37 +1,46 @@
-# Flight instrumentation and Phase 2 tuning
+# Flight instrumentation and Phase 3 allocation
 
-Phase 0 archives are preserved unchanged (`p3-powered-psm-1`). Phase 1 passed all
-339 tests including output equivalence before Phase 2 edits. Current physics is
-`p3-natural-aero-2.1`; see the [Phase 2 review fixes](../../docs/psm-phase2-review-fixes.md) for
-files, architecture, invariant results, migrated tests, deltas and review risks.
-Engine/allocation and automatic breakout remain deferred.
+Current physics: `p3-engine-allocation-3`. Phase 0 archives (`p3-powered-psm-1`)
+remain unchanged. See [the Phase 3 report](../../docs/psm-phase3-implementation.md)
+for ownership contracts, signed capacity, gain calibration, regressions and discrepancies.
+Automatic breakout/recovery migration remains deferred. Phase 2 B9/playtest acceptance
+is still pending; this implementation does not approve its provisional tuning.
 
 ```sh
 npm test                         # Hard invariants and the existing handling tests
 npm run typecheck
+npm run build                    # Runs hard tests first, then typecheck and production bundle
 npm run flight:bench             # Informational report; does not overwrite goldens
-FLIGHT_GOLDEN=update npm run flight:bench  # Overwrites archives: do not use for Phase 2 comparison
+FLIGHT_GOLDEN=update npm run flight:bench  # Overwrites archives: do not use for cross-phase comparison
 ```
 
-Reports are written to `out/report.json` and `out/report.md` (ignored by git).
-Phase 2 also writes `out/phase2.json` / `.md`, exact 120 Hz applied-force ledgers
-under `out/traces/`, and `out/legacy-*.json` for migrated old feel expectations.
-`phase1-metrics.json` is the captured pre-edit benchmark run. `phase2.report.ts`
-compares closed-loop pilots and open-loop archive inputs separately, runs restoring
-ablations/curve swaps, audits canonical incidence migration, and extends tail slide
-to 30 s without altering the original golden setup. `releaseSafety.ts` shares the review's
-C+pull+W for 5 s then neutral reproduction between CI and the report. Reports run W=0/1
-for up to 40 s; CI's unpowered window is 14 s to avoid a legitimate long-descent terrain
-collision. The 40 s powered case remains a hard lifecycle check.
+Reports are written to ignored `out/` files. `report.json`/`.md` retain standard
+scenario metrics. `phase3.json`/`.md` add directional capacities, post-stall pedal
+shares, no-TVC 3/8-second rotation, brake/burner, governor, 5 m/s path/work results,
+handoff dip, gain sweeps and Phase 2 deltas. `phase2-metrics.json` captures the clean
+pre-Phase-3 HEAD baseline with its commit/version. `phase1-metrics.json` remains the
+older baseline. `phase2.report.ts` continues archived-input replay, natural ablations,
+and the extended tail-slide and neutral-release traces; its name denotes the harness,
+not the physics version being executed. Reports have a 30 s timeout because their
+120 Hz diagnostic JSONL traces now include allocation, engine and work ledgers.
 
-`flightInstrumentation(...).lastStep` reports start-of-step flow and the **applied**
-controller, neutral subcomponent, natural restoring/damping, alpha/beta drag and
-legacy TVC correction. Main airflow fields still observe the end pose. The ledger
-is diagnostics only, not Phase 3 allocation; neutral is included in controller.
+`releaseSafety.ts` shares the five-second C+pull+W reproduction. Powered CI requires
+recovery before any terminal collision; it permits a recovered, unattended nose-down
+flight to reach terrain later in the 40 s observation. The unpowered 14 s liveness
+window remains hard. A future recovery assist must not be silently simulated here.
+
+`flightInstrumentation(...).lastStep` records the integrated start-of-step flow,
+authority budget, signed allocation, target/actual/coupled/lagging TVC torque, rate-servo
+damping, natural moments and translation work/cap. `budget` uses that same tick;
+main airflow fields observe the end pose. Actual acceleration reconstructs from
+`aero + floor + actualTvc + stabilityDamping + naturalRestoring + naturalDamping`.
+The TVC reservation is not added again. Its unresolved portion is kept in `unmet`.
+
 Numeric feel targets produce `ok`, `⚠ out` or `report`. B9 explicitly reports
 `pending playtest`; Phase 2 acceptance is not complete. `reportExpect` accepts only
 finite numeric feel values. Every migrated integration uses `stepLegacyFlight` for
-hard finite/quaternion/alive checks; phase/completion assertions are also hard.
+hard finite/quaternion/alive checks; phase lifecycle and detector-gate consistency
+remain hard. The old powered yaw completion target is a feel measurement.
 Unreached thresholds are JSON `null`, rendered as `—`, not zero or the track timeout.
 B8 reports incidence reduction over a benchmark-only 0.2 s no-assist window (>0).
 B10 warns for a missing or >4 s head drop. B20 compares against each aircraft's archived
@@ -53,14 +62,14 @@ uses the shared `observeAirflow` source (also behind `angleOfAttack`); beta is
 +Z. Incidence is the unsigned nose/velocity angle. Zero-speed angles report zero.
 `stall.aoaDeg` remains the runtime's **start-of-step** reading, intentionally separate.
 q is a dimensionless `(v / profile.aero.referenceSpeedMps)²` proxy (default 90 m/s).
-Thrust is acceleration (F/m), in m/s², recovered
-from the last engine output; it is not a new engine model.
+Thrust is acceleration (F/m), in m/s², read from the engine's actual output.
+`enginePower` is actual power in dry-thrust units, not the governor request.
 
-Legacy aero/floor/PSM are full-stick **rate ceilings before turn budget and High-G**,
-in rad/s internally and °/s in the HUD. They are not Phase 3 authority shares and must
-not be compared across phases as though their semantics were unchanged. Capacity
-uses full-travel geometry, not current nozzle travel or mixer gains. Differential yaw
-and roll are coupled, so the displayed axis maxima are not simultaneously additive.
+Legacy rate-ceiling overlay rows have been replaced by acceleration budgets and
+allocations. TVC command capacity has positive/negative bounds; actual coupled torque
+has a separate full-travel bound. Yaw/roll maxima are not simultaneously additive.
+`geometryCapacity()` is the explicitly raw, gain=1 archive reference helper;
+`tvcMomentCapacity()` is the runtime signed/gain-scaled contract.
 
 ## Harness and goldens
 
@@ -81,7 +90,7 @@ replay expands it for each substep. Each golden file contains:
 
 `replayGolden` merges recorded initial fields onto a fresh spawn so newly added fields
 survive. Arrays are replaced. It ignores profile versions by design; it does not use
-the public replay reader. **I4 output equivalence was explicitly retired in Phase 2**:
+the public replay reader. **I4 output equivalence was explicitly retired for Phase 2 and Phase 3**:
 natural aero is an intentional physics change. `goldenPolicy.ts` records the archive
 version and each reviewed retirement with a reason. An unknown physics/archive version
 fails with explicit regenerate/retire instructions; equality still enables output-leaf
@@ -113,7 +122,11 @@ The actual `GameRuntime` snapshot/public replay path has its own exact FPS check
 - Tracks stop on `alive = false`; reports include actual duration/alive status.
   Speed loss uses the existing arcade km/h conversion (5.4 × simulation m/s).
 
-## Spec discrepancies resolved against the unchanged runtime
+## Historical Phase 0 findings and Phase 3 resolution
+
+The measurements below describe the archived Phase 0 runtime, not current authority.
+The owner has since approved directional command capacities and separate coupled
+physical moment bounds; Phase 3 implements that resolution at scalar gain 2.
 
 1. §0.7 says legacy floor is positive at **45 m/s**, but §0.1 and `stepFlight` give
    `max(0, 0.12 - v/90)`. It is positive only below **10.8 m/s**, and zero at 45 and
@@ -131,11 +144,11 @@ The actual `GameRuntime` snapshot/public replay path has its own exact FPS check
    for **both** signed directions from the reviewed 0.5° full-grid sweep.
 
    Thus §0.1's max, §3's nose-up table and §0.7's ±1% agreement cannot all hold.
-   Phase 3 must resolve the capacity contract and explicitly choose the calibration
-   direction before tuning `thrustVectoring.gain` against the Cobra/Kulbit goldens.
+   Phase 3 resolves the capacity contract with positive/negative command capacities
+   before tuning `thrustVectoring.gain` against the Cobra/Kulbit goldens.
    Treating the displayed nose-down maximum as pull authority would overstate the
-   nose-up authority those maneuvers use. This fix round leaves the helper, geometry,
-   profiles and gains unchanged; no contract alternative has been selected.
+   nose-up authority those maneuvers use. Raw archive geometry helpers remain at gain 1;
+   the runtime contract includes the authored gain and directional signs explicitly.
 
 Both issues are recorded in the source-of-truth plan's **Errata — Rev. 3.1 candidates**
 ([plan](../../docs/psm-implementation-plan.md)), along with the F-22 yaw/budget issue:
@@ -149,7 +162,7 @@ The seeded I1/I11 fuzz retains four entry-speed seeds per aircraft (zero, near-z
 reverse and random), and adds four seeds at each of 120° and 170° incidence per aircraft.
 The added poses randomize the turn plane and forward speed, assert reverse flow at entry
 and after the first substep, and randomize commands every 0.25 s for 6 s.
-A fixed-flow fixture also runs the real `stepFlight` to convergence and compares body
-rates with the legacy overlay sum where the turn budget is inactive and TVC moments
-cancel (or thrust is zero). Its tolerance is numerical, not a feel target. Any future discovery of
-an existing physics bug must be reported separately, not fixed under Phase 0.
+The old fixed-flow legacy-overlay equality fixture has been superseded by Phase 3
+allocation conservation and actual-moment reconstruction checks. The new engine,
+allocation and path/work tests enforce ownership without retaining obsolete generic
+PSM rate expectations. See the implementation report for every migrated assertion.

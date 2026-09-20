@@ -9,7 +9,6 @@ import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { getFlightProfile } from '../src/game/flight/profile'
 import { createFlightRig } from '../src/render/aircraft/flightRig'
 import { stepThrustVectoring, tvcTargets, thrustForces } from '../src/game/flight/thrustVectoring'
-import { neutralCommand } from '../src/game/runtime/commands'
 import { su57ControlTargets } from '../src/render/aircraft/su57Rig'
 
 const flightProfile = getFlightProfile('su57').flight
@@ -175,7 +174,7 @@ describe('Su-57 shipped model articulation', () => {
     s.maneuver.phase = 'active'; s.rates.pitch = flightProfile.pitchRate; s.enginePower = 1
     rig(s, 0)
     expect(gimbal.quaternion.angleTo(initial)).toBeLessThan(1e-7)
-    stepThrustVectoring(s, { ...neutralCommand(0, s.id), pitch: 1 }, 1 / 120, 40, 90)
+    stepThrustVectoring(s, { left: 18, right: 18 }, 1 / 120)
     rig(s, 1 / 120)
     expect(gimbal.quaternion.angleTo(initial)).toBeGreaterThan(0)
     expect(gimbal.quaternion.angleTo(initial)).toBeLessThanOrEqual(36 / 120 * Math.PI / 180 + 1e-7)

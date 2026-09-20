@@ -42,12 +42,8 @@ export const maneuverDefaults: ManeuverProfile = {
   entryMax: 115,
   minAltitude: 150,
 
-  pitchRate: 2.6,
-  yawRate: 1.6,
-  rollRate: 2.1,
   exitSpeed: 135,
   blendSeconds: 0.6,
-  fullControlThrust: 24,
 
   pathResponse: 1.5,
   activeGrip: 0.08,

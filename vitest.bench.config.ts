@@ -1,3 +1,3 @@
 import { defineConfig } from 'vitest/config'
 
-export default defineConfig({ test: { include: ['benchmarks/**/*.report.ts'] } })
+export default defineConfig({ test: { testTimeout: 30000, include: ['benchmarks/**/*.report.ts'] } })

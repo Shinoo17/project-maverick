@@ -4,7 +4,7 @@
 import { createRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSessionSettings } from '../../app/sessionStore'
-import { getAircraft, modelUrl } from '../../content/aircraft'
+import { getAircraft, modelUrl, playgroundAircraft } from '../../content/aircraft'
 import { FlightInput } from '../../game/input/FlightInput'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import type { AircraftState } from '../../game/state/WorldState'
@@ -19,7 +19,8 @@ import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 export function FlightPage() {
   const { t } = useTranslation()
-  const { aircraftId } = useSessionSettings()
+  const { aircraftId: selectedAircraftId } = useSessionSettings()
+  const [aircraftId, setAircraftId] = useState(selectedAircraftId)
   const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(), preset: 'mouse', cameraMode: 'horizon', running: false, resetId: 0, timeScale: 1, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches }), [])
   const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
@@ -98,7 +99,7 @@ export function FlightPage() {
   const warning = flightWarning(telemetry)
   return <main className="flight-root">
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
-      {webgl && !failed && <SceneBoundary key={retry} fallback={null} onError={onError}><Suspense fallback={null}>
+      {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
         <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} onReady={onReady} onTelemetry={onTelemetry} />
       </Suspense></SceneBoundary>}
     </div>
@@ -125,6 +126,7 @@ export function FlightPage() {
       <label htmlFor="practice-preset">{t('practicePreset')}</label><select id="practice-preset" disabled={!ready} value={practicePreset} onChange={e => { const value = e.target.value as PracticePreset; setPracticePreset(value); resetFlight(value) }}>{(Object.keys(practiceSpawns) as PracticePreset[]).map(id => <option key={id} value={id}>{t(`spawn_${id}`)}</option>)}</select>
       <label htmlFor="practice-lesson">{t('practiceLesson')}</label><select id="practice-lesson" disabled={!ready} value={lesson} onChange={e => { const value = Number(e.target.value); setLesson(value); const spawn: PracticePreset = value === 6 ? 'cobra' : value === 5 ? 'recovery' : value === 4 ? 'highG' : 'free'; setPracticePreset(spawn); resetFlight(spawn) }}>{[0, 1, 2, 3, 4, 5, 6].map(id => <option key={id} value={id}>{t(lessonLabels[id])}</option>)}</select>
       <details className="flight-lab-settings"><summary>{t('flightLab')}</summary>
+        <label htmlFor="validation-aircraft">{t('labAircraft')}</label><select id="validation-aircraft" value={aircraftId} onChange={e => { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); setAircraftId(e.target.value) }}>{playgroundAircraft.map(entry => <option key={entry.id} value={entry.id}>{entry.designation} · {entry.name}</option>)}</select>
         <label htmlFor="practice-speed">{t('practiceSpeed')}</label><select id="practice-speed" value={timeScale} onChange={e => { session.timeScale = Number(e.target.value); setTimeScale(session.timeScale) }}>{[1, 0.5, 0.25].map(value => <option key={value} value={value}>×{value}</option>)}</select>
         <label><input type="checkbox" checked={lab} onChange={e => setLab(e.target.checked)} /> {t('showTelemetry')}</label>
         <label><input type="checkbox" checked={reducedMotion} onChange={e => { session.reducedMotion = e.target.checked; setReducedMotion(e.target.checked) }} /> {t('reducedFlightMotion')}</label>

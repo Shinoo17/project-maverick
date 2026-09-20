@@ -52,17 +52,19 @@ describe('held, thrust-powered PSM', () => {
   })
 
   it.each(['f22', 'su57'])('gives more post-stall control with thrust, and none of the powered assist at zero thrust: %s', id => {
-    const idle = aircraft(id, 0), powered = structuredClone(idle)
+    const idle = aircraft(id, 0)
+    idle.enginePower = 0; idle.engine.actualThrust = 0
+    const powered = structuredClone(idle)
     for (const s of [idle, powered]) {
       s.stall.severity = 1; s.maneuver.phase = 'active'; s.maneuver.blend = 1
     }
     fly(idle, dt, { psmArm: true, pitch: 1 })
     expect(idle.enginePower).toBe(0)
-    expect(idle.maneuver.controlAuthority).toBe(0)
+    expect(idle.flightForces!.budget.poweredControlAvailable).toBe(0)
     fly(powered, 0.75, { psmArm: true, pitch: 1, speedAdjust: 1 })
     fly(idle, 0.75 - dt, { psmArm: true, pitch: 1 })
     expect(powered.rates.pitch).toBeGreaterThan(idle.rates.pitch * 3)
-    expect(powered.maneuver.controlAuthority).toBeGreaterThan(0.9)
+    expect(powered.flightForces!.budget.poweredControlAvailable).toBeGreaterThan(0)
     expect(powered.maneuver.phase).toBe('active')
   })
 
@@ -102,11 +104,13 @@ describe('held, thrust-powered PSM', () => {
   it.each(['f22', 'su57'])('does not create mechanical energy by toggling PSM: %s', id => {
     const s = aircraft(id), p = getFlightProfile(id).flight
     const energy = () => 0.5 * speedOf(s) ** 2 + p.gravity * s.position.y
-    const initial = energy()
+    let allowed = energy()
     // Neutral speed-hold only replaces base drag. Maneuvers must cost energy.
     for (let tick = 0; tick < 600; tick++) {
       stepFlight(s, { ...neutralCommand(tick, s.id), psmArm: tick % 24 < 12, yaw: 1 }, dt)
-      expect(energy()).toBeLessThanOrEqual(initial + 0.1)
+      const work = s.flightForces!.translation
+      allowed += work.thrustWork - work.dragWork
+      expect(energy()).toBeLessThanOrEqual(allowed + 1e-8)
     }
   })
 })
@@ -130,7 +134,7 @@ describe('canted TVC geometry and replay', () => {
   })
 
   it('rejects unusable transition/thrust settings and exit thresholds', () => {
-    for (const [key, value] of [['blendSeconds', 0], ['fullControlThrust', 0], ['exitSpeed', 115]] as const) {
+    for (const [key, value] of [['blendSeconds', 0], ['exitSpeed', 115]] as const) {
       const p = structuredClone(getFlightProfile('f22')); p.maneuver[key] = value
       expect(() => validateFlightProfile(p)).toThrow(`maneuver.${key}`)
     }

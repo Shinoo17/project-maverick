@@ -22,9 +22,23 @@ function nonnegative(value: number, path: string) {
 
 export function validateFlightProfile(profile: AircraftFlightProfile, path = 'flightProfile') {
   validateFinite(profile, path)
-  const { aero, flight, stall, maneuver, thrustVectoring } = profile
+  const { aero, flight, stall, maneuver, thrustVectoring, engine } = profile
+  for (const key of ['spoolUpResponse', 'spoolDownResponse'] as const) {
+    if (!Number.isFinite(engine?.[key])) throw new Error(`${path}.engine.${key}: expected finite number`)
+    positive(engine[key], `${path}.engine.${key}`)
+  }
 
-  for (const key of ['referenceSpeedMps', 'highSpeedMps'] as const) {
+  for (const axis of ['pitch', 'yaw', 'roll'] as const) {
+    const values = {
+      [`aero.controlAcceleration.${axis}`]: aero.controlAcceleration?.[axis],
+      [`arcadeControlFloor.acceleration.${axis}`]: profile.arcadeControlFloor?.acceleration?.[axis],
+      [`arcadeControlFloor.maxRate.${axis}`]: profile.arcadeControlFloor?.maxRate?.[axis],
+    }
+    for (const [key, value] of Object.entries(values)) {
+      if (!Number.isFinite(value) || value < 0) throw new Error(`${path}.${key}: expected finite nonnegative number`)
+    }
+  }
+  for (const key of ['referenceSpeedMps', 'highSpeedMps', 'pathRateFloorMps'] as const) {
     if (!Number.isFinite(aero?.[key])) throw new Error(`${path}.aero.${key}: expected finite number`)
     positive(aero[key], `${path}.aero.${key}`)
   }
@@ -38,6 +52,9 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   }
   if (aero.alphaCriticalDeg <= aero.alphaNormalDeg) {
     throw new Error(`${path}.aero.alphaCriticalDeg: must exceed alphaNormalDeg`)
+  }
+  if (!Number.isFinite(aero.maxControllableAlphaDeg) || aero.maxControllableAlphaDeg < aero.alphaNormalDeg || aero.maxControllableAlphaDeg > 180) {
+    throw new Error(`${path}.aero.maxControllableAlphaDeg: expected alphaNormalDeg..180`)
   }
   for (const axis of ['pitch', 'yaw'] as const) {
     const curve = aero.restoring?.[axis], curvePath = `${path}.aero.restoring.${axis}`
@@ -104,7 +121,6 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   positive(maneuver.burnerSeconds, `${path}.maneuver.burnerSeconds`)
   positive(maneuver.burnerRecharge, `${path}.maneuver.burnerRecharge`)
   positive(maneuver.blendSeconds, `${path}.maneuver.blendSeconds`)
-  positive(maneuver.fullControlThrust, `${path}.maneuver.fullControlThrust`)
   for (const [key, value] of Object.entries(maneuver)) {
     if (typeof value === 'number') nonnegative(value, `${path}.maneuver.${key}`)
   }
@@ -121,10 +137,16 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   }
 
   if (thrustVectoring) {
-    for (const [axis, value] of Object.entries(thrustVectoring.inertia)) {
+    for (const axis of ['pitch', 'yaw', 'roll'] as const) {
+      const value = thrustVectoring.inertia?.[axis]
+      if (!Number.isFinite(value)) throw new Error(`${path}.thrustVectoring.inertia.${axis}: expected finite number`)
       positive(value, `${path}.thrustVectoring.inertia.${axis}`)
     }
-    for (const key of ['maxAngle', 'rollGain', 'yawGain', 'cantDeg', 'actuatorRate', 'actuatorResponse', 'authorityResponse', 'spacing', 'lipArm'] as const) {
+    for (const key of ['pivotX', 'height'] as const) {
+      if (!Number.isFinite(thrustVectoring[key])) throw new Error(`${path}.thrustVectoring.${key}: expected finite number`)
+    }
+    positive(thrustVectoring.maxAngle, `${path}.thrustVectoring.maxAngle`)
+    for (const key of ['maxAngle', 'rollGain', 'yawGain', 'cantDeg', 'actuatorRate', 'actuatorResponse', 'gain', 'spacing', 'lipArm'] as const) {
       if (!Number.isFinite(thrustVectoring[key])) throw new Error(`${path}.thrustVectoring.${key}: expected finite number`)
       nonnegative(thrustVectoring[key], `${path}.thrustVectoring.${key}`)
     }

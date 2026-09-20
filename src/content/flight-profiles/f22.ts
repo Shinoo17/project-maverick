@@ -8,7 +8,7 @@ export const f22TvcProfile: ThrustVectoringProfile = {
   cantDeg: 0,
   actuatorRate: 45,
   actuatorResponse: 7,
-  authorityResponse: 5,
+  gain: 2,
 
   pivotX: -6.3824,
   height: -1.0373,
@@ -18,8 +18,13 @@ export const f22TvcProfile: ThrustVectoringProfile = {
 }
 
 export const f22Profile: AircraftFlightProfile = {
+  arcadeControlFloor: { acceleration: { pitch: 0.25, yaw: 0.18, roll: 0.3 }, maxRate: { pitch: 0.2, yaw: 0.15, roll: 0.3 } },
+  engine: { spoolUpResponse: 4, spoolDownResponse: 6 },
   aero: {
     ...aeroDefaults,
+    maxControllableAlphaDeg: 180,
+    controlAcceleration: { pitch: 4.75, yaw: 2.1, roll: 10.5 },
+    pathRateFloorMps: 40,
     // Arcade stability: predictable high-incidence return; no powered authority.
     restoring: { pitch: [{ incidenceDeg: 0, stiffness: 1.2 }, { incidenceDeg: 20, stiffness: 1.2 }, { incidenceDeg: 45, stiffness: 1.0 }, { incidenceDeg: 90, stiffness: 0.65 }, { incidenceDeg: 180, stiffness: 0.45 }], yaw: [{ incidenceDeg: 0, stiffness: 0.9 }, { incidenceDeg: 20, stiffness: 0.9 }, { incidenceDeg: 45, stiffness: 0.75 }, { incidenceDeg: 90, stiffness: 0.5 }, { incidenceDeg: 180, stiffness: 0.35 }] },
     damping: { attached: { pitch: 0.1, yaw: 0.12, roll: 0.08 }, separated: { pitch: 0.65, yaw: 0.55, roll: 0.35 } },
@@ -58,9 +63,6 @@ export const f22Profile: AircraftFlightProfile = {
     entryMin: 65,
     entryMax: 115,
     minAltitude: 150,
-    pitchRate: 2.6,
-    yawRate: 1.6,
-    rollRate: 2.1,
     recoveryAcceleration: 70,
   },
   thrustVectoring: f22TvcProfile,

@@ -24,23 +24,7 @@ describe('P1 flight acceptance', () => {
     expect(results[0].tick).toBe(600); expect(results[1]).toEqual(results[0]); expect(results[2]).toEqual(results[0])
     expect(results[0].aircraft[0].alive).toBe(true)
   })
-  it('accelerates and decelerates directly, coasts briefly on release, then holds the reached speed', () => {
-    for (const sign of [1, -1]) {
-      const runtime = run(60, 1, () => ({ speedAdjust: sign }))
-      const speed = () => new Vector3().copy(runtime.snapshot().aircraft[0].velocity).length()
-      const held = speed()
-      expect((held - 130) * sign).toBeGreaterThan(18)
-      for (let i = 0; i < 120; i++) runtime.advance(1 / 60)
-      const settled = speed()
-      expect((settled - held) * sign).toBeGreaterThan(1)
-      expect((settled - held) * sign).toBeLessThan(5)
-      for (let i = 0; i < 120; i++) runtime.advance(1 / 60)
-      expect(speed()).toBeCloseTo(settled, 6)
-      expect(runtime.snapshot().aircraft[0].speedDrive).toBe(0)
-    }
-    expect(new Vector3().copy(run(60, 8, () => ({ speedAdjust: 1 })).snapshot().aircraft[0].velocity).length()).toBeCloseTo(200)
-    expect(new Vector3().copy(run(60, 8, () => ({ speedAdjust: -1 })).snapshot().aircraft[0].velocity).length()).toBeCloseTo(65)
-  })
+  // Instant-thrust numeric expectations moved to legacySpeed.report.ts for Phase 3 spool.
   it('maps canonical axes correctly and preserves nose/path separation', () => {
     const pitch = run(60, 1, () => ({ pitch: 1 })).snapshot().aircraft[0]
     const forward = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(pitch.orientation))

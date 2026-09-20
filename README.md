@@ -93,9 +93,15 @@ Source GLBs are unchanged. The registry excludes F-22's two detached bay fitting
 
 The animation rest-pose/static-track preparation is adapted from `example/F22`, under its MIT license. See [third-party notice](THIRD_PARTY_NOTICES.md). Model provenance and distribution rights remain with the supplied assets; the code license is not a model license.
 
-PSM uses held **C** with thrust-powered pitch/yaw/roll assistance; it has no active
-time limit or cooldown. Use **W** for control thrust, **X** for independent airbraking,
-and **Shift** for afterburner (also available during PSM). Both F-22 and Su-57 have
-simulation-owned TVC that remains usable in stall without C. Su-57 uses an arcade
-canted-nozzle approximation. Tune profiles and inspect Flight Lab using
-[the flight profile guide](docs/flight-profiles.md).
+Phase 3 uses **C** to open debug limiter permission. Angular response is allocated
+from physical aero, geometry/thrust-based TVC and a separate low-speed control floor.
+There is no generic powered PSM rate envelope. **W** requests dry power, **Shift**
+requests afterburner and **X** adds drag independently; actual engine power spools.
+The governor trims only base drag. F-22 has no commanded yaw TVC; Su-57 has coupled
+yaw/roll TVC. Legacy labels/path grip remain until Phase 4; automatic breakout is not implemented.
+
+Flight Lab shows requested/actual power, signed capacity, aero/TVC/floor/unmet allocation,
+actual and coupled torque, actuator lag, nozzle targets and the controlled path-rate cap.
+Its aircraft selector includes the Playground-only `f22-notvc` validation variant.
+See the [Phase 3 implementation and validation report](docs/psm-phase3-implementation.md)
+for all changed files, measured capacities, invariant results, benchmarks and known limitations.
