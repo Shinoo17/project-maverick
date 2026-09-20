@@ -4,6 +4,7 @@ import { Quaternion, Vector3 } from 'three'
 import { createAircraft, runTrack, runScenario, scenarioNames } from '../../benchmarks/flight/harness'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { computeBudget } from '../../src/game/flight/authority'
+import { aeroFlowEffectiveness } from '../../src/game/flight/aerodynamics'
 import { observeAirflow } from '../../src/game/flight/airflow'
 import { poweredThrustForces, tvcMomentCapacity, solveTvcAngles } from '../../src/game/flight/thrustVectoring'
 import { axes } from '../../src/game/flight/allocation'
@@ -92,12 +93,12 @@ it('reachable nozzle solve does not treat three independent torque ceilings as t
 })
 it('I16: budget ignores command and intent ignores aircraft capability/governor trim', () => {
   const state = createAircraft('f22'), profile = getFlightProfile('f22'), flow = observeAirflow(state, profile)
-  const reference = computeBudget(flow, 0.7, 25, profile)
+  const reference = computeBudget(flow, aeroFlowEffectiveness(flow, profile.aero), 25, profile)
   const input = { ...neutralCommand(0, state.id), pitch: 1, afterburner: true, airbrake: true }
   const expected = readIntent(input, createPilotIntent(), 1 / 120, 2)
   for (const id of ids) {
     state.aircraftId = id; state.engine.requestedPower = 100; state.intent = expected
-    expect(computeBudget(flow, 0.7, 25, profile)).toEqual(reference)
+    expect(computeBudget(flow, aeroFlowEffectiveness(flow, profile.aero), 25, profile)).toEqual(reference)
     expect(readIntent(input, createPilotIntent(), 1 / 120, 2)).toEqual(expected)
   }
   const source = readFileSync(new URL('../../src/game/flight/authority.ts', import.meta.url), 'utf8')

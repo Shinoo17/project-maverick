@@ -17,7 +17,8 @@ FLIGHT_GOLDEN=update npm run flight:bench  # Overwrites archives: do not use for
 Reports are written to ignored `out/` files. `report.json`/`.md` retain standard
 scenario metrics. `phase3.json`/`.md` add directional capacities, post-stall pedal
 shares, no-TVC 3/8-second rotation, brake/burner, governor, 5 m/s path/work results,
-handoff dip, gain sweeps and Phase 2 deltas. `phase2-metrics.json` captures the clean
+handoff dips at low and substantial q, gain sweeps (including Cobra heading change)
+and every Phase 2 scenario's deltas. `phase2-metrics.json` captures the clean
 pre-Phase-3 HEAD baseline with its commit/version. `phase1-metrics.json` remains the
 older baseline. `phase2.report.ts` continues archived-input replay, natural ablations,
 and the extended tail-slide and neutral-release traces; its name denotes the harness,

@@ -30,6 +30,7 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
 
   for (const axis of ['pitch', 'yaw', 'roll'] as const) {
     const values = {
+      [`flight.minRateTarget.${axis}`]: flight.minRateTarget?.[axis],
       [`aero.controlAcceleration.${axis}`]: aero.controlAcceleration?.[axis],
       [`arcadeControlFloor.acceleration.${axis}`]: profile.arcadeControlFloor?.acceleration?.[axis],
       [`arcadeControlFloor.maxRate.${axis}`]: profile.arcadeControlFloor?.maxRate?.[axis],
@@ -63,6 +64,19 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
     for (const [i, knot] of curve.entries()) {
       if (!Number.isFinite(knot?.incidenceDeg) || knot.incidenceDeg <= previous || knot.incidenceDeg > 180
         || !Number.isFinite(knot?.stiffness) || knot.stiffness < 0) throw new Error(`${curvePath}.${i}: invalid incidence/stiffness`)
+      previous = knot.incidenceDeg
+    }
+    if (curve[0].incidenceDeg !== 0 || curve.at(-1)!.incidenceDeg !== 180) throw new Error(`${curvePath}: must span 0..180 degrees`)
+  }
+  for (const axis of ['pitch', 'yaw', 'roll'] as const) {
+    const curve = aero.controlEffectiveness?.[axis], curvePath = `${path}.aero.controlEffectiveness.${axis}`
+    if (!Array.isArray(curve) || curve.length < 2) throw new Error(`${curvePath}: expected at least two knots`)
+    let previous = -1
+    for (const [i, knot] of curve.entries()) {
+      if (!Number.isFinite(knot?.incidenceDeg) || knot.incidenceDeg <= previous || knot.incidenceDeg > 180
+        || !Number.isFinite(knot?.effectiveness) || knot.effectiveness < 0 || knot.effectiveness > 1) {
+        throw new Error(`${curvePath}.${i}: invalid incidence/effectiveness`)
+      }
       previous = knot.incidenceDeg
     }
     if (curve[0].incidenceDeg !== 0 || curve.at(-1)!.incidenceDeg !== 180) throw new Error(`${curvePath}: must span 0..180 degrees`)
@@ -102,18 +116,18 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
     throw new Error(`${path}.flight.turnRateReserve: expected fraction between 0 and 1`)
   }
 
-  for (const key of ['stallSpeedKph', 'recoverySpeedKph', 'criticalAoaDeg', 'recoveryAoaDeg',
-    'controlAuthority', 'dragMultiplier', 'entrySeconds', 'recoverySeconds'] as const) {
+  for (const key of ['stallSpeedKph', 'separationAttachedSpeedKph', 'criticalAoaDeg', 'separationAttachedAoaDeg',
+    'controlAuthority', 'dragMultiplier', 'separationEntrySeconds', 'separationRecoverySeconds'] as const) {
     if (!Number.isFinite(stall[key])) throw new Error(`${path}.stall.${key}: expected finite number`)
-    if (key === 'controlAuthority' || key === 'recoveryAoaDeg') nonnegative(stall[key], `${path}.stall.${key}`)
+    if (key === 'controlAuthority' || key === 'separationAttachedAoaDeg') nonnegative(stall[key], `${path}.stall.${key}`)
     else positive(stall[key], `${path}.stall.${key}`)
   }
-  if (stall.recoverySpeedKph <= stall.stallSpeedKph || stall.recoverySpeedKph > flight.topSpeedKph) {
-    throw new Error(`${path}.stall.recoverySpeedKph: must exceed stallSpeedKph and not exceed topSpeedKph`)
+  if (stall.separationAttachedSpeedKph <= stall.stallSpeedKph || stall.separationAttachedSpeedKph > flight.topSpeedKph) {
+    throw new Error(`${path}.stall.separationAttachedSpeedKph: must exceed stallSpeedKph and not exceed topSpeedKph`)
   }
   if (stall.criticalAoaDeg > 180) throw new Error(`${path}.stall.criticalAoaDeg: must not exceed 180`)
-  if (stall.recoveryAoaDeg >= stall.criticalAoaDeg) {
-    throw new Error(`${path}.stall.recoveryAoaDeg: must be below criticalAoaDeg`)
+  if (stall.separationAttachedAoaDeg >= stall.criticalAoaDeg) {
+    throw new Error(`${path}.stall.separationAttachedAoaDeg: must be below criticalAoaDeg`)
   }
   if (stall.controlAuthority > 1) throw new Error(`${path}.stall.controlAuthority: expected fraction between 0 and 1`)
   if (stall.dragMultiplier < 1) throw new Error(`${path}.stall.dragMultiplier: must be at least 1`)
@@ -146,6 +160,7 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
       if (!Number.isFinite(thrustVectoring[key])) throw new Error(`${path}.thrustVectoring.${key}: expected finite number`)
     }
     positive(thrustVectoring.maxAngle, `${path}.thrustVectoring.maxAngle`)
+    positive(thrustVectoring.gain, `${path}.thrustVectoring.gain`)
     for (const key of ['maxAngle', 'rollGain', 'yawGain', 'cantDeg', 'actuatorRate', 'actuatorResponse', 'gain', 'spacing', 'lipArm'] as const) {
       if (!Number.isFinite(thrustVectoring[key])) throw new Error(`${path}.thrustVectoring.${key}: expected finite number`)
       nonnegative(thrustVectoring[key], `${path}.thrustVectoring.${key}`)

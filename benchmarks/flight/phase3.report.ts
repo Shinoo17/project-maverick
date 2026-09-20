@@ -21,8 +21,19 @@ const peak = (trace: Trace, value: (state: Trace['initialState']) => number) => 
 const metric = (trace: Trace, id: string) => measure(trace).find(row => row.id === id)?.value ?? null
 const summary = (trace: Trace) => ({
   peakAoa: metric(trace, 'B1.cobra.peakAoa'), timeTo90: metric(trace, 'B2.cobra.timeTo90'),
+  headingChange: metric(trace, 'B4.cobra.headingChange'),
   time360: metric(trace, 'B5.kulbit.time360'),
 })
+const handoffMetrics = (trace: Trace) => {
+  const onset = trace.samples.findIndex(sample => (sample.state.flightForces?.allocation.tvc.pitch ?? 0) > 1e-6)
+  if (onset < 0) return { rateDipRadPerSec: null, onsetSeconds: null, preOnsetAero: null, preOnsetQ: null }
+  const before = trace.samples.slice(Math.max(0, onset - 24), onset + 1)
+  const after = trace.samples.slice(onset, onset + 61)
+  const prior = trace.samples[Math.max(0, onset - 1)].state.flightForces
+  return { rateDipRadPerSec: Math.max(0, Math.max(...before.map(s => s.state.rates.pitch)) - Math.min(...after.map(s => s.state.rates.pitch))),
+    onsetSeconds: trace.samples[onset].time, preOnsetAero: prior?.allocation.aero.pitch ?? null,
+    preOnsetQ: prior?.airflowStart.dynamicPressure ?? null }
+}
 
 it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression deltas', () => {
   const results = ['f22', 'su57', 'f22-notvc'].map(id => {
@@ -37,6 +48,10 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
     const handoff = pull.samples.findIndex(sample => (sample.state.flightForces?.allocation.tvc.pitch ?? 0) > 1e-6)
     const before = handoff < 0 ? null : Math.max(...pull.samples.slice(Math.max(0, handoff - 24), handoff + 1).map(sample => sample.state.rates.pitch))
     const after = handoff < 0 ? null : Math.min(...pull.samples.slice(handoff, handoff + 61).map(sample => sample.state.rates.pitch))
+    // Establish attached aerodynamic control before opening debug permission.
+    // This probes a substantial aero -> TVC handoff, unlike the low-q pull.
+    const moderate = createAircraft(id); moderate.position.y = 4000; moderate.velocity = { x: 140, y: 0, z: 0 }
+    const moderateTrace = runTrack(moderate, 4, (_state, time) => ({ pitch: 1, psmArm: time >= 1, speedAdjust: 1, afterburner: true }))
     const brakeState = highSeed(id, 70, 80)
     brakeState.enginePower = 65 / 50; brakeState.engine.actualThrust = 65; brakeState.speedDrive = 1; brakeState.maneuver.airbrake = 1
     const brake = runTrack(brakeState, 0.5, () => ({ pitch: 1, psmArm: true, speedAdjust: 1, afterburner: true, airbrake: true }))
@@ -57,6 +72,7 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
         finalYawRateDeg: pedal.samples.at(-1)!.state.rates.yaw * 180 / Math.PI, meanAllocationRadPerSec2: shares },
       handoff: { rateDipRadPerSec: before === null ? null : Math.max(0, before - after!), onsetSeconds: handoff < 0 ? null : pull.samples[handoff].time,
         window: 'pre-onset peak over 0.2 s minus minimum over following 0.5 s' },
+      moderateHandoff: { ...handoffMetrics(moderateTrace), seed: '140 m/s attached pull, C opens at 1 s, W+Shift held' },
       limiterPull: { rotation3s: pull.samples[360].noseRotationDeg, rotation8s: pull.samples.at(-1)!.noseRotationDeg,
         time180: firstTime(pull.samples, s => s.noseRotationDeg >= 180), time360: firstTime(pull.samples, s => s.noseRotationDeg >= 360) },
       brakeBurner: { speedLossMps: speed(brakeState) - speed(brake.samples.at(-1)!.state), initialIncidence: 80,
@@ -86,7 +102,7 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
       })
     } finally { p.gain = original }
   })
-  const regression = phase2.results.flatMap(aircraft => aircraft.scenarios.filter(s => ['hardTurn900', 'fullStick500', 'release45', 'tailSlide', 'sideslip60'].includes(s.scenario)).flatMap(scenario => {
+  const regression = phase2.results.flatMap(aircraft => aircraft.scenarios.flatMap(scenario => {
     const rows = measure(runScenario(scenario.scenario as ScenarioName, aircraft.aircraftId))
     return rows.map(current => { const prior = scenario.metrics.find(row => row.id === current.id)?.value ?? null
       return { id: aircraft.aircraftId, scenario: scenario.scenario, metric: current.id, phase2: prior, phase3: current.value,
@@ -106,8 +122,11 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
   const md = [`# Phase 3 — ${flightProfileVersion}`, '', 'Tuning measurements are informational. See phase3.json for capacities, allocation shares, work/cap diagnostics and full regression deltas.', '',
     '| Aircraft | Gain | Pedal peak yaw °/s | Pull rotation at 3s / 8s | Time 180° / 360° | Handoff dip rad/s | Brake/burner speed loss m/s |', '|---|---:|---:|---:|---:|---:|---:|']
   for (const r of results) md.push(`| ${r.id} | ${r.gain} | ${r.pedal.peakYawRateDeg.toFixed(3)} | ${r.limiterPull.rotation3s.toFixed(3)} / ${r.limiterPull.rotation8s.toFixed(3)} | ${r.limiterPull.time180 ?? '—'} / ${r.limiterPull.time360 ?? '—'} | ${r.handoff.rateDipRadPerSec ?? '—'} | ${r.brakeBurner.speedLossMps.toFixed(3)} |`)
-  md.push('', `B11 peak-yaw ratio F-22/Su-57 = ${yawRatio.toFixed(4)} (target ≤0.5).`, 'B19 no-TVC rotation at 3 s target <180°; B18 is report-only.', '', '## Gain calibration', '', '| Aircraft | Gain | Cobra peak ° | Cobra time 90° | Kulbit time 360° | Pitch rate at 0.2 s |', '|---|---:|---:|---:|---:|---:|')
-  for (const c of calibration) md.push(`| ${c.id} | ${c.gain}${c.selected ? ' (selected)' : ''} | ${c.cobra.peakAoa?.toFixed(3)} | ${c.cobra.timeTo90 ?? '—'} | ${c.kulbit.time360 ?? '—'} | ${c.initialPitchRateAt02s.toFixed(4)} |`)
+  md.push('', `B11 peak-yaw ratio F-22/Su-57 = ${yawRatio.toFixed(4)} (target ≤0.5).`, 'B19 no-TVC rotation at 3 s target <180°; B18 is report-only.', '',
+    '## Moderate-q handoff', '', '| Aircraft | Onset s | Pre-onset q | Pre-onset aero rad/s² | Dip rad/s |', '|---|---:|---:|---:|---:|')
+  for (const r of results) md.push(`| ${r.id} | ${r.moderateHandoff.onsetSeconds ?? '—'} | ${r.moderateHandoff.preOnsetQ?.toFixed(3) ?? '—'} | ${r.moderateHandoff.preOnsetAero?.toFixed(3) ?? '—'} | ${r.moderateHandoff.rateDipRadPerSec?.toFixed(4) ?? '—'} |`)
+  md.push('', '## Gain calibration', '', '| Aircraft | Gain | Cobra peak ° | Cobra time 90° | Cobra heading ° (target ≤20) | Kulbit time 360° | Pitch rate at 0.2 s |', '|---|---:|---:|---:|---:|---:|---:|')
+  for (const c of calibration) md.push(`| ${c.id} | ${c.gain}${c.selected ? ' (selected)' : ''} | ${c.cobra.peakAoa?.toFixed(3)} | ${c.cobra.timeTo90 ?? '—'} | ${c.cobra.headingChange?.toFixed(3)} | ${c.kulbit.time360 ?? '—'} | ${c.initialPitchRateAt02s.toFixed(4)} |`)
   md.push('', '## Phase 2 regression', '', '| Aircraft | Metric | Phase 2 | Phase 3 | Delta |', '|---|---|---:|---:|---:|')
   for (const r of regression) md.push(`| ${r.id} | ${r.metric} | ${r.phase2?.toFixed(4) ?? '—'} | ${r.phase3?.toFixed(4) ?? '—'} | ${r.delta?.toFixed(4) ?? '—'} |`)
   writeFileSync(new URL('phase3.md', directory), md.join('\n') + '\n')

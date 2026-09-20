@@ -32,7 +32,8 @@ export const f22Profile: AircraftFlightProfile = {
   },
   flight: {
     ...flightDefaults,
-    neutralRollResponse: 9,
+    neutralRollResponse: 9.1,
+    minRateTarget: { pitch: 0.2, yaw: 0.15, roll: 0.3 },
 
     // Speed and energy.
     minPoweredMps: 65,
@@ -53,9 +54,9 @@ export const f22Profile: AircraftFlightProfile = {
   stall: {
     ...stallDefaults,
     stallSpeedKph: 300,
-    recoverySpeedKph: 350,
+    separationAttachedSpeedKph: 350,
     criticalAoaDeg: 30,
-    recoveryAoaDeg: 20,
+    separationAttachedAoaDeg: 20,
   },
   maneuver: {
     ...maneuverDefaults,

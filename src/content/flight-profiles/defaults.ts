@@ -1,8 +1,20 @@
 import type { AeroProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
 
-export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg'> = {
+export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg' | 'controlEffectiveness'> = {
   referenceSpeedMps: 90,
   highSpeedMps: 160,
+  // Control-surface effectiveness versus unsigned incidence. Attached flow keeps
+  // full effectiveness to 25°, deliberately leaving ordinary flight unchanged;
+  // past that the shape follows the forward-flow projection (cos incidence) down
+  // to an authored stalled residual, so pure sideslip loses surface authority
+  // exactly like pure alpha. One shape for all three axes and all airframes on
+  // purpose: per-axis and per-aircraft differentiation is Phase 8 tuning, not an
+  // architecture decision. Provisional until that playtest.
+  controlEffectiveness: {
+    pitch: [{ incidenceDeg: 0, effectiveness: 1 }, { incidenceDeg: 25, effectiveness: 1 }, { incidenceDeg: 45, effectiveness: 0.71 }, { incidenceDeg: 60, effectiveness: 0.5 }, { incidenceDeg: 90, effectiveness: 0.15 }, { incidenceDeg: 120, effectiveness: 0.09 }, { incidenceDeg: 180, effectiveness: 0.05 }],
+    yaw: [{ incidenceDeg: 0, effectiveness: 1 }, { incidenceDeg: 25, effectiveness: 1 }, { incidenceDeg: 45, effectiveness: 0.71 }, { incidenceDeg: 60, effectiveness: 0.5 }, { incidenceDeg: 90, effectiveness: 0.15 }, { incidenceDeg: 120, effectiveness: 0.09 }, { incidenceDeg: 180, effectiveness: 0.05 }],
+    roll: [{ incidenceDeg: 0, effectiveness: 1 }, { incidenceDeg: 25, effectiveness: 1 }, { incidenceDeg: 45, effectiveness: 0.71 }, { incidenceDeg: 60, effectiveness: 0.5 }, { incidenceDeg: 90, effectiveness: 0.15 }, { incidenceDeg: 120, effectiveness: 0.09 }, { incidenceDeg: 180, effectiveness: 0.05 }],
+  },
   // Neutral-assist fade band. Retained 20–30° starting tune; human playtest
   // remains pending. Independent of the continuous separation band.
   alphaNormalDeg: 20,
@@ -30,8 +42,8 @@ export const flightDefaults = {
 export const stallDefaults = {
   controlAuthority: 0.25,
   dragMultiplier: 1.8,
-  entrySeconds: 0.4,
-  recoverySeconds: 1.2,
+  separationEntrySeconds: 0.4,
+  separationRecoverySeconds: 1.2,
 } satisfies Partial<StallProfile>
 
 // New aircraft must opt into PSM. The remaining PSM values are a tuning baseline;

@@ -59,7 +59,7 @@ describe('stall envelope', () => {
       const s = pose(speed, angle), p = getFlightProfile(s.aircraftId).stall
       stepStall(s, p, observeAirflow(s, getFlightProfile(s.aircraftId)), dt)
       expect(s.stall.cause).toBe(cause)
-      expect(s.stall.severity).toBeCloseTo(separationTarget(observeAirflow(s, getFlightProfile(s.aircraftId)), p).target * (1 - Math.exp(-dt / p.entrySeconds)), 14)
+      expect(s.stall.severity).toBeCloseTo(separationTarget(observeAirflow(s, getFlightProfile(s.aircraftId)), p).target * (1 - Math.exp(-dt / p.separationEntrySeconds)), 14)
       for (let tick = 1; tick < 60; tick++) stepStall(s, p, observeAirflow(s, getFlightProfile(s.aircraftId)), dt)
       expect(s.stall.severity).toBeGreaterThan(0)
     })
@@ -77,7 +77,7 @@ describe('stall envelope', () => {
     expect(split.stall.severity).toBeCloseTo(s.stall.severity, 14)
     s.stall.severity = 1
     stepStall(s, p.stall, flow, dt)
-    expect(s.stall.severity).toBeCloseTo(1 + (target - 1) * (1 - Math.exp(-dt / p.stall.recoverySeconds)), 14)
+    expect(s.stall.severity).toBeCloseTo(1 + (target - 1) * (1 - Math.exp(-dt / p.stall.separationRecoverySeconds)), 14)
   })
 
   it('does not advance stalled or stopped simulation state with a nonpositive step', () => {
@@ -134,7 +134,7 @@ describe('forgiving stall flight', () => {
 describe('stall configuration and lifecycle', () => {
   it('uses each aircraft envelope and rejects overrides below its recovery speed', () => {
     const p = getFlightProfile('f22'), previous = p.stall
-    p.stall = { ...previous, stallSpeedKph: 500, recoverySpeedKph: 550 }
+    p.stall = { ...previous, stallSpeedKph: 500, separationAttachedSpeedKph: 550 }
     try {
       const tuned = pose(450), other = pose(450, 0, 'su57')
       fly(tuned, 0.5); fly(other, 0.5)
@@ -147,10 +147,10 @@ describe('stall configuration and lifecycle', () => {
   })
 
   it.each([
-    ['stallSpeedKph', 0], ['stallSpeedKph', NaN], ['recoverySpeedKph', 290], ['recoverySpeedKph', 2000],
-    ['criticalAoaDeg', 181], ['criticalAoaDeg', 0], ['recoveryAoaDeg', 30], ['recoveryAoaDeg', -1],
+    ['stallSpeedKph', 0], ['stallSpeedKph', NaN], ['separationAttachedSpeedKph', 290], ['separationAttachedSpeedKph', 2000],
+    ['criticalAoaDeg', 181], ['criticalAoaDeg', 0], ['separationAttachedAoaDeg', 30], ['separationAttachedAoaDeg', -1],
     ['controlAuthority', -0.1], ['controlAuthority', 1.1], ['dragMultiplier', 0.9],
-    ['entrySeconds', 0], ['recoverySeconds', Infinity], ['recoverySeconds', 0],
+    ['separationEntrySeconds', 0], ['separationRecoverySeconds', Infinity], ['separationRecoverySeconds', 0],
   ] as const)('rejects invalid %s = %s with an actionable path', (key, value) => {
     const p = structuredClone(getFlightProfile('f22'))
     p.stall[key] = value

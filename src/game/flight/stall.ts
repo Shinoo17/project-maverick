@@ -22,8 +22,8 @@ export const createStallState = (): StallState => ({ severity: 0, cause: 'none',
  * Low-speed loss of lift/control is retained without inventing aerodynamic force at q=0.
  */
 export function separationTarget(flow: AirflowState, profile: StallProfile) {
-  const lowSpeed = 1 - MathUtils.smoothstep(arcadeSpeed(flow.airspeed), profile.stallSpeedKph, profile.recoverySpeedKph)
-  const alpha = MathUtils.smoothstep(Math.abs(flow.alphaDeg), profile.recoveryAoaDeg, profile.criticalAoaDeg) * flow.confidence
+  const lowSpeed = 1 - MathUtils.smoothstep(arcadeSpeed(flow.airspeed), profile.stallSpeedKph, profile.separationAttachedSpeedKph)
+  const alpha = MathUtils.smoothstep(Math.abs(flow.alphaDeg), profile.separationAttachedAoaDeg, profile.criticalAoaDeg) * flow.confidence
   return { lowSpeed, alpha, target: Math.max(lowSpeed, alpha) }
 }
 
@@ -32,7 +32,7 @@ export function stepStall(state: AircraftState, profile: StallProfile, flow: Air
   const stall = state.stall
   const { lowSpeed, alpha, target } = separationTarget(flow, profile)
   stall.aoaDeg = flow.alphaDeg
-  const seconds = target > stall.severity ? profile.entrySeconds : profile.recoverySeconds
+  const seconds = target > stall.severity ? profile.separationEntrySeconds : profile.separationRecoverySeconds
   stall.severity += (target - stall.severity) * (1 - Math.exp(-dt / seconds))
   // Labels observe the continuous factors, never feed the solver.
   stall.cause = lowSpeed > 0 && alpha > 0 ? 'speed+aoa' : lowSpeed > 0 ? 'speed' : alpha > 0 ? 'aoa' : 'none'

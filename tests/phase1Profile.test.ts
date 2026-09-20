@@ -11,6 +11,21 @@ import { FLIGHT_STEP } from '../src/game/runtime/clock'
 import { Quaternion, Vector3 } from 'three'
 
 describe('Phase 1 profile constants', () => {
+  it.each([0, -1, NaN, Infinity, undefined])('rejects unusable TVC gain %s; null is the explicit no-TVC contract', value => {
+    const profile = structuredClone(getFlightProfile('f22'))
+    Object.assign(profile.thrustVectoring!, { gain: value })
+    expect(() => validateFlightProfile(profile, 'plane')).toThrow('plane.thrustVectoring.gain')
+    profile.thrustVectoring = null
+    expect(() => validateFlightProfile(profile, 'plane')).not.toThrow()
+  })
+
+  it('requires finite nonnegative minimum rate requests on every axis', () => {
+    for (const axis of ['pitch', 'yaw', 'roll']) for (const value of [-1, NaN, Infinity, undefined]) {
+      const profile = structuredClone(getFlightProfile('f22'))
+      Object.assign(profile.flight.minRateTarget, { [axis]: value })
+      expect(() => validateFlightProfile(profile, 'plane')).toThrow(`plane.flight.minRateTarget.${axis}`)
+    }
+  })
   const fields = {
     aero: ['referenceSpeedMps', 'highSpeedMps', 'alphaNormalDeg', 'alphaCriticalDeg'],
     flight: ['afterburnerAcceleration', 'airbrakeDeceleration'],

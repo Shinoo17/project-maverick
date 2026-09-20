@@ -20,10 +20,11 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
   const closedScale = requestedTurn > 0 ? Math.min(1, closedTurnBudget / requestedTurn) : 1
   const permission = closedScale + (1 - closedScale) * envelope.limiterOpen
   target.pitch *= permission; target.yaw *= permission
-  // A closed limiter still permits the deliberately small low-q floor target.
+  // Low-speed intent remains usable with a closed limiter. This request tuning
+  // is independent of the floor budget; allocation may leave it unmet.
   for (const axis of ['pitch', 'yaw', 'roll'] as const) {
     const input = command[axis]
-    if (Math.abs(target[axis]) < Math.abs(input) * profile.arcadeControlFloor.maxRate[axis]) target[axis] = input * profile.arcadeControlFloor.maxRate[axis]
+    if (Math.abs(target[axis]) < Math.abs(input) * p.minRateTarget[axis]) target[axis] = input * p.minRateTarget[axis]
     if (axis === 'roll') continue
     const incidence = axis === 'pitch' ? flow.alphaDeg : -flow.betaDeg
     if (input * incidence > 0) target[axis] *= clamp((envelope.alphaLimitDeg - Math.abs(incidence)) / 5, 0, 1)

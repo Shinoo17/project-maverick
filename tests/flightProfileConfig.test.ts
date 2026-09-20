@@ -32,7 +32,7 @@ describe('aircraft flight configuration', () => {
       f22.maneuver.entryMin = 90
       f22.maneuver.activeGrip = 0.2
       f22.stall.stallSpeedKph = 200
-      f22.stall.entrySeconds = 1
+      f22.stall.separationEntrySeconds = 1
       expect(su57).toEqual(otherAircraft)
       expect({ flightDefaults, maneuverDefaults, stallDefaults }).toEqual(defaults)
     } finally {

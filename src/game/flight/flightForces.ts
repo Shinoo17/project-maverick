@@ -21,6 +21,8 @@ export interface FlightForces {
   airflowStart: AirflowState
   separation: number
   highAoa: number
+  /** Measured control-surface effectiveness per axis (0..1); not a gameplay factor. */
+  flowEffectiveness: AeroAxes
   neutralWeight: number
   ratesBefore: AeroAxes
   ratesAfter: AeroAxes

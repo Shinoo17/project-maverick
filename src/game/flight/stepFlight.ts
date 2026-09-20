@@ -9,7 +9,7 @@ import { stepSpeed } from './speed'
 import { stepStall } from './stall'
 import { observeAirflow } from './airflow'
 import { interpretEnvelope } from './envelope'
-import { naturalAerodynamics, naturalRateStep } from './aerodynamics'
+import { aeroFlowEffectiveness, naturalAerodynamics, naturalRateStep } from './aerodynamics'
 
 import { computeBudget, signedBudget } from './authority'
 import { allocate, axes, zeroAxes } from './allocation'
@@ -33,9 +33,12 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   state.limiterOpen = command.psmArm && maneuverProfile.psmEnabled ? 1 : 0
   const envelope = interpretEnvelope(state, airflowStart, profile)
   const rates = state.rates, ratesBefore = { ...rates }
-  const natural = naturalAerodynamics(airflowStart, envelope.separation, ratesBefore, aero)
+  // One evaluation per substep feeds both the natural layer and the capability
+  // budget; authority.ts stays free of any aerodynamics import.
+  const effectiveness = aeroFlowEffectiveness(airflowStart, aero)
+  const natural = naturalAerodynamics(airflowStart, envelope.separation, effectiveness, ratesBefore, aero)
   const { thrust, braking } = stepSpeed(state, command, dt, speed)
-  const budget = computeBudget(airflowStart, envelope.separation, thrust, profile)
+  const budget = computeBudget(airflowStart, effectiveness, thrust, profile)
   const control = requestControl(command, ratesBefore, airflowStart, envelope, profile, m.highG, dt)
   state.intent = readIntent(command, state.intent, dt, control.saturationRatio)
   const selectedBudget = signedBudget(budget, control.request)
@@ -65,7 +68,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   }
   const neutralWeight = 1 - envelope.highAoa
   state.flightForces = {
-    dt, airflowStart, separation: envelope.separation, highAoa: envelope.highAoa,
+    dt, airflowStart, separation: envelope.separation, highAoa: envelope.highAoa, flowEffectiveness: effectiveness,
     ratesBefore, ratesAfter: { ...rates }, controller, stabilityDamping: control.servoDamping, neutralWeight,
     naturalRestoring: natural.restoring, naturalDamping: damping,
     alphaDrag: natural.alphaDrag, betaDrag: natural.betaDrag, tvc: actualTvc,

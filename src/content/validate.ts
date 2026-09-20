@@ -57,8 +57,8 @@ export function validateSession(config: SessionConfig) {
       }
       const profile = flightProfiles[getAircraft(id).flightProfileId]
       resolveSpeedLimits(profile.flight, override, path)
-      if ((override.topSpeedKph ?? profile.flight.topSpeedKph) < profile.stall.recoverySpeedKph) {
-        throw new Error(`${path}.topSpeedKph: must be at least stall.recoverySpeedKph`)
+      if ((override.topSpeedKph ?? profile.flight.topSpeedKph) < profile.stall.separationAttachedSpeedKph) {
+        throw new Error(`${path}.topSpeedKph: must be at least stall.separationAttachedSpeedKph`)
       }
     }
   }

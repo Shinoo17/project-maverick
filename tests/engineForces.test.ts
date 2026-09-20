@@ -2,6 +2,29 @@ import { expect, it } from 'vitest'
 import { Vector3 } from 'three'
 import { controlledPathStep, integrateTranslation } from '../src/game/flight/engineForces'
 
+// Independent constant-force solutions (gravity and transverse forces disabled).
+// Work comes from known displacements, never from the returned work ledger.
+it.each([
+  { speed: 10, thrust: 20, drag: 5, dt: 0.2, endSpeed: 13, displacement: 2.3, distance: 2.3 },
+  { speed: 10, thrust: -20, drag: 5, dt: 0.2, endSpeed: 5, displacement: 1.5, distance: 1.5 },
+  { speed: 1, thrust: -4, drag: 0, dt: 1, endSpeed: -3, displacement: -1, distance: 1.25 },
+  { speed: 1, thrust: -4, drag: 1, dt: 1, endSpeed: -2.4, displacement: -0.86, distance: 1.06 },
+  { speed: 1, thrust: 0, drag: 4, dt: 1, endSpeed: 0, displacement: 0.125, distance: 0.125 },
+])('I18 independent work oracle: $speed m/s, thrust $thrust, drag $drag', seed => {
+  const { speed, thrust, drag, dt, endSpeed, displacement, distance } = seed
+  const result = integrateTranslation(new Vector3(speed, 0, 0), new Vector3(1, 0, 0),
+    new Vector3(thrust, 0, 0), new Vector3(), drag, 0, 0, 40, dt)
+  expect(result.velocity.x).toBeCloseTo(endSpeed, 12)
+  expect(result.velocity.y).toBeCloseTo(0, 12); expect(result.velocity.z).toBeCloseTo(0, 12)
+  expect(result.thrustWork).toBeCloseTo(thrust * displacement, 12)
+  expect(result.dragWork).toBeCloseTo(drag * distance, 12)
+  expect((result.velocity.lengthSq() - speed ** 2) / 2).toBeCloseTo(thrust * displacement - drag * distance, 12)
+  if (speed * endSpeed > 0) {
+    // No crossing: infer trapezoidal displacement from measured endpoint velocities.
+    expect(result.thrustWork).toBeCloseTo(thrust * (speed + result.velocity.x) * dt / 2, 12)
+  }
+})
+
 it('I19: engine path rate is bounded at zero/low speed, even with simultaneous reverse thrust', () => {
   const dt = 1 / 120, floor = 40, path = new Vector3(1, 0, 0)
   for (const speed of [0, 0.001, 1, 5, 40, 100]) for (const axial of [-1000, 0, 1000]) {

@@ -416,6 +416,7 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **ไฟล์:** `engine.ts`, `allocation.ts` (ใหม่), `speed.ts`, `thrustVectoring.ts`, `maneuvers.ts`, `stepFlight.ts`, `WorldState.ts`, `GameRuntime.ts`, `content/aircraft/index.ts`, `content/flight-profiles/*`, `su57Rig.ts`/`flightRig.ts` (อ่าน actual power), tests
 
 ### Phase 4 — Automatic breakout + minimal continuous recovery
+- **Hard ordering constraint (Phase 3 review):** port legacy path/gravity weights below **before** enabling automatic breakout. Add per-substep `limiterOpen` continuity tests with bounds derived from authored exponential open/close rates in the same change; Phase 3's explicit C debug step is not that invariant.
 - Envelope §2 ขับ `alphaLimitDeg` + `gAllowance`; High-G key ยังอยู่แต่ map เข้า `gAllowance` path เดียวกัน
 - Port `activeGrip/recoveryGrip/recoveryAcceleration` ([stepFlight.ts:94-97](../src/game/flight/stepFlight.ts#L94-L97)) และ `gravityBlend` ([stepFlight.ts:116](../src/game/flight/stepFlight.ts#L116)) จาก phase → `separation` / lift ตาม q (ไม่งั้นไม่มี path alignment เลยเมื่อไม่มี phase)
 - Mouse frame: `psmControl` ([FlightInput.ts:37](../src/game/input/FlightInput.ts#L37), [FlightScene.tsx:69](../src/render/FlightScene.tsx#L69)) → blend `LEVEL_FRAME` ตาม `highAoa` ต่อเนื่อง

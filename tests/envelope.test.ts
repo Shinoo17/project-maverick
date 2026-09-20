@@ -24,7 +24,7 @@ describe('independent incidence envelope', () => {
     expect(envelope.alphaLimitDeg).toBe(60)
 
     // Changing stall thresholds alone cannot retune any envelope threshold.
-    profile.stall.recoveryAoaDeg = 5
+    profile.stall.separationAttachedAoaDeg = 5
     profile.stall.criticalAoaDeg = 10
     expect(interpretEnvelope(state, airflow, profile)).toEqual(envelope)
   })

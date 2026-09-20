@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { aircraftIds, scenarioNames, createAircraft, runScenario, runTrack, scenarioSetup } from '../benchmarks/flight/harness'
-import { naturalAerodynamics, naturalRateStep, restoringStiffness } from '../src/game/flight/aerodynamics'
+import { aeroFlowEffectiveness, naturalAerodynamics, naturalRateStep, restoringStiffness } from '../src/game/flight/aerodynamics'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
 import { separationTarget, stepStall } from '../src/game/flight/stall'
@@ -20,7 +20,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     const state = createAircraft(id), profile = getFlightProfile(id)
     for (const speed of [0, 1e-9, 0.001, 2, 10, 70, 300]) for (const sign of [-1, 1]) {
       state.velocity = { x: sign * speed, y: 0, z: 0 }
-      const n = naturalAerodynamics(observeAirflow(state, profile), 1, state.rates, profile.aero)
+      const n = naturalAerodynamics(observeAirflow(state, profile), 1, aeroFlowEffectiveness(observeAirflow(state, profile), profile.aero), state.rates, profile.aero)
       for (const value of Object.values(n.restoring)) expect(Math.abs(value)).toBeLessThan(epsilon)
       expect(n.alphaDrag).toBeGreaterThanOrEqual(0)
       expect(n.betaDrag).toBeGreaterThanOrEqual(0)
@@ -30,7 +30,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
       state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
       state.velocity = { x: 70, y: 0, z: 0 }
       const flow = observeAirflow(state, profile)
-      expect(naturalAerodynamics(flow, 1, state.rates, profile.aero).restoring.pitch * angle).toBeLessThan(0)
+      expect(naturalAerodynamics(flow, 1, aeroFlowEffectiveness(flow, profile.aero), state.rates, profile.aero).restoring.pitch * angle).toBeLessThan(0)
     }
   })
 
@@ -39,7 +39,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     state.rates = { pitch: 1, yaw: -2, roll: 3 }
     for (const z of [-80, 80]) {
       state.velocity = { x: 60, y: 0, z }
-      const n = naturalAerodynamics(observeAirflow(state, profile), 0.6, state.rates, profile.aero)
+      const n = naturalAerodynamics(observeAirflow(state, profile), 0.6, aeroFlowEffectiveness(observeAirflow(state, profile), profile.aero), state.rates, profile.aero)
       expect(n.restoring.yaw * z).toBeGreaterThan(0)
       expect(Math.abs(n.restoring.pitch)).toBe(0)
       const applied = naturalRateStep(n, state.rates, dt)
@@ -50,7 +50,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
       }
     }
     state.velocity = { x: 0, y: 0, z: 0 }
-    const n = naturalAerodynamics(observeAirflow(state, profile), 1, state.rates, profile.aero)
+    const n = naturalAerodynamics(observeAirflow(state, profile), 1, aeroFlowEffectiveness(observeAirflow(state, profile), profile.aero), state.rates, profile.aero)
     for (const group of [n.restoring, n.damping]) for (const value of Object.values(group)) expect(Math.abs(value)).toBe(0)
   })
 
@@ -59,7 +59,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     for (const scenario of scenarioNames) runScenario(scenario, id, (state, previous) => {
       const flow = observeAirflow(previous, profile)
       const target = separationTarget(flow, profile.stall).target
-      const tau = target > previous.stall.severity ? profile.stall.entrySeconds : profile.stall.recoverySeconds
+      const tau = target > previous.stall.severity ? profile.stall.separationEntrySeconds : profile.stall.separationRecoverySeconds
       expect(Math.abs(state.stall.severity - previous.stall.severity)).toBeLessThanOrEqual(1 - Math.exp(-dt / tau) + epsilon)
       expect(state.stall.severity).toBeGreaterThanOrEqual(0)
       expect(state.stall.severity).toBeLessThanOrEqual(1)
@@ -80,7 +80,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     const stripped = structuredClone(profile)
     stripped.maneuver.psmEnabled = false; stripped.thrustVectoring = null
     const flow = observeAirflow(copy, profile)
-    expect(naturalAerodynamics(flow, 1, copy.rates, stripped.aero)).toEqual(naturalAerodynamics(flow, 1, copy.rates, profile.aero))
+    expect(naturalAerodynamics(flow, 1, aeroFlowEffectiveness(flow, stripped.aero), copy.rates, stripped.aero)).toEqual(naturalAerodynamics(flow, 1, aeroFlowEffectiveness(flow, profile.aero), copy.rates, profile.aero))
   })
 
   it('neutral high-incidence controller yields to aero; the contribution ledger reconstructs rates', () => {

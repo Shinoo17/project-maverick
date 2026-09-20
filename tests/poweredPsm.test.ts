@@ -8,7 +8,7 @@ import { FLIGHT_STEP as dt } from '../src/game/runtime/clock'
 import { getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
 import { stepFlight } from '../src/game/flight/stepFlight'
 import { stepManeuvers } from '../src/game/flight/maneuvers'
-import { nozzleDirection, thrustForces, tvcTargets } from '../src/game/flight/thrustVectoring'
+import { nozzleDirection, thrustForces, tvcTargets, tvcMomentCapacity } from '../src/game/flight/thrustVectoring'
 import { runFlightReplay } from '../src/game/playground/replay'
 
 function aircraft(id = 'f22', speed = 100) {
@@ -64,7 +64,15 @@ describe('held, thrust-powered PSM', () => {
     fly(powered, 0.75, { psmArm: true, pitch: 1, speedAdjust: 1 })
     fly(idle, 0.75 - dt, { psmArm: true, pitch: 1 })
     expect(powered.rates.pitch).toBeGreaterThan(idle.rates.pitch * 3)
-    expect(powered.flightForces!.budget.poweredControlAvailable).toBeGreaterThan(0)
+    const profile = getFlightProfile(id), budget = powered.flightForces!.budget
+    const capacity = tvcMomentCapacity(profile.thrustVectoring, powered.engine.actualThrust).commanded
+    expect(budget.tvc).toEqual(capacity)
+    expect(budget.poweredControlAvailable).toBeCloseTo(Math.min(1, powered.engine.actualThrust / profile.flight.maxThrust), 12)
+    // Sustained W must spool enough thrust to expose a meaningful fraction of dry
+    // geometric capacity; this fails if the powered branch is merely epsilon > 0.
+    const dryPitch = tvcMomentCapacity(profile.thrustVectoring, profile.flight.maxThrust).commanded.positive.pitch
+    expect(budget.tvc.positive.pitch).toBeGreaterThan(dryPitch * 0.3)
+    expect(powered.flightForces!.allocation.tvc.pitch).toBeGreaterThan(dryPitch * 0.3)
     expect(powered.maneuver.phase).toBe('active')
   })
 

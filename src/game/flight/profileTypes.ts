@@ -24,6 +24,9 @@ export interface FlightProfile {
   pitchRate: number
   yawRate: number
   rollRate: number
+  /** Minimum full-stick rate request at low speed (rad/s). This grants no authority
+   * and is independent of the arcade floor's acceleration and maxRate budgets. */
+  minRateTarget: AeroAxes
   rateResponse: number
   /** Response when reversing an existing roll, not starting one (1/s). */
   rollReversalResponse: number
@@ -47,11 +50,18 @@ export interface FlightProfile {
 export interface AeroAxes { pitch: number; yaw: number; roll: number }
 /** Strictly increasing incidence (degrees), nonnegative stiffness at q=1 (rad/s²). */
 export type RestoringCurve = { incidenceDeg: number; stiffness: number }[]
+/** Strictly increasing incidence (degrees) spanning 0..180; effectiveness in 0..1. */
+export type EffectivenessCurve = { incidenceDeg: number; effectiveness: number }[]
 
 /** Flow reference, legacy surface speed curve and independent incidence envelope. */
 export interface AeroProfile {
-  /** Surface angular acceleration at q=1, before separation loss (rad/s²). */
+  /** Surface angular acceleration in fully attached flow at q=1 (rad/s²). */
   controlAcceleration: AeroAxes
+  /** Control-surface effectiveness versus unsigned incidence, as an explicit
+   * aerodynamic model. Never derived from the separation band in StallProfile and
+   * never from EnvelopeFactors: authority stays a function of measured flow.
+   */
+  controlEffectiveness: { pitch: EffectivenessCurve; yaw: EffectivenessCurve; roll: EffectivenessCurve }
   /** Minimum denominator for transverse engine-force path rotation (m/s). */
   pathRateFloorMps: number
   referenceSpeedMps: number
@@ -63,7 +73,8 @@ export interface AeroProfile {
   alphaNormalDeg: number
   alphaCriticalDeg: number
   restoring: { pitch: RestoringCurve; yaw: RestoringCurve }
-  /** Rate damping coefficients (1/s at q=1), interpolated by separation. */
+  /** Rate damping coefficients (1/s at q=1), interpolated by the larger of the
+   * separation memory and the measured loss of attached flow (1 − effectiveness). */
   damping: { attached: AeroAxes; separated: AeroAxes }
   /** Speed-squared drag coefficients (1/m); never included in governor trim. */
   alphaDrag: number
@@ -80,18 +91,18 @@ export interface StallProfile {
   /** Displayed ARCADE km/h, using the same scale as topSpeedKph. */
   stallSpeedKph: number
   /** Upper edge of the continuous low-speed separation band. */
-  recoverySpeedKph: number
+  separationAttachedSpeedKph: number
   /** Full-separation absolute pitch-plane alpha (degrees), independent of sideslip. */
   criticalAoaDeg: number
   /** Attached-flow edge of the continuous pitch-alpha band; below criticalAoaDeg. */
-  recoveryAoaDeg: number
+  separationAttachedAoaDeg: number
   /** Legacy path-grip fraction at full stall (0–1). Angular aero authority is budgeted separately. */
   controlAuthority: number
   /** Multiplier on base drag at full stall (>= 1). Alpha/beta drag stays separate. */
   dragMultiplier: number
   /** Exponential separation/reattachment time constants (seconds), not deadlines. */
-  entrySeconds: number
-  recoverySeconds: number
+  separationEntrySeconds: number
+  separationRecoverySeconds: number
 }
 
 export interface ManeuverProfile {

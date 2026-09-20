@@ -1,9 +1,12 @@
 # Phase 3 — Engine + Aero/TVC Authority Allocation
 
 Status: **implementation, automated tests and benchmarks complete; stopped before Phase 4**.
-Physics/replay version: `p3-engine-allocation-3`. No commit was made. The owner approved
+Physics/replay version: `p3-engine-allocation-3`. Initial implementation committed as
+`7a618d7`, with `Co-authored-by: astra 6 <noreply@openai.com>`. Subsequent review fixes
+are in the working tree. The owner approved
 directional TVC command capacities plus separate coupled physical moments and waived
-an independent agent review. This report supplies review focus, not a claimed Claude review.
+an independent agent review during implementation, then supplied the independent
+[PASS WITH FIXES review](psm-phase3-review.md). The response is recorded below; no new review agent was invoked.
 
 **Scope qualifications:** angular authority is fully allocated and phase-independent.
 Legacy **translation/path-grip and gravity weights** still use maneuver phase/blend,
@@ -117,6 +120,10 @@ thrust is equal too (the inherited spawn spool is still decaying toward that req
 - Floor tuning is fixed per airframe, independent of engine, burner, intent and limiter.
   Available floor is `max(0, floor.acceleration - physicalAero - signedTvcCapacity)`.
   Floor headroom includes reserved real authority and cannot drive its rate above `maxRate`.
+- `flight.minRateTarget` separately defines low-speed full-stick demand. Its initial
+  values preserve the previous response, but changing floor tuning cannot change
+  the request that aero/TVC receive. The pitch activation boundary is tested from
+  the authored rate/reference-speed ratio (~18.95 m/s for F-22).
 - Runtime passes zero participation. Aero is reserved first, TVC next, then the floor gap;
   unsatisfied drive remains `unmet`. There is no early-TVC blend or participation profile field.
 
@@ -272,10 +279,23 @@ At 70 m/s, 80° incidence, pre-spooled burner plus brake, over 0.5 seconds:
 | su57 | 64.879 → 62.349 m/s² | 6.144 rad/s² | 7.857 m/s |
 | f22-notvc | 64.937 → 63.451 m/s² | 0.000 rad/s² | 9.051 m/s |
 
-**Handoff:** both TVC aircraft report 0 rad/s pitch dip in this authored pull. The
+**Handoff:** both TVC aircraft report 0 rad/s pitch dip in the original low-q pull. The
 metric is the pre-onset 0.2-second peak minus the minimum in the following 0.5 seconds,
 clamped at zero. No-TVC reports null because no handoff occurs. This is not proof that
 all handoffs are invisible; actuator slew is retained. Participation remains zero.
+
+The review follow-up adds a 140 m/s attached-flow seed: full pull and W+Shift,
+then debug C permission at 1 s. This has substantial aero allocation before TVC onset:
+
+| Aircraft | TVC onset | Pre-onset q | Pre-onset aero pitch | Handoff dip |
+|---|---:|---:|---:|---:|
+| F-22 | 1.583 s | 4.640 | 13.957 rad/s² | **1.0266 rad/s** |
+| Su-57 | 1.575 s | 4.533 | 13.957 rad/s² | **0.8676 rad/s** |
+| f22-notvc | none | — | — | null |
+
+This exposes a response dip the original seed missed. It measures the combined
+transition (aero loss, rate demand and actuator response), not isolated actuator lag.
+Keep it visible for playtest; no participation blending or gain retune was introduced.
 
 **Gain calibration:** gains 1, 1.5, 2, 2.5 and 3 were swept using the same closed-loop
 Cobra and Kulbit pilots; archived Phase 0 samples give ~1.25 s to 90° and ~3 s to 360°
@@ -288,6 +308,11 @@ spool and actuator onset dominate. No acceleration-ratio 4× shortcut was used, 
 no per-axis geometry boost was introduced. Human playtest should choose between these
 tradeoffs; no matching of old generic PSM output is claimed.
 
+The sweep now also reports B4 path heading. Higher gain does **not** solve that target
+in the measured pilots: F-22 heading change at gains 2 / 2.5 / 3 is
+47.071° / 55.005° / 53.556°; Su-57 is 48.625° / 55.618° / 59.368° (target ≤20°).
+Shorter time to 90° alone is insufficient evidence for a better path-versus-nose result.
+
 Reproduce with `npm run flight:bench`; detailed values and the complete sweep are in
 `benchmarks/flight/out/phase3.json` and `.md`. Those generated reports are git-ignored.
 The stable tables and interpretation above preserve this run's results in source control.
@@ -297,7 +322,8 @@ The stable tables and interpretation above preserve this run's results in source
 - Clean Phase 2 HEAD: **29 suites / 363 tests passed**; benchmark **6 suites / 15 passed**.
   Baseline was regenerated in an isolated temporary checkout with the same installed
   dependencies/assets; the exact source commit is in `phase2-metrics.json`.
-- Phase 3: **34 suites / 403 tests passed**; benchmark **8 suites / 20 passed**.
+- Initial Phase 3: **34 suites / 403 tests passed**. After review fixes:
+  **34 suites / 419 tests passed**; benchmark **8 suites / 20 passed**.
   Typecheck and production build passed. `npm run build` runs the hard test suite
   through `prebuild`, so invariant failures stop the build. Existing Vite chunk-size advisory remains.
 - All original archives are unchanged. Their open-loop inputs replay at exact supported
@@ -316,6 +342,27 @@ Selected Phase 2 → Phase 3 deltas:
 | release45 incidence at 0.5 s | 13.3858° → 13.3927° | 13.6387° → 13.6465° |
 | sideslip60 speed loss | 32.5388 → 32.2795 arcade km/h | 34.9855 → 34.7115 arcade km/h |
 | tailSlide flip within 10 s | unreached → unreached | unreached → unreached |
+
+The following regressions were missing from the initial selected table and are
+required context for any gain decision:
+
+| Metric | F-22, Phase 2 → Phase 3 | Su-57, Phase 2 → Phase 3 | Target |
+|---|---|---|---|
+| B1 Cobra peak incidence | 95.5278° → 73.5259° | 95.8936° → 72.5357° | 75–95° |
+| B2 Cobra time to 90° | 1.1833 s → unreached | 1.1667 s → unreached | benchmark |
+| **B4 Cobra heading change** | **30.6550° → 47.0705°** | **30.1084° → 48.6247°** | **≤20°; both out** |
+| B15 reversal heading change | 18.5395° → 75.7447° | 19.7500° → 63.3752° | report |
+| **B15 reversal altitude loss** | **229.0172 m → 0.0000 m** | **247.0783 m → 0.0000 m** | report, fixed 10 s window |
+
+At gain 2, the Cobra no longer reaches the pilot's 90° release threshold, so its pull
+dwells until the 2.5 s timeout instead of releasing around 1.18 s. Thrust and legacy
+lateral grip act off-path longer. Above the 40 m/s denominator floor, the transverse
+angle law retains the prior `atan(F_transverse * dt / speed)` form; this regression
+does not establish a new free-turn source. Reversal takes longer too: the 10 s track
+never falls below its entry altitude. Its zero measured loss is a window result,
+not a claim of free climb or completed recovery. The generated regression table now
+includes **all** Phase 2 scenarios, and the gain sweep includes B4, preventing this
+selection omission from recurring.
 
 Obsolete assertions were identified and preserved deliberately:
 
@@ -363,7 +410,26 @@ Obsolete assertions were identified and preserved deliberately:
 
 ## 12. Review focus
 
-No independent Claude review was run, as requested. If reviewed later, prioritize:
+The owner supplied an independent review after the initial commit. No additional
+review agent was run. Follow-up disposition:
+
+| Finding | Result |
+|---|---|
+| F1 request/floor coupling | FIXED: independent validated `flight.minRateTarget`; floor retunes cannot alter controller request; boundary covered. |
+| F2 zero gain | FIXED: strictly positive gain; zero/negative/nonfinite/missing rejected; null remains the explicit no-TVC contract. |
+| F3 self-certifying work | FIXED coverage: independent constant-force displacement/work oracles cover acceleration, braking, axial reversal and stopping; no returned ledger supplies the expected bound. Existing coupled/gravity ledger checks remain. |
+| F4 incomplete overlay | FIXED: natural restoring and natural damping rows added, with English/Thai labels. |
+| F5 limiter continuity | PARTIAL / PHASE 4: fractional envelope mapping and explicit C-only step behavior are tested. Runtime smoothing and its profile-derived per-step continuity bound remain required together in Phase 4. No claim that debug C is continuous. |
+| F6 weak powered assertion | FIXED: actual-thrust capacity equality, normalized dry-capability equality, and allocated pitch/capacity exceeding 30% of dry geometric capacity after the W spool fixture. |
+| F7 omitted regressions | FIXED: B4 and B15 values/attribution added above; generated report compares every baseline scenario. |
+| Additional gain/handoff coverage | Scalar gain tested across all command/physical moment axes; substantial-aero handoff benchmark added and its nonzero dips reported. |
+
+Both blocking fixes are complete. Authored gain, floor values and flight dynamics
+remain unchanged; independent request tuning begins at the previous values. Legacy
+path/gravity migration is a hard prerequisite for automatic breakout, now stated at
+the start of the Phase 4 plan. The original review document is preserved unchanged.
+
+For any subsequent review or playtest, prioritize:
 
 1. Two-actuator least-squares reachability, directional sign selection and the reconciliation
    of TVC reservations versus coupled target moments and actual actuator lag.

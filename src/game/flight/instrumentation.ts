@@ -3,6 +3,7 @@ import { getFlightProfile } from './profile'
 import { observeAirflow } from './airflow'
 import { interpretEnvelope } from './envelope'
 import { computeBudget } from './authority'
+import { aeroFlowEffectiveness } from './aerodynamics'
 
 /** End-of-step observation; lastStep holds the allocation and force ledger
  * actually used at the start of the integrated substep. Never feeds physics. */
@@ -13,6 +14,6 @@ export function flightInstrumentation(state: AircraftState) {
     airspeed: airflow.airspeed, alphaDeg: airflow.alphaDeg, betaDeg: airflow.betaDeg, incidenceDeg: airflow.incidenceDeg,
     dynamicPressureProxy: airflow.dynamicPressure, airflow,
     lastStep: state.flightForces ?? null, envelope: interpretEnvelope(state, airflow, p),
-    actualThrust, budget: state.flightForces?.budget ?? computeBudget(airflow, state.stall.severity, actualThrust, p),
+    actualThrust, budget: state.flightForces?.budget ?? computeBudget(airflow, aeroFlowEffectiveness(airflow, p.aero), actualThrust, p),
   }
 }
