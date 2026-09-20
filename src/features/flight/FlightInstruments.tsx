@@ -1,3 +1,5 @@
+import { observeAirflow } from '../../game/flight/airflow'
+import { envelopeLabel, interpretEnvelope } from '../../game/flight/envelope'
 /* THESIS: The reference implementation's fighter glass (example/F22), on the training range.
    OWN-WORLD: One phosphor green drawn onto a single canvas, with a translucent green bloom
    under every mark instead of fills or black outlines.
@@ -34,7 +36,9 @@ const standby: GlassState = {
 
 const nose = new Vector3(), attitudeQuaternion = new Quaternion()
 export function glassState({ camera, state, position, orientation, velocity }: HudFrame): GlassState {
-  const m = state.maneuver, maneuverProfile = getFlightProfile(state.aircraftId).maneuver
+  const m = state.maneuver, profile = getFlightProfile(state.aircraftId), maneuverProfile = profile.maneuver
+  const envelope = interpretEnvelope(state, observeAirflow({ orientation, velocity }, profile), profile)
+  const label = envelopeLabel(envelope, state.intent.demand)
   const attitude = flightAttitude(orientation)
   nose.set(1, 0, 0).applyQuaternion(attitudeQuaternion.set(orientation.x, orientation.y, orientation.z, orientation.w))
   const altitude = position.y
@@ -46,7 +50,7 @@ export function glassState({ camera, state, position, orientation, velocity }: H
     groundClearance: altitude,
     edge: Math.max(0, Math.min(trainingMap.radius - Math.hypot(position.x, position.z), trainingMap.radius - altitude)),
     burnerReserve: m.burner, burnerSeconds: m.burner * maneuverProfile.burnerSeconds, burnerState: burnerStates[burnerStatus(state)] ?? 'ready',
-    airbrake: m.airbrake > 0.1, highG: m.highG > 0.1, psm: m.phase === 'active' || m.phase === 'recovery',
+    airbrake: m.airbrake > 0.1, highG: envelope.gAllowance > 1.06, psm: label === 'HIGH_AOA' || label === 'POST_STALL' || label === 'RECOVERING',
   }
 }
 

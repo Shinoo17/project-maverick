@@ -96,7 +96,7 @@ export interface StallProfile {
   criticalAoaDeg: number
   /** Attached-flow edge of the continuous pitch-alpha band; below criticalAoaDeg. */
   separationAttachedAoaDeg: number
-  /** Legacy path-grip fraction at full stall (0–1). Angular aero authority is budgeted separately. */
+  /** Path-grip fraction at full separation (0–1). Angular aero authority is budgeted separately. */
   controlAuthority: number
   /** Multiplier on base drag at full stall (>= 1). Alpha/beta drag stays separate. */
   dragMultiplier: number
@@ -106,7 +106,7 @@ export interface StallProfile {
 }
 
 export interface ManeuverProfile {
-  /** Explicit PSM capability. High-G and afterburner remain independent. */
+  /** Enable the temporary debug C comparison path. Automatic permission is independent. */
   psmEnabled: boolean
   // PSM entry envelope: speed in m/s, altitude in metres.
   entryMin: number
@@ -117,14 +117,14 @@ export interface ManeuverProfile {
   exitSpeed: number
   /** Seconds for 99% of the legacy path-grip blend. Not angular authority or a duration limit. */
   blendSeconds: number
-  /** PSM airflow alignment response (1/s), independent of normal flight. */
+  /** Separated-flow alignment response (1/s), independent of normal flight. */
   pathResponse: number
-  /** Dimensionless airflow grip during PSM and recovery. */
+  /** Dimensionless grip endpoints: high incidence and reattachment. */
   activeGrip: number
   recoveryGrip: number
   /** Recovery lateral acceleration budget (m/s²). */
   recoveryAcceleration: number
-  /** Legacy active-PSM lateral budget (m/s²). */
+  /** High-incidence separated-flow lateral budget (m/s²). */
   lateralAcceleration: number
   /** Keep the original 0.3 radians exactly; 17° was a rounded design label. */
   recoveryIncidenceRad: number
@@ -169,7 +169,26 @@ export interface ThrustVectoringProfile {
 
 export interface EngineProfile { spoolUpResponse: number; spoolDownResponse: number }
 
+/** Permission tuning only; q uses (airspeed / referenceSpeedMps)². */
+export interface BreakoutProfile {
+  qLow: number
+  qHigh: number
+  baseWeight: number
+  brakeWeight: number
+  powerWeight: number
+  comboWeight: number
+  sustainWeight: number
+  /** Exponential response rates (1/s). */
+  openRate: number
+  closeRate: number
+  brakeBoost: number
+  powerBoost: number
+  /** Maximum multiplier of the normal turn acceleration budget. */
+  hardTurnG: number
+}
+
 export interface AircraftFlightProfile {
+  breakout: BreakoutProfile
   arcadeControlFloor: { acceleration: AeroAxes; maxRate: AeroAxes }
   engine: EngineProfile
   aero: AeroProfile

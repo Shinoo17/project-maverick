@@ -1,4 +1,4 @@
-import { Quaternion, Vector3 } from 'three'
+import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
 import type { PilotCommand } from '../runtime/commands'
 import { trainingMap } from '../../content/maps'
@@ -8,12 +8,12 @@ import { poweredThrustForces, solveTvcAngles, stepThrustVectoring } from './thru
 import { stepSpeed } from './speed'
 import { stepStall } from './stall'
 import { observeAirflow } from './airflow'
-import { interpretEnvelope } from './envelope'
+import { stepEnvelope } from './envelope'
 import { aeroFlowEffectiveness, naturalAerodynamics, naturalRateStep } from './aerodynamics'
 
 import { computeBudget, signedBudget } from './authority'
 import { allocate, axes, zeroAxes } from './allocation'
-import { requestControl } from './controller'
+import { measureControlDemand, requestControl } from './controller'
 import { readIntent } from './intent'
 import { integrateTranslation } from './engineForces'
 
@@ -29,9 +29,9 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   stepStall(state, stallProfile, airflowStart, dt)
   stepManeuvers(state, command, dt, airflowStart)
   const m = state.maneuver
-  // C is debug permission only; legacy labels cannot grant angular authority.
-  state.limiterOpen = command.psmArm && maneuverProfile.psmEnabled ? 1 : 0
-  const envelope = interpretEnvelope(state, airflowStart, profile)
+  const demand = measureControlDemand(command, airflowStart, state.stall.severity, profile, state.limiterOpen)
+  state.intent = readIntent(command, state.intent, dt, demand.saturationRatio)
+  const { envelope, limiterStep } = stepEnvelope(state, airflowStart, profile, dt, command.psmArm && maneuverProfile.psmEnabled)
   const rates = state.rates, ratesBefore = { ...rates }
   // One evaluation per substep feeds both the natural layer and the capability
   // budget; authority.ts stays free of any aerodynamics import.
@@ -39,8 +39,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const natural = naturalAerodynamics(airflowStart, envelope.separation, effectiveness, ratesBefore, aero)
   const { thrust, braking } = stepSpeed(state, command, dt, speed)
   const budget = computeBudget(airflowStart, effectiveness, thrust, profile)
-  const control = requestControl(command, ratesBefore, airflowStart, envelope, profile, m.highG, dt)
-  state.intent = readIntent(command, state.intent, dt, control.saturationRatio)
+  const control = requestControl(command, ratesBefore, airflowStart, envelope, profile, dt, demand)
   const selectedBudget = signedBudget(budget, control.request)
   const allocation = allocate(control.request, selectedBudget, zeroAxes(), ratesBefore, dt)
   const targets = solveTvcAngles(allocation.tvc, thrust, tvc)
@@ -68,17 +67,22 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   }
   const neutralWeight = 1 - envelope.highAoa
   state.flightForces = {
-    dt, airflowStart, separation: envelope.separation, highAoa: envelope.highAoa, flowEffectiveness: effectiveness,
+    dt, airflowStart, envelope, limiterStep, separation: envelope.separation, highAoa: envelope.highAoa, flowEffectiveness: effectiveness,
     ratesBefore, ratesAfter: { ...rates }, controller, stabilityDamping: control.servoDamping, neutralWeight,
     naturalRestoring: natural.restoring, naturalDamping: damping,
     alphaDrag: natural.alphaDrag, betaDrag: natural.betaDrag, tvc: actualTvc,
     budget, allocation, targetTorque, coupledTarget, actuatorLag, nozzleTargets: targets,
     translation: { thrustWork: 0, dragWork: 0, controlPathRate: 0, controlPathCap: 0, uncappedControlPathRate: null, pathCapActive: false, longitudinalZeroCrossing: false },
   }
-  const authority = control.speedAuthority, normalLimit = control.normalLimit
-  // Phase 4 will port these path/gravity weights away from legacy phase/blend.
-  const grip = 1 - m.blend
-  const surfaceControl = 1 - state.stall.severity * (1 - stallProfile.controlAuthority)
+  const authority = demand.speedAuthority, normalLimit = control.normalLimit
+  // Path support follows measured flow and separation, never C or legacy phase.
+  // Reattachment restores the old recovery grip continuously; no delayed assist.
+  const separation = envelope.separation
+  const grip = 1 - separation
+  const lift = demand.lift
+  const reattachment = 1 - MathUtils.smoothstep(airflowStart.incidenceDeg, aero.alphaNormalDeg, aero.alphaCriticalDeg)
+  const pathGrip = MathUtils.lerp(maneuverProfile.activeGrip, maneuverProfile.recoveryGrip, reattachment)
+  const surfaceControl = demand.surfaceControl
   if (m.phase === 'active') m.rotation += Math.hypot(rates.pitch, rates.yaw) * dt
   const angular = new Vector3(rates.roll, -rates.yaw, rates.pitch)
   const orientation = new Quaternion().copy(state.orientation)
@@ -88,31 +92,35 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   state.orientation = { x: orientation.x, y: orientation.y, z: orientation.z, w: orientation.w }
   const forward = new Vector3(1, 0, 0).applyQuaternion(orientation)
   const path = speed > 0.001 ? velocity.clone().divideScalar(speed) : forward.clone()
-  // The PSM branch retains its original loose airflow. Normal flight anticipates
-  // nose rotation and closes the remaining slip, within the same budget as rates.
-  const lateral = forward.clone().addScaledVector(path, -forward.dot(path))
-  if (m.phase !== 'active' && forward.dot(path) < -0.8) {
+  // Attached flow anticipates nose rotation; separated flow retains loose grip.
+  const alignment = forward.dot(path)
+  const lateral = forward.clone().addScaledVector(path, -alignment)
+  const reverseAlignment = MathUtils.smoothstep(-alignment, 0.8, 1)
+  if (reverseAlignment > 0) {
     // At a 180° nose reversal the projection is zero. Choose the aircraft's up
     // plane to continue bending airflow rather than stalling at the antipode.
     if (lateral.lengthSq() < 1e-8) lateral.set(0, 1, 0).applyQuaternion(orientation).addScaledVector(path, -new Vector3(0, 1, 0).applyQuaternion(orientation).dot(path))
-    lateral.normalize()
+    const length = Math.max(lateral.length(), 1e-9)
+    lateral.multiplyScalar(1 + (1 / length - 1) * reverseAlignment)
   }
   const normalLateral = lateral.clone()
   if (normalLateral.lengthSq() > 1e-8) normalLateral.setLength(speed * p.pathResponse * forward.angleTo(path))
   const anticipation = forward.clone().sub(previousForward).multiplyScalar(speed * p.turnAnticipation / dt)
   anticipation.addScaledVector(path, -anticipation.dot(path))
   normalLateral.add(anticipation).clampLength(0, normalLimit).multiplyScalar(surfaceControl)
-  lateral.multiplyScalar(speed * maneuverProfile.pathResponse * authority * (m.phase === 'active' ? maneuverProfile.activeGrip : maneuverProfile.recoveryGrip))
-  const lateralLimit = m.phase === 'recovery' ? maneuverProfile.recoveryAcceleration : maneuverProfile.lateralAcceleration * (1 + m.highG * 0.6)
+  lateral.multiplyScalar(speed * maneuverProfile.pathResponse * authority * pathGrip * lift)
+  const lateralLimit = MathUtils.lerp(maneuverProfile.lateralAcceleration, maneuverProfile.recoveryAcceleration, reattachment) * lift
   if (lateral.length() > lateralLimit) lateral.setLength(lateralLimit)
   lateral.lerp(normalLateral, grip)
-  const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + m.highG * (maneuverProfile.highGDrag - 1))
+  const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + control.highG * (maneuverProfile.highGDrag - 1))
   const stallDrag = 1 + state.stall.severity * (stallProfile.dragMultiplier - 1)
   const drag = p.drag * speed * speed * stallDrag + turnLoss + natural.alphaDrag + natural.betaDrag
   const engineForce = vectoredThrust
     ? new Vector3().copy(vectoredThrust.acceleration).applyQuaternion(orientation)
     : forward.clone().multiplyScalar(thrust)
-  const gravityBlend = Math.max(state.stall.severity, 0.5 * (1 - grip))
+  // Attached lift need only support one G to hold the arcade horizon. At near
+  // rest even attached flow cannot do that; separated flow lets gravity return.
+  const gravityBlend = 1 - Math.min(1, p.turnAcceleration * lift / p.gravity) * (1 - separation)
   const translated = integrateTranslation(velocity, path, engineForce, lateral, drag + braking,
     p.gravity, gravityBlend, aero.pathRateFloorMps, dt)
   velocity.copy(translated.velocity)

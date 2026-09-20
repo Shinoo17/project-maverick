@@ -1,0 +1,1547 @@
+{
+  "flightProfileVersion": "p3-flow-effectiveness-4",
+  "sourceCommit": "527a25aee2251c8efb53e97c9b008185b24433eb",
+  "capture": "npm run flight:bench before Phase 4 edits; Phase 0 golden files untouched",
+  "metrics": [
+    {
+      "aircraftId": "f22",
+      "scenario": "hardTurn900",
+      "id": "B13.hardTurn900.peakAoa",
+      "value": 3.5749306108606853,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "hardTurn900",
+      "id": "B13.hardTurn900.meanG",
+      "value": 10.684544957495813,
+      "unit": "G"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "hardTurn900",
+      "id": "B13.hardTurn900.speedLoss",
+      "value": 126.4861956704092,
+      "unit": "arcade km/h"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "fullStick500",
+      "id": "baseline.fullStick500.peakAoa",
+      "value": 3.992492743305002,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "cobraC",
+      "id": "B1.cobra.peakAoa",
+      "value": 90.30033866736864,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "cobraC",
+      "id": "B2.cobra.timeTo90",
+      "value": 2.5083333333333333,
+      "unit": "s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "cobraC",
+      "id": "B3.cobra.speedLoss",
+      "value": 142.57249441218778,
+      "unit": "arcade km/h"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "cobraC",
+      "id": "B4.cobra.headingChange",
+      "value": 56.218143244558,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "cobraC",
+      "id": "legacy.recovery.backToNormal",
+      "value": 2.7,
+      "unit": "s after C release"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "kulbitC",
+      "id": "B5.kulbit.time360",
+      "value": 4.766666666666667,
+      "unit": "s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "reversal180C",
+      "id": "B15.reversal.headingChange",
+      "value": 8.85511104399079,
+      "unit": "deg at 10 s / stop"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "reversal180C",
+      "id": "B15.reversal.altitudeLoss",
+      "value": 0,
+      "unit": "m"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "tailSlide",
+      "id": "B10.tailSlide.flipTime",
+      "value": null,
+      "unit": "s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "pedalC",
+      "id": "baseline.pedal.yawRate",
+      "value": 26.411478359907786,
+      "unit": "deg/s at 2 s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B8.recovery.naturalDuringDelay",
+      "value": 15.683681141604655,
+      "unit": "deg reduction / 0.2 s without assist"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence0s",
+      "value": 45,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence0.2s",
+      "value": 29.316318858395345,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence0.5s",
+      "value": 13.393106943136477,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence1s",
+      "value": 3.2668648809441305,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence1.5s",
+      "value": 1.0204195846012785,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B9.natural.release45.maxAttitudeStep",
+      "value": 0.040512670168156406,
+      "unit": "deg/substep"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "release45",
+      "id": "B9.natural.release45.maxRate",
+      "value": 4.8615204209606775,
+      "unit": "deg/s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "sideslip60",
+      "id": "B20.sideslip60.speedLoss1s",
+      "value": 32.29899312872214,
+      "unit": "arcade km/h"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "hardTurn900",
+      "id": "B13.hardTurn900.peakAoa",
+      "value": 3.5838772473122624,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "hardTurn900",
+      "id": "B13.hardTurn900.meanG",
+      "value": 10.691577143188994,
+      "unit": "G"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "hardTurn900",
+      "id": "B13.hardTurn900.speedLoss",
+      "value": 127.95075023379967,
+      "unit": "arcade km/h"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "fullStick500",
+      "id": "baseline.fullStick500.peakAoa",
+      "value": 3.988516141309657,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "cobraC",
+      "id": "B1.cobra.peakAoa",
+      "value": 89.57827174064286,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "cobraC",
+      "id": "B2.cobra.timeTo90",
+      "value": null,
+      "unit": "s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "cobraC",
+      "id": "B3.cobra.speedLoss",
+      "value": 161.09677545401846,
+      "unit": "arcade km/h"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "cobraC",
+      "id": "B4.cobra.headingChange",
+      "value": 57.92399446640197,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "cobraC",
+      "id": "legacy.recovery.backToNormal",
+      "value": 2.708333333333333,
+      "unit": "s after C release"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "kulbitC",
+      "id": "B5.kulbit.time360",
+      "value": 5.058333333333334,
+      "unit": "s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "reversal180C",
+      "id": "B15.reversal.headingChange",
+      "value": 3.8657650730342814,
+      "unit": "deg at 10 s / stop"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "reversal180C",
+      "id": "B15.reversal.altitudeLoss",
+      "value": 0,
+      "unit": "m"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "tailSlide",
+      "id": "B10.tailSlide.flipTime",
+      "value": null,
+      "unit": "s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "pedalC",
+      "id": "baseline.pedal.yawRate",
+      "value": 31.668183381371872,
+      "unit": "deg/s at 2 s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B8.recovery.naturalDuringDelay",
+      "value": 15.531713097233506,
+      "unit": "deg reduction / 0.2 s without assist"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence0s",
+      "value": 45,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence0.2s",
+      "value": 29.468286902766494,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence0.5s",
+      "value": 13.646726165043262,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence1s",
+      "value": 3.3497630087261627,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B9.natural.release45.incidence1.5s",
+      "value": 1.061095399594692,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B9.natural.release45.maxAttitudeStep",
+      "value": 0.03013861738965795,
+      "unit": "deg/substep"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "release45",
+      "id": "B9.natural.release45.maxRate",
+      "value": 3.6166340879600165,
+      "unit": "deg/s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "sideslip60",
+      "id": "B20.sideslip60.speedLoss1s",
+      "value": 34.72095732495688,
+      "unit": "arcade km/h"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "phase3",
+      "id": "B11.pedal.peakYawRate",
+      "value": 18.677054826317296,
+      "unit": "deg/s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "phase3",
+      "id": "B18.handoffRateDip",
+      "value": 0,
+      "unit": "rad/s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "phase3",
+      "id": "B18.moderateHandoffRateDip",
+      "value": 0.6958019542564724,
+      "unit": "rad/s"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "phase3",
+      "id": "B19.notvc.maxRotation3s",
+      "value": 225.92394047585202,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "phase3",
+      "id": "B11.pedal.peakYawRate",
+      "value": 38.89241543469031,
+      "unit": "deg/s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "phase3",
+      "id": "B18.handoffRateDip",
+      "value": 0,
+      "unit": "rad/s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "phase3",
+      "id": "B18.moderateHandoffRateDip",
+      "value": 0.6421836088339856,
+      "unit": "rad/s"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "phase3",
+      "id": "B19.notvc.maxRotation3s",
+      "value": 212.33932727985908,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "phase3",
+      "id": "B11.pedal.peakYawRate",
+      "value": 18.677054826317313,
+      "unit": "deg/s"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "phase3",
+      "id": "B18.handoffRateDip",
+      "value": null,
+      "unit": "rad/s"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "phase3",
+      "id": "B18.moderateHandoffRateDip",
+      "value": null,
+      "unit": "rad/s"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "phase3",
+      "id": "B19.notvc.maxRotation3s",
+      "value": 108.11285055280142,
+      "unit": "deg"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v100",
+      "value": 0.9275000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v100",
+      "value": 0.9275,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v100",
+      "value": 0.9275,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v100",
+      "value": 1.3987500000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v100",
+      "value": 1.2597916666666666,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v100",
+      "value": 1.2446875,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v100",
+      "value": 1.0013081725828479,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v100",
+      "value": 0.9803076673743859,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v100",
+      "value": 1.0005202397286506,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v100",
+      "value": 3.75,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v100",
+      "value": 2.7916666666666665,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v100",
+      "value": 2.6875,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v100",
+      "value": 1.0111845847429408,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v100",
+      "value": 0.9115773734837241,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v100",
+      "value": 1.0023609034446912,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v100",
+      "value": 0.15000000000000016,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v100",
+      "value": 0.15000000000000013,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v100",
+      "value": 0.15000000000000013,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v100",
+      "value": 5.675,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v100",
+      "value": 4.045833333333333,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v100",
+      "value": 3.8687499999999995,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v100",
+      "value": 1.059913982414928,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v100",
+      "value": 0.6934566824692324,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v100",
+      "value": 1.0030984512269867,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v45",
+      "value": 1.3987499999999993,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v45",
+      "value": 1.2597916666666662,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v45",
+      "value": 1.2446874999999995,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v45",
+      "value": 0.9926461888919736,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v45",
+      "value": 0.9527733660313576,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v45",
+      "value": 0.9867347255713987,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v45",
+      "value": 3.75,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v45",
+      "value": 2.7916666666666665,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v45",
+      "value": 2.6874999999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v45",
+      "value": 0.9566023965391297,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v45",
+      "value": 0.7387626093338134,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v45",
+      "value": 0.9123347660327967,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v45",
+      "value": 5.675,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v45",
+      "value": 4.045833333333334,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v45",
+      "value": 3.868749999999999,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v45",
+      "value": 0.8612482703093226,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v45",
+      "value": 0.1562148741783343,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v45",
+      "value": 0.7084359895991094,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v100",
+      "value": 0.9275000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v100",
+      "value": 0.9275,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v100",
+      "value": 0.9275,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v100",
+      "value": 1.25375,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v100",
+      "value": 1.1691666666666667,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v100",
+      "value": 1.1993750000000003,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v100",
+      "value": 1.0013823737266465,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v100",
+      "value": 0.9823011823151163,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v100",
+      "value": 1.0005461693959494,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v100",
+      "value": 2.7499999999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v100",
+      "value": 2.1666666666666665,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v100",
+      "value": 2.3749999999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v100",
+      "value": 1.0107907658683348,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v100",
+      "value": 0.9155359044939099,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v100",
+      "value": 1.0020039781861092,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v100",
+      "value": 0.15000000000000016,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v100",
+      "value": 0.15000000000000013,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v100",
+      "value": 0.15000000000000013,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v100",
+      "value": 3.9749999999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v100",
+      "value": 2.983333333333333,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v100",
+      "value": 3.3374999999999995,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v100",
+      "value": 1.0674307811024182,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v100",
+      "value": 0.6980858418333992,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v100",
+      "value": 0.9844951047046638,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v45",
+      "value": 0.9275,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v45",
+      "value": 1.2537499999999995,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v45",
+      "value": 1.1691666666666665,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v45",
+      "value": 1.1993749999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v45",
+      "value": 0.9923073103764991,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v45",
+      "value": 0.9599758756952428,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v45",
+      "value": 0.9880184322989664,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v45",
+      "value": 2.7499999999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v45",
+      "value": 2.166666666666667,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v45",
+      "value": 2.374999999999999,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v45",
+      "value": 0.9528000901650717,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v45",
+      "value": 0.6933979881738092,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v45",
+      "value": 0.9088983016734768,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v45",
+      "value": 3.9749999999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v45",
+      "value": 2.9833333333333334,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v45",
+      "value": 3.3374999999999995,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v45",
+      "value": 0.8708507560477372,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v45",
+      "value": 0.07975593127906756,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "su57",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v45",
+      "value": 0.6274433889391571,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v100",
+      "value": 0.9275000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v100",
+      "value": 0.9275,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v100",
+      "value": 0.9275,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v100",
+      "value": 1.3987500000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v100",
+      "value": 1.2597916666666666,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v100",
+      "value": 1.2446875,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v100",
+      "value": 1.0013081725828477,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v100",
+      "value": 0.9803076673743859,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v100",
+      "value": 1.0005202397286506,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v100",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v100",
+      "value": 3.75,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v100",
+      "value": 2.7916666666666665,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v100",
+      "value": 2.6875,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v100",
+      "value": 1.0029445538577526,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v100",
+      "value": 0.9115773734837241,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v100",
+      "value": 0.9998159476852251,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v100",
+      "value": 0.15000000000000016,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v100",
+      "value": 0.15000000000000013,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v100",
+      "value": 0.15000000000000013,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v100",
+      "value": 5.675,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v100",
+      "value": 4.045833333333333,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v100",
+      "value": 3.8687499999999995,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v100",
+      "value": 0.9821423002362024,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v100",
+      "value": 0.6934566824692324,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v100",
+      "value": 0.9736110349483759,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v45",
+      "value": 0.9275000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v45",
+      "value": 1.3987499999999993,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v45",
+      "value": 1.2597916666666662,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v45",
+      "value": 1.2446874999999995,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v45",
+      "value": 0.9847650030774996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v45",
+      "value": 0.9527733660313561,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v45",
+      "value": 0.9841615410591531,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v45",
+      "value": 0.5000000000000001,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v45",
+      "value": 3.75,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v45",
+      "value": 2.7916666666666665,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v45",
+      "value": 2.6874999999999996,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v45",
+      "value": 0.9027663289439097,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v45",
+      "value": 0.7387626093338134,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v45",
+      "value": 0.8951107344372028,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v45",
+      "value": 0.15000000000000002,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v45",
+      "value": 5.675,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v45",
+      "value": 4.045833333333334,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v45",
+      "value": 3.868749999999999,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v45",
+      "value": 0.661303432641,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v45",
+      "value": 0.15621487417833407,
+      "unit": "ratio"
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "scenario": "crossflow",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v45",
+      "value": 0.653907913084986,
+      "unit": "ratio"
+    }
+  ]
+}

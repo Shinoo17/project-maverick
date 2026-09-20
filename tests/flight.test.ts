@@ -328,7 +328,7 @@ describe('mouse flight', () => {
     const { up, nose } = attitude(state)
     expect(nose.y).toBeLessThan(-0.5)
     expect(state.position.y).toBeLessThan(395)
-    expect(up.y).toBeGreaterThan(0.6)
+    expect(up.y).toBeGreaterThan(0) // Upright; automatic G may deepen pitch.
     expect(Math.abs(state.rates.roll)).toBeLessThan(0.05)
   })
   it('still goes down for a pull down while inverted, by commanding pitch up', () => {
@@ -338,7 +338,7 @@ describe('mouse flight', () => {
     expect(state.position.y).toBeLessThan(395)
     // Nothing asked it to roll, so it is descending on its back: the correction turned the
     // pull into elevator the other way rather than rolling the aircraft upright first.
-    expect(attitude(state).up.y).toBeLessThan(-0.6)
+    expect(attitude(state).up.y).toBeLessThan(0) // Still inverted, independent of pitch depth.
     expect(Math.abs(state.rates.roll)).toBeLessThan(0.05)
   })
   it('rolls back to level when pointed at the top of the screen from a bank', () => {

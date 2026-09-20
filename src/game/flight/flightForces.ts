@@ -1,3 +1,4 @@
+import type { EnvelopeFactors, LimiterStep } from './envelope'
 import type { AuthorityBudget } from './authority'
 import type { AllocationRecord } from './allocation'
 import type { AirflowState } from './airflow'
@@ -10,6 +11,8 @@ import type { AeroAxes } from './profileTypes'
  * This is diagnostics only, never an authority/allocation budget or physics input.
  */
 export interface FlightForces {
+  envelope: EnvelopeFactors
+  limiterStep: LimiterStep
   budget: AuthorityBudget
   allocation: AllocationRecord
   nozzleTargets: { left: number; right: number }

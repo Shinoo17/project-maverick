@@ -110,7 +110,7 @@ turn across to the mirrored bank instead of stalling.
 The shaping is radial: the length is clamped to the gate, the dead zone is taken off it, the
 curve is applied to what is left, and the direction is carried through untouched.
 */
-export function readStickAxes(stick: MouseStick, screen: ScreenFrame = LEVEL_FRAME): StickAxes | null {
+export function readStickAxes(stick: MouseStick, screen: ScreenFrame = LEVEL_FRAME, highAoa = 0): StickAxes | null {
   if (!stick.live) return null
   const magnitude = Math.hypot(stick.x, stick.y)
   if (magnitude < 1e-6) return { pitch: 0, roll: 0 }
@@ -139,6 +139,11 @@ export function readStickAxes(stick: MouseStick, screen: ScreenFrame = LEVEL_FRA
       if (side) x += (side * reach - x) * (Math.abs(stick.x) / magnitude)
     }
   }
+  // Blend the complete screen correction (including antipodal roll handling)
+  // toward body axes. Scaling the frame angle or only its first rotation would
+  // leave a discontinuity at highAoa=1 for a pointer below the horizon.
+  x += (stick.x - x) * highAoa
+  y += (stick.y - y) * highAoa
   const live = (travel - MOUSE_STICK.deadZone) / (1 - MOUSE_STICK.deadZone)
   const scale = live ** MOUSE_STICK.curve / magnitude
   const clamp = (value: number) => Math.max(-1, Math.min(1, value))

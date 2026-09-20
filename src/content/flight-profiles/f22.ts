@@ -1,5 +1,5 @@
 import type { AircraftFlightProfile, ThrustVectoringProfile } from '../../game/flight/profileTypes'
-import { aeroDefaults, flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
+import { breakoutDefaults, aeroDefaults, flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
 
 export const f22TvcProfile: ThrustVectoringProfile = {
   maxAngle: 20,
@@ -18,6 +18,7 @@ export const f22TvcProfile: ThrustVectoringProfile = {
 }
 
 export const f22Profile: AircraftFlightProfile = {
+  breakout: { ...breakoutDefaults },
   arcadeControlFloor: { acceleration: { pitch: 0.25, yaw: 0.18, roll: 0.3 }, maxRate: { pitch: 0.2, yaw: 0.15, roll: 0.3 } },
   engine: { spoolUpResponse: 4, spoolDownResponse: 6 },
   aero: {

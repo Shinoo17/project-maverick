@@ -1,3 +1,6 @@
+import { observeAirflow } from '../game/flight/airflow'
+import { interpretEnvelope } from '../game/flight/envelope'
+import { getFlightProfile } from '../game/flight/profile'
 import { memo, Suspense, useEffect, useMemo, useRef, type RefObject } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Box3, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
@@ -66,7 +69,8 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
         // Refreshed per simulation tick, not per rendered frame: the sim steps at 120 Hz
         // inside one advance() call, and a correction held across four ticks of a 2 rad/s
         // roll would make the aircraft answer differently at 30 fps than at 144.
-        session.input.psmControl = live.maneuver.phase === 'active' || live.maneuver.phase === 'recovery'
+        const profile = getFlightProfile(live.aircraftId)
+        session.input.highAoa = interpretEnvelope(live, observeAirflow(live, profile), profile).highAoa
         session.input.screen = screenFrame(live, session.cameraMode)
         return session.input.command(tick, id, session.preset)
       })

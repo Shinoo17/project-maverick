@@ -57,9 +57,9 @@ describe('P2 maneuvers', () => {
     const paused = r.snapshot(); r.pause(); r.advance(1); expect(r.snapshot()).toEqual(paused)
     r.reset('free'); expect(r.snapshot()).toEqual(make().snapshot())
   })
-  it('gives High-G extra turning and speed cost only when pulling', () => {
+  it('Space requests extra G at partial demand, with no effect on neutral input', () => {
     const fly = (extra: Partial<PilotCommand>) => { const s = make().snapshot().aircraft[0]; for (let i = 0; i < 120; i++) stepFlight(s, { ...neutralCommand(i, s.id), ...extra }, 1 / 120); return s }
-    const normal = fly({ pitch: 1 }), hard = fly({ pitch: 1, highG: true })
+    const normal = fly({ pitch: 0.5 }), hard = fly({ pitch: 0.5, highG: true })
     expect(hard.rates.pitch).toBeGreaterThan(normal.rates.pitch)
     expect(speed(hard.velocity)).toBeLessThan(speed(normal.velocity))
     expect(speed(fly({ highG: true }).velocity)).toBeCloseTo(130)
@@ -82,13 +82,15 @@ describe('P2 maneuvers', () => {
 import { FlightInput } from '../src/game/input/FlightInput'
 import { runFlightReplay } from '../src/game/playground/replay'
 describe('P2 playground lifecycle', () => {
-  it('uses a held modifier and body-axis mouse control through inverted PSM', () => {
+  it('keeps C as debug input while incidence continuously blends the inverted mouse frame', () => {
     const input = new FlightInput(); input.press('KeyC'); input.held.delete('KeyC')
     expect(input.command(0, 'a', 'keyboard').psmArm).toBe(false)
     input.engage(); input.move(0, -input.gate.radius); input.screen = { angle: Math.PI, blend: 1 }
     expect(input.command(0, 'a', 'mouse').pitch).toBe(-1)
-    input.press('KeyC'); expect(input.command(1, 'a', 'mouse').pitch).toBe(1)
-    input.held.delete('KeyC'); input.psmControl = true
+    input.press('KeyC'); expect(input.command(1, 'a', 'mouse').pitch).toBe(-1)
+    input.held.delete('KeyC'); input.highAoa = 0.5
+    expect(input.command(2, 'a', 'mouse').pitch).toBeCloseTo(0, 12)
+    input.highAoa = 1
     expect(input.command(2, 'a', 'mouse').pitch).toBe(1)
     input.clear(); expect(input.command(3, 'a', 'mouse')).toEqual(neutralCommand(3, 'a'))
   })

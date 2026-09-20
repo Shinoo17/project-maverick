@@ -62,3 +62,23 @@ export function goldenAtFps(golden: Golden, fps: number) {
   })
   return samples
 }
+
+/** I7: authored exponential bounds each automatic substep. The tolerance is
+ * floating-point roundoff only, not a gameplay epsilon. Debug C may step open. */
+export function assertLimiterStep(state: AircraftState, previous: AircraftState) {
+  const f = state.flightForces!, transition = f.limiterStep
+  if (!transition.automatic) return
+  const b = getFlightProfile(state.aircraftId).breakout
+  const from = previous.limiterOpen, target = transition.target
+  const rate = target > from ? b.openRate * (1 + b.brakeBoost * state.intent.brakeIntent + b.powerBoost * state.intent.powerIntent) : b.closeRate
+  const blend = 1 - Math.exp(-rate * f.dt)
+  const change = state.limiterOpen - from
+  const roundoff = 16 * Number.EPSILON
+  const bound = (target > from ? 1 - from : from) * blend
+  if (transition.previous !== from || transition.rate !== rate || target < 0 || target > 1
+    || state.limiterOpen < 0 || state.limiterOpen > 1
+    || Math.abs(change) > bound + roundoff
+    || Math.abs(change - (target - from) * blend) > roundoff) {
+    throw new Error(`I7: automatic limiter exceeded authored exponential (delta=${change}, bound=${bound})`)
+  }
+}

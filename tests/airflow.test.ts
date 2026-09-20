@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Quaternion, Vector3 } from 'three'
+import { MathUtils, Quaternion, Vector3 } from 'three'
 import { aircraftIds, createAircraft, runScenario } from '../benchmarks/flight/harness'
 import { angleOfAttack, observeAirflow } from '../src/game/flight/airflow'
 import { interpretEnvelope } from '../src/game/flight/envelope'
@@ -112,7 +112,7 @@ describe('shared airflow observation', () => {
   })
 })
 
-describe('observe-only envelope', () => {
+describe('read-only envelope observation', () => {
   it('keeps debug limiter permission independent of legacy path smoothing', () => {
     const state = createAircraft('f22'), profile = getFlightProfile('f22')
     state.velocity = { x: 0, y: -100, z: 0 }
@@ -122,13 +122,15 @@ describe('observe-only envelope', () => {
     state.maneuver.phase = 'recovery'
     const flow = observeAirflow(state, profile)
     expect(interpretEnvelope(state, flow, profile)).toEqual({
-      highAoa: 1, separation: 0.4, intent: 0, limiterOpen: 0,
-      alphaLimitDeg: 20, gAllowance: 1.3, stabilityAssist: 0.4, recoveryAssist: 0.4,
+      highAoa: 1, separation: 0.4, intent: 0, limiterOpen: 0, limiterTarget: 0,
+      energyPermission: 1 - MathUtils.smoothstep(flow.dynamicPressure, profile.breakout.qLow, profile.breakout.qHigh),
+      alphaLimitDeg: 20, gAllowance: 1.3, hardTurnBlend: 0.5,
     })
     state.velocity = { x: 0, y: 0, z: 0 }
     expect(interpretEnvelope(state, observeAirflow(state, profile), profile).highAoa).toBe(0)
     state.maneuver.phase = 'normal'
-    expect(interpretEnvelope(state, flow, profile).recoveryAssist).toBe(0)
+    expect(interpretEnvelope(state, flow, profile)).not.toHaveProperty('recoveryAssist')
+    expect(interpretEnvelope(state, flow, profile)).not.toHaveProperty('stabilityAssist')
   })
 
   it('accepts frozen state/profile and leaves both unchanged', () => {

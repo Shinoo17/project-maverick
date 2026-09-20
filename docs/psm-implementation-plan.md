@@ -109,8 +109,8 @@ interface EnvelopeFactors {
   limiterOpen: number       // 0..1, time-smoothed
   alphaLimitDeg: number     // ≤ profile capability maxControllableAlpha
   gAllowance: number        // hard-turn G ceiling multiplier (High-G merged)
-  stabilityAssist: number   // 0..1
-  recoveryAssist: number    // 0..1
+  hardTurnBlend: number     // 0..1; rate/drag blend, independent of gAllowance mapping
+  // Phase 5 will add stabilityAssist/recoveryAssist alongside real consumers and I15 coverage.
 }
 
 /** Per-tick debug record; every invariant about authority is checked against this. */
@@ -138,7 +138,7 @@ Stick เต็ม = **"ต้องการ authority เพิ่ม"** ร�
 | `B·Pi` | brake + power combination (คำนวณในสูตร ไม่ใส่ใน `powerIntent` เพื่อไม่นับซ้ำ) | intent |
 | `Pi` | **`powerIntent`** = `max(Shift, W · w_W)` — **input ผู้เล่นเท่านั้น**; ไม่ใช้ requested engine power เพราะมี governor trim ปน ([speed.ts:33](../src/game/flight/speed.ts#L33)) | `PilotIntent` |
 | `H` | already-high incidence = `smoothstep(alphaNormal, alphaCritical, incidence)` | AirflowState |
-| `T` | sustained saturation (leaky integrator ~0.4 s) | ใหม่ (น้ำหนักต่ำ ดู §6 D4) |
+| `T` | sustained demand (leaky integrator ~0.4 s; P4-1 owner amendment) | ใหม่ (น้ำหนักต่ำ ดู §6 D4) |
 
 **M4 owner decision (19 ก.ย. 2026):** `alphaNormal` / `alphaCritical` ใน §2 หมายถึง
 `profile.aero.alphaNormalDeg` / `profile.aero.alphaCriticalDeg` ซึ่งเป็น threshold ของ
@@ -148,10 +148,14 @@ Stick เต็ม = **"ต้องการ authority เพิ่ม"** ร�
 Phase 1 ใช้ 20° / 30° เป็นค่าเริ่มต้นชั่วคราวเพื่อคง highAoa observation เดิม ยังไม่ใช่ผล playtest.
 `alphaLimitDeg` แบบ observe-only อ่าน `aero.alphaNormalDeg`; การเปิด limiter ตามสูตรด้านล่างยังรอ Phase 4.
 
+**P4-2 owner decision (20 ก.ย. 2026):** คง combined unsigned-incidence restriction. `alphaLimitDeg` จำกัดมุม nose-to-velocity ไม่ใช่ limit แยกรายแกน; limiter permission กับ AD16 capability ตั้งใจให้ทำงานซ้อนกัน. Regression seed alpha +10° / beta −60°, limiter ปิด: pitch request แรกต้องเป็นศูนย์ แล้วกลับมาเป็นบวกภายใน 0.2 s สำหรับ partial/full demand ที่ระบุใน test. การถ่วง `outward` ตาม contribution จริงต่อ incidence rate แทนการอิ่มตัวที่ axis angle 5° เป็นงาน Phase 8; ห้ามแก้ tuning เพื่อชดเชยตอนนี้.
+
 ### 2.3 สูตร (โครง — ค่าน้ำหนักเป็น profile)
 
+**P4-1 owner decision (20 ก.ย. 2026):** ให้ `S` คุม automatic G เท่านั้น; breakout ใช้ `D × permission` เพราะ saturation ตาม rate request ปัจจุบันกับ low-energy `E` ไม่มีช่วงซ้อนกันบริเวณความเร็วเข้า maneuver ใน attached flight. ยกเลิกตัวคูณ full-open rate ใน feedback; วัดด้วย limiter permission ปัจจุบันก่อน G allowance. `T` สะสม demand ด้วยน้ำหนักต่ำเดิม เพื่อไม่ให้ `S` กลับมาคุม breakout ทางอ้อม. AuthorityBudget / aero / TVC / floor ไม่เปลี่ยน.
+
 ```
-demandGate = D · S                                   // ต้องทั้งดึงแรงและชน limiter จริง
+demandGate = D                                       // P4-1: saturation คุม G เท่านั้น
 permission = E · (w_base + w_brake·B + w_power·Pi + w_combo·B·Pi) + w_sustain·T·E
 intent     = clamp(demandGate · permission, 0, 1)
 
@@ -586,7 +590,7 @@ HUD ไม่มี flight-path marker (painter รับ `velocity` แต่�
 Space = High-G, X = airbrake ([FlightInput.ts:41-42](../src/game/input/FlightInput.ts#L41-L42)) ดังนั้น Phase 4 ทดสอบด้วย X; ย้าย binding ใน Phase 6 พร้อม command format change ครั้งเดียว
 
 **D4 — "Sustained demand" เป็นตัวแยกแยะที่อ่อน**
-Mouse stick เป็น positional — ตำแหน่งคงอยู่เมื่อหยุดขยับ ([mouseStick.ts](../src/game/input/mouseStick.ts) `moveStick` clamp แล้วถือไว้) ผู้เล่น dogfight ที่ลาก mouse ไปขอบจะ "sustained" โดยอัตโนมัติ จึงให้น้ำหนัก `T` ต่ำ และให้ตัวแยกหลักเป็น `S` (ชน limiter จริง — reuse `rateScale` เดิม), `E` (q), และ B/Pi
+Mouse stick เป็น positional — ตำแหน่งคงอยู่เมื่อหยุดขยับ ([mouseStick.ts](../src/game/input/mouseStick.ts) `moveStick` clamp แล้วถือไว้) ผู้เล่น dogfight ที่ลาก mouse ไปขอบจะ "sustained" โดยอัตโนมัติ จึงให้น้ำหนัก `T` ต่ำ และให้ตัวแยก breakout เป็น `E` (q) และ B/Pi; ตาม P4-1 owner decision ให้ `S` (ชน rate limit จริง) คุม automatic G เท่านั้น
 
 **D5 — TVC capability ไม่ควรคำนวณจาก "actual nozzle deflection"**
 `tvcTargets()` ได้ angle จาก command ([thrustVectoring.ts:22-28](../src/game/flight/thrustVectoring.ts#L22-L28)) ถ้า capacity = f(actual angle) จะวนกลับ: angle เล็ก → capacity เล็ก → allocation ขอน้อย → angle เล็ก ใช้ **capacity = max deflection × actual thrust × geometry** สำหรับ allocation และ **actual angle** สำหรับ moment ที่ใช้จริง (ตรงกับ `vectoredThrust` เดิม)

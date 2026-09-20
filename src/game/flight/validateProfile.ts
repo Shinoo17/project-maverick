@@ -23,6 +23,20 @@ function nonnegative(value: number, path: string) {
 export function validateFlightProfile(profile: AircraftFlightProfile, path = 'flightProfile') {
   validateFinite(profile, path)
   const { aero, flight, stall, maneuver, thrustVectoring, engine } = profile
+  const b = profile.breakout
+  for (const key of ['qLow', 'qHigh', 'baseWeight', 'brakeWeight', 'powerWeight', 'comboWeight',
+    'sustainWeight', 'openRate', 'closeRate', 'brakeBoost', 'powerBoost', 'hardTurnG'] as const) {
+    if (!Number.isFinite(b?.[key]) || b[key] < 0) throw new Error(`${path}.breakout.${key}: expected finite nonnegative number`)
+  }
+  if (b.qHigh <= b.qLow) throw new Error(`${path}.breakout.qHigh: must exceed qLow`)
+  positive(b.openRate, `${path}.breakout.openRate`)
+  positive(b.closeRate, `${path}.breakout.closeRate`)
+  if (!Number.isFinite(b.openRate * (1 + b.brakeBoost + b.powerBoost))) throw new Error(`${path}.breakout: opening rate overflow`)
+  if (!Number.isFinite(b.hardTurnG * flight.turnAcceleration)) throw new Error(`${path}.breakout.hardTurnG: turn budget overflow`)
+  if (b.hardTurnG < 1) throw new Error(`${path}.breakout.hardTurnG: must be at least 1`)
+  for (const key of ['baseWeight', 'brakeWeight', 'powerWeight', 'comboWeight', 'sustainWeight'] as const) {
+    if (b[key] > 1) throw new Error(`${path}.breakout.${key}: expected 0..1`)
+  }
   for (const key of ['spoolUpResponse', 'spoolDownResponse'] as const) {
     if (!Number.isFinite(engine?.[key])) throw new Error(`${path}.engine.${key}: expected finite number`)
     positive(engine[key], `${path}.engine.${key}`)

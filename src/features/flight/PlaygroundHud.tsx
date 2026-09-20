@@ -1,3 +1,5 @@
+import { observeAirflow } from '../../game/flight/airflow'
+import { envelopeLabel, interpretEnvelope } from '../../game/flight/envelope'
 import { flightInstrumentation } from '../../game/flight/instrumentation'
 import { arcadeSpeed } from '../../game/flight/speed'
 import { getFlightProfile } from '../../game/flight/profile'
@@ -9,7 +11,7 @@ export const lessonLabels = ['lesson0', 'lesson1', 'lesson2', 'lesson3', 'lesson
 const lessonHints = ['lessonHint1', 'lessonHint1', 'lessonHint2', 'lessonHint3', 'lessonHint4', 'lessonHint5', 'lessonHint6'] as const
 export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: { state: AircraftState | null; practice?: PracticeState; lesson: number; cameraChanged: boolean; lab: boolean }) {
   const { t } = useTranslation()
-  const maneuverProfile = getFlightProfile(state?.aircraftId ?? aircraft[0].id).maneuver
+  const profile = getFlightProfile(state?.aircraftId ?? aircraft[0].id), maneuverProfile = profile.maneuver
   const instrumentation = lab && state ? flightInstrumentation(state) : null
   const axes = (value: { pitch: number; yaw: number; roll: number }, scale = 1) => [value.pitch, value.yaw, value.roll].map(v => (v * scale).toFixed(2)).join(' / ')
   const m = state?.maneuver
@@ -18,16 +20,16 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
     !!practice && practice.brakeSeconds >= 1,
     !!practice && practice.highGDegrees >= 90,
     !!practice?.recovered, (m?.completed ?? 0) > 0][lesson]
-  const status = m?.phase ?? 'normal'
+  const status = state ? envelopeLabel(interpretEnvelope(state, observeAirflow(state, profile), profile), state.intent.demand) : 'NORMAL'
   const speed = state ? Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z) : 0
   const low = !!state && state.position.y < maneuverProfile.minAltitude
   const outsideSpeed = speed < maneuverProfile.entryMin || speed > maneuverProfile.entryMax
   const psmReady = maneuverProfile.psmEnabled && !!state && !low && !outsideSpeed
   return <>
     <section className="maneuver-instrument" data-details={lab || lesson > 0} data-phase={status} aria-label={t('maneuver')}>
-      <div className="maneuver-status"><span>{t('maneuver')}</span><strong>{t(status === 'normal' ? psmReady ? 'psmReady' : 'psmUnavailable' : `psm_${status}`)}</strong></div>
-      <p>{!maneuverProfile.psmEnabled ? t('profileUnsupported') : status === 'normal' ? t(low ? 'psmLow' : outsideSpeed ? 'psmSpeed' : 'psmHold') : t(`psmHint_${status}`)}</p>
-      {maneuverProfile.psmEnabled && <div className="psm-speed-band" data-ready={psmReady}>{t('psmBand', { min: Math.round(arcadeSpeed(maneuverProfile.entryMin)), max: Math.round(arcadeSpeed(maneuverProfile.entryMax)) })}</div>}
+      <div className="maneuver-status"><span>{t('maneuver')}</span><strong>{t(`envelope_${status}`)}</strong></div>
+      <p>{t(status === 'RECOVERING' || status === 'DEPARTED' ? 'hudStallRecovering' : 'automaticPsmHint')}</p>
+      {lab && maneuverProfile.psmEnabled && <div className="psm-speed-band" data-ready={psmReady}>{t('debugC')} · {t('psmBand', { min: Math.round(arcadeSpeed(maneuverProfile.entryMin)), max: Math.round(arcadeSpeed(maneuverProfile.entryMax)) })}</div>}
       <div className="maneuver-readings"><span>{t('noseOffPath')} <b>{state ? `${(m?.alpha ?? 0).toFixed(0)}°` : '—'}</b></span></div>
     </section>
     {lesson > 0 && <section className="flight-lesson" aria-label={t('practiceLesson')}><span>{t(lessonLabels[lesson])}</span><strong role="status">{complete ? t('lessonDone') : t(lessonHints[lesson])}</strong><small>{t('ringsPassed', { count: practice?.rings ?? 0 })} · {t('psmCompleted', { count: m?.completed ?? 0 })}</small></section>}

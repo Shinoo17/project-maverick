@@ -54,16 +54,16 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     for (const group of [n.restoring, n.damping]) for (const value of Object.values(group)) expect(Math.abs(value)).toBe(0)
   })
 
-  it('I7: separation and legacy path-grip memory obey authored substep bounds on every trace', () => {
+  it.each(scenarioNames)('I7: separation and legacy observer memory obey authored substep bounds: %s', scenario => {
     const profile = getFlightProfile(id)
-    for (const scenario of scenarioNames) runScenario(scenario, id, (state, previous) => {
+    runScenario(scenario, id, (state, previous) => {
       const flow = observeAirflow(previous, profile)
       const target = separationTarget(flow, profile.stall).target
       const tau = target > previous.stall.severity ? profile.stall.separationEntrySeconds : profile.stall.separationRecoverySeconds
       expect(Math.abs(state.stall.severity - previous.stall.severity)).toBeLessThanOrEqual(1 - Math.exp(-dt / tau) + epsilon)
       expect(state.stall.severity).toBeGreaterThanOrEqual(0)
       expect(state.stall.severity).toBeLessThanOrEqual(1)
-      // Legacy path grip has an exponential 99%-response time; debug limiter permission is separate.
+      // Legacy observer memory retains its exponential response until Phase 6; it no longer sets path grip.
       expect(Math.abs(state.maneuver.blend - previous.maneuver.blend)).toBeLessThanOrEqual(1 - Math.exp(-Math.log(100) * dt / profile.maneuver.blendSeconds) + 1e-9)
     })
   })

@@ -7,11 +7,12 @@ import { createAircraft } from '../benchmarks/flight/harness'
 import { aeroFlowEffectiveness } from '../src/game/flight/aerodynamics'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { interpretEnvelope } from '../src/game/flight/envelope'
-import { requestControl } from '../src/game/flight/controller'
+import { measureControlDemand, requestControl } from '../src/game/flight/controller'
 import { computeBudget } from '../src/game/flight/authority'
 import { stepFlight } from '../src/game/flight/stepFlight'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { tvcMomentCapacity, poweredThrustForces } from '../src/game/flight/thrustVectoring'
+import { assertLimiterStep } from './invariants/helpers'
 
 it('low-speed rate requests are independent of floor tuning and activate at the authored boundary', () => {
   const state = createAircraft('f22'), profile = structuredClone(getFlightProfile('f22'))
@@ -19,17 +20,21 @@ it('low-speed rate requests are independent of floor tuning and activate at the 
   for (const speed of [0, 5, 18, 19, 25, 100]) {
     state.velocity.x = speed
     const flow = observeAirflow(state, profile), envelope = interpretEnvelope(state, flow, profile)
-    const reference = requestControl(command, state.rates, flow, envelope, profile, 0, dt)
+    const demand = measureControlDemand(command, flow, state.stall.severity, profile, state.limiterOpen)
+    const reference = requestControl(command, state.rates, flow, envelope, profile, dt, demand)
     const retuned = structuredClone(profile)
     retuned.arcadeControlFloor = { acceleration: { pitch: 100, yaw: 100, roll: 100 }, maxRate: { pitch: 100, yaw: 100, roll: 100 } }
-    expect(requestControl(command, state.rates, flow, envelope, retuned, 0, dt)).toEqual(reference)
+    expect(requestControl(command, state.rates, flow, envelope, retuned, dt, measureControlDemand(command, flow, state.stall.severity, retuned, state.limiterOpen))).toEqual(reference)
   }
   const boundary = profile.aero.referenceSpeedMps * profile.flight.minRateTarget.pitch / profile.flight.pitchRate
   for (const speed of [boundary - 0.01, boundary + 0.01]) {
     state.velocity.x = speed
     const flow = observeAirflow(state, profile), envelope = interpretEnvelope(state, flow, profile)
-    const result = requestControl({ ...command, yaw: 0, roll: 0 }, state.rates, flow, envelope, profile, 0, dt)
-    const target = Math.max(profile.flight.minRateTarget.pitch, profile.flight.pitchRate * speed / profile.aero.referenceSpeedMps)
+    const input = { ...command, yaw: 0, roll: 0 }
+    const demand = measureControlDemand(input, flow, state.stall.severity, profile, state.limiterOpen)
+    const result = requestControl(input, state.rates, flow, envelope, profile, dt, demand)
+    const closedBudget = demand.closedTurnBudget
+    const target = Math.max(profile.flight.minRateTarget.pitch, Math.min(closedBudget, profile.flight.pitchRate * speed / profile.aero.referenceSpeedMps))
     expect(result.request.pitch).toBeCloseTo(target * (1 - Math.exp(-profile.flight.rateResponse * dt)) / dt, 12)
   }
 })
@@ -48,13 +53,21 @@ it('fractional limiter permission is continuous and changes no capability budget
   }
 })
 
-it('Phase 3 debug permission steps only on C transitions; runtime smoothing remains a Phase 4 requirement', () => {
+it('debug C may step open; release rejoins the continuous automatic path without changing capability', () => {
   const state = createAircraft('f22'); state.velocity.x = 25
   for (const open of [false, false, true, true, false, false]) {
+    const previous = structuredClone(state)
     const alternate = structuredClone(state), command = { ...neutralCommand(0, state.id), pitch: 1, psmArm: open }
     stepFlight(state, command, 1 / 120)
     stepFlight(alternate, { ...command, psmArm: !open }, 1 / 120)
-    expect(state.limiterOpen).toBe(open ? 1 : 0)
+    if (open) expect(state.limiterOpen).toBe(1)
+    else {
+      assertLimiterStep(state, previous)
+      if (previous.limiterOpen === 1) {
+        expect(state.limiterOpen).toBeLessThan(1)
+        expect(state.limiterOpen).toBeGreaterThan(state.flightForces!.limiterStep.target)
+      }
+    }
     expect(state.flightForces!.budget).toEqual(alternate.flightForces!.budget)
   }
 })

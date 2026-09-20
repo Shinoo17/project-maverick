@@ -1,21 +1,21 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
-import { createAircraft, runTrack, runScenario, scenarioNames } from '../../benchmarks/flight/harness'
+import { createAircraft, runTrack, runScenario, scenarioNames, automaticScenarioNames } from '../../benchmarks/flight/harness'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { computeBudget } from '../../src/game/flight/authority'
 import { aeroFlowEffectiveness } from '../../src/game/flight/aerodynamics'
 import { observeAirflow } from '../../src/game/flight/airflow'
 import { poweredThrustForces, tvcMomentCapacity, solveTvcAngles } from '../../src/game/flight/thrustVectoring'
 import { axes } from '../../src/game/flight/allocation'
-import { assertAircraftValid, assertActuatorStep, mulberry32, runAtFps } from './helpers'
+import { assertAircraftValid, assertActuatorStep, assertLimiterStep, mulberry32, runAtFps } from './helpers'
 import { stepFlight } from '../../src/game/flight/stepFlight'
 import { neutralCommand } from '../../src/game/runtime/commands'
 import { readIntent, createPilotIntent } from '../../src/game/flight/intent'
 
 const ids = ['f22', 'su57', 'f22-notvc']
 function audit(state: ReturnType<typeof createAircraft>, previous: ReturnType<typeof createAircraft>) {
-  assertAircraftValid(state); assertActuatorStep(state, previous)
+  assertAircraftValid(state); assertActuatorStep(state, previous); assertLimiterStep(state, previous)
   const f = state.flightForces!, { budget: b, allocation: r } = f, p = getFlightProfile(state.aircraftId)
   const thrust = state.engine.actualThrust, epsilon = 1e-8
   for (const axis of axes) {
@@ -48,7 +48,7 @@ function audit(state: ReturnType<typeof createAircraft>, previous: ReturnType<ty
 }
 
 describe.each(ids)('%s Phase 3 hard invariants', id => {
-  it.each(scenarioNames)('I10–I19 allocation/moment/work/path trace: %s', scenario => { runScenario(scenario, id, audit) })
+  it.each([...scenarioNames, ...automaticScenarioNames.filter(name => !name.endsWith('C'))])('I10–I19 allocation/moment/work/path trace: %s', scenario => { runScenario(scenario, id, audit) })
   it.each([1, 42, 991])('I10–I19 low/reverse-speed mixed-input fuzz seed %s', seed => {
     const random = mulberry32(seed), state = createAircraft(id)
     state.position.y = 4000
@@ -128,14 +128,5 @@ it('I13/I14: C and burner cannot create powered rotation in a fixed zero-q no-TV
     }
     expect(powered.rates).toEqual(idle.rates)
     expect(powered.flightForces!.allocation.floor).toEqual(idle.flightForces!.allocation.floor)
-  }
-})
-it('Phase 3 does not automatically open the limiter from brake, burner or full stick', () => {
-  for (const id of ids) {
-    const state = createAircraft(id); state.position.y = 4000; state.velocity.x = 80
-    for (let i = 0; i < 240; i++) {
-      stepFlight(state, { ...neutralCommand(i, state.id), pitch: 1, afterburner: true, airbrake: true }, 1 / 120)
-      expect(state.limiterOpen).toBe(0)
-    }
   }
 })

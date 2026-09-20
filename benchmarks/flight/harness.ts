@@ -11,7 +11,8 @@ import { observeAirflow } from '../../src/game/flight/airflow'
 
 export const aircraftIds = ['f22', 'su57'] as const
 export const scenarioNames = ['hardTurn900', 'fullStick500', 'cobraC', 'kulbitC', 'reversal180C', 'tailSlide', 'pedalC', 'release45', 'sideslip60'] as const
-export type ScenarioName = typeof scenarioNames[number]
+export const automaticScenarioNames = ['cobra', 'kulbit', 'reversal180', 'pedal', 'psmIntent450', 'psmIntent450C'] as const
+export type ScenarioName = typeof scenarioNames[number] | typeof automaticScenarioNames[number]
 export type Sample = { step: number; time: number; state: AircraftState; noseRotationDeg: number }
 export type CommandRun = { startStep: number; steps: number; command: PilotCommand }
 export interface Trace {
@@ -38,7 +39,15 @@ export function createAircraft(aircraftId: string) {
   return state
 }
 
-export function scenarioSetup(name: ScenarioName, aircraftId: string) {
+export function scenarioSetup(name: ScenarioName, aircraftId: string): { state: AircraftState; seconds: number; controller: Controller } {
+  if (name === 'cobra' || name === 'kulbit' || name === 'reversal180' || name === 'pedal') {
+    const legacy = scenarioSetup(`${name}C` as ScenarioName, aircraftId)
+    const controller: Controller = (state, time, rotation) => {
+      const command = legacy.controller(state, time, rotation)
+      return { ...command, psmArm: false, airbrake: !!command.psmArm, afterburner: !!command.psmArm }
+    }
+    return { ...legacy, controller }
+  }
   const state = createAircraft(aircraftId)
   state.position = { x: 0, y: name === 'tailSlide' ? 2500 : 2000, z: 0 }
   const kph = name === 'hardTurn900' ? 900 : name === 'fullStick500' ? 500 : 450
@@ -58,12 +67,13 @@ export function scenarioSetup(name: ScenarioName, aircraftId: string) {
   }
   const flight = getFlightProfile(aircraftId).flight
   state.enginePower = flight.drag * new Vector3().copy(state.velocity).lengthSq() / dryThrustLimit(flight, state.speedLimits)
-  const seconds = name === 'kulbitC' ? 8 : name === 'release45' ? 2 : name === 'sideslip60' ? 1
+  const seconds = ['kulbitC', 'psmIntent450', 'psmIntent450C'].includes(name) ? 8 : name === 'release45' ? 2 : name === 'sideslip60' ? 1
     : ['hardTurn900', 'fullStick500', 'pedalC'].includes(name) ? 3 : 10
   let cobraStage = 0
   let reversalReleased = false
   const controller: Controller = (current, time, rotation) => {
     switch (name) {
+      case 'psmIntent450': case 'psmIntent450C': return { pitch: 1, airbrake: true, afterburner: true, psmArm: name.endsWith('C') }
       case 'hardTurn900': case 'fullStick500': return { pitch: 1 }
       case 'kulbitC': return { psmArm: true, pitch: 1, speedAdjust: 1, afterburner: true }
       case 'pedalC': return { psmArm: true, yaw: 1, speedAdjust: 1 }

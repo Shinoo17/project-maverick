@@ -6,8 +6,8 @@ export type InputPreset = 'mouse' | 'keyboard'
 const strongest = (digital: number, analog: number) => Math.abs(analog) > Math.abs(digital) ? analog : digital
 export class FlightInput {
   readonly held = new Set<string>()
-  // Body-axis stick in PSM allows a continuous pull through vertical/inverted.
-  psmControl = false
+  // Flow observation refreshed on simulation ticks, never from C/legacy phase.
+  highAoa = 0
   press(code: string) { this.held.add(code) }
   readonly stick = createMouseStick()
   // The flight surface in pixels, and the gate that spans it.
@@ -15,7 +15,7 @@ export class FlightInput {
   gate: StickGate = stickGate(640, 480)
   // How far the airframe appears rotated inside the frame, and how much of that applies.
   screen: ScreenFrame = LEVEL_FRAME
-  clear() { this.psmControl = false; this.held.clear(); clearStick(this.stick); this.screen = LEVEL_FRAME }
+  clear() { this.highAoa = 0; this.held.clear(); clearStick(this.stick); this.screen = LEVEL_FRAME }
   // The surface has taken the pointer: neutral and live from the first frame.
   engage() { engageStick(this.stick) }
   setViewport(width: number, height: number) {
@@ -34,7 +34,7 @@ export class FlightInput {
     // keeps the axes it was tuned on and a mouse roll adds no yaw of its own.
     c.yaw = has('KeyQ', 'KeyE') ? +has('KeyE') - +has('KeyQ') : c.roll * 0.12
     if (preset === 'mouse') {
-      const axes = readStickAxes(this.stick, has('KeyC') || this.psmControl ? LEVEL_FRAME : this.screen)
+      const axes = readStickAxes(this.stick, this.screen, this.highAoa)
       if (axes) { c.pitch = strongest(c.pitch, axes.pitch); c.roll = strongest(c.roll, axes.roll) }
     }
     c.speedAdjust = +has('KeyW') - +has('KeyS')

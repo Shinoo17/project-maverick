@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { aircraftIds, scenarioNames, runScenario, runTrack, createAircraft } from '../../benchmarks/flight/harness'
-import { assertAircraftValid, assertActuatorStep, mulberry32, runAtFps } from './helpers'
+import { assertAircraftValid, assertActuatorStep, assertLimiterStep, mulberry32, runAtFps } from './helpers'
 import { neutralCommand, type PilotCommand } from '../../src/game/runtime/commands'
 import { runFlightReplay } from '../../src/game/playground/replay'
 import { getFlightProfile } from '../../src/game/flight/profile'
@@ -10,7 +10,7 @@ import { flightInstrumentation } from '../../src/game/flight/instrumentation'
 
 const observe: Parameters<typeof runTrack>[3] = (state, previous) => {
   assertAircraftValid(state)
-  assertActuatorStep(state, previous)
+  assertActuatorStep(state, previous); assertLimiterStep(state, previous)
 }
 describe.each(aircraftIds)('%s Phase 0 invariants', aircraftId => {
   it.each(scenarioNames)('I1/I11: %s valid state and actuator bounds at every substep', scenario => {

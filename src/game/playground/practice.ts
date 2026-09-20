@@ -13,7 +13,7 @@ export type PracticeState = ReturnType<typeof createPracticeState>
 export function stepPractice(p: PracticeState, s: AircraftState, c: PilotCommand, previousX: number, dt: number) {
   p.pitch += Math.abs(c.pitch) * dt; p.roll += Math.abs(c.roll) * dt; p.yaw += Math.abs(c.yaw) * dt
   if (c.airbrake) p.brakeSeconds += dt
-  if (s.maneuver.highG > 0.5) p.highGDegrees += s.maneuver.pathRate * dt
+  if ((s.flightForces?.envelope.gAllowance ?? 1) > 1.3) p.highGDegrees += s.maneuver.pathRate * dt
   const speed = Math.hypot(s.velocity.x, s.velocity.y, s.velocity.z)
   if (speed < 60) p.wasLow = true
   if (p.wasLow && speed >= 90 && s.maneuver.alpha < 20 && s.alive) p.recovered = true

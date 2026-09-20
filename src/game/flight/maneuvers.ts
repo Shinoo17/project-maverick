@@ -59,11 +59,11 @@ export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: n
     }
   }
   const assisted = m.phase === 'active' || m.phase === 'recovery'
-  const highGTarget = !assisted && m.phase !== 'armed' && command.highG && Math.hypot(command.pitch, command.yaw) > 0.35
+  const highGTarget = command.highG && Math.hypot(command.pitch, command.yaw) > 0.35
     ? clamp((speed - p.highGMinSpeedMps) / p.highGSpeedFadeMps, 0, 1) * clamp((p.highGMaxSpeedMps - speed) / p.highGSpeedFadeMps, 0, 1) : 0
   m.highG += (highGTarget - m.highG) * (1 - Math.exp(-6 * dt))
   const brake = command.airbrake
   m.airbrake += (+brake - m.airbrake) * (1 - Math.exp(-12 * dt))
-  // Legacy labels/path grip remain until Phase 4. No rate or thrust authority.
+  // Legacy comparison labels remain until Phase 6. No path, rate or thrust authority.
   return { alpha, assisted, brake }
 }

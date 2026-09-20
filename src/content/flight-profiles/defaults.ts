@@ -1,4 +1,4 @@
-import type { AeroProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
+import type { AeroProfile, BreakoutProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
 
 export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg' | 'controlEffectiveness'> = {
   referenceSpeedMps: 90,
@@ -46,8 +46,8 @@ export const stallDefaults = {
   separationRecoverySeconds: 1.2,
 } satisfies Partial<StallProfile>
 
-// New aircraft must opt into PSM. The remaining PSM values are a tuning baseline;
-// they do not grant the capability while psmEnabled is false.
+// C comparison remains opt-in. Path parameters now describe continuous flow;
+// automatic permission and physical capability do not depend on psmEnabled.
 export const maneuverDefaults: ManeuverProfile = {
   psmEnabled: false,
   entryMin: 65,
@@ -72,4 +72,13 @@ export const maneuverDefaults: ManeuverProfile = {
   highGDrag: 2,
   burnerSeconds: 6,
   burnerRecharge: 12,
+}
+
+// Shared provisional envelope, without aircraft personality tuning (Phase 8).
+export const breakoutDefaults: BreakoutProfile = {
+  qLow: 0.5, qHigh: 1.8,
+  baseWeight: 0.15, brakeWeight: 0.35, powerWeight: 0.25, comboWeight: 0.8,
+  sustainWeight: 0.05,
+  openRate: 3, closeRate: 2, brakeBoost: 1, powerBoost: 1,
+  hardTurnG: 1.6,
 }

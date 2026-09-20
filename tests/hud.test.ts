@@ -6,6 +6,9 @@ import { glassState } from '../src/features/flight/FlightInstruments'
 import { arcadeSpeed } from '../src/game/flight/speed'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
+import { observeAirflow } from '../src/game/flight/airflow'
+import { getFlightProfile } from '../src/game/flight/profile'
+import { separationTarget } from '../src/game/flight/stall'
 import { stepFlight } from '../src/game/flight/stepFlight'
 
 const pose = (heading: number, pitch = 0, bank = 0) => new Quaternion()
@@ -56,15 +59,54 @@ describe('velocity marker projection', () => {
 })
 
 describe('stall advisories', () => {
-  it('shows recovery advice, suppresses it during active PSM, and keeps terrain/boundary priority', () => {
+  it('keeps a mild separation advisory with held demand above the low-energy threshold', () => {
+    const state = aircraft()
+    state.velocity = { x: 80, y: 0, z: 0 }
+    state.intent.demand = 1
+    state.stall.severity = 0.1
+    expect(flightWarning(state)).toBeNull()
+    for (const separation of [0.1001, 0.25, 0.5]) {
+      state.stall.severity = separation
+      expect(flightWarning(state)).toBe('hudStallRecovering')
+    }
+    state.stall.severity = 0.5001
+    expect(flightWarning(state)).toBe('hudStall')
+    state.intent.demand = 0
+    expect(flightWarning(state)).toBe('hudStallRecovering')
+    state.position.y = 50
+    expect(flightWarning(state)).toBe('lowAltitude')
+    state.position.x = 7000
+    expect(flightWarning(state)).toBe('boundaryWarning')
+  })
+
+  it.each([0, 1])('keeps all three advisories reachable in settled low-speed flight (demand=%s)', demand => {
+    const state = aircraft(), profile = getFlightProfile(state.aircraftId)
+    state.intent.demand = demand
+    for (const [speed, heldWarning] of [[62, 'hudStallRecovering'], [60, 'hudStall'], [59, 'hudLowEnergy']] as const) {
+      state.velocity = { x: speed, y: 0, z: 0 }
+      // Use the unmodified profile's equilibrium separation, not hand-picked
+      // severity, to catch a warning hidden by the real low-speed stall band.
+      state.stall.severity = separationTarget(observeAirflow(state, profile), profile.stall).target
+      const expected = demand === 0 && heldWarning === 'hudStall' ? 'hudStallRecovering' : heldWarning
+      expect(flightWarning(state)).toBe(expected)
+    }
+    state.orientation = pose(0, 40)
+    state.stall.severity = 1
+    expect(flightWarning(state)).toBe(demand === 0 ? 'hudStall' : null)
+  })
+
+  it('uses continuous flow labels independent of legacy phase, with terrain/boundary priority', () => {
     const state = aircraft()
     expect(flightWarning(null)).toBeNull()
     expect(flightWarning(state)).toBeNull()
     state.stall = { severity: 1, cause: 'aoa', aoaDeg: 40 }
+    state.orientation = pose(0, 40)
     expect(flightWarning(state)).toBe('hudStall')
-    state.stall.cause = 'none'
+    state.orientation = pose(0, 0)
     expect(flightWarning(state)).toBe('hudStallRecovering')
-    state.maneuver.phase = 'active'
+    state.maneuver.phase = 'normal'
+    state.intent.demand = 1
+    state.orientation = pose(0, 40)
     state.velocity.x = 40
     expect(flightWarning(state)).toBeNull()
     state.position.y = 50
@@ -144,7 +186,7 @@ describe('HUD glass mapping', () => {
     expect(read().burnerState).toBe('depleted')
     state.maneuver.burnerLocked = false; state.maneuver.burnerActive = true
     expect(read().burnerState).toBe('engaged')
-    state.maneuver.phase = 'active'
+    state.maneuver.phase = 'normal'; state.intent.demand = 1; state.orientation = pose(0, 45)
     expect(read().psm).toBe(true)
   })
 })

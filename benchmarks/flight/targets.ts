@@ -6,6 +6,11 @@ export const naturalObservationWindowSeconds = 0.2
 export const phase2Playtest = { status: 'pending', b9Targets: 'pending owner playtest', fadeBand: 'provisional 20–30 degrees' } as const
 /** Feel targets warn in reports only. Missing ranges intentionally mean report-only. */
 export const targets: Record<string, Target> = {
+  'B12.fullStick500.peakIncidence': { max: 25 },
+  'B12.fullStick500.limiterOpen': { max: 0.35 },
+  'B14.psmIntent.timeTo70': { max: 1.2 },
+  'B16.limiter.chatterCount': { max: 2 },
+  'B17.cVsAuto.peakDelta': { max: 15 },
   'B1.cobra.peakAoa': { min: 75, max: 95 },
   'B2.cobra.timeTo90': { min: 0.7, max: 1.2 },
   'B4.cobra.headingChange': { max: 20 },

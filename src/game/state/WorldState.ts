@@ -28,7 +28,7 @@ export interface AircraftState {
   enginePower: number
   engine: EngineState
   intent: PilotIntent
-  /** Phase 3 debug permission; automatic breakout starts in Phase 4. */
+  /** Continuous automatic permission; C may force it open for debug comparison. */
   limiterOpen: number
   thrustVectoring: ThrustVectoringState
   rates: { pitch: number; yaw: number; roll: number }
