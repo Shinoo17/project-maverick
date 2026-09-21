@@ -53,15 +53,9 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
   for (const axis of ['pitch', 'yaw', 'roll'] as const) {
     const input = command[axis]
     if (Math.abs(target[axis]) < Math.abs(input) * p.minRateTarget[axis]) target[axis] = input * p.minRateTarget[axis]
-    if (axis === 'roll') continue
-    const incidence = axis === 'pitch' ? flow.alphaDeg : -flow.betaDeg
-    // Use the same five-degree band to fade outward restriction through zero.
-    // Combined incidence still sets the limit; cross-axis flow cannot turn a
-    // tiny signed-angle change into an all-or-nothing controller request.
-    const outward = clamp(Math.sign(input) * incidence / 5, 0, 1)
-    const allowed = clamp((envelope.alphaLimitDeg - flow.incidenceDeg) / 5, 0, 1)
-    target[axis] *= 1 - outward * (1 - allowed)
   }
+  const limited = restrictIncidence(target, flow, envelope.alphaLimitDeg, dt)
+  target.pitch = limited.pitch; target.yaw = limited.yaw
   const request = { pitch: 0, yaw: 0, roll: 0 }, servoDamping = { ...request }
   for (const axis of ['pitch', 'yaw', 'roll'] as const) {
     if (command[axis] === 0) {
@@ -78,4 +72,34 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
     }
   }
   return { request, servoDamping, normalLimit, highG }
+}
+
+/** Project only the outward component of the COMBINED requested nose rotation.
+ * Inward motion and tangent cross-axis motion survive. A finite-step gradient
+ * includes second-order curvature at 0/180°, without division by sin(incidence).
+ * Roll stays a body-axis rotation and cannot rotate the nose by itself.
+ */
+export function restrictIncidence(target: AeroAxes, flow: AirflowState, limitDeg: number, dt: number): AeroAxes {
+  if (flow.confidence === 0) return { ...target }
+  const alpha = flow.alphaDeg * Math.PI / 180, beta = flow.betaDeg * Math.PI / 180
+  const vx = Math.cos(alpha) * Math.cos(beta), vy = -Math.sin(alpha) * Math.cos(beta), vz = Math.sin(beta)
+  const gp = -vy + 0.5 * (vx * target.pitch - target.roll * vz) * dt
+  const gy = -vz + 0.5 * (vx * target.yaw + target.roll * vy) * dt
+  const outward = target.pitch * gp + target.yaw * gy
+  const allowed = clamp((limitDeg - flow.incidenceDeg) / 5, 0, 1)
+  if (outward <= 0) return { ...target }
+  // A binary active-axis mask jumps when a second input crosses zero. Weight
+  // the projection continuously by squared requested travel instead: neutral axes stay
+  // neutral, and infinitesimal cross-axis input cannot unlock full pitch/yaw.
+  const travel = target.pitch ** 2 + target.yaw ** 2
+  if (travel === 0) return { ...target }
+  const wp = target.pitch ** 2 / travel, wy = target.yaw ** 2 / travel
+  // Numerical tangent regularization, not an incidence permission deadband.
+  const norm = wp * gp * gp + wy * gy * gy + 1e-12
+  const scale = outward / norm * (1 - allowed) * flow.confidence
+  const pitch = target.pitch - wp * gp * scale, yaw = target.yaw - wy * gy * scale
+  // Weighted projection can increase Euclidean norm; permission never amplifies
+  // total requested nose rate. This rescale preserves the correction direction.
+  const rateScale = Math.min(1, Math.hypot(target.pitch, target.yaw) / Math.max(Math.hypot(pitch, yaw), 1e-20))
+  return { pitch: pitch * rateScale, yaw: yaw * rateScale, roll: target.roll }
 }

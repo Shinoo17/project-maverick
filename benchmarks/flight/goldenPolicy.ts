@@ -3,6 +3,9 @@
  */
 export const phase0ArchiveVersion = 'p3-powered-psm-1'
 const retiredI4: Record<string, { archiveVersion: string; reason: string }> = {
+  'p4.5c-jet-drift-1': { archiveVersion: phase0ArchiveVersion, reason: 'Rev. 4 explicit dry control power and dissipative directional braking with specific-work accounting. Phase 0 archived inputs remain safety tracks, not output equivalence.' },
+  'p4.5b-continuation-1': { archiveVersion: phase0ArchiveVersion, reason: 'Rev. 4 continuation/release and combined contribution-aware limiter supersede P4-2 behavior; archives preserved.' },
+  'p4.5a-entry-path-1': { archiveVersion: phase0ArchiveVersion, reason: 'Rev. 4 entry window and explicit physical/path assist separation; Phase 0 outputs remain archived.' },
   'p4-automatic-envelope-2': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 4 review fixes controller permission continuity and owner-approved saturation for G only. Preserve historical golden outputs and replay archived inputs under the new version.' },
   'p4-automatic-envelope-1': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 4 automatic permission, shared G allowance and continuous flow-based path/gravity intentionally change physics. Preserve every Phase 0 golden output.' },
   'p3-flow-effectiveness-4': { archiveVersion: phase0ArchiveVersion, reason: 'Airflow-derived control effectiveness replaces the separation factor in physical aero authority and adds crossflow damping. Preserve Phase 0 archives for calibration.' },

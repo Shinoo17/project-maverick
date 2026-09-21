@@ -24,17 +24,18 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   validateFinite(profile, path)
   const { aero, flight, stall, maneuver, thrustVectoring, engine } = profile
   const b = profile.breakout
-  for (const key of ['qLow', 'qHigh', 'baseWeight', 'brakeWeight', 'powerWeight', 'comboWeight',
+  for (const key of ['handoffSeconds', 'qLow', 'qHigh', 'baseWeight', 'brakeWeight', 'decelerationWeight', 'powerWeight', 'comboWeight',
     'sustainWeight', 'openRate', 'closeRate', 'brakeBoost', 'powerBoost', 'hardTurnG'] as const) {
     if (!Number.isFinite(b?.[key]) || b[key] < 0) throw new Error(`${path}.breakout.${key}: expected finite nonnegative number`)
   }
   if (b.qHigh <= b.qLow) throw new Error(`${path}.breakout.qHigh: must exceed qLow`)
+  positive(b.handoffSeconds, `${path}.breakout.handoffSeconds`)
   positive(b.openRate, `${path}.breakout.openRate`)
   positive(b.closeRate, `${path}.breakout.closeRate`)
   if (!Number.isFinite(b.openRate * (1 + b.brakeBoost + b.powerBoost))) throw new Error(`${path}.breakout: opening rate overflow`)
   if (!Number.isFinite(b.hardTurnG * flight.turnAcceleration)) throw new Error(`${path}.breakout.hardTurnG: turn budget overflow`)
   if (b.hardTurnG < 1) throw new Error(`${path}.breakout.hardTurnG: must be at least 1`)
-  for (const key of ['baseWeight', 'brakeWeight', 'powerWeight', 'comboWeight', 'sustainWeight'] as const) {
+  for (const key of ['baseWeight', 'brakeWeight', 'decelerationWeight', 'powerWeight', 'comboWeight', 'sustainWeight'] as const) {
     if (b[key] > 1) throw new Error(`${path}.breakout.${key}: expected 0..1`)
   }
   for (const key of ['spoolUpResponse', 'spoolDownResponse'] as const) {
@@ -102,9 +103,13 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   for (const key of ['alphaDrag', 'betaDrag', 'reverseDrag'] as const) {
     if (!Number.isFinite(aero[key]) || aero[key] < 0) throw new Error(`${path}.aero.${key}: expected finite nonnegative number`)
   }
-  for (const key of ['afterburnerAcceleration', 'airbrakeDeceleration', 'neutralRollResponse'] as const) {
+  for (const key of ['afterburnerAcceleration', 'airbrakeDeceleration', 'neutralRollResponse', 'physicalPathResponse', 'physicalPathAcceleration', 'pathAssistAcceleration', 'pathAssistResponse', 'airbrakeCrossflow', 'controlPower'] as const) {
     if (!Number.isFinite(flight[key])) throw new Error(`${path}.flight.${key}: expected finite number`)
     nonnegative(flight[key], `${path}.flight.${key}`)
+  }
+  positive(flight.pathAssistResponse, `${path}.flight.pathAssistResponse`)
+  for (const key of ['airbrakeCrossflow', 'controlPower'] as const) {
+    if (flight[key] > 1) throw new Error(`${path}.flight.${key}: expected 0..1`)
   }
   for (const key of ['lateralAcceleration', 'recoveryIncidenceRad', 'recoverySpeedMps',
     'highGMinSpeedMps', 'highGMaxSpeedMps', 'highGSpeedFadeMps'] as const) {

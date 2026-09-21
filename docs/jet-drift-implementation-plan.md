@@ -1,5 +1,7 @@
 # Jet Drift / Implicit PSM — Implementation Amendment (Rev. 4)
 
+> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5–9 remain pending. The original planning status below is historical.
+
 > 21 September 2026 — Owner-approved implementation direction; implementation pending.
 > Target branch: feat/psm-rework. Planning baseline: 33fa51010d03b34d21a8da9ce6f1588a408f95ee (Phase 4 complete).
 > Companion to [psm-implementation-plan.md](psm-implementation-plan.md). This document governs the explicitly amended post-Phase-4 work; completed Phase 0–4 reports remain historical evidence.

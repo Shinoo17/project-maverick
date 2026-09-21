@@ -58,6 +58,10 @@ describe('held, thrust-powered PSM', () => {
     for (const s of [idle, powered]) {
       s.stall.severity = 1; s.maneuver.phase = 'active'; s.maneuver.blend = 1
     }
+    // Isolate the original zero-thrust boundary: Rev. 4 adds explicit dry control power.
+    const tuning = getFlightProfile(id).flight, savedPower = tuning.controlPower
+    tuning.controlPower = 0
+    try {
     fly(idle, dt, { psmArm: true, pitch: 1 })
     expect(idle.enginePower).toBe(0)
     expect(idle.flightForces!.budget.poweredControlAvailable).toBe(0)
@@ -74,6 +78,7 @@ describe('held, thrust-powered PSM', () => {
     expect(budget.tvc.positive.pitch).toBeGreaterThan(dryPitch * 0.3)
     expect(powered.flightForces!.allocation.tvc.pitch).toBeGreaterThan(dryPitch * 0.3)
     expect(powered.maneuver.phase).toBe('active')
+    } finally { tuning.controlPower = savedPower }
   })
 
   it.each(['f22', 'su57'])('keeps TVC and translation at full stall with no C, even while braking: %s', id => {

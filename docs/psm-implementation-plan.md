@@ -1,5 +1,7 @@
 # PSM / High-AoA / TVC — Implementation Plan (Rev. 4)
 
+> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5–9 remain pending. The original planning status below is historical.
+
 > **Rev. 4 — 21 ก.ย. 2026: owner อนุมัติทิศทาง Jet Drift / Implicit PSM แล้ว**
 > เริ่มงานถัดไปจาก [Jet Drift implementation amendment](jet-drift-implementation-plan.md): baseline capture → Phase 4.5A (entry/path assist) → 4.5B (continuation/cross-axis) → 4.5C (braking/power/work) → 5 → 6 → 8 → 7 → 9.
 > เป้าหมาย: เข้า high-AoA ง่ายในช่วง 350–700 **arcade km/h บน HUD**, ต่อ pitch/yaw/roll ได้, ไม่ต้องใช้ C หรือคา Afterburner เพื่อเริ่มทุกท่า; ท่าทั้งหมดเกิดจาก physics + input.

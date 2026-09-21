@@ -173,3 +173,10 @@ The old fixed-flow legacy-overlay equality fixture has been superseded by Phase 
 allocation conservation and actual-moment reconstruction checks. The new engine,
 allocation and path/work tests enforce ownership without retaining obsolete generic
 PSM rate expectations. See the implementation report for every migrated assertion.
+
+
+## Jet Drift / Phase 4.5
+
+Run `npm run flight:bench -- benchmarks/flight/jetDrift.report.ts` for the no-C entry grid, partial holds, mirrored handoffs, release/reapply, matched-state exit treatments, normal flight, reserve and ablation diagnostics. Runs use the existing 120 Hz harness. Targets in `targets.ts` are report-only.
+
+Immutable Phase 4 starting measurements live in `jet-drift-baseline/`; reviewed implementation measurements live in `jet-drift-results/`. Compressed traces are JSON (`gzip -dc <trace.json.gz>`), including exact initial states/commands and sampled force records. Fresh output goes to ignored `out/jet-drift-current/`. `DRIFT_STAGE=baseline` refuses to overwrite the archive. See `docs/phase45-implementation-report.md` for units, version policy and limitations.

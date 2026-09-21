@@ -30,6 +30,8 @@ export interface AircraftState {
   intent: PilotIntent
   /** Continuous automatic permission; C may force it open for debug comparison. */
   limiterOpen: number
+  /** Smoothed explicit translational assistance permission. */
+  pathAssistWeight: number
   thrustVectoring: ThrustVectoringState
   rates: { pitch: number; yaw: number; roll: number }
   /** Read-only diagnostics, populated after the first integrated flight substep. */

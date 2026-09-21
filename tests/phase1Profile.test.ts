@@ -118,6 +118,8 @@ describe('Phase 1 profile constants', () => {
     state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
     state.maneuver.phase = 'active'
     state.maneuver.blend = 1
+    // Observe this legacy arcade term while assistance is still present.
+    state.pathAssistWeight = 1
     const reference = structuredClone(state)
     const command = { ...neutralCommand(0, state.id), psmArm: true, pitch: 1, speedAdjust: 1 }
     stepFlight(reference, command, FLIGHT_STEP)

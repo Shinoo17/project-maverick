@@ -15,6 +15,7 @@ import { computeBudget, signedBudget } from './authority'
 import { allocate, axes, zeroAxes } from './allocation'
 import { measureControlDemand, requestControl } from './controller'
 import { readIntent } from './intent'
+import { physicalPathResponse } from './pathResponse'
 import { integrateTranslation } from './engineForces'
 
 // Canonical body axes: +X forward, +Y up, +Z right. Positive pitch raises nose;
@@ -30,14 +31,14 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   stepManeuvers(state, command, dt, airflowStart)
   const m = state.maneuver
   const demand = measureControlDemand(command, airflowStart, state.stall.severity, profile, state.limiterOpen)
-  state.intent = readIntent(command, state.intent, dt, demand.saturationRatio)
+  state.intent = readIntent(command, state.intent, dt, demand.saturationRatio, profile.breakout.handoffSeconds)
   const { envelope, limiterStep } = stepEnvelope(state, airflowStart, profile, dt, command.psmArm && maneuverProfile.psmEnabled)
   const rates = state.rates, ratesBefore = { ...rates }
   // One evaluation per substep feeds both the natural layer and the capability
   // budget; authority.ts stays free of any aerodynamics import.
   const effectiveness = aeroFlowEffectiveness(airflowStart, aero)
   const natural = naturalAerodynamics(airflowStart, envelope.separation, effectiveness, ratesBefore, aero)
-  const { thrust, braking } = stepSpeed(state, command, dt, speed)
+  const { thrust, brakes, power, brakeSources } = stepSpeed(state, command, dt, speed, Math.max(envelope.intent, envelope.continuation))
   const budget = computeBudget(airflowStart, effectiveness, thrust, profile)
   const control = requestControl(command, ratesBefore, airflowStart, envelope, profile, dt, demand)
   const selectedBudget = signedBudget(budget, control.request)
@@ -51,7 +52,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
     const reserved = allocation.tvc[axis]
     const achieved = Math.sign(reserved) * Math.min(Math.abs(reserved), Math.max(0, Math.sign(reserved) * targetTorque[axis]))
     allocation.unmet[axis] += reserved - achieved
-    allocation.tvc[axis] = achieved
+    allocation.tvc[axis] = achieved || 0
     coupledTarget[axis] = targetTorque[axis] - achieved
   }
   stepThrustVectoring(state, targets, dt)
@@ -67,15 +68,17 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   }
   const neutralWeight = 1 - envelope.highAoa
   state.flightForces = {
+    power, brakes: { ...brakes, ...brakeSources },
     dt, airflowStart, envelope, limiterStep, separation: envelope.separation, highAoa: envelope.highAoa, flowEffectiveness: effectiveness,
     ratesBefore, ratesAfter: { ...rates }, controller, stabilityDamping: control.servoDamping, neutralWeight,
     naturalRestoring: natural.restoring, naturalDamping: damping,
     alphaDrag: natural.alphaDrag, betaDrag: natural.betaDrag, tvc: actualTvc,
     budget, allocation, targetTorque, coupledTarget, actuatorLag, nozzleTargets: targets,
-    translation: { thrustWork: 0, dragWork: 0, controlPathRate: 0, controlPathCap: 0, uncappedControlPathRate: null, pathCapActive: false, longitudinalZeroCrossing: false },
+    translation: { thrustWork: 0, dragWork: 0, brakeWork: 0, brakeForce: { x: 0, y: 0, z: 0 }, brakePathRate: 0, brakePathCap: 0, controlPathRate: 0, controlPathCap: 0, uncappedControlPathRate: null, pathCapActive: false, longitudinalZeroCrossing: false },
   }
   const authority = demand.speedAuthority, normalLimit = control.normalLimit
-  // Path support follows measured flow and separation, never C or legacy phase.
+  // Baseline arcade response follows flow/separation; explicit assistance below
+  // may loosen it during entry. The physical contribution reads flow alone.
   // Reattachment restores the old recovery grip continuously; no delayed assist.
   const separation = envelope.separation
   const grip = 1 - separation
@@ -107,11 +110,17 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   if (normalLateral.lengthSq() > 1e-8) normalLateral.setLength(speed * p.pathResponse * forward.angleTo(path))
   const anticipation = forward.clone().sub(previousForward).multiplyScalar(speed * p.turnAnticipation / dt)
   anticipation.addScaledVector(path, -anticipation.dot(path))
+  const attachedAlignment = normalLateral.clone()
   normalLateral.add(anticipation).clampLength(0, normalLimit).multiplyScalar(surfaceControl)
   lateral.multiplyScalar(speed * maneuverProfile.pathResponse * authority * pathGrip * lift)
   const lateralLimit = MathUtils.lerp(maneuverProfile.lateralAcceleration, maneuverProfile.recoveryAcceleration, reattachment) * lift
   if (lateral.length() > lateralLimit) lateral.setLength(lateralLimit)
+  const looseResponse = lateral.clone()
   lateral.lerp(normalLateral, grip)
+  const physical = physicalPathResponse(airflowStart, previousForward, path, profile)
+  const assist = lateral.clone().sub(physical).clampLength(0, p.pathAssistAcceleration).multiplyScalar(envelope.pathAssistWeight)
+  lateral.copy(physical).add(assist)
+  state.flightForces.path = { attachedAlignment, anticipation, looseResponse, physical, assist, assistWeight: envelope.pathAssistWeight, total: lateral.clone() }
   const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + control.highG * (maneuverProfile.highGDrag - 1))
   const stallDrag = 1 + state.stall.severity * (stallProfile.dragMultiplier - 1)
   const drag = p.drag * speed * speed * stallDrag + turnLoss + natural.alphaDrag + natural.betaDrag
@@ -121,15 +130,15 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   // Attached lift need only support one G to hold the arcade horizon. At near
   // rest even attached flow cannot do that; separated flow lets gravity return.
   const gravityBlend = 1 - Math.min(1, p.turnAcceleration * lift / p.gravity) * (1 - separation)
-  const translated = integrateTranslation(velocity, path, engineForce, lateral, drag + braking,
-    p.gravity, gravityBlend, aero.pathRateFloorMps, dt)
+  const translated = integrateTranslation(velocity, path, engineForce, lateral, drag,
+    p.gravity, gravityBlend, aero.pathRateFloorMps, dt, { ...brakes, orientation })
   velocity.copy(translated.velocity)
-  const { thrustWork, dragWork, controlPathRate, controlPathCap, uncappedControlPathRate, pathCapActive, longitudinalZeroCrossing } = translated
-  state.flightForces.translation = { thrustWork, dragWork, controlPathRate, controlPathCap, uncappedControlPathRate, pathCapActive, longitudinalZeroCrossing }
+  const { thrustWork, dragWork, brakeWork, brakeForce, brakePathRate, brakePathCap, controlPathRate, controlPathCap, uncappedControlPathRate, pathCapActive, longitudinalZeroCrossing } = translated
+  state.flightForces.translation = { thrustWork, dragWork, brakeWork, brakeForce, brakePathRate, brakePathCap, controlPathRate, controlPathCap, uncappedControlPathRate, pathCapActive, longitudinalZeroCrossing }
   m.alpha = observeAirflow({ orientation: state.orientation, velocity }, profile).incidenceDeg
   m.pathRate = speed > 1 && velocity.length() > 1 ? path.angleTo(velocity) / dt * 180 / Math.PI : 0
   m.g = Math.sqrt(1 + (speed * m.pathRate * Math.PI / 180 / p.gravity) ** 2)
-  m.drag = drag + braking
+  m.drag = drag + Math.max(0, -brakeForce.dot(path))
   Object.assign(state.velocity, velocity)
   state.position.x += velocity.x * dt; state.position.y += velocity.y * dt; state.position.z += velocity.z * dt
   if (state.position.y <= 3) { state.position.y = 3; state.alive = false; state.stopReason = 'terrain' }

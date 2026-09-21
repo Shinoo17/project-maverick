@@ -25,7 +25,7 @@ interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session:
 function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
-  const rig = useMemo(() => new FlightCamera(), [])
+  const rig = useMemo(() => new FlightCamera(new URLSearchParams(window.location.search).has('driftCamera')), [])
   const group = useRef<Group>(null)
   const elapsed = useRef(0), reset = useRef(-1)
   const rigTick = useRef(-1)
@@ -41,6 +41,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     orientation.position.copy(bounds.getCenter(new Vector3())).negate()
     return root
   }, [asset, definition])
+  const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId] })
@@ -83,7 +84,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     rigTick.current = tick
     const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
-    rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion)
+    rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)

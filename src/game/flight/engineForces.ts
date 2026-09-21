@@ -1,4 +1,4 @@
-import { Vector3 } from 'three'
+import { Quaternion, Vector3 } from 'three'
 
 /** Engine + lateral-force change of path direction. Longitudinal work is integrated by
  * stepFlight's shared energy guard, independent of this transverse rate cap.
@@ -17,7 +17,12 @@ export function controlledPathStep(path: Vector3, controlForce: Vector3, speed: 
  * potential energy, not a source hidden in the direction normalization. */
 export function integrateTranslation(velocity: Vector3, path: Vector3, engineForce: Vector3,
   lateral: Vector3, dragAndBrake: number, gravity: number, gravityBlend: number,
-  floorMps: number, dt: number) {
+  floorMps: number, dt: number, brake?: DirectionalBrake) {
+  const braked = brake ? directionalBrakeStep(velocity, brake, floorMps, dt) : null
+  if (braked) {
+    velocity = braked.velocity
+    if (velocity.lengthSq() > 1e-16) path = velocity.clone().normalize()
+  }
   const speed = velocity.length()
   const axialThrust = engineForce.dot(path)
   const net = axialThrust - dragAndBrake
@@ -51,5 +56,31 @@ export function integrateTranslation(velocity: Vector3, path: Vector3, engineFor
     const allowedSpeed = Math.max(0, -gravityStep + Math.sqrt(gravityStep * gravityStep + 2 * energy))
     result.multiplyScalar(Math.min(1, allowedSpeed / candidateSpeed))
   }
-  return { velocity: result, thrustWork, dragWork, controlPathRate: controlPath.angle / dt, controlPathCap: controlPath.maxRate, uncappedControlPathRate: controlPath.uncappedRate, pathCapActive: controlPath.capActive, longitudinalZeroCrossing: poweredSpeed < 0 }
+  return { velocity: result, thrustWork, dragWork: dragWork + (braked?.work ?? 0), brakeWork: braked?.work ?? 0, brakeForce: braked?.force ?? new Vector3(), brakePathRate: braked?.pathRate ?? 0, brakePathCap: braked?.pathCap ?? 0, controlPathRate: controlPath.angle / dt, controlPathCap: controlPath.maxRate, uncappedControlPathRate: controlPath.uncappedRate, pathCapActive: controlPath.capActive, longitudinalZeroCrossing: poweredSpeed < 0 }
+}
+
+export interface DirectionalBrake {
+  orientation: { x: number; y: number; z: number; w: number }
+  forward: number
+  crossflow: number
+}
+/** Dissipative split impulse: each body component decays exponentially, never
+ * overshoots zero. The exact midpoint impulse work is the lost kinetic energy.
+ * A speed floor bounds anisotropic direction change near rest. The engine step
+ * subsequently uses this new direction, so both longitudinal and transverse
+ * brake effects are included, without charging the same loss twice.
+ */
+export function directionalBrakeStep(velocity: Vector3, brake: DirectionalBrake, floorMps: number, dt: number) {
+  const q = new Quaternion().copy(brake.orientation)
+  const body = velocity.clone().applyQuaternion(q.clone().invert()), initial = body.clone()
+  const denominator = Math.max(velocity.length(), floorMps)
+  body.x *= Math.exp(-Math.max(0, brake.forward) * dt / denominator)
+  const cross = Math.exp(-Math.max(0, brake.crossflow) * dt / denominator)
+  body.y *= cross; body.z *= cross
+  const impulse = body.clone().sub(initial)
+  const work = Math.max(0, -impulse.dot(initial.clone().add(body).multiplyScalar(0.5)))
+  const result = body.applyQuaternion(q)
+  return { velocity: result, work, force: impulse.applyQuaternion(q).divideScalar(dt),
+    pathCap: Math.abs(brake.forward - brake.crossflow) / (2 * denominator),
+    pathRate: velocity.lengthSq() > 1e-16 && result.lengthSq() > 1e-16 ? Math.atan2(velocity.clone().cross(result).length(), velocity.dot(result)) / dt : 0 }
 }

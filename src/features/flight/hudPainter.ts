@@ -278,7 +278,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
 
   // Preserve the original winged-circle nose pipper. FPM uses a distinct diamond.
   function drawNosePipper(state: GlassState, camera: Camera) {
-    const point = projectPoint(camera, scratch.set(state.forward.x, state.forward.y, state.forward.z).multiplyScalar(4000).add(state.position), width, height)
+    const point = projectVelocityMarker(camera, state.position, scratch.copy(state.forward).multiplyScalar(2), width, height, 24)
     if (!point) return
     const { x: cx, y: cy } = point
     const r = Math.max(layout.half * 0.018, 6)

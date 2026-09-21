@@ -1,3 +1,4 @@
+import { simulationSpeed } from '../../game/flight/speedLimits'
 import type { AeroProfile, BreakoutProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
 
 export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg' | 'controlEffectiveness'> = {
@@ -26,6 +27,7 @@ export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps
 export const flightDefaults = {
   afterburnerAcceleration: 38,
   airbrakeDeceleration: 30,
+  airbrakeCrossflow: 0.25, controlPower: 0.7,
   driveResponse: 8,
   releaseResponse: 6,
   rateResponse: 5,
@@ -34,6 +36,7 @@ export const flightDefaults = {
   neutralResponse: 9,
   turnRateReserve: 0.9,
   pathResponse: 4,
+  physicalPathResponse: 0.35, physicalPathAcceleration: 40, pathAssistAcceleration: 250, pathAssistResponse: 18,
   turnAnticipation: 0.65,
   gravity: 9.81,
 } satisfies Partial<FlightProfile>
@@ -76,9 +79,10 @@ export const maneuverDefaults: ManeuverProfile = {
 
 // Shared provisional envelope, without aircraft personality tuning (Phase 8).
 export const breakoutDefaults: BreakoutProfile = {
-  qLow: 0.5, qHigh: 1.8,
-  baseWeight: 0.15, brakeWeight: 0.35, powerWeight: 0.25, comboWeight: 0.8,
+  handoffSeconds: 0.22,
+  qLow: (simulationSpeed(650) / aeroDefaults.referenceSpeedMps) ** 2, qHigh: (simulationSpeed(850) / aeroDefaults.referenceSpeedMps) ** 2,
+  baseWeight: 0.08, brakeWeight: 0.92, decelerationWeight: 0.45, powerWeight: 0.1, comboWeight: 0.1,
   sustainWeight: 0.05,
-  openRate: 3, closeRate: 2, brakeBoost: 1, powerBoost: 1,
+  openRate: 5, closeRate: 2, brakeBoost: 1, powerBoost: 1,
   hardTurnG: 1.6,
 }

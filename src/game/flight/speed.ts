@@ -14,7 +14,7 @@ export function dryThrustLimit(p: FlightProfile, limits: SpeedLimits) {
   return Math.max(p.maxThrust, p.drag * limits.topSpeedMps ** 2 + p.acceleration)
 }
 
-export function stepSpeed(state: AircraftState, command: PilotCommand, dt: number, speed: number) {
+export function stepSpeed(state: AircraftState, command: PilotCommand, dt: number, speed: number, maneuverIntent = 0) {
   const profile = getFlightProfile(state.aircraftId)
   const p = profile.flight
   stepBurner(state.maneuver, command.afterburner, profile.maneuver, dt)
@@ -38,12 +38,24 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
   const maxThrust = m.burnerActive
     ? Math.max(dryThrust * 1.6, p.drag * topSpeed ** 2 + p.afterburnerAcceleration)
     : dryThrust
-  const requestedPower = clamp(trim + acceleration, 0, maxThrust) / dryThrust
+  // Bounded explicit pilot maneuver request, shared by translation and TVC.
+  // Neither drag coefficients beyond base trim nor a speed error enter this term.
+  const controlPower = p.controlPower * clamp(maneuverIntent, 0, 1)
+  const dryRequest = Math.min(dryThrust, trim + Math.max(0, drive) + controlPower * dryThrust)
+  const burnerRequest = Math.max(0, acceleration - Math.max(0, drive))
+  const requestedPower = clamp(dryRequest + burnerRequest, 0, maxThrust) / dryThrust
   const thrust = stepEngine(state, requestedPower, dryThrust, profile.engine, dt)
 
   // Shed overspeed gradually (including after burner cutoff), never clamp velocity.
   // Gravity, turning losses and PSM still act independently in stepFlight.
   const excess = Math.max(0, speed - topSpeed)
   const overspeedBraking = Math.min(excess * p.releaseResponse, p.deceleration, excess / dt)
-  return { thrust, braking: Math.max(m.airbrake * p.airbrakeDeceleration, Math.max(0, -drive), overspeedBraking) }
+  const airbrake = m.airbrake * p.airbrakeDeceleration
+  const isotropic = Math.max(Math.max(0, -drive), overspeedBraking)
+  return { thrust, braking: Math.max(airbrake, isotropic),
+    brakes: { forward: Math.max(airbrake, isotropic), crossflow: Math.max(airbrake * p.airbrakeCrossflow, isotropic) },
+    power: { baseTrim: trim, drive: Math.max(0, drive), controlPower, controlThrust: controlPower * dryThrust,
+      burner: burnerRequest, requestedPower, actualThrust: thrust },
+    brakeSources: { airbrake, deceleration: Math.max(0, -drive), overspeed: overspeedBraking },
+  }
 }

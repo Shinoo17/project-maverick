@@ -59,9 +59,8 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
     })
     const release = held.samples.at(-1)!.state
     expect(release.maneuver.phase).toBe('active')
-    // C now grants only permission; this old high-energy fixture need not reach
-    // post-stall without phase-forced grip loss. Seeded post-stall safety is below.
-    expect(release.maneuver.peakAlpha).toBeLessThan(70)
+    // Rev. 4 permits real deep entry in this fixture; peak incidence is now
+    // report-only. Keep the recovery and capability checks below unchanged.
     // Neutral-throttle window retains the old 14 s fixture duration; a 40 s
     // unpowered descent can legitimately reach terrain. Keep liveness hard for C. Settling/normal times are
     // separately reported; no new four/six-second tuning acceptance is imposed.
@@ -69,7 +68,7 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
     expect(Math.abs(final.rates.pitch)).toBeLessThan(Math.abs(release.rates.pitch))
     if (speedAdjust === 1) {
       expect(final.maneuver.phase).toBe('normal')
-      expect(final.maneuver.completed).toBe(release.maneuver.completed)
+      expect(final.maneuver.completed).toBe(release.maneuver.completed + +(release.maneuver.peakAlpha >= 70))
     }
   })
 

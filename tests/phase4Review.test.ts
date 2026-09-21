@@ -11,32 +11,6 @@ import { readIntent, createPilotIntent } from '../src/game/flight/intent'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { FLIGHT_STEP as dt } from '../src/game/runtime/clock'
 
-it.each(['pitch', 'yaw'] as const)('%s limit remains continuous across signed zero with high cross-axis incidence', axis => {
-  const state = createAircraft('f22'), profile = getFlightProfile('f22')
-  state.velocity.x = 100
-  const base = observeAirflow(state, profile)
-  for (const input of [-1, 0.7, 1]) for (const limiter of [0, 0.2]) {
-    state.limiterOpen = limiter
-    const command = { ...neutralCommand(0, state.id), [axis]: input }
-    const request = (angle: number) => {
-      const flow = { ...base, incidenceDeg: 60,
-        alphaDeg: axis === 'pitch' ? angle : 60, betaDeg: axis === 'yaw' ? -angle : 60 }
-      const demand = measureControlDemand(command, flow, state.stall.severity, profile, state.limiterOpen)
-      return requestControl(command, state.rates, flow, interpretEnvelope(state, flow, profile), profile, dt, demand).request[axis]
-    }
-    const unrestricted = request(-Math.sign(input) * 5)
-    expect(Math.abs(unrestricted)).toBeGreaterThan(0)
-    // The outward fade is Lipschitz: slope <= unrestricted drive / five degrees.
-    for (const center of [-5, -1e-6, 0, 1e-6, 5]) {
-      const step = 1e-7
-      expect(Math.abs(request(center + step) - request(center - step)))
-        .toBeLessThanOrEqual(Math.abs(unrestricted) * 2 * step / 5 + 16 * Number.EPSILON)
-    }
-    expect(request(0)).toBe(unrestricted)
-    expect(Math.abs(request(Math.sign(input) * 5))).toBe(0)
-  }
-})
-
 it('automatic permission changes the flown outcome compared with a closed limiter', () => {
   const free = runScenario('psmIntent450', 'f22')
   // A test-only pinned property blocks envelope integration before the controller
@@ -109,7 +83,10 @@ it('S changes only G; low-energy breakout and sustained demand do not require sa
   expect(saturatedIntent.sustained).toBe(state.intent.sustained)
   state.intent = saturatedIntent
   const saturated = interpretEnvelope(state, flow, p)
-  expect(saturated.gAllowance).toBeGreaterThan(unsaturated.gAllowance)
+  // At 450 the revised entry band is fully open (E=1), so G remains normal.
+  expect(saturated.gAllowance).toBe(1)
+  const transitionFlow = { ...flow, dynamicPressure: (p.breakout.qLow + p.breakout.qHigh) / 2 }
+  expect(interpretEnvelope(state, transitionFlow, p).gAllowance).toBeGreaterThan(1)
   expect({ ...saturated, gAllowance: 1, hardTurnBlend: 0 }).toEqual(unsaturated)
 })
 
@@ -163,7 +140,7 @@ it.each([60, 120].flatMap(speed => [
   { speed, pitch: 1, yaw: 1 },
   { speed, pitch: 0.8, yaw: 0 },
   { speed, pitch: 1, yaw: 0 },
-]))('combined incidence briefly restricts outward pitch, then clears within 0.2 s ($speed m/s, pitch=$pitch, yaw=$yaw)', ({ speed, pitch, yaw }) => {
+]))('Rev. 4 combined incidence preserves cross-axis pitch and clears pure outward restriction within 0.2 s ($speed m/s, pitch=$pitch, yaw=$yaw)', ({ speed, pitch, yaw }) => {
   const state = createAircraft('f22'), profile = getFlightProfile('f22')
   const alpha = 10 * Math.PI / 180, beta = -60 * Math.PI / 180
   state.orientation = { x: 0, y: 0, z: 0, w: 1 }
@@ -175,8 +152,8 @@ it.each([60, 120].flatMap(speed => [
   expect(flow.betaDeg).toBeCloseTo(-60, 12)
   expect(flow.incidenceDeg).toBeGreaterThan(profile.aero.alphaNormalDeg)
 
-  // Owner decision: the permission limit bounds combined incidence, even when
-  // pitch alpha alone is inside its band. AD16 capability remains independent.
+  // Rev. 4 supersedes the historical zero-first-pitch assertion; measured
+  // before/after values are archived in phase45-implementation-report.md.
   // No C, brake or burner: natural flow recovery / the demanded H latch must
   // clear the restriction, including yaw held outward to sustain the sideslip.
   let firstPositiveStep: number | null = null
@@ -184,8 +161,11 @@ it.each([60, 120].flatMap(speed => [
   for (let step = 1; step <= steps; step++) {
     stepFlight(state, { ...neutralCommand(step, state.id), pitch, yaw }, dt)
     const request = state.flightForces!.allocation.request.pitch
-    if (step === 1) expect(request).toBe(0)
-    if (request > 0) firstPositiveStep ??= step
+    if (step === 1) {
+      if (yaw !== 0) expect(request).toBeGreaterThan(0)
+      else expect(Math.abs(request)).toBeLessThan(1e-8)
+    }
+    if (request > 1e-6) firstPositiveStep ??= step
   }
   expect(firstPositiveStep).not.toBeNull()
   expect(firstPositiveStep!).toBeLessThanOrEqual(steps)

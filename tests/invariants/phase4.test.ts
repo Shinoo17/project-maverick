@@ -37,7 +37,7 @@ it('path/gravity and natural forces depend on flow, not legacy phase or blend', 
 const profile = getFlightProfile('f22')
 function envelopeRig(q = 0.2, incidence = 0) {
   const state = createAircraft('f22')
-  state.intent = { demand: 1, saturation: 1, sustained: 0, brakeIntent: 0, powerIntent: 0 }
+  state.intent = { ...createPilotIntent(), demand: 1, saturation: 1, sustained: 0, brakeIntent: 0, powerIntent: 0 }
   const flow = { ...observeAirflow(state, profile), dynamicPressure: q, incidenceDeg: incidence }
   return { state, flow }
 }
@@ -89,11 +89,11 @@ describe('automatic permission', () => {
   it('H maintains permission during demanded sideslip, then demand release closes monotonically without a latch', () => {
     const { state, flow } = envelopeRig(profile.breakout.qHigh + 1, 90)
     flow.alphaDeg = 0; flow.betaDeg = 90
-    state.limiterOpen = 0.7; state.intent.saturation = 0
+    state.limiterOpen = 0.7; state.intent.saturation = 0; state.intent.continuation = 1
     const held = stepEnvelope(state, flow, profile, dt, false)
     expect(held.limiterStep.target).toBe(1)
     expect(state.limiterOpen).toBeGreaterThan(0.7)
-    state.intent.demand = 0
+    state.intent.demand = 0; state.intent.continuation = 0
     for (let i = 0; i < 240; i++) {
       const previous = state.limiterOpen
       const result = stepEnvelope(state, flow, profile, dt, false)

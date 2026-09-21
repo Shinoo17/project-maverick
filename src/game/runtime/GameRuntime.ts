@@ -47,7 +47,7 @@ export class GameRuntime {
           orientation: { x: 0, y: 0, z: 0, w: 1 },
           velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, alive: true,
           maneuver: createManeuverState(), stall: createStallState(), thrustVectoring: createThrustVectoringState(),
-          speedDrive: 0, intent: createPilotIntent(), limiterOpen: 0,
+          speedDrive: 0, intent: createPilotIntent(), limiterOpen: 0, pathAssistWeight: 1,
           engine: { requestedPower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * practiceSpawns[this.preset].speed ** 2 },
           enginePower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits),
           rates: { pitch: 0, yaw: 0, roll: 0 },

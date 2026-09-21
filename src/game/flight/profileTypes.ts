@@ -15,6 +15,10 @@ export interface FlightProfile {
   maxThrust: number
   afterburnerAcceleration: number
   airbrakeDeceleration: number
+  /** Fraction of forward airbrake acceleration applied to body crossflow. */
+  airbrakeCrossflow: number
+  /** Explicit maneuver request, fraction of dry thrust; no drag compensation. */
+  controlPower: number
   /** Speed-squared drag coefficient; drag * speed² gives deceleration. */
   drag: number
   /** Pitch/yaw rate-squared drag coefficient. */
@@ -41,6 +45,12 @@ export interface FlightProfile {
   turnRateReserve: number
   /** Velocity-to-nose alignment response (1/s). */
   pathResponse: number
+  /** Flow-only translational model, not a measured aerodynamic law (1/s). */
+  physicalPathResponse: number
+  physicalPathAcceleration: number
+  /** Declared cap on the arcade contribution (m/s²). */
+  pathAssistAcceleration: number
+  pathAssistResponse: number
   /** Feed-forward alignment gain (dimensionless). */
   turnAnticipation: number
   /** Gravity used for climb/descent energy cost (m/s²). */
@@ -171,10 +181,12 @@ export interface EngineProfile { spoolUpResponse: number; spoolDownResponse: num
 
 /** Permission tuning only; q uses (airspeed / referenceSpeedMps)². */
 export interface BreakoutProfile {
+  handoffSeconds: number
   qLow: number
   qHigh: number
   baseWeight: number
   brakeWeight: number
+  decelerationWeight: number
   powerWeight: number
   comboWeight: number
   sustainWeight: number
