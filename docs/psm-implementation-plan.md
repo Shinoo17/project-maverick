@@ -1,4 +1,11 @@
-# PSM / High-AoA / TVC — Final Baseline (Rev. 3)
+# PSM / High-AoA / TVC — Implementation Plan (Rev. 4)
+
+> **Rev. 4 — 21 ก.ย. 2026: owner อนุมัติทิศทาง Jet Drift / Implicit PSM แล้ว**
+> เริ่มงานถัดไปจาก [Jet Drift implementation amendment](jet-drift-implementation-plan.md): baseline capture → Phase 4.5A (entry/path assist) → 4.5B (continuation/cross-axis) → 4.5C (braking/power/work) → 5 → 6 → 8 → 7 → 9.
+> เป้าหมาย: เข้า high-AoA ง่ายในช่วง 350–700 **arcade km/h บน HUD**, ต่อ pitch/yaw/roll ได้, ไม่ต้องใช้ C หรือคา Afterburner เพื่อเริ่มทุกท่า; ท่าทั้งหมดเกิดจาก physics + input.
+> Phase 0–4 เป็นฐานที่ทำแล้ว; งาน Rev. 4 ยัง **pending implementation**. Commit นี้แก้เอกสารเท่านั้น.
+> Amendment §2 ระบุข้อที่แทน baseline เดิมอย่างชัดเจน รวม entry/continuation, P4-2, governor I17, work I18 และลำดับ phase; ข้ออื่นและ Phase 3 contract resolution ยังใช้ต่อ.
+> ข้อความ Rev. 3 ด้านล่างเก็บที่มาและประวัติการตัดสินใจไว้; สูตร/ขอบเขตที่ amendment แทนแล้วไม่ใช่ข้อสั่งให้ย้อน implementation กลับ.
 
 > 18 ก.ย. 2026 · **Final Baseline — อนุมัติแล้ว** (รวม amendments: floor `{acceleration, maxRate}`, `powerIntent` อ่าน input ผู้เล่นเท่านั้น, `w_combo·B·Pi`, B9 target จาก Phase 2 playtest) — Rev. 3 เพิ่ม: Arcade Control Floor แยกจาก Physical Aero (§3.2), `powerIntent` ≠ `poweredControlAvailable` (§2), allocation strategy รองรับ TVC participation (§3.3), Hard Invariants ≠ Tuning Benchmarks (§5)
 > แทนที่ส่วน C (บางส่วน), D, E, F, H ของ [psm-architecture-review.md](psm-architecture-review.md)
@@ -122,6 +129,8 @@ interface AllocationRecord { request: Axes; aero: Axes; tvc: Axes; floor: Axes; 
 ---
 
 ## 2. Revised Envelope / Breakout Logic
+
+> สูตรส่วนนี้เป็น baseline ของ Phase 4. สำหรับ implementation ถัดไป ใช้ [Rev. 4 amendment §4–5](jet-drift-implementation-plan.md#4-speed-and-input-behavior) เพื่อเปลี่ยน speed window, แยก entry/continuation และแก้ contribution-aware limiter. S feedback ยังคุม automatic G; ไม่กลับมาเป็น prerequisite ของ breakout.
 
 ### 2.1 หลักการ
 
@@ -308,6 +317,8 @@ Neutral damping เดิม `neutralResponse 9` ([stepFlight.ts:46](../src/game
 
 ## 4. Revised Implementation Phases
 
+Rev. 4 execution order: **baseline capture → 4.5A → 4.5B → 4.5C → 5 → 6 → 8 → 7 → 9**. เลข phase เดิมคงไว้เพื่ออ้างอิง; diagnostic camera มาก่อน แต่ final camera polish ทำหลัง aircraft validation. ดูขอบเขตและ completion gates ใน [amendment §6](jet-drift-implementation-plan.md#6-implementation-sequence-and-completion-gates).
+
 ข้อบังคับทุก phase: fixed-step `1 − exp(−k·dt)`; determinism 30/60/144 FPS; phase ที่เปลี่ยน physics bump `flightProfileVersion` ([profile.ts:7](../src/game/flight/profile.ts#L7)); `replay.ts` ปฏิเสธ version เก่า
 
 | Phase | ชื่อ | Physics เปลี่ยน? | C |
@@ -317,10 +328,13 @@ Neutral damping เดิม `neutralResponse 9` ([stepFlight.ts:46](../src/game
 | 2 | Natural aerodynamics | ใช่ | gameplay เดิม |
 | 3 | Engine + Aero/TVC allocation | ใช่ | **ให้แค่ limiter open (debug)** ไม่ให้ rate |
 | 4 | Automatic breakout + minimal continuous recovery | ใช่ | debug comparison |
-| 5 | Recovery assist | ใช่ | debug |
+| 4.5A | Accessible 350–700 entry + physical/arcade path separation | ใช่ | debug comparison only |
+| 4.5B | Partial-stick continuation + roll handoff + contribution-aware limiter | ใช่ | debug comparison only |
+| 4.5C | Directional braking + bounded dry control power + work ledger | ใช่ | debug comparison only |
+| 5 | Recovery assist using shared activity/release semantics | ใช่ | debug |
 | 6 | Remove legacy gates / input | ใช่ (command format) | ลบ |
+| 8 | Aircraft validation (before final camera polish) | tuning | – |
 | 7 | Camera + HUD polish | ไม่ | – |
-| 8 | Aircraft validation | tuning | – |
 | 9 | FX / Audio / Maneuver detector | ไม่ | – |
 
 > ต่างจากข้อเสนอ: Recovery ย้ายมาก่อนลบ gates, velocity marker + camera re-key ย้ายมา Phase 0–1, engine อยู่ Phase 3 — เหตุผลใน §6
@@ -460,7 +474,23 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - Acceptance ใช้ **X** เป็น airbrake (Space ยังเป็น High-G จนถึง Phase 6)
 - **ไฟล์:** `envelope.ts`, `controller.ts` (แยกจาก stepFlight), `stepFlight.ts`, `FlightInput.ts`, `FlightScene.tsx`, `telemetry.ts`, `maneuvers.ts`
 
+### Phase 4.5 — Jet Drift implementation amendment
+
+**Status: pending.** [แผนรายละเอียดที่อนุมัติ](jet-drift-implementation-plan.md) เป็น implementation authority ของ phase นี้.
+
+- Preparation: permanent no-C entry/hold/handoff/exit benchmarks + baseline capture; diagnostic framing/telemetry only.
+- **4.5A:** เข้าจาก attached flight ที่ 350–700 HUD km/h; Airbrake + pitch/yaw ไม่บังคับ burner; S เป็น mild entry intent; แยก physical flow response ออกจาก arcade path assist เพื่อแก้ entry deadlock ตั้งแต่มุมต่ำ.
+- **4.5B:** แยก continuation activity จาก entry demand; roll/partial stick/axis handoff ไม่ปิด limiter โดยผิดเจตนา; ยก P4-2 contribution-aware limiter จาก Phase 8 มาทำในขั้นนี้.
+- **4.5C:** body-axis dissipative braking + consistent force/work integration; explicit bounded dry control-power request ผ่าน spool/actual thrust จริง; burner ใช้เปลี่ยน trajectory ไม่ใช่ท่าอัตโนมัติ.
+- คง angular authority/allocation/geometry/floor contracts และ F-22 zero commanded yaw TVC; ไม่ gate actual thrust เพื่อยืด drift.
+- เป้าหมายเวลาเข้า/ค้างท่าเป็น provisional benchmarks; ห้ามเพิ่ม floor หรือซ่อนพลังงานเพื่อให้ผ่านตัวเลข.
+- ปรับ I17/I18 และ behavior-specific P4-2 assertions พร้อม implementation และบันทึกเหตุผล; คง archive/golden policy เดิม.
+- Physics/command changes ต้อง version ตามสัญญาเดิม; การแก้แผนอย่างเดียวไม่ bump runtime version.
+
 ### Phase 5 — Recovery assist
+
+> ใช้ continuation/release signal เดียวกับ 4.5B. Natural response ทำทันที; assist หลัง delay และหยุดแย่งทันทีเมื่อผู้เล่นสั่ง. ตรวจ recovery แบบ convergence window ไม่ใช่บังคับ absolute rates ลดทุก tick.
+
 - `recovery.ts`: activity (attack fast, release `delaySeconds`) → `recoveryAssist` → damping, anti-spin, nose precision, path alignment ภายใน authority จริง + drag ต่อ path rotation ที่ q ต่ำ
 - **ไฟล์:** `recovery.ts` (ใหม่), `envelope.ts`, `stepFlight.ts`, profiles
 
@@ -473,11 +503,17 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **ไฟล์:** `commands.ts`, `FlightInput.ts`, `maneuvers.ts`, `practice.ts`, `replay.ts`, `PlaygroundHud.tsx`, `hudPainter.ts`, `FlightInstruments.tsx`, `FlightPage.tsx`, `locales/*`, `content/schemas.ts`, tests `maneuvers`/`poweredPsm`
 
 ### Phase 7 — Camera + HUD polish
-- Camera: velocity-look share cap ~0.35–0.5 (จาก 0.88), offset lag ตาม decouple, up smoothing ช้าลงเมื่อ rate สูง, FOV ตาม decouple, ไม่มี phase
+
+> Rev. 4: ทำ final polish หลัง Phase 8; ใช้ projected aircraft bounds/FPM visibility และ playtest เลือก camera blend ไม่ตัดสิน clipping จากค่า 0.88 อย่างเดียว. Diagnostic presentation ทำก่อน 4.5 ได้.
+
+- Camera: prototype velocity-look share ~0.35–0.5 (จาก 0.88), เลือกค่าสุดท้ายจาก framing/playtest; offset lag ตาม decouple, up smoothing ช้าลงเมื่อ rate สูง, FOV ตาม decouple, ไม่มี phase
 - HUD: regime tone, AoA bracket, departure warning ไม่รบกวน
 - **ไฟล์:** `FlightCamera.ts`, `hudPainter.ts`, `FlightInstruments.tsx`
 
 ### Phase 8 — Aircraft validation
+
+> Rev. 4: ทำก่อน final Phase 7. การ tune ให้เล่นได้ใน 4.5A/B/C ต้องทำภายในแต่ละขั้น ไม่เลื่อนทั้งหมดมาที่นี่. คง F-22 commanded yaw TVC = 0 และ coupled moment bounds ตาม Phase 3 resolution; ประเมิน aero yaw และ roll + pitch แยกจาก Su-57 multi-axis TVC.
+
 - F-22, Su-57 tuning ตาม personality; non-TVC จริง (F/A-18 หรือ F-16) ต้องมี model + rig (`presentationIds` มีแค่ `f22`/`su57` [schemas.ts:4](../src/content/schemas.ts#L4))
 - **ไฟล์:** `content/flight-profiles/*`, `content/aircraft/index.ts`, `render/aircraft/*`, `docs/flight-profiles.md`
 
@@ -524,8 +560,8 @@ ID คงที่; คอลัมน์ Phase = phase ที่เริ่ม
 | I14 | **Floor เป็น gap-fill + ceiling**: `floor > 0` เฉพาะเมื่อ `physicalAero + tvc < floor.acceleration`; rate ที่ floor พาไป ≤ `maxRate` + ε; floor ไม่ขึ้นกับ thrust/powerIntent | unit + fuzz | 3 |
 | I15 | **Assist ไม่สร้าง authority**: stability/recovery assist ไม่เพิ่ม \|rate\| ในทิศ request เกิน allocation (damping/อยู่ใน budget เท่านั้น) | property test | 3 (stability) / 5 (recovery) |
 | I16 | **Intent/capability boundary**: `PilotIntent` ไม่ขึ้นกับ profile; `AuthorityBudget` ไม่ขึ้นกับ command (ทดสอบด้วยการสลับ input) + lint rule / import check | unit | 3 |
-| I17 | **Governor**: requested power ไม่เพิ่มจาก α-drag, β-drag, brake (เทียบ state เดียวกัน drag ต่างกัน) | unit | 3 |
-| I18 | **Energy bound**: Δ(v²/2 + g·h) ≤ ∫(thrust·v̂)dt − ∫(drag+brake)·v dt + ε ต่อ step | ทุก tick | 3 |
+| I17 | **Governor (Rev. 4)**: cruise trim ชดเชย base drag เท่านั้น; explicit bounded control-power request จาก pilot intent อนุญาตใน 4.5C แต่ห้ามชดเชย α/β-drag หรือ hidden speed error. ที่ state/input เดียวกัน เปลี่ยน non-base drag coefficients แล้ว requested power ต้องไม่เพิ่ม; actual spool/thrust ใช้ร่วมทุก consumer | unit + source ledger; เปลี่ยน assertion พร้อม 4.5C | 3 / 4.5C |
+| I18 | **Specific-energy bound (Rev. 4)**: Δ(v²/2 + g·h) ≤ ∫(a_thrust · v)dt − dissipated drag/brake work + ε ต่อ step. ใช้ force/displacement integration ที่สอดคล้องกัน; vector brake ต้อง dissipative. แก้หน่วยจากสูตรเดิมที่ขาด speed ใน thrust work | ทุก tick; vector work coverage เพิ่ม 4.5C | 3 / 4.5C |
 | I19 | **No instant path reversal จาก engine/lateral force**: ส่วนของ velocity heading rate ที่มาจาก engine force + lateral path force ≤ cap จาก profile (`pathRateFloorMps`) ทุก speed — **ไม่รวม gravity** (ที่ 5 m/s gravity เดียวก็หมุน velocity ได้ ≈ g/v ≈ 2 rad/s ซึ่งถูกต้อง) | fuzz ที่ speed 0–20 m/s + burner; วัดจาก force decomposition ต่อ step | 3 |
 | I20 | **Recovery ไม่แย่ง**: input activity เกิน threshold → `recoveryAssist = 0` | ทุก tick | 5 |
 | I21 | **No legacy gates**: `PilotCommand` ไม่มี `psmArm`/`highG`; flight ไม่อ่าน `maneuver.phase`; `FlightCamera` ไม่อ่าน phase | type + grep test | 6 (camera: 7) |
@@ -599,6 +635,9 @@ Mouse stick เป็น positional — ตำแหน่งคงอยู่�
 ของเดิม `authority` floor 0.12 ([stepFlight.ts:26](../src/game/flight/stepFlight.ts#L26)) และ `stall.controlAuthority 0.25` คือสิ่งที่ทำให้ non-TVC ยังคุมได้ที่ความเร็วต่ำ
 
 **D7 — Autothrottle ต้องไม่ชดเชย drag ที่ไม่ใช่ base drag**
+
+> Rev. 4 qualification: base trim rule นี้ยังคงอยู่ แต่ 4.5C เพิ่ม explicit bounded control-power request จากเจตนาผู้เล่นได้ตาม [amendment §5.5](jet-drift-implementation-plan.md#55-braking-thrust-and-work). ต้องผ่าน spool/actual thrust และไม่คำนวณจาก non-base drag หรือ speed deficit; I17 เปลี่ยนให้ตรวจแยกสองแหล่งนี้.
+
 ถ้า governor "ถือความเร็ว" จริงตอน α-drag/brake สูง จะ request power เต็มเอง → TVC authority ฟรีโดยไม่กด Shift ของเดิม trim เฉพาะ `drag·v²` ([speed.ts:33](../src/game/flight/speed.ts#L33)) — คงกฎนี้ไว้อย่างชัดเจน (I17)
 
 **D8 — Engine spool ไม่ควรอยู่ Phase 0–1**
