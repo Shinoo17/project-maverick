@@ -166,7 +166,7 @@ it('labels and presentation have no effect on an automatic flight trace', () => 
   const plain = runTrack(initial, 3, controller)
   const observed = runTrack(initial, 3, controller, state => {
     const telemetry = flightInstrumentation(state)
-    envelopeLabel(telemetry.envelope, state.intent.demand); flightWarning(state)
+    envelopeLabel(telemetry.envelope, state.intent.activity); flightWarning(state)
   })
   expect(observed).toEqual(plain)
   const alternate = structuredClone(initial)

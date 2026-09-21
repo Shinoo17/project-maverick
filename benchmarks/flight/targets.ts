@@ -35,9 +35,10 @@ export function targetStatus(value: number | null, target?: Target): 'ok' | '⚠
   return value === null || (target.min !== undefined && (target.minExclusive ? value <= target.min : value < target.min)) || (target.max !== undefined && value > target.max) ? '⚠ out' : 'ok'
 }
 
-/** Rev. 4 playtest candidates. Never CI gates or unconditional maneuver promises. */
+/** Rev. 4 playtest candidates. Never CI gates or unconditional maneuver promises.
+ * Useful-adjustment duration remains a human-playtest goal in the plan;
+ * secondsAbove30 does not measure useful control and cannot score that goal. */
 export const jetDriftTargets = {
   entry30Seconds450to600: { min: 0.4, max: 0.8 },
   entry30Speed650to700: { min: 350 },
-  usefulAdjustmentSeconds: { min: 1.5, max: 3 },
 } satisfies Record<string, Target>

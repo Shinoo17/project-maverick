@@ -14,14 +14,16 @@ export function flightWarning(state: AircraftState | null) {
   const profile = getFlightProfile(state.aircraftId)
   const flow = observeAirflow(state, profile)
   const envelope = interpretEnvelope(state, flow, profile)
-  const label = envelopeLabel(envelope, state.intent.demand)
+  const label = envelopeLabel(envelope, state.intent.activity)
+  // Phase 4.5 treats active high-AoA input (including roll) as intentional drift,
+  // even at full separation. Distinguishing a pilot fighting departure needs Phase 5 recovery signals.
   if (label === 'HIGH_AOA' || label === 'POST_STALL') return null
   // Low-speed separation alone should not hide the actionable energy advisory.
   // High-incidence recovery/departure still takes precedence below this speed.
   if (flow.airspeed < 60 && envelope.highAoa === 0) return 'hudLowEnergy'
   if (label === 'RECOVERING') return 'hudStallRecovering'
   if (label === 'DEPARTED') return 'hudStall'
-  // Held demand can leave mild separation labelled NORMAL. Match its severity
+  // Held activity can leave mild separation labelled NORMAL. Match its severity
   // to the recovery advisory; DEPARTED above handles separation greater than 0.5.
   if (envelope.separation > 0.1) return 'hudStallRecovering'
   return null

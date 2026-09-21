@@ -13,6 +13,7 @@ export function flightInstrumentation(state: AircraftState) {
   const actualThrust = state.engine.actualThrust
   const f = state.flightForces
   const limitations = {
+    // Entry permission diagnostic: pitch/yaw demand asks for incidence; roll-only continuation does not.
     permission: !!f && f.envelope.limiterOpen < 0.5 && state.intent.demand > 0,
     authority: !!f && Object.values(f.allocation.unmet).some(value => Math.abs(value) > 0.1),
     spool: state.engine.requestedPower > state.enginePower + 0.05,

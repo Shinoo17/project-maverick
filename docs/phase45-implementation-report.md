@@ -1,6 +1,7 @@
 # Phase 4.5 implementation report
 
-Source: `a581ee5c967c2aec7e4f8a00ed054125762f86d5` (planning revision after Phase 4).
+Baseline parent: `a581ee5c967c2aec7e4f8a00ed054125762f86d5` (planning revision after Phase 4).
+Implementation commit: `05d50e0` (Phase 4.5A–C and archived evidence).
 Implementation follows Rev. 4; Phase 5 recovery assistance and Phase 6 bindings are separate work.
 
 ## Baseline and intentional behavioral migrations
@@ -26,7 +27,7 @@ Final profile version: `p4.5c-jet-drift-1`. Command schema remains 1 because bin
 
 ## Validation and measured results
 
-Automated implementation gates passed; human feel acceptance remains pending. The source commit above is the parent of these working-tree changes; no implementation commit was created. Human playtest is required for handling/motion comfort; automated traces do not establish that a named maneuver is achieved. Net horizontal headings (null at degenerate projection), 3D velocity direction change and cumulative nose rotation are reported separately.
+Automated implementation gates passed; human feel acceptance remains pending. Human playtest is required for handling/motion comfort; automated traces do not establish that a named maneuver is achieved. Net horizontal headings (null at degenerate projection), 3D velocity direction change and cumulative nose rotation are reported separately.
 
 
 ### Entry measurements (attached, level, trim initialized, X + full pitch, no C/burner)
@@ -52,7 +53,7 @@ All 450–600 pitch-entry samples meet the provisional 0.4–0.8 s report target
 
 ### Hold, handoff and exit
 
-At 500, full pitch + X for one second then 0.5 pitch + X for three seconds gives 3.28/3.26 s above 30° for F-22/Su-57 (includes entry). Final speeds are 176/168; altitude gains are 101/100 m. This is an incidence-duration proxy, not proof of useful control for that entire interval. The reports include unmet angular demand and full actuator/allocation records.
+At 500, full pitch + X for one second then 0.5 pitch + X for three seconds gives 3.28/3.26 s above 30° for F-22/Su-57 (includes entry). Final speeds are 176/168; altitude gains are 101/100 m. This is an incidence-duration proxy, not proof of useful control for that entire interval. The observation ends at the four-second track boundary while incidence remains above 30°; the full duration is right-censored. The 1.5–3 s useful-adjustment goal remains pending human playtest, with no automated target until useful control has a defined measure; `secondsAbove30` is not compared against that range. The reports include unmet angular demand and full actuator/allocation records.
 
 Pitch → yaw → roll-only → pitch uses 0.1 s neutral handoffs and then neutral release. Across 0.15/0.22/0.30 s release tuning, minimum limiter during the roll segment is 0.933/0.954/0.966 on F-22 and 0.900/0.877/0.863 on Su-57. Different trajectories mean a longer release window does not monotonically improve the flown result. At the authored 0.22 s both accept roll continuation; release memory reaches exactly zero and renewed input has immediate priority. Real FlightInput cardinal/diagonal mouse, recenter, Q/E and mixed keyboard overrides are tested and replayed at 30/60/144 FPS. Q/E remains digital until Phase 6's deterministic ramp work.
 
@@ -81,10 +82,20 @@ At 500 with dry power and directional brakes retained, full arcade assistance ta
 - Add `?driftCamera` before the route hash to enable fixed-world diagnostic framing. It fits projected corners of the loaded normalized model bounds. The nose pipper has an edge indication like the distinct FPM. Normal camera behavior is unchanged. Automated camera tests cover 30/60/90/120/180°, several aspect ratios, both mode arguments and reduced motion; they use conservative bounding boxes, not skinned-vertex or comfort validation.
 - A fresh browser session confirmed keyboard flight starts, the aircraft and new Flight Lab values render at desktop and 760 × 820, and the browser error log is empty. The existing narrow Flight Lab overlay covers much of the scene by design and can be disabled. Automated mouse command/replay checks do not replace pointer-lock handling and motion-comfort playtests. Final camera/HUD polish remains Phase 7.
 
-### Verification and reproduction
+### Post-implementation review corrections
+
+Completed the all-axis activity migration in glass HUD and warning observers, including the observer parameter name and test fixtures. Roll-only drift remains POST_STALL without a false recovery/departure advisory; actual neutral release still restores advisories. Off-screen/behind-camera nose direction now uses a double edge chevron, distinct from the FPM's single chevron; the winged circle is reserved for on-screen direction.
+
+Two observer choices are intentional for Phase 4.5. The instrumentation permission flag uses pitch/yaw `demand` to identify restricted entry permission, not every limitation during drift; roll-only continuation does not assert it. Stall/recovery warnings are suppressed for active high-AoA input, including roll at full separation. This avoids interrupting intentional drift but can also silence a departure advisory while the pilot fights a real departure. Activity is not proof of control; revisit this distinction in Phase 5 when recovery signals are available. Boundary and low-altitude warnings retain priority.
+
+Removed the unused executable `usefulAdjustmentSeconds` target. The plan retains the human-playtest goal; incidence duration is only a proxy and does not establish useful control. Archived traces and source hashes describe implementation commit `05d50e0` and remain historical evidence.
+
+Review validation: `npm run build` passed 536 tests in 38 files, TypeScript and production build. The focused `npm run flight:bench -- benchmarks/flight/jetDrift.report.ts` passed; metrics, entry target statuses, dry-power sweeps, ablations and handoff sweeps exactly match the archived Phase 4.5C report. Browser inspection of the real canvas painter covered on-screen, lateral and aft markers at desktop and narrow canvas sizes. `git diff --check` passed.
+
+### Original implementation verification and reproduction
 
 - `npm run build`: 532 tests passed in 38 files; TypeScript and production Vite build passed. Vite retains its Three.js chunk-size warning.
-- `npm run flight:bench`: 23 checks passed in 11 report files. `DRIFT_STAGE=final npm run flight:bench -- benchmarks/flight/jetDrift.report.ts` captures the delivery corpus.
+- `npm run flight:bench`: 23 benchmark execution/tests passed in 11 report files; this does not mean all feel targets passed. Entry targets emit report-only statuses, not pass/fail assertions. `DRIFT_STAGE=final npm run flight:bench -- benchmarks/flight/jetDrift.report.ts` captures the delivery corpus.
 - Focused tests cover dimensional work and non-reversal, low-speed path bounds, contribution-aware incidence, command-independent physical response, smoothing/release, input routes, validation, actual-thrust power and replay rejection. Existing allocation, floor, coupled-torque, actuator, restoring and zero/reverse-flow checks remain active.
 - `git diff --check` passed. Impeccable's mechanical detector reported no findings on the diagnostic HUD/camera edits.
 - Before traces: `benchmarks/flight/jet-drift-baseline`. Intermediate A/B metrics and final C metrics/traces: `benchmarks/flight/jet-drift-results`. Normal report output remains under ignored `benchmarks/flight/out`. Sampled trace files contain initial state, run-length encoded 120 Hz commands and 0.25 s state/force snapshots; runTrack computes metrics on every substep. Use Python gzip/json or Node zlib to inspect `.json.gz`.

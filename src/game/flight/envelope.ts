@@ -71,8 +71,8 @@ export function stepEnvelope(state: EnvelopeState, flow: AirflowState, profile: 
 
 export type EnvelopeLabel = 'NORMAL' | 'HIGH_AOA' | 'POST_STALL' | 'RECOVERING' | 'DEPARTED'
 /** Observer only: no stored label or hysteresis can feed back into flight. */
-export function envelopeLabel(envelope: EnvelopeFactors, demand: number): EnvelopeLabel {
-  if (demand < 0.1) {
+export function envelopeLabel(envelope: EnvelopeFactors, activity: number): EnvelopeLabel {
+  if (activity < 0.1) {
     if (envelope.highAoa > 0.8 && envelope.separation > 0.8) return 'DEPARTED'
     if (envelope.highAoa > 0 || envelope.separation > 0.1) return 'RECOVERING'
   }

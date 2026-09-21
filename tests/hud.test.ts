@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import { flightAttitude, burnerStatus, flightWarning } from '../src/features/flight/telemetry'
-import { glassLayout, projectRung, projectVelocityMarker } from '../src/features/flight/hudPainter'
+import { createGlassPainter, glassLayout, projectRung, projectVelocityMarker } from '../src/features/flight/hudPainter'
 import { glassState } from '../src/features/flight/FlightInstruments'
 import { arcadeSpeed } from '../src/game/flight/speed'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
@@ -10,6 +10,8 @@ import { observeAirflow } from '../src/game/flight/airflow'
 import { getFlightProfile } from '../src/game/flight/profile'
 import { separationTarget } from '../src/game/flight/stall'
 import { stepFlight } from '../src/game/flight/stepFlight'
+import { flightInstrumentation } from '../src/game/flight/instrumentation'
+import { readIntent } from '../src/game/flight/intent'
 
 const pose = (heading: number, pitch = 0, bank = 0) => new Quaternion()
   .setFromAxisAngle(new Vector3(0, 1, 0), -heading * Math.PI / 180)
@@ -59,10 +61,34 @@ describe('velocity marker projection', () => {
 })
 
 describe('stall advisories', () => {
-  it('keeps a mild separation advisory with held demand above the low-energy threshold', () => {
+  it.each([0.6, 1])('keeps roll-only drift intentional across glass and telemetry (separation=%s)', separation => {
+    const state = aircraft(), camera = new PerspectiveCamera()
+    state.position = { x: 0, y: 3000, z: 0 }
+    state.velocity = { x: 100, y: 0, z: 0 }
+    state.orientation = pose(0, 45)
+    state.stall.severity = separation
+    const neutral = neutralCommand(0, state.id)
+    state.intent = readIntent({ ...neutral, roll: 0.7 }, state.intent, 1 / 120, 0)
+    const glass = () => glassState({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity })
+    expect(state.intent.demand).toBe(0)
+    expect(state.intent.activity).toBe(1)
+    expect(flightInstrumentation(state).label).toBe('POST_STALL')
+    expect(glass().psm).toBe(true)
+    expect(flightWarning(state)).toBeNull()
+
+    // Actual release still restores the advisory even during permission's handoff decay.
+    state.intent = readIntent(neutral, state.intent, 1 / 120, 0)
+    expect(state.intent.continuation).toBeGreaterThan(0)
+    const departed = separation > 0.8
+    expect(flightInstrumentation(state).label).toBe(departed ? 'DEPARTED' : 'RECOVERING')
+    expect(glass().psm).toBe(!departed)
+    expect(flightWarning(state)).toBe(departed ? 'hudStall' : 'hudStallRecovering')
+  })
+
+  it('keeps a mild separation advisory with held activity above the low-energy threshold', () => {
     const state = aircraft()
     state.velocity = { x: 80, y: 0, z: 0 }
-    state.intent.demand = 1
+    state.intent.activity = 1
     state.stall.severity = 0.1
     expect(flightWarning(state)).toBeNull()
     for (const separation of [0.1001, 0.25, 0.5]) {
@@ -71,7 +97,7 @@ describe('stall advisories', () => {
     }
     state.stall.severity = 0.5001
     expect(flightWarning(state)).toBe('hudStall')
-    state.intent.demand = 0
+    state.intent.activity = 0
     expect(flightWarning(state)).toBe('hudStallRecovering')
     state.position.y = 50
     expect(flightWarning(state)).toBe('lowAltitude')
@@ -79,20 +105,20 @@ describe('stall advisories', () => {
     expect(flightWarning(state)).toBe('boundaryWarning')
   })
 
-  it.each([0, 1])('keeps all three advisories reachable in settled low-speed flight (demand=%s)', demand => {
+  it.each([0, 1])('keeps all three advisories reachable in settled low-speed flight (activity=%s)', activity => {
     const state = aircraft(), profile = getFlightProfile(state.aircraftId)
-    state.intent.demand = demand
+    state.intent.activity = activity
     for (const [speed, heldWarning] of [[62, 'hudStallRecovering'], [60, 'hudStall'], [59, 'hudLowEnergy']] as const) {
       state.velocity = { x: speed, y: 0, z: 0 }
       // Use the unmodified profile's equilibrium separation, not hand-picked
       // severity, to catch a warning hidden by the real low-speed stall band.
       state.stall.severity = separationTarget(observeAirflow(state, profile), profile.stall).target
-      const expected = demand === 0 && heldWarning === 'hudStall' ? 'hudStallRecovering' : heldWarning
+      const expected = activity === 0 && heldWarning === 'hudStall' ? 'hudStallRecovering' : heldWarning
       expect(flightWarning(state)).toBe(expected)
     }
     state.orientation = pose(0, 40)
     state.stall.severity = 1
-    expect(flightWarning(state)).toBe(demand === 0 ? 'hudStall' : null)
+    expect(flightWarning(state)).toBe(activity === 0 ? 'hudStall' : null)
   })
 
   it('uses continuous flow labels independent of legacy phase, with terrain/boundary priority', () => {
@@ -105,7 +131,7 @@ describe('stall advisories', () => {
     state.orientation = pose(0, 0)
     expect(flightWarning(state)).toBe('hudStallRecovering')
     state.maneuver.phase = 'normal'
-    state.intent.demand = 1
+    state.intent.activity = 1
     state.orientation = pose(0, 40)
     state.velocity.x = 40
     expect(flightWarning(state)).toBeNull()
@@ -186,8 +212,46 @@ describe('HUD glass mapping', () => {
     expect(read().burnerState).toBe('depleted')
     state.maneuver.burnerLocked = false; state.maneuver.burnerActive = true
     expect(read().burnerState).toBe('engaged')
-    state.maneuver.phase = 'normal'; state.intent.demand = 1; state.orientation = pose(0, 45)
+    state.maneuver.phase = 'normal'; state.intent.activity = 1; state.orientation = pose(0, 45)
     expect(read().psm).toBe(true)
+  })
+})
+
+describe('nose pipper painting', () => {
+  it.each([[1600, 900], [760, 820]])('distinguishes actual nose, off-screen nose and FPM at %s × %s', (width, height) => {
+    // Record the real painter, so projection tests alone cannot hide an ignored onScreen flag.
+    const ctx = {
+      arc: vi.fn(), rotate: vi.fn(), translate: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(),
+      beginPath() {}, clearRect() {}, clip() {}, closePath() {}, fill() {}, fillRect() {},
+      fillText() {}, rect() {}, restore() {}, save() {}, setLineDash() {}, setTransform() {},
+      stroke() {}, strokeText() {},
+    }
+    const canvas = { getContext: () => ctx } as unknown as HTMLCanvasElement
+    const painter = createGlassPainter(canvas, { speedBand: null })
+    painter.resize(width, height, 1)
+    const state = aircraft(), camera = new PerspectiveCamera(60, width / height, 0.5, 14000)
+    state.position = { x: 0, y: 0, z: 0 }
+    camera.lookAt(1, 0, 0); camera.updateMatrixWorld()
+    const glass = glassState({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity })
+    // Zero velocity hides FPM; isolate the pipper without changing the production painter.
+    const draw = (forward: Vector3, velocity = new Vector3()) => {
+      ctx.arc.mockClear(); ctx.rotate.mockClear(); ctx.translate.mockClear(); ctx.moveTo.mockClear()
+      painter.draw({ ...glass, forward, velocity })
+    }
+    draw(new Vector3(1, 0, 0))
+    expect(ctx.arc.mock.calls.filter(call => call[2] > 2)).toHaveLength(1)
+    for (const forward of [new Vector3(0.1, 0, 1).normalize(), new Vector3(-1, 0, 0)]) {
+      draw(forward)
+      const point = projectVelocityMarker(camera, state.position, forward.clone().multiplyScalar(2), width, height, 24)!
+      expect(point.onScreen).toBe(false)
+      expect(ctx.arc.mock.calls.filter(call => call[2] > 2)).toHaveLength(0)
+      expect(ctx.translate).toHaveBeenCalledWith(point.x, point.y)
+      expect(ctx.rotate).toHaveBeenCalledWith(point.angle)
+      expect(ctx.moveTo).toHaveBeenCalledWith(-17, -6)
+    }
+    draw(new Vector3(1, 0, 0), new Vector3(-100, 0, 0))
+    expect(ctx.moveTo).toHaveBeenCalledWith(-10, -6)
+    expect(ctx.moveTo).not.toHaveBeenCalledWith(-17, -6)
   })
 })
 

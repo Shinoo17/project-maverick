@@ -38,7 +38,7 @@ const nose = new Vector3(), attitudeQuaternion = new Quaternion()
 export function glassState({ camera, state, position, orientation, velocity }: HudFrame): GlassState {
   const m = state.maneuver, profile = getFlightProfile(state.aircraftId), maneuverProfile = profile.maneuver
   const envelope = interpretEnvelope(state, observeAirflow({ orientation, velocity }, profile), profile)
-  const label = envelopeLabel(envelope, state.intent.demand)
+  const label = envelopeLabel(envelope, state.intent.activity)
   const attitude = flightAttitude(orientation)
   nose.set(1, 0, 0).applyQuaternion(attitudeQuaternion.set(orientation.x, orientation.y, orientation.z, orientation.w))
   const altitude = position.y
