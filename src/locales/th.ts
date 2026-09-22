@@ -156,6 +156,7 @@ export const th: Translation = {
   labCapActive: 'จำกัดอยู่',
   labDamping: 'แรงหน่วงการหมุน P/Y/R',
   labNaturalRestoring: 'แรงคืนตัวตามธรรมชาติ P/Y/R',
+  labNaturalDeparture: 'แรงทิ้งหัวตอนไหลย้อน P/Y/R',
   labNaturalDamping: 'แรงหน่วงตามธรรมชาติ P/Y/R',
   labActuatorLag: 'แรงบิดต่างจาก actuator lag P/Y/R',
   labAircraft: 'เครื่องบินทดสอบ (เริ่มการบินใหม่)',

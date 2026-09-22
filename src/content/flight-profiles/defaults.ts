@@ -1,9 +1,11 @@
 import { simulationSpeed } from '../../game/flight/speedLimits'
 import type { AeroProfile, BreakoutProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
 
-export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg' | 'controlEffectiveness'> = {
+export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg' | 'controlEffectiveness' | 'departure'> = {
   referenceSpeedMps: 90,
   highSpeedMps: 160,
+  // Tail-slide nose drop, shared by both airframes. Provisional until playtest.
+  departure: { stiffness: 3, minPressure: 0.3 },
   // Control-surface effectiveness versus unsigned incidence. Attached flow keeps
   // full effectiveness to 25°, deliberately leaving ordinary flight unchanged;
   // past that the shape follows the forward-flow projection (cos incidence) down

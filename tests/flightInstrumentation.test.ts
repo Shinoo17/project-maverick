@@ -114,7 +114,7 @@ describe.each([...aircraftIds, 'f22-notvc'])('%s allocation ledger', aircraftId 
       expect(observation.actualThrust).toBe(state.engine.actualThrust)
       const ledger = observation.lastStep!
       for (const axis of ['pitch', 'yaw', 'roll'] as const) {
-        expect(ledger.ratesAfter[axis]).toBeCloseTo(ledger.ratesBefore[axis] + FLIGHT_STEP * (ledger.controller[axis] + ledger.tvc[axis] + ledger.naturalRestoring[axis] + ledger.naturalDamping[axis]), 12)
+        expect(ledger.ratesAfter[axis]).toBeCloseTo(ledger.ratesBefore[axis] + FLIGHT_STEP * (ledger.controller[axis] + ledger.tvc[axis] + ledger.naturalRestoring[axis] + ledger.naturalDeparture[axis] + ledger.naturalDamping[axis]), 12)
       }
     }
   })

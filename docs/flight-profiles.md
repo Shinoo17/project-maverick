@@ -122,6 +122,14 @@ scale angular control authority, which comes from `aero.controlEffectiveness`
 versus measured incidence, nor the natural restoring moment, which comes from
 `aero.restoring`.
 
+`aero.departure` is the nose-down bias that acts only in reversed flow, where the
+restoring moment is zero and a tail slide would otherwise hang nose-up. Raise
+`stiffness` (rad/s² at q = 1) for a faster nose drop; raise `minPressure` (a
+dimensionless q floor, 0.3 is about 49 m/s) to keep that drop strong at the
+near-motionless apex of a slide. It is shared by both stock airframes and can be
+overridden per aircraft. `docs/reverse-flow-departure.md` records the model,
+the sweep behind the stock values and the maneuvers it changes.
+
 Speed uses the same conversion as `topSpeedKph`: 300 on the HUD is about 55.56
 simulation m/s. `minPoweredMps: 65` still limits S to 351 on the HUD, so holding S
 alone does not stall these aircraft. Airbrake, climbing or maneuver losses can.

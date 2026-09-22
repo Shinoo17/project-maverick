@@ -64,14 +64,14 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const controller = zeroAxes()
   for (const axis of axes) {
     controller[axis] = allocation.aero[axis] + allocation.floor[axis] + control.servoDamping[axis]
-    rates[axis] += (controller[axis] + actualTvc[axis] + natural.restoring[axis] + damping[axis]) * dt
+    rates[axis] += (controller[axis] + actualTvc[axis] + natural.restoring[axis] + natural.departure[axis] + damping[axis]) * dt
   }
   const neutralWeight = 1 - envelope.highAoa
   state.flightForces = {
     power, brakes: { ...brakes, ...brakeSources },
     dt, airflowStart, envelope, limiterStep, separation: envelope.separation, highAoa: envelope.highAoa, flowEffectiveness: effectiveness,
     ratesBefore, ratesAfter: { ...rates }, controller, stabilityDamping: control.servoDamping, neutralWeight,
-    naturalRestoring: natural.restoring, naturalDamping: damping,
+    naturalRestoring: natural.restoring, naturalDeparture: natural.departure, naturalDamping: damping,
     alphaDrag: natural.alphaDrag, betaDrag: natural.betaDrag, tvc: actualTvc,
     budget, allocation, targetTorque, coupledTarget, actuatorLag, nozzleTargets: targets,
     translation: { thrustWork: 0, dragWork: 0, brakeWork: 0, brakeForce: { x: 0, y: 0, z: 0 }, brakePathRate: 0, brakePathCap: 0, controlPathRate: 0, controlPathCap: 0, uncappedControlPathRate: null, pathCapActive: false, longitudinalZeroCrossing: false },

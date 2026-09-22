@@ -155,6 +155,7 @@ export const en = {
   labCapActive: 'limiting',
   labDamping: 'Servo / neutral damping P/Y/R',
   labNaturalRestoring: 'Natural restoring P/Y/R',
+  labNaturalDeparture: 'Reverse-flow departure P/Y/R',
   labNaturalDamping: 'Natural damping P/Y/R',
   labActuatorLag: 'Actuator lag torque P/Y/R',
   labAircraft: 'Test aircraft (resets flight)',

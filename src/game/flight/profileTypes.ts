@@ -83,6 +83,10 @@ export interface AeroProfile {
   alphaNormalDeg: number
   alphaCriticalDeg: number
   restoring: { pitch: RestoringCurve; yaw: RestoringCurve }
+  /** Nose-down bias in reverse flow; see docs/reverse-flow-departure.md.
+   * stiffness is rad/s² at q = 1; minPressure is a dimensionless q floor.
+   */
+  departure: { stiffness: number; minPressure: number }
   /** Rate damping coefficients (1/s at q=1), interpolated by the larger of the
    * separation memory and the measured loss of attached flow (1 − effectiveness). */
   damping: { attached: AeroAxes; separated: AeroAxes }

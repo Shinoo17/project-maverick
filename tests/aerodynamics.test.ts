@@ -22,6 +22,9 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
       state.velocity = { x: sign * speed, y: 0, z: 0 }
       const n = naturalAerodynamics(observeAirflow(state, profile), 1, aeroFlowEffectiveness(observeAirflow(state, profile), profile.aero), state.rates, profile.aero)
       for (const value of Object.values(n.restoring)) expect(Math.abs(value)).toBeLessThan(epsilon)
+      expect(Math.abs(n.departure.yaw) + Math.abs(n.departure.roll)).toBe(0)
+      if (sign < 0 && speed >= 10) expect(n.departure.pitch).toBeLessThan(-epsilon)
+      else expect(Math.abs(n.departure.pitch)).toBeLessThan(epsilon)
       expect(n.alphaDrag).toBeGreaterThanOrEqual(0)
       expect(n.betaDrag).toBeGreaterThanOrEqual(0)
     }
@@ -76,7 +79,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     copy.maneuver.burnerActive = true; copy.enginePower = 1
     stepFlight(state, neutralCommand(0, state.id), dt)
     stepFlight(copy, { ...neutralCommand(0, copy.id), psmArm: true, pitch: 1, yaw: 1, roll: 1, afterburner: true, highG: true, airbrake: true }, dt)
-    for (const key of ['naturalRestoring', 'naturalDamping', 'alphaDrag', 'betaDrag', 'separation'] as const) expect(copy.flightForces![key]).toEqual(state.flightForces![key])
+    for (const key of ['naturalRestoring', 'naturalDeparture', 'naturalDamping', 'alphaDrag', 'betaDrag', 'separation'] as const) expect(copy.flightForces![key]).toEqual(state.flightForces![key])
     const stripped = structuredClone(profile)
     stripped.maneuver.psmEnabled = false; stripped.thrustVectoring = null
     const flow = observeAirflow(copy, profile)
@@ -88,7 +91,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     for (const sample of trace.samples.slice(1)) {
       const f = sample.state.flightForces!
       for (const axis of axes) {
-        expect(f.ratesAfter[axis]).toBeCloseTo(f.ratesBefore[axis] + dt * (f.controller[axis] + f.tvc[axis] + f.naturalRestoring[axis] + f.naturalDamping[axis]), 12)
+        expect(f.ratesAfter[axis]).toBeCloseTo(f.ratesBefore[axis] + dt * (f.controller[axis] + f.tvc[axis] + f.naturalRestoring[axis] + f.naturalDeparture[axis] + f.naturalDamping[axis]), 12)
         if (f.highAoa === 1) expect(Math.abs(f.stabilityDamping[axis])).toBe(0)
       }
     }
@@ -162,6 +165,10 @@ it('I6: validates required curves/damping/drag and keeps independent nested airc
       Object.assign(bad.aero.controlEffectiveness, { [axis]: invalid })
       expect(() => validateFlightProfile(bad)).toThrow(`aero.controlEffectiveness.${axis}`)
     }
+  }
+  for (const key of ['stiffness', 'minPressure'] as const) for (const value of [undefined, -1, Infinity, NaN]) {
+    const bad = structuredClone(p); Object.assign(bad.aero.departure, { [key]: value })
+    expect(() => validateFlightProfile(bad)).toThrow(`aero.departure.${key}`)
   }
   for (const key of ['alphaDrag', 'betaDrag', 'reverseDrag'] as const) for (const value of [undefined, -1, Infinity, NaN]) {
     const bad = structuredClone(p); Object.assign(bad.aero, { [key]: value })

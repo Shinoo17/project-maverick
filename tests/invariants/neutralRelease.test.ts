@@ -38,6 +38,7 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
         expect(state.rates[axis]).toBeCloseTo(before.rates[axis] * Math.exp(-response[axis] * dt), 12)
         expect(Math.abs(state.rates[axis])).toBeLessThanOrEqual(Math.abs(before.rates[axis]) + epsilon)
         expect(Math.abs(state.flightForces!.naturalRestoring[axis])).toBe(0)
+        expect(Math.abs(state.flightForces!.naturalDeparture[axis])).toBe(0)
         expect(Math.abs(state.flightForces!.naturalDamping[axis])).toBe(0)
       }
     }
@@ -79,18 +80,14 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
     state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
     const energy = () => new Vector3().copy(state.velocity).lengthSq() / 2 + p.gravity * state.position.y
     const initialEnergy = energy()
-    let lastSpeed = new Vector3().copy(state.velocity).length()
     for (let tick = 0; tick < 6 / dt; tick++) {
       const previous = structuredClone(state)
       stepFlight(state, neutralCommand(tick, state.id), dt)
       valid(state, previous)
-      // Speed alone need not decrease when natural aero tips the aircraft into
-      // a dive. Track kinetic + potential energy, retaining the original intent.
+      // Departure tips this backwards fixture into a dive: speed may rise, but
+      // total energy stays bounded and altitude pays for it on every step.
       expect(energy()).toBeLessThanOrEqual(initialEnergy + epsilon * initialEnergy)
-      // Retain the original monotonic-speed assertion for this exact fixture too.
-      const speed = new Vector3().copy(state.velocity).length()
-      expect(speed).toBeLessThanOrEqual(lastSpeed + 1e-8)
-      lastSpeed = speed
+      expect(state.position.y).toBeLessThanOrEqual(previous.position.y + epsilon)
     }
   })
 })

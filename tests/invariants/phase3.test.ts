@@ -34,7 +34,7 @@ function audit(state: ReturnType<typeof createAircraft>, previous: ReturnType<ty
     const neutral = f.stabilityDamping[axis]
     expect(neutral * f.ratesBefore[axis]).toBeLessThanOrEqual(epsilon)
     expect(Math.abs(neutral * f.dt)).toBeLessThanOrEqual(Math.abs(f.ratesBefore[axis]) + epsilon)
-    expect(f.ratesAfter[axis]).toBeCloseTo(f.ratesBefore[axis] + f.dt * (r.aero[axis] + r.floor[axis] + neutral + f.tvc[axis] + f.naturalRestoring[axis] + f.naturalDamping[axis]), 11)
+    expect(f.ratesAfter[axis]).toBeCloseTo(f.ratesBefore[axis] + f.dt * (r.aero[axis] + r.floor[axis] + neutral + f.tvc[axis] + f.naturalRestoring[axis] + f.naturalDeparture[axis] + f.naturalDamping[axis]), 11)
   }
   if (p.thrustVectoring) expect(f.tvc).toEqual(poweredThrustForces(state.thrustVectoring, thrust, p.thrustVectoring).angularAcceleration)
   else {

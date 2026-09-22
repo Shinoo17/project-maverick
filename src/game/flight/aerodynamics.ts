@@ -58,6 +58,10 @@ export function aeroFlowEffectiveness(flow: AirflowState, profile: AeroProfile):
  * flip exactly when they are needed. `restoringSeparationIndependence` in
  * tests/aerodynamics.test.ts pins this semantic.
  *
+ * Departure is the separate nose-down channel for reverse flow, where restoring
+ * has no moment; weighting, floor and consequences are in
+ * docs/reverse-flow-departure.md.
+ *
  * Damping blends attached→separated with max(separation, 1 − effectiveness), so
  * crossflow with no pitch-alpha stall (pure sideslip) still damps as separated flow.
  */
@@ -71,6 +75,12 @@ export function naturalAerodynamics(flow: AirflowState, separation: number, effe
     yaw: restoringStiffness(profile.restoring.yaw, flow.incidenceDeg) * q * yawFlow,
     roll: 0,
   }
+  const departurePressure = Math.max(flow.dynamicPressure, profile.departure.minPressure) * flow.confidence
+  const departure: AeroAxes = {
+    pitch: -profile.departure.stiffness * departurePressure * flow.reverseFlow * (1 - Math.abs(Math.sin(alpha))) * Math.cos(beta),
+    yaw: 0,
+    roll: 0,
+  }
   const dampingCoefficient = { pitch: 0, yaw: 0, roll: 0 }
   const damping = { pitch: 0, yaw: 0, roll: 0 }
   for (const axis of curveAxes) {
@@ -81,7 +91,7 @@ export function naturalAerodynamics(flow: AirflowState, separation: number, effe
   }
   const speedSquared = flow.airspeed ** 2
   return {
-    restoring, damping, dampingCoefficient,
+    restoring, departure, damping, dampingCoefficient,
     alphaDrag: profile.alphaDrag * speedSquared * (pitchFlow ** 2 + profile.reverseDrag * flow.reverseFlow),
     betaDrag: profile.betaDrag * speedSquared * yawFlow ** 2,
   }

@@ -58,10 +58,14 @@ export function measure(trace: Trace) {
     add('psmIntent.peakLimiter', peak(samples, sample => sample.state.limiterOpen), 'fraction')
   }
   if ((scenario === 'pedalC' || scenario === 'pedal')) add('baseline.pedal.yawRate', samples[Math.min(240, samples.length - 1)].state.rates.yaw * 180 / Math.PI, 'deg/s at 2 s')
-  if (scenario === 'tailSlide') add('B10.tailSlide.flipTime', firstTime(samples, sample => {
-    const q = sample.state.orientation
-    return 2 * (q.x * q.y + q.z * q.w) < 0
-  }), 's')
+  if (scenario === 'tailSlide') {
+    const apex = firstTime(samples, sample => sample.state.velocity.y <= 0)
+    const flip = firstTime(samples, sample => {
+      const q = sample.state.orientation
+      return 2 * (q.x * q.y + q.z * q.w) < 0
+    })
+    add('B10.tailSlide.flipTime', apex === null || flip === null ? null : flip - apex, 's after apex')
+  }
   if (scenario === 'sideslip60') add('B20.sideslip60.speedLoss1s', arcadeSpeed(speed(entry) - speed(samples.at(-1)!)), 'arcade km/h')
   return rows.map(row => {
     const target = benchmarkTarget(row.id, trace.aircraftId)

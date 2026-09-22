@@ -40,7 +40,7 @@ window remains hard. A future recovery assist must not be silently simulated her
 authority budget, signed allocation, target/actual/coupled/lagging TVC torque, rate-servo
 damping, natural moments and translation work/cap. `budget` uses that same tick;
 main airflow fields observe the end pose. Actual acceleration reconstructs from
-`aero + floor + actualTvc + stabilityDamping + naturalRestoring + naturalDamping`.
+`aero + floor + actualTvc + stabilityDamping + naturalRestoring + naturalDeparture + naturalDamping`.
 The TVC reservation is not added again. Its unresolved portion is kept in `unmet`.
 
 Numeric feel targets produce `ok`, `⚠ out` or `report`. B9 explicitly reports
@@ -125,7 +125,9 @@ The actual `GameRuntime` snapshot/public replay path has its own exact FPS check
   and is unavailable below 1 m/s.
 - Legacy back-to-normal is measured after C release. Pedal yaw rate is sampled at 2 s.
   Release45 reports incidence at 0/0.2/0.5/1/1.5 s, maximum body-rate vector magnitude and maximum attitude step.
-  Tail slide reports the first nose-below-horizon sample; sideslip reports 1 s speed loss.
+  Tail slide reports the first nose-below-horizon sample measured from the apex, the
+  first sample with non-positive vertical speed; the entry climb is scenario setup.
+  Sideslip reports 1 s speed loss.
 - Tracks stop on `alive = false`; reports include actual duration/alive status.
   Speed loss uses the existing arcade km/h conversion (5.4 × simulation m/s).
 

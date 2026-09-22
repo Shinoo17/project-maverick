@@ -100,6 +100,10 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
     const value = aero.damping?.[regime]?.[axis]
     if (!Number.isFinite(value) || value < 0) throw new Error(`${path}.aero.damping.${regime}.${axis}: expected finite nonnegative number`)
   }
+  for (const key of ['stiffness', 'minPressure'] as const) {
+    const value = aero.departure?.[key]
+    if (!Number.isFinite(value) || value < 0) throw new Error(`${path}.aero.departure.${key}: expected finite nonnegative number`)
+  }
   for (const key of ['alphaDrag', 'betaDrag', 'reverseDrag'] as const) {
     if (!Number.isFinite(aero[key]) || aero[key] < 0) throw new Error(`${path}.aero.${key}: expected finite nonnegative number`)
   }

@@ -87,8 +87,10 @@ it('reports Phase 2 deltas, ablations and exact substep force ledgers without fe
     const profile = getFlightProfile(id)
     const flipTime = trace.samples.find(s => new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(s.state.orientation)).y < 0)?.time ?? null
     const apex = trace.samples.reduce((best, s) => observeAirflow(s.state, profile).airspeed < observeAirflow(best.state, profile).airspeed ? s : best)
-    return { aircraftId: id, pitch, flipTime, flipAfterApex: flipTime === null ? null : flipTime - apex.time,
-      targetSeconds: targets['B10.tailSlide.flipTime'].max, status: targetStatus(flipTime, targets['B10.tailSlide.flipTime']),
+    const verticalApex = trace.samples.find(s => s.state.velocity.y <= 0)?.time ?? null
+    const flipAfterApex = flipTime === null || verticalApex === null ? null : flipTime - verticalApex
+    return { aircraftId: id, pitch, flipTime, flipAfterApex,
+      targetSeconds: targets['B10.tailSlide.flipTime'].max, status: targetStatus(flipAfterApex, targets['B10.tailSlide.flipTime']),
       minSpeed: observeAirflow(apex.state, profile).airspeed, apexTime: apex.time,
       firstReverse: trace.samples.find(s => observeAirflow(s.state, profile).reverseFlow > 0)?.time ?? null,
       finalIncidence: observeAirflow(trace.samples.at(-1)!.state, profile).incidenceDeg,

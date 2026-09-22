@@ -36,6 +36,7 @@ export interface FlightForces {
   controller: AeroAxes
   stabilityDamping: AeroAxes
   naturalRestoring: AeroAxes
+  naturalDeparture: AeroAxes
   naturalDamping: AeroAxes
   tvc: AeroAxes
   alphaDrag: number

@@ -64,6 +64,7 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
         <div><dt>{t('labPathCap')}</dt><dd>{instrumentation.lastStep.translation.controlPathRate.toFixed(3)} / {instrumentation.lastStep.translation.controlPathCap.toFixed(3)} rad/s · {instrumentation.lastStep.translation.pathCapActive ? t('labCapActive') : '—'}</dd></div>
         <div><dt>{t('labDamping')}</dt><dd>{axes(instrumentation.lastStep.stabilityDamping)} rad/s²</dd></div>
         <div><dt>{t('labNaturalRestoring')}</dt><dd>{axes(instrumentation.lastStep.naturalRestoring)} rad/s²</dd></div>
+        <div><dt>{t('labNaturalDeparture')}</dt><dd>{axes(instrumentation.lastStep.naturalDeparture)} rad/s²</dd></div>
         <div><dt>{t('labNaturalDamping')}</dt><dd>{axes(instrumentation.lastStep.naturalDamping)} rad/s²</dd></div>
         <div><dt>{t('labAllocatedAero')}</dt><dd>{axes(instrumentation.lastStep.allocation.aero)} rad/s²</dd></div>
         <div><dt>{t('labAllocatedTvc')}</dt><dd>{axes(instrumentation.lastStep.allocation.tvc)} rad/s²</dd></div>

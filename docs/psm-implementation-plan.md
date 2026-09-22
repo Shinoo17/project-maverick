@@ -272,7 +272,9 @@ aero.restoring: {
 aero.damping: { attached: Axes; separated: Axes }   // lerp ด้วย separation
 ```
 
-- Moment = `−stiffness(incidence) · q · sin(alpha|beta)` → ศูนย์ที่ 0° และ 180° (180° เป็น unstable equilibrium ⇒ tail slide flip เกิดเอง)
+- Moment = `−stiffness(incidence) · q · sin(alpha|beta)` → ศูนย์ที่ 0° และ 180°
+- **แก้ไข 23 ก.ย. 2026:** 180° ไม่ได้ flip เอง วัดแล้วหัวทิ้งช้า 22–25 s ต้องมี channel `departure` แยกต่างหาก
+  (`aero.departure`, physics version `p4.6-reverse-departure-1`) ดู `docs/reverse-flow-departure.md`
 - Stiffness curve ต่อลำ เช่น F-22 ลดลงน้อยใน high AoA (predictable), Su-57 ลดลงมาก (freestyle), Su-35 ลดลงมาก + `alphaDrag` สูง
 - Validation: stiffness ≥ 0, knots เรียง incidence
 - **Restoring ไม่คูณ separation โดยตั้งใจ** (owner decision 20 ก.ย. 2026): การเสีย static stability หลัง stall
@@ -595,7 +597,7 @@ Kulbit 360° Time                    4.3 s     3.0–4.5 s   ok
 | B7 `recovery.backToNormal` | เวลาถึง label NORMAL | 2 | report (อาจหลายวินาที) |
 | B8 `recovery.naturalDuringDelay` | incidence เปลี่ยนระหว่าง delay | 2 | > 0 |
 | B9 `natural.release45` | seed 45° ปล่อย: incidence ที่ 0.2/0.5/1.5 s, max rate | 2 | ตั้งจาก **playtest Phase 2** (Phase 0 ไม่มี baseline เพราะ physics เดิมไม่มี restoring) |
-| B10 `tailSlide.flipTime` | เวลาหัวลงต่ำกว่า horizon | 2 | ≤ 4 s |
+| B10 `tailSlide.flipTime` | เวลาหัวลงต่ำกว่า horizon **นับจาก apex** (แก้ไข 23 ก.ย. 2026: เดิมนับจาก t=0 ซึ่งรวมช่วงไต่ ~6 s จึงเป็นไปไม่ได้) | 2 | ≤ 4 s |
 | B11 `pedal.yawRate` | post-stall yaw rate Q/E 2 s | 3 | F-22 ≤ 50% Su-57 |
 | B12 `beginner.fullStick500.peakAoa` | ไม่มี brake/burner 3 s | 4 | ≤ 25°, limiterOpen ≤ 0.35 |
 | B13 `hardTurn900` | peak incidence, sustained G, speed loss | 0 | incidence ≤ αNormal+5°; G > golden |
