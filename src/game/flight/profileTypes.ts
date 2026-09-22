@@ -203,8 +203,22 @@ export interface BreakoutProfile {
   hardTurnG: number
 }
 
+/** Knife-edge pull turns horizontally; cap incidence so it drifts instead of cobras. */
+export interface BankedDriftProfile {
+  /** Absolute bank angle band (degrees) that fades the cap in. */
+  bankStartDeg: number
+  bankFullDeg: number
+  /** Displayed ARCADE km/h band that fades the cap in, below the S floor. */
+  speedStartKph: number
+  speedFullKph: number
+  maxAlphaDeg: number
+  /** Share of path assist kept at full drift (0–1): 0 slides like PSM, 1 carves. */
+  pathGrip: number
+}
+
 export interface AircraftFlightProfile {
   breakout: BreakoutProfile
+  bankedDrift: BankedDriftProfile
   arcadeControlFloor: { acceleration: AeroAxes; maxRate: AeroAxes }
   engine: EngineProfile
   aero: AeroProfile

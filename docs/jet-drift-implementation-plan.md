@@ -1,6 +1,6 @@
 # Jet Drift / Implicit PSM — Implementation Amendment (Rev. 4)
 
-> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5–9 remain pending. The original planning status below is historical.
+> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. [Phase 4.5D banked drift](#phase-45d--banked-drift-amendment-23-september-2026) is also delivered. Phase 5–9 remain pending. The original planning status below is historical.
 
 > 21 September 2026 — Owner-approved implementation direction; implementation pending.
 > Target branch: feat/psm-rework. Planning baseline: 33fa51010d03b34d21a8da9ce6f1588a408f95ee (Phase 4 complete).
@@ -229,6 +229,66 @@ Files: speed.ts, engine.ts only where request/spool plumbing requires it, engine
 - Compare brake held vs released, burner held vs pulsed, exhausted reserve and non-TVC behavior.
 
 Done: useful drift/axis changes do not require continuous burner; Afterburner produces a measured trajectory response after brake release; no dissipation, authority, near-zero or replay invariant is weakened to meet feel targets.
+
+### Phase 4.5D — Banked drift (amendment, 23 September 2026)
+
+**Status: code and automated validation delivered; human playtest pending.** Owner-approved follow-up to 4.5C. Physics version `p4.7-banked-drift-1`.
+
+**Problem.** At knife-edge, pitch turns the nose in the horizontal plane. Before this change, pulling with S or Airbrake at about ±90° bank opened the limiter, just as it does wings-level. The result was a horizontal cobra at 75–105° incidence, and the velocity turned less than with a plain pull.
+
+**Goal.** At high bank, pitch + S becomes a racing-style drift into the turn. The nose leads the velocity by a visible slip angle. Incidence stays low and speed bleeds off. Wings-level and inverted PSM are unchanged.
+
+**Design.** This is a continuous weight on existing permission. It adds no mode, phase or latch.
+
+- `bankedDriftWeight(orientation, flow, profile)` in [envelope.ts](../src/game/flight/envelope.ts) reads the body span axis against world up, `|span.y| = |sin(bank)|`. It combines a smoothstep over the bank band with a smoothstep over the HUD speed band. Both wings-level and inverted give exactly 0.
+- The incidence permission becomes `alphaLimitDeg = min(lerp(alphaNormal, maxControllable, limiterOpen), lerp(maxControllable, maxAlphaDeg, weight))`. The cap only ever lowers the limit. It never opens the limiter, raises G allowance or touches any authority budget.
+- Path-assist release is scaled by `1 - weight · pathGrip`. The capped nose therefore still drags the velocity around the corner instead of sliding loose as in PSM. With the cap alone, heading change fell to about 40°.
+- New profile block `bankedDrift`. The shared defaults are provisional until playtest.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `bankStartDeg` / `bankFullDeg` | 55 / 80 | Absolute bank band that fades the cap in |
+| `speedStartKph` / `speedFullKph` | 280 / 330 | HUD speed band. It sits below the S floor (`minPoweredMps` 65 ≈ 351 HUD), so a held S drift does not release the cap as speed settles |
+| `maxAlphaDeg` | 35 | Incidence cap at full weight |
+| `pathGrip` | 0.4 | Share of path assist kept at full weight: 0 slides like PSM, 1 carves with almost no slip |
+
+**Out of scope, by evidence or by decision:**
+
+- No sink compensation. The existing gravity blend already holds knife-edge height (≤ 18 m lost in 3 s in every measured row).
+- No Q/E counter-steer. At knife-edge the yaw axis is horizontal, so Q/E trims the nose up or down (top rudder), not the drift angle. That needs no code.
+- No explicit upper speed limit and no separate G limit. At high q the closed limiter and the existing turn budget already bound the turn.
+- No camera, VFX or HUD slip indicator in this step. The existing vapor observer reads alpha, sideslip and G, and the HUD already draws the velocity marker. Revisit in Phase 7/9 only if playtest shows the drift is unreadable.
+
+**Measured results.** Knife-edge (bank 90°), full pitch, 3 s, from level trimmed flight at the listed HUD speed (`driftSpawn` + body-X roll). The before column is `p4.6-reverse-departure-1`. Values are peak incidence / velocity heading change / end HUD speed. Plain pull is unchanged by construction.
+
+| F-22 | Plain pull | S before | S after | Airbrake before | Airbrake after |
+|---|---|---|---|---|---|
+| 350 | 10° / 93° / 390 | 75° / 64° / 351 | 38° / 73° / 357 | 90° / 46° / 317 | 45° / 30° / 355 |
+| 500 | 4° / 148° / 522 | 77° / 94° / 351 | 24° / 136° / 365 | 97° / 60° / 344 | 37° / 62° / 455 |
+| 700 | 4° / 142° / 714 | 91° / 93° / 371 | 8° / 157° / 560 | 105° / 68° / 357 | 35° / 60° / 581 |
+| 1000 | 4° / 140° / 942 | 23° / 139° / 655 | 8° / 142° / 673 | 88° / 94° / 557 | 35° / 116° / 658 |
+
+Su-57 after-values stay within about 7° and 10 km/h of F-22 (for example, S at 500: 24° / 136° / 360). Height loss is ≤ 18 m in every row. Wings-level S at 500 remains a 77° cobra.
+
+**Known limitations for playtest:**
+
+- The low-speed Airbrake drift turns less than before: at 350 the heading change falls from 46° to 30°. Airbrake also overshoots the cap early (about 45° at 350) because of rate inertia. S is the intended drift input. Airbrake tuning, including a per-source grip, is a playtest item.
+- Airbrake keeps continuation open at high speed. At 700–1000 the Airbrake drift therefore still sits at the cap (35°). S at those speeds is a hard turn with little slip, because the limiter stays closed.
+- The debug C arm is capped at knife-edge as well.
+- Between 55° and 80° bank the weight is partial. At 60° bank, S still produces a tilted cobra (about 74°). Lower `bankStartDeg` if playtest wants the drift earlier.
+- The version bump rejects replays saved under `p4.6-reverse-departure-1`. Phase 0 goldens replay as archived inputs (goldenPolicy retirement entry).
+
+**Validation.** [bankedDrift.test.ts](../tests/bankedDrift.test.ts) covers:
+
+- weight bands and exact zero at 0°/±180°;
+- the cap at knife-edge only;
+- a drift weight of 0 on every step of wings-level and inverted pulls;
+- knife-edge ±90° S drift for both airframes: incidence 15–40°, heading > 120°, height loss < 20 m, slower than a plain pull;
+- the 1000 km/h S turn staying below the cap.
+
+The full suite (543 tests), TypeScript and `npm run flight:bench` (23 checks) pass.
+
+Files: [envelope.ts](../src/game/flight/envelope.ts), [profileTypes.ts](../src/game/flight/profileTypes.ts), [validateProfile.ts](../src/game/flight/validateProfile.ts), [defaults.ts](../src/content/flight-profiles/defaults.ts), F-22/Su-57 profiles, [profile.ts](../src/game/flight/profile.ts), [goldenPolicy.ts](../benchmarks/flight/goldenPolicy.ts), tests.
 
 ### Phase 5 — Recovery assist
 

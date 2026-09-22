@@ -486,6 +486,7 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **4.5A:** เข้าจาก attached flight ที่ 350–700 HUD km/h; Airbrake + pitch/yaw ไม่บังคับ burner; S เป็น mild entry intent; แยก physical flow response ออกจาก arcade path assist เพื่อแก้ entry deadlock ตั้งแต่มุมต่ำ.
 - **4.5B:** แยก continuation activity จาก entry demand; roll/partial stick/axis handoff ไม่ปิด limiter โดยผิดเจตนา; ยก P4-2 contribution-aware limiter จาก Phase 8 มาทำในขั้นนี้.
 - **4.5C:** body-axis dissipative braking + consistent force/work integration; explicit bounded dry control-power request ผ่าน spool/actual thrust จริง; burner ใช้เปลี่ยน trajectory ไม่ใช่ท่าอัตโนมัติ.
+- **4.5D (เพิ่ม 23 ก.ย. 2026):** Banked drift. ที่ bank ประมาณ ±90° การดึง pitch + S จะ drift เข้าโค้งในแนวราบแทน Cobra ใช้ weight ต่อเนื่องจาก bank และ speed เป็นเพดาน incidence (35°) และคง path assist ไว้บางส่วน ไม่มี mode หรือ latch ใหม่ รายละเอียดและผลวัดอยู่ใน [amendment](jet-drift-implementation-plan.md#phase-45d--banked-drift-amendment-23-september-2026).
 - คง angular authority/allocation/geometry/floor contracts และ F-22 zero commanded yaw TVC; ไม่ gate actual thrust เพื่อยืด drift.
 - เป้าหมายเวลาเข้า/ค้างท่าเป็น provisional benchmarks; ห้ามเพิ่ม floor หรือซ่อนพลังงานเพื่อให้ผ่านตัวเลข.
 - ปรับ I17/I18 และ behavior-specific P4-2 assertions พร้อม implementation และบันทึกเหตุผล; คง archive/golden policy เดิม.

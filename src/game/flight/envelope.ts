@@ -1,7 +1,8 @@
-import { MathUtils } from 'three'
+import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
 import type { AircraftFlightProfile } from './profileTypes'
 import type { AirflowState } from './airflow'
+import { arcadeSpeed } from './speedLimits'
 
 /** Permission only. These factors never change an authority budget. */
 export interface EnvelopeFactors {
@@ -17,6 +18,7 @@ export interface EnvelopeFactors {
   hardTurnBlend: number
   continuation: number
   pathAssistWeight: number
+  bankedDrift: number
 }
 export interface LimiterStep {
   previous: number
@@ -24,7 +26,21 @@ export interface LimiterStep {
   rate: number
   automatic: boolean
 }
-type EnvelopeState = Pick<AircraftState, 'stall' | 'maneuver' | 'limiterOpen' | 'pathAssistWeight' | 'intent'>
+type EnvelopeState = Pick<AircraftState, 'stall' | 'maneuver' | 'limiterOpen' | 'pathAssistWeight' | 'intent' | 'orientation'>
+
+/** 1 at knife-edge above the speed band, 0 wings-level or inverted. */
+export function bankedDriftWeight(orientation: EnvelopeState['orientation'], flow: AirflowState, profile: AircraftFlightProfile) {
+  const d = profile.bankedDrift
+  const wingSpan = new Vector3(0, 0, 1).applyQuaternion(new Quaternion().copy(orientation))
+  const knifeEdge = MathUtils.smoothstep(Math.abs(wingSpan.y), Math.sin(d.bankStartDeg * Math.PI / 180), Math.sin(d.bankFullDeg * Math.PI / 180))
+  return knifeEdge * MathUtils.smoothstep(arcadeSpeed(flow.airspeed), d.speedStartKph, d.speedFullKph)
+}
+
+function alphaLimit(limiterOpen: number, bankedDrift: number, profile: AircraftFlightProfile) {
+  const a = profile.aero
+  const envelope = MathUtils.lerp(a.alphaNormalDeg, a.maxControllableAlphaDeg, limiterOpen)
+  return Math.min(envelope, MathUtils.lerp(a.maxControllableAlphaDeg, profile.bankedDrift.maxAlphaDeg, bankedDrift))
+}
 
 /** Read-only observation, also used before integration. H uses unsigned incidence;
  * confidence gates continuation as well as highAoa; near-rest angles never latch. */
@@ -41,15 +57,17 @@ export function interpretEnvelope(state: EnvelopeState, flow: AirflowState, prof
   const intent = MathUtils.clamp(D * permission, 0, 1)
   // Space remains a smoothed manual request into the same allowance as automatic G.
   const hardTurn = Math.max(D * S * (1 - E), state.maneuver.highG)
+  const bankedDrift = bankedDriftWeight(state.orientation, flow, profile)
   return {
     highAoa: H * flow.confidence, separation: state.stall.severity,
     intent, energyPermission: E, limiterTarget: Math.max(intent, continuation),
     limiterOpen: state.limiterOpen,
-    alphaLimitDeg: MathUtils.lerp(a.alphaNormalDeg, a.maxControllableAlphaDeg, state.limiterOpen),
+    alphaLimitDeg: alphaLimit(state.limiterOpen, bankedDrift, profile),
     gAllowance: MathUtils.lerp(1, b.hardTurnG, hardTurn),
     hardTurnBlend: hardTurn,
     continuation,
     pathAssistWeight: state.pathAssistWeight,
+    bankedDrift,
   }
 }
 
@@ -60,12 +78,13 @@ export function stepEnvelope(state: EnvelopeState, flow: AirflowState, profile: 
   // C alone may jump open for comparison; every automatic step, including release
   // from C, follows the same exponential. No threshold latch or snap-to-zero.
   state.limiterOpen = debugOpen ? 1 : previous + (target - previous) * (1 - Math.exp(-rate * dt))
-  const assistTarget = 1 - state.limiterOpen * Math.max(state.intent.brakeIntent,
+  const assistRelease = state.limiterOpen * Math.max(state.intent.brakeIntent,
     state.intent.decelerationIntent * 0.65, envelope.continuation) * flow.confidence
+  const assistTarget = 1 - assistRelease * (1 - envelope.bankedDrift * profile.bankedDrift.pathGrip)
   state.pathAssistWeight += (assistTarget - state.pathAssistWeight) * (1 - Math.exp(-profile.flight.pathAssistResponse * dt))
   envelope.pathAssistWeight = state.pathAssistWeight
   envelope.limiterOpen = state.limiterOpen
-  envelope.alphaLimitDeg = MathUtils.lerp(profile.aero.alphaNormalDeg, profile.aero.maxControllableAlphaDeg, state.limiterOpen)
+  envelope.alphaLimitDeg = alphaLimit(state.limiterOpen, envelope.bankedDrift, profile)
   return { envelope, limiterStep: { previous, target, rate, automatic: !debugOpen } satisfies LimiterStep }
 }
 

@@ -130,6 +130,15 @@ near-motionless apex of a slide. It is shared by both stock airframes and can be
 overridden per aircraft. `docs/reverse-flow-departure.md` records the model,
 the sweep behind the stock values and the maneuvers it changes.
 
+`bankedDrift` turns a knife-edge pull into a horizontal drift instead of a cobra.
+Above about 55° bank it lowers the incidence limit toward `maxAlphaDeg` and keeps
+`pathGrip` of the path assist, so the velocity follows the nose around the corner.
+Its effect is full at `bankFullDeg` and at or above `speedFullKph`; it is zero
+wings-level and inverted. Raise `pathGrip` for a tighter carve with less slip; lower
+it for a looser slide. Raise `maxAlphaDeg` to allow more slip before the cap. Keep
+`speedFullKph` below the S floor (351 on the HUD) or a held S drift releases the cap
+as speed settles. The cap only ever lowers permission; it adds no authority.
+
 Speed uses the same conversion as `topSpeedKph`: 300 on the HUD is about 55.56
 simulation m/s. `minPoweredMps: 65` still limits S to 351 on the HUD, so holding S
 alone does not stall these aircraft. Airbrake, climbing or maneuver losses can.

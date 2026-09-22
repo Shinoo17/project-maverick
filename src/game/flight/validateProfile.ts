@@ -72,6 +72,15 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   if (!Number.isFinite(aero.maxControllableAlphaDeg) || aero.maxControllableAlphaDeg < aero.alphaNormalDeg || aero.maxControllableAlphaDeg > 180) {
     throw new Error(`${path}.aero.maxControllableAlphaDeg: expected alphaNormalDeg..180`)
   }
+  const drift = profile.bankedDrift
+  if (!(drift?.bankStartDeg >= 0 && drift.bankFullDeg > drift.bankStartDeg && drift.bankFullDeg <= 90)) {
+    throw new Error(`${path}.bankedDrift: expected 0 <= bankStartDeg < bankFullDeg <= 90`)
+  }
+  if (!(drift.speedStartKph >= 0 && drift.speedFullKph > drift.speedStartKph)) {
+    throw new Error(`${path}.bankedDrift: expected 0 <= speedStartKph < speedFullKph`)
+  }
+  if (!(drift.maxAlphaDeg > 0 && drift.maxAlphaDeg <= 180)) throw new Error(`${path}.bankedDrift.maxAlphaDeg: expected 0 < value <= 180`)
+  if (!(drift.pathGrip >= 0 && drift.pathGrip <= 1)) throw new Error(`${path}.bankedDrift.pathGrip: expected 0..1`)
   for (const axis of ['pitch', 'yaw'] as const) {
     const curve = aero.restoring?.[axis], curvePath = `${path}.aero.restoring.${axis}`
     if (!Array.isArray(curve) || curve.length < 2) throw new Error(`${curvePath}: expected at least two knots`)

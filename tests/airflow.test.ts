@@ -124,7 +124,7 @@ describe('read-only envelope observation', () => {
     expect(interpretEnvelope(state, flow, profile)).toEqual({
       highAoa: 1, separation: 0.4, intent: 0, limiterOpen: 0, limiterTarget: 0,
       energyPermission: 1 - MathUtils.smoothstep(flow.dynamicPressure, profile.breakout.qLow, profile.breakout.qHigh),
-      alphaLimitDeg: 20, gAllowance: 1.3, hardTurnBlend: 0.5, continuation: 0, pathAssistWeight: 1,
+      alphaLimitDeg: 20, gAllowance: 1.3, hardTurnBlend: 0.5, continuation: 0, pathAssistWeight: 1, bankedDrift: 0,
     })
     state.velocity = { x: 0, y: 0, z: 0 }
     expect(interpretEnvelope(state, observeAirflow(state, profile), profile).highAoa).toBe(0)
