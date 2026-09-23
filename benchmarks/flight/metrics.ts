@@ -2,6 +2,7 @@ import { Vector3 } from 'three'
 import { observeAirflow } from '../../src/game/flight/airflow'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { arcadeSpeed } from '../../src/game/flight/speedLimits'
+import { envelopeLabel } from '../../src/game/flight/envelope'
 import type { Trace, Sample } from './harness'
 import { benchmarkTarget, naturalObservationWindowSeconds, targetStatus } from './targets'
 
@@ -39,9 +40,11 @@ export function measure(trace: Trace) {
     add('B15.reversal.altitudeLoss', initialState.position.y - Math.min(...samples.map(sample => sample.state.position.y)), 'm')
   }
   if (scenario === 'release45') {
-    // Incidence response with neutral input and no C/assist during a documented
-    // 0.2 s observation window; this does not implement a recovery-delay system.
+    // Neutral input from t = 0. The 0.2 s window lies inside recovery.delaySeconds
+    // (pinned in tests/recovery.test.ts), so B8 measures natural response only.
     add('B8.recovery.naturalDuringDelay', incidence(entry) - incidence(samples[Math.round(naturalObservationWindowSeconds * 120)]), 'deg reduction / 0.2 s without assist')
+    add('B6.recovery.assistFull', firstTime(samples, s => (s.state.flightForces?.envelope.recoveryAssist ?? 0) >= 0.9), 's after release')
+    add('B7.recovery.backToNormal', firstTime(samples, s => !!s.state.flightForces && envelopeLabel(s.state.flightForces.envelope, s.state.intent.activity) === 'NORMAL'), 's after release')
     for (const seconds of [0, 0.2, 0.5, 1, 1.5]) add(`B9.natural.release45.incidence${seconds}s`, incidence(samples[Math.round(seconds * 120)]), 'deg')
     add('B9.natural.release45.maxAttitudeStep', peak(samples.slice(1), sample => sample.noseRotationDeg - samples[sample.step - 1].noseRotationDeg), 'deg/substep')
     add('B9.natural.release45.maxRate', peak(samples, sample => Math.hypot(...Object.values(sample.state.rates))) * 180 / Math.PI, 'deg/s')

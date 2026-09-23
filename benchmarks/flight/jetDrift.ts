@@ -49,6 +49,7 @@ export function driftMetrics(trace: Trace) {
   const p = getFlightProfile(trace.aircraftId), samples = trace.samples
   const flows = samples.map(s => observeAirflow(s.state, p))
   const first = samples[0], last = samples.at(-1)!
+  const lastAbove30 = flows.map(f => f.incidenceDeg >= 30).lastIndexOf(true)
   const initialVelocity = new Vector3().copy(first.state.velocity), finalVelocity = new Vector3().copy(last.state.velocity)
   const heading = (a: Vector3, b: Vector3) => Math.hypot(a.x, a.z) < 1e-6 || Math.hypot(b.x, b.z) < 1e-6 ? null
     : Math.atan2(a.x * b.z - a.z * b.x, a.x * b.x + a.z * b.z) * 180 / Math.PI
@@ -60,6 +61,8 @@ export function driftMetrics(trace: Trace) {
     cumulativeNoseDegrees: last.noseRotationDeg, netNoseHeadingDegrees: heading(forward(first.state), forward(last.state)),
     netVelocityHeadingDegrees: heading(initialVelocity, finalVelocity), velocityDirection3d: initialVelocity.length() < 1 || finalVelocity.length() < 1 ? null : initialVelocity.angleTo(finalVelocity) * 180 / Math.PI,
     finalIncidence: flows.at(-1)!.incidenceDeg,
+    // Convergence window: time after which incidence stays below 30°; null while still above at track end.
+    settledBelow30: lastAbove30 === flows.length - 1 ? null : samples[lastAbove30 + 1].time,
     thrustWork: samples.slice(1).reduce((sum, s) => sum + s.state.flightForces!.translation.thrustWork, 0),
     dragWork: samples.slice(1).reduce((sum, s) => sum + s.state.flightForces!.translation.dragWork, 0),
     unmet: Object.fromEntries(['pitch', 'yaw', 'roll'].map(axis => [axis, Math.max(...samples.slice(1).map(s => Math.abs(s.state.flightForces!.allocation.unmet[axis as 'pitch'])))])),

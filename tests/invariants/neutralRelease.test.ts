@@ -53,7 +53,7 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
       recovered ||= sawRecovery && state.maneuver.phase === 'normal'
       if (!state.alive) {
         // A recovered, nose-down aircraft can later hit terrain without pilot
-        // input. Phase 3 has no attitude-leveling recovery/autopilot (Phase 5).
+        // input. Phase 5 recovery aligns the nose with the airflow; it never levels attitude.
         expect(speedAdjust).toBe(1); expect(recovered).toBe(true)
         expect(['terrain', 'boundary']).toContain(state.stopReason)
       }

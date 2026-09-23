@@ -81,6 +81,12 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   }
   if (!(drift.maxAlphaDeg > 0 && drift.maxAlphaDeg <= 180)) throw new Error(`${path}.bankedDrift.maxAlphaDeg: expected 0 < value <= 180`)
   if (!(drift.pathGrip >= 0 && drift.pathGrip <= 1)) throw new Error(`${path}.bankedDrift.pathGrip: expected 0..1`)
+  const r = profile.recovery
+  // A handoff gap shorter than the continuation window must never start recovery.
+  if (!(r?.delaySeconds >= b.handoffSeconds)) throw new Error(`${path}.recovery.delaySeconds: expected at least breakout.handoffSeconds`)
+  positive(r.rampSeconds, `${path}.recovery.rampSeconds`)
+  nonnegative(r.response, `${path}.recovery.response`)
+  nonnegative(r.noseRate, `${path}.recovery.noseRate`)
   for (const axis of ['pitch', 'yaw'] as const) {
     const curve = aero.restoring?.[axis], curvePath = `${path}.aero.restoring.${axis}`
     if (!Array.isArray(curve) || curve.length < 2) throw new Error(`${curvePath}: expected at least two knots`)

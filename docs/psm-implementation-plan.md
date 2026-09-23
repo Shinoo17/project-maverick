@@ -1,6 +1,6 @@
 # PSM / High-AoA / TVC — Implementation Plan (Rev. 4)
 
-> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5–9 remain pending. The original planning status below is historical.
+> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5 recovery assist is delivered; see [Phase 5 report](psm-phase5-implementation.md). Phase 6–9 remain pending. The original planning status below is historical.
 
 > **Rev. 4 — 21 ก.ย. 2026: owner อนุมัติทิศทาง Jet Drift / Implicit PSM แล้ว**
 > เริ่มงานถัดไปจาก [Jet Drift implementation amendment](jet-drift-implementation-plan.md): baseline capture → Phase 4.5A (entry/path assist) → 4.5B (continuation/cross-axis) → 4.5C (braking/power/work) → 5 → 6 → 8 → 7 → 9.
@@ -119,7 +119,7 @@ interface EnvelopeFactors {
   alphaLimitDeg: number     // ≤ profile capability maxControllableAlpha
   gAllowance: number        // hard-turn G ceiling multiplier (High-G merged)
   hardTurnBlend: number     // 0..1; rate/drag blend, independent of gAllowance mapping
-  // Phase 5 will add stabilityAssist/recoveryAssist alongside real consumers and I15 coverage.
+  recoveryAssist: number    // Phase 5: 0 on angular input, ramps in after recovery.delaySeconds; weight only
 }
 
 /** Per-tick debug record; every invariant about authority is checked against this. */
@@ -493,6 +493,8 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - Physics/command changes ต้อง version ตามสัญญาเดิม; การแก้แผนอย่างเดียวไม่ bump runtime version.
 
 ### Phase 5 — Recovery assist
+
+**Status: delivered** (`p5-recovery-assist-1`, [report](psm-phase5-implementation.md)). Implemented inside `envelope.ts` + `controller.ts` instead of a new `recovery.ts`; human playtest pending.
 
 > ใช้ continuation/release signal เดียวกับ 4.5B. Natural response ทำทันที; assist หลัง delay และหยุดแย่งทันทีเมื่อผู้เล่นสั่ง. ตรวจ recovery แบบ convergence window ไม่ใช่บังคับ absolute rates ลดทุก tick.
 

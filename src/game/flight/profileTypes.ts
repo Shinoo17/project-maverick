@@ -216,9 +216,22 @@ export interface BankedDriftProfile {
   pathGrip: number
 }
 
+/** Neutral-stick assistance after release. Never acts while the pilot commands a rate. */
+export interface RecoveryProfile {
+  /** Seconds of neutral stick before assistance starts; at least breakout.handoffSeconds. */
+  delaySeconds: number
+  /** Seconds from start to full assistance (smoothstep). */
+  rampSeconds: number
+  /** Dissipative rate-servo response toward the recovery target (1/s). */
+  response: number
+  /** Nose-to-airflow target rate at 90° incidence (rad/s); the drive is budgeted. */
+  noseRate: number
+}
+
 export interface AircraftFlightProfile {
   breakout: BreakoutProfile
   bankedDrift: BankedDriftProfile
+  recovery: RecoveryProfile
   arcadeControlFloor: { acceleration: AeroAxes; maxRate: AeroAxes }
   engine: EngineProfile
   aero: AeroProfile

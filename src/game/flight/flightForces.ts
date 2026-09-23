@@ -35,6 +35,8 @@ export interface FlightForces {
   ratesAfter: AeroAxes
   controller: AeroAxes
   stabilityDamping: AeroAxes
+  /** Recovery share of allocation.request; allocated without the arcade floor. */
+  recoveryRequest: AeroAxes
   naturalRestoring: AeroAxes
   naturalDeparture: AeroAxes
   naturalDamping: AeroAxes

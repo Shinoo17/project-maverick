@@ -1,5 +1,5 @@
 import type { AircraftFlightProfile, ThrustVectoringProfile } from '../../game/flight/profileTypes'
-import { bankedDriftDefaults, breakoutDefaults, aeroDefaults, flightDefaults, maneuverDefaults, stallDefaults } from './defaults'
+import { bankedDriftDefaults, breakoutDefaults, aeroDefaults, flightDefaults, maneuverDefaults, recoveryDefaults, stallDefaults } from './defaults'
 
 // Arcade approximation of canted twin nozzles, not measured Su-57 performance.
 // Pitch uses both together; yaw and roll share differential nozzle travel.
@@ -21,6 +21,7 @@ export const su57TvcProfile: ThrustVectoringProfile = {
 export const su57Profile: AircraftFlightProfile = {
   breakout: { ...breakoutDefaults },
   bankedDrift: { ...bankedDriftDefaults },
+  recovery: { ...recoveryDefaults },
   arcadeControlFloor: { acceleration: { pitch: 0.25, yaw: 0.18, roll: 0.3 }, maxRate: { pitch: 0.2, yaw: 0.15, roll: 0.3 } },
   engine: { spoolUpResponse: 4, spoolDownResponse: 6 },
   aero: {

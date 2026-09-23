@@ -1,7 +1,7 @@
 import phase1Baseline from './phase1-metrics.json'
 
 export type Target = { min?: number; max?: number; minExclusive?: boolean }
-/** Benchmark-only pre-assist observation window; no Phase 5 delay is implemented. */
+/** Natural-only observation window; must lie inside every profile's recovery.delaySeconds. */
 export const naturalObservationWindowSeconds = 0.2
 export const phase2Playtest = { status: 'pending', b9Targets: 'pending owner playtest', fadeBand: 'provisional 20–30 degrees' } as const
 /** Feel targets warn in reports only. Missing ranges intentionally mean report-only. */
@@ -15,6 +15,7 @@ export const targets: Record<string, Target> = {
   'B2.cobra.timeTo90': { min: 0.7, max: 1.2 },
   'B4.cobra.headingChange': { max: 20 },
   'B5.kulbit.time360': { min: 3, max: 4.5 },
+  'B6.recovery.assistFull': { min: 0.5, max: 1.5 },
   'B8.recovery.naturalDuringDelay': { min: 0, minExclusive: true },
   'B10.tailSlide.flipTime': { max: 4 },
   // B9 cannot be signed off until the Phase 2 owner playtest authors targets.

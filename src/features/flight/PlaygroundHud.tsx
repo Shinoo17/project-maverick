@@ -53,6 +53,7 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
       <div><dt>{t('labFloorBudget')}</dt><dd>{axes(instrumentation.budget.arcadeFloor.acceleration)} rad/s² · {axes(instrumentation.budget.arcadeFloor.maxRate)} rad/s</dd></div>
       {instrumentation.lastStep && <>
         <div><dt>{t('labDriftActivity')}</dt><dd>{state.intent.demand.toFixed(2)} / {state.intent.activity.toFixed(2)} / {state.intent.continuation.toFixed(2)}</dd></div>
+        <div><dt>{t('labRecoveryAssist')}</dt><dd>{instrumentation.lastStep.envelope.recoveryAssist.toFixed(2)} / {state.intent.releaseSeconds.toFixed(1)} s</dd></div>
         <div><dt>{t('labControlPower')}</dt><dd>{(instrumentation.lastStep.power.controlPower * 100).toFixed(0)}%</dd></div>
         <div><dt>{t('labPowerSources')}</dt><dd>{[instrumentation.lastStep.power.baseTrim, instrumentation.lastStep.power.drive, instrumentation.lastStep.power.controlThrust, instrumentation.lastStep.power.burner].map(v => v.toFixed(1)).join(' / ')} m/s²</dd></div>
         {instrumentation.lastStep.path && <div><dt>{t('labPathSources')}</dt><dd>{length(instrumentation.lastStep.path.physical)} / {length(instrumentation.lastStep.path.assist)} m/s²</dd></div>}

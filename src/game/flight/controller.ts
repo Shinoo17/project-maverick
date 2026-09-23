@@ -34,7 +34,8 @@ export function measureControlDemand(command: PilotCommand, flow: AirflowState, 
  * Demand must be measured before stepping the limiter (one-substep feedback lag). */
 export function requestControl(command: PilotCommand, rates: AeroAxes, flow: AirflowState,
   envelope: EnvelopeFactors, profile: AircraftFlightProfile, dt: number,
-  demand: ReturnType<typeof measureControlDemand>) {
+  demand: ReturnType<typeof measureControlDemand>,
+  assist: { burnerActive: boolean; natural: Readonly<AeroAxes> } = { burnerActive: false, natural: { pitch: 0, yaw: 0, roll: 0 } }) {
   const p = profile.flight
   const { speedAuthority } = demand
   const normalLimit = demand.normalLimit * envelope.gAllowance
@@ -56,11 +57,29 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
   }
   const limited = restrictIncidence(target, flow, envelope.alphaLimitDeg, dt)
   target.pitch = limited.pitch; target.yaw = limited.yaw
-  const request = { pitch: 0, yaw: 0, roll: 0 }, servoDamping = { ...request }
+  const request = { pitch: 0, yaw: 0, roll: 0 }, servoDamping = { ...request }, recoveryRequest = { ...request }
+  // Recovery flies the same neutral servo once released. It takes over where neutral
+  // damping fades with highAoa, so attached flight is unchanged. It steers along the
+  // actual natural restoring + departure moment, so it never pushes against natural
+  // recovery; where that moment is zero (a natural saddle) it only damps. Roll target is zero.
+  // An engaged afterburner flies the path to the nose (slingshot exit), so recovery only
+  // holds the nose. A held key with an empty reserve gives no thrust and no exception.
+  const r = profile.recovery, recovery = envelope.recoveryAssist * envelope.highAoa
+  const naturalNorm = Math.hypot(assist.natural.pitch, assist.natural.yaw)
+  const noseRate = assist.burnerActive || naturalNorm === 0 ? 0 : r.noseRate / naturalNorm
   for (const axis of ['pitch', 'yaw', 'roll'] as const) {
     if (command[axis] === 0) {
-      const response = (axis === 'roll' ? p.neutralRollResponse : p.neutralResponse) * (1 - envelope.highAoa)
-      servoDamping[axis] = -rates[axis] * (1 - Math.exp(-response * dt)) / dt
+      const neutral = (axis === 'roll' ? p.neutralRollResponse : p.neutralResponse) * (1 - envelope.highAoa)
+      // One exponential for both responses: damping can never flip the rate sign.
+      const blend = 1 - Math.exp(-(neutral + r.response * recovery) * dt)
+      const goal = (axis === 'roll' ? 0 : assist.natural[axis]) * noseRate * recovery
+      // Rate already turning toward the airflow, up to the goal, is left to natural
+      // aero; only the excess or opposing part is damped.
+      const useful = clamp(rates[axis], Math.min(0, goal), Math.max(0, goal))
+      servoDamping[axis] = -(rates[axis] - useful) * blend / dt
+      // The corrective drive is allocated from real aero/TVC only (no arcade floor):
+      // no budget, no correction.
+      if (recovery > 0) request[axis] = recoveryRequest[axis] = (goal - useful) * blend / dt
     } else {
       const response = target[axis] * rates[axis] < 0 ? axis === 'roll' ? p.rollReversalResponse : p.counterResponse : p.rateResponse
       const blend = 1 - Math.exp(-response * dt)
@@ -71,7 +90,7 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
       request[axis] = target[axis] * blend / dt
     }
   }
-  return { request, servoDamping, normalLimit, highG }
+  return { request, recoveryRequest, servoDamping, normalLimit, highG }
 }
 
 /** Project only the outward component of the COMBINED requested nose rotation.

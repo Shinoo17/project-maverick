@@ -19,6 +19,8 @@ export interface EnvelopeFactors {
   continuation: number
   pathAssistWeight: number
   bankedDrift: number
+  /** 0 on any angular input; ramps in after the shared release delay. Weight only, never authority. */
+  recoveryAssist: number
 }
 export interface LimiterStep {
   previous: number
@@ -58,6 +60,7 @@ export function interpretEnvelope(state: EnvelopeState, flow: AirflowState, prof
   // Space remains a smoothed manual request into the same allowance as automatic G.
   const hardTurn = Math.max(D * S * (1 - E), state.maneuver.highG)
   const bankedDrift = bankedDriftWeight(state.orientation, flow, profile)
+  const r = profile.recovery
   return {
     highAoa: H * flow.confidence, separation: state.stall.severity,
     intent, energyPermission: E, limiterTarget: Math.max(intent, continuation),
@@ -68,6 +71,8 @@ export function interpretEnvelope(state: EnvelopeState, flow: AirflowState, prof
     continuation,
     pathAssistWeight: state.pathAssistWeight,
     bankedDrift,
+    // releaseSeconds resets on the same step as any activity (I20).
+    recoveryAssist: MathUtils.smoothstep(state.intent.releaseSeconds, r.delaySeconds, r.delaySeconds + r.rampSeconds),
   }
 }
 

@@ -49,7 +49,8 @@ finite numeric feel values. Every migrated integration uses `stepLegacyFlight` f
 hard finite/quaternion/alive checks; phase lifecycle and detector-gate consistency
 remain hard. The old powered yaw completion target is a feel measurement.
 Unreached thresholds are JSON `null`, rendered as `—`, not zero or the track timeout.
-B8 reports incidence reduction over a benchmark-only 0.2 s no-assist window (>0).
+B8 reports incidence reduction over a 0.2 s window inside the Phase 5 recovery delay (>0).
+B6 reports when recovery assist reaches 0.9 after release; B7 reports the first NORMAL label.
 B10 warns for a missing or >4 s head drop. B20 compares against each aircraft's archived
 sideslip loss ×1.3 with a strict lower bound. B9 ranges must come from owner playtest;
 do not derive them from this automated run. Recovery labels are still legacy.

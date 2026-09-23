@@ -133,6 +133,6 @@ it('reports Phase 2 deltas, ablations and exact substep force ledgers without fe
   for (const row of psmReleases) md.push(`| ${row.aircraftId} | ${row.speedAdjust} | ${fmt(row.settledAt)} | ${fmt(row.normalAt)} | ${fmt(row.final.rates.pitch)} | ${row.stopReason ?? 'alive'} at ${fmt(row.duration)} s |`)
   md.push('', 'Release ablations and tail-slide samples: phase2.json. Every substep ledger: traces/*.jsonl.',
     'Ledger controller includes stabilityDamping; add controller + tvc + naturalRestoring + naturalDamping once to reconstruct rate change.',
-    'B8 reports incidence reduction during a 0.2 s neutral/no-C observation window; no Phase 5 delay system is implemented. B9 and Phase 2 acceptance remain pending owner playtest.')
+    'B8 reports incidence reduction during a 0.2 s neutral/no-C window inside the Phase 5 recovery delay. B9 and Phase 2 acceptance remain pending owner playtest.')
   writeFileSync(new URL('phase2.md', out), md.join('\n') + '\n')
 })

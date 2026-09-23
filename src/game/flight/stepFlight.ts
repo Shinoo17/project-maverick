@@ -40,9 +40,14 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const natural = naturalAerodynamics(airflowStart, envelope.separation, effectiveness, ratesBefore, aero)
   const { thrust, brakes, power, brakeSources } = stepSpeed(state, command, dt, speed, Math.max(envelope.intent, envelope.continuation))
   const budget = computeBudget(airflowStart, effectiveness, thrust, profile)
-  const control = requestControl(command, ratesBefore, airflowStart, envelope, profile, dt, demand)
+  const naturalMoment = zeroAxes()
+  for (const axis of axes) naturalMoment[axis] = natural.restoring[axis] + natural.departure[axis]
+  const control = requestControl(command, ratesBefore, airflowStart, envelope, profile, dt, demand, { burnerActive: m.burnerActive, natural: naturalMoment })
   const selectedBudget = signedBudget(budget, control.request)
-  const allocation = allocate(control.request, selectedBudget, zeroAxes(), ratesBefore, dt)
+  // The arcade floor fills gaps for the pilot only; recovery corrects with real authority.
+  const floor = { ...selectedBudget.arcadeFloor.acceleration }
+  for (const axis of axes) if (control.recoveryRequest[axis] !== 0) floor[axis] = 0
+  const allocation = allocate(control.request, { ...selectedBudget, arcadeFloor: { ...selectedBudget.arcadeFloor, acceleration: floor } }, zeroAxes(), ratesBefore, dt)
   const targets = solveTvcAngles(allocation.tvc, thrust, tvc)
   const targetTorque = tvc ? poweredThrustForces(targets, thrust, tvc).angularAcceleration : zeroAxes()
   const coupledTarget = zeroAxes()
@@ -70,7 +75,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   state.flightForces = {
     power, brakes: { ...brakes, ...brakeSources },
     dt, airflowStart, envelope, limiterStep, separation: envelope.separation, highAoa: envelope.highAoa, flowEffectiveness: effectiveness,
-    ratesBefore, ratesAfter: { ...rates }, controller, stabilityDamping: control.servoDamping, neutralWeight,
+    ratesBefore, ratesAfter: { ...rates }, controller, stabilityDamping: control.servoDamping, recoveryRequest: control.recoveryRequest, neutralWeight,
     naturalRestoring: natural.restoring, naturalDeparture: natural.departure, naturalDamping: damping,
     alphaDrag: natural.alphaDrag, betaDrag: natural.betaDrag, tvc: actualTvc,
     budget, allocation, targetTorque, coupledTarget, actuatorLag, nozzleTargets: targets,

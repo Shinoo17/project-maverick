@@ -92,7 +92,8 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
       const f = sample.state.flightForces!
       for (const axis of axes) {
         expect(f.ratesAfter[axis]).toBeCloseTo(f.ratesBefore[axis] + dt * (f.controller[axis] + f.tvc[axis] + f.naturalRestoring[axis] + f.naturalDeparture[axis] + f.naturalDamping[axis]), 12)
-        if (f.highAoa === 1) expect(Math.abs(f.stabilityDamping[axis])).toBe(0)
+        // Phase 5: natural aero owns high incidence until the recovery delay expires.
+        if (f.highAoa === 1 && f.envelope.recoveryAssist === 0) expect(Math.abs(f.stabilityDamping[axis])).toBe(0)
       }
     }
     const first = trace.samples[1].state.flightForces!

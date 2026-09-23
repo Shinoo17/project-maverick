@@ -140,6 +140,7 @@ export const en = {
   labRequestedResponse: 'Requested drive P/Y/R',
   labNozzleTargets: 'Requested nozzles L/R',
   labDriftActivity: 'Entry / active / handoff',
+  labRecoveryAssist: 'Recovery assist / release',
   labControlPower: 'Dry control request',
   labPowerSources: 'Trim / drive / control / burner',
   labPathSources: 'Physical / assisted path',

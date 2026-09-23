@@ -141,6 +141,7 @@ export const th: Translation = {
   labRequestedResponse: 'แรงหมุนที่ขอ P/Y/R',
   labNozzleTargets: 'มุมหัวฉีดที่ขอ L/R',
   labDriftActivity: 'เข้า / สั่ง / ต่อแกน',
+  labRecoveryAssist: 'ช่วยฟื้นท่า / ปล่อยคัน',
   labControlPower: 'กำลังควบคุมแบบ dry',
   labPowerSources: 'Trim / เร่ง / ควบคุม / burner',
   labPathSources: 'Path กายภาพ / ตัวช่วย',

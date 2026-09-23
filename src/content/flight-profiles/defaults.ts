@@ -1,5 +1,5 @@
 import { simulationSpeed } from '../../game/flight/speedLimits'
-import type { AeroProfile, BankedDriftProfile, BreakoutProfile, FlightProfile, ManeuverProfile, StallProfile } from '../../game/flight/profileTypes'
+import type { AeroProfile, BankedDriftProfile, BreakoutProfile, FlightProfile, ManeuverProfile, RecoveryProfile, StallProfile } from '../../game/flight/profileTypes'
 
 export const aeroDefaults: Pick<AeroProfile, 'referenceSpeedMps' | 'highSpeedMps' | 'alphaNormalDeg' | 'alphaCriticalDeg' | 'controlEffectiveness' | 'departure'> = {
   referenceSpeedMps: 90,
@@ -87,6 +87,15 @@ export const breakoutDefaults: BreakoutProfile = {
   sustainWeight: 0.05,
   openRate: 5, closeRate: 2, brakeBoost: 1, powerBoost: 1,
   hardTurnG: 1.6,
+}
+
+// Provisional until playtest. The delay outlasts breakout.handoffSeconds so a brief
+// neutral gap between chained inputs never starts recovery.
+export const recoveryDefaults: RecoveryProfile = {
+  delaySeconds: 0.3,
+  rampSeconds: 0.3,
+  response: 5,
+  noseRate: 1.2,
 }
 
 // Provisional until playtest. Speed band sits under the S floor (minPoweredMps ≈ 351 km/h).
