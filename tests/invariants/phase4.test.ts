@@ -8,31 +8,12 @@ import { observeAirflow } from '../../src/game/flight/airflow'
 import { envelopeLabel, interpretEnvelope, stepEnvelope } from '../../src/game/flight/envelope'
 import { getFlightProfile, validateFlightProfile } from '../../src/game/flight/profile'
 import { readIntent, createPilotIntent } from '../../src/game/flight/intent'
-import { measureControlDemand, requestControl } from '../../src/game/flight/controller'
-import { createAircraft, aircraftIds, automaticScenarioNames, runScenario, runTrack } from '../../benchmarks/flight/harness'
+import { createAircraft, aircraftIds, runScenario, runTrack } from '../../benchmarks/flight/harness'
 import { assertAircraftValid, assertActuatorStep, assertLimiterStep, runAtFps } from './helpers'
 import { runFlightReplay } from '../../src/game/playground/replay'
 import { flightInstrumentation } from '../../src/game/flight/instrumentation'
 import { flightWarning } from '../../src/features/flight/telemetry'
 import { FlightInput } from '../../src/game/input/FlightInput'
-
-it('path/gravity and natural forces depend on flow, not legacy phase or blend', () => {
-  for (const speed of [0, 20, 60, 100]) for (const incidence of [0, 45, 120, 180]) {
-    const initial = createAircraft('f22'); initial.position.y = 4000
-    initial.velocity = { x: speed, y: 0, z: 0 }; initial.stall.severity = 0.7
-    const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), incidence * Math.PI / 180)
-    initial.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
-    const normal = structuredClone(initial)
-    stepFlight(normal, neutralCommand(0, normal.id), dt)
-    for (const phase of ['armed', 'active', 'recovery'] as const) {
-      const alternate = structuredClone(initial); alternate.maneuver.phase = phase; alternate.maneuver.blend = 1
-      stepFlight(alternate, neutralCommand(0, alternate.id), dt)
-      expect(alternate.velocity).toEqual(normal.velocity)
-      expect(alternate.orientation).toEqual(normal.orientation)
-      expect(alternate.flightForces).toEqual(normal.flightForces)
-    }
-  }
-})
 
 const profile = getFlightProfile('f22')
 function envelopeRig(q = 0.2, incidence = 0) {
@@ -50,7 +31,7 @@ describe('automatic permission', () => {
     if (mode === 'incidence') state.intent.saturation = 0
     for (let i = 0; i < 120; i++) {
       const previous = state.limiterOpen
-      const { envelope, limiterStep } = stepEnvelope(state, flow, profile, dt, false)
+      const { envelope, limiterStep } = stepEnvelope(state, flow, profile, dt)
       const b = profile.breakout
       const rate = limiterStep.target > previous ? b.openRate * (1 + b.brakeBoost * state.intent.brakeIntent + b.powerBoost * state.intent.powerIntent) : b.closeRate
       const bound = (limiterStep.target > previous ? 1 - previous : previous) * (1 - Math.exp(-rate * dt))
@@ -63,40 +44,37 @@ describe('automatic permission', () => {
   it('boosted low energy opens faster; beginner permission starts gradually', () => {
     const plain = envelopeRig(), intentional = envelopeRig()
     intentional.state.intent.brakeIntent = 1; intentional.state.intent.powerIntent = 1
-    stepEnvelope(plain.state, plain.flow, profile, dt, false)
-    stepEnvelope(intentional.state, intentional.flow, profile, dt, false)
+    stepEnvelope(plain.state, plain.flow, profile, dt)
+    stepEnvelope(intentional.state, intentional.flow, profile, dt)
     expect(plain.state.limiterOpen).toBeGreaterThan(0)
     expect(plain.state.limiterOpen).toBeLessThan(profile.breakout.baseWeight)
     expect(intentional.state.limiterOpen).toBeGreaterThan(plain.state.limiterOpen)
     expect(intentional.state.limiterOpen).toBeLessThan(1)
   })
 
-  it('high speed full demand becomes G permission, and Space joins the same path', () => {
+  it('high speed full demand becomes G permission', () => {
     const { state, flow } = envelopeRig(profile.breakout.qHigh + 1)
     state.intent.brakeIntent = state.intent.powerIntent = 1
-    const envelope = stepEnvelope(state, flow, profile, dt, false).envelope
+    const envelope = stepEnvelope(state, flow, profile, dt).envelope
     expect(envelope.energyPermission).toBe(0)
     expect(envelope.limiterOpen).toBe(0)
     expect(envelope.gAllowance).toBe(profile.breakout.hardTurnG)
-    state.intent.saturation = 0; state.maneuver.highG = 1
-    const manual = interpretEnvelope(state, flow, profile)
-    const input = { ...neutralCommand(0, state.id), pitch: 1 }
-    const demand = measureControlDemand(input, flow, state.stall.severity, profile, state.limiterOpen)
-    expect(requestControl(input, state.rates, flow, manual, profile, dt, demand))
-      .toEqual(requestControl({ ...input, highG: true }, state.rates, flow, envelope, profile, dt, demand))
+    // Without saturation there is no hard turn: Phase 6 removed the manual Space request.
+    state.intent.saturation = 0
+    expect(interpretEnvelope(state, flow, profile).gAllowance).toBe(1)
   })
 
   it('H maintains permission during demanded sideslip, then demand release closes monotonically without a latch', () => {
     const { state, flow } = envelopeRig(profile.breakout.qHigh + 1, 90)
     flow.alphaDeg = 0; flow.betaDeg = 90
     state.limiterOpen = 0.7; state.intent.saturation = 0; state.intent.continuation = 1
-    const held = stepEnvelope(state, flow, profile, dt, false)
+    const held = stepEnvelope(state, flow, profile, dt)
     expect(held.limiterStep.target).toBe(1)
     expect(state.limiterOpen).toBeGreaterThan(0.7)
     state.intent.demand = 0; state.intent.continuation = 0
     for (let i = 0; i < 240; i++) {
       const previous = state.limiterOpen
-      const result = stepEnvelope(state, flow, profile, dt, false)
+      const result = stepEnvelope(state, flow, profile, dt)
       expect(result.limiterStep.target).toBe(0)
       expect(state.limiterOpen).toBeGreaterThan(0)
       expect(state.limiterOpen).toBeLessThan(previous)
@@ -107,9 +85,9 @@ describe('automatic permission', () => {
     const outputs = [30, 60, 144].map(hz => {
       const { state, flow } = envelopeRig()
       state.intent.brakeIntent = state.intent.powerIntent = 1
-      for (let i = 0; i < hz; i++) stepEnvelope(state, flow, profile, 1 / hz, false)
+      for (let i = 0; i < hz; i++) stepEnvelope(state, flow, profile, 1 / hz)
       state.intent.demand = 0
-      for (let i = 0; i < hz; i++) stepEnvelope(state, flow, profile, 1 / hz, false)
+      for (let i = 0; i < hz; i++) stepEnvelope(state, flow, profile, 1 / hz)
       return state.limiterOpen
     })
     expect(outputs[0]).toBeCloseTo(outputs[1], 14)
@@ -128,9 +106,8 @@ const audit = (state: ReturnType<typeof createAircraft>, previous: ReturnType<ty
   assertAircraftValid(state); assertActuatorStep(state, previous); assertLimiterStep(state, previous)
 }
 describe.each([...aircraftIds, 'f22-notvc'])('%s automatic integration', id => {
-  it.each(automaticScenarioNames.filter(name => !name.endsWith('C')))('I1/I7/I11: %s runs without C', scenario => {
+  it.each(['cobra', 'kulbit', 'reversal180', 'pedal', 'psmIntent450'] as const)('I1/I7/I11: %s runs on automatic permission', scenario => {
     const trace = runScenario(scenario, id, audit)
-    expect(trace.commands.every(run => !run.command.psmArm)).toBe(true)
     expect(trace.samples.some(s => s.state.limiterOpen > 0)).toBe(true)
     if (id === 'f22-notvc') for (const { state } of trace.samples.slice(1)) {
       expect(state.flightForces!.budget.poweredControlAvailable).toBe(0)
@@ -138,7 +115,7 @@ describe.each([...aircraftIds, 'f22-notvc'])('%s automatic integration', id => {
       expect(state.flightForces!.allocation.tvc).toEqual({ pitch: 0, yaw: 0, roll: 0 })
     }
   })
-  it('I2/I3: automatic X + Shift + pull replays exactly at 30/60/144 FPS', () => {
+  it('I2/I3: automatic Airbrake + Shift + pull replays exactly at 30/60/144 FPS', () => {
     const input = (tick: number, entityId: string) => ({ ...neutralCommand(tick, entityId), pitch: tick < 180 ? 1 : 0,
       airbrake: tick < 180, afterburner: tick < 180, speedAdjust: tick < 60 ? -1 : 0 })
     const at60 = runAtFps(60, id, input)
@@ -151,13 +128,16 @@ describe.each([...aircraftIds, 'f22-notvc'])('%s automatic integration', id => {
   })
 })
 
-it('I7 audit rejects an automatic limiter jump, while debug C can explicitly open', () => {
+it('I7 audit rejects a limiter jump, and no command opens the limiter in one step', () => {
   const state = createAircraft('f22'), previous = structuredClone(state)
   stepFlight(state, neutralCommand(0, state.id), dt)
   state.limiterOpen = 1
   expect(() => assertLimiterStep(state, previous)).toThrow('I7')
-  stepFlight(state, { ...neutralCommand(0, state.id), psmArm: true }, dt)
-  expect(() => assertLimiterStep(state, previous)).not.toThrow()
+  const low = createAircraft('f22'); low.position.y = 4000; low.velocity.x = 40
+  const before = structuredClone(low)
+  stepFlight(low, { ...neutralCommand(0, low.id), pitch: 1, yaw: 1, roll: 1, speedAdjust: 1, airbrake: true, afterburner: true }, dt)
+  expect(() => assertLimiterStep(low, before)).not.toThrow()
+  expect(low.limiterOpen).toBeLessThan(1)
 })
 
 it('labels and presentation have no effect on an automatic flight trace', () => {
@@ -170,9 +150,9 @@ it('labels and presentation have no effect on an automatic flight trace', () => 
   })
   expect(observed).toEqual(plain)
   const alternate = structuredClone(initial)
-  alternate.maneuver.phase = 'active'; alternate.maneuver.blend = 1; alternate.stall.cause = 'aoa'
+  alternate.stall.cause = 'aoa'
   for (let i = 0; i < 120; i++) {
-    const command = { ...neutralCommand(i, initial.id), ...controller(), highG: true }
+    const command = { ...neutralCommand(i, initial.id), ...controller() }
     stepFlight(initial, command, dt); stepFlight(alternate, command, dt)
     expect(alternate.flightForces).toEqual(initial.flightForces)
     expect(alternate.velocity).toEqual(initial.velocity)
@@ -180,9 +160,9 @@ it('labels and presentation have no effect on an automatic flight trace', () => 
   }
 })
 
-it('X/Space/Shift keep their bindings, and the entire positional mouse correction blends continuously', () => {
+it('Space is Airbrake, Shift is Afterburner, X is unbound, and the positional mouse correction blends continuously', () => {
   const input = new FlightInput(); input.press('KeyX'); input.press('Space'); input.press('ShiftLeft')
-  expect(input.command(0, 'a', 'keyboard')).toMatchObject({ airbrake: true, highG: true, afterburner: true, psmArm: false })
+  expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true, afterburner: true })
   for (const angle of [-Math.PI, -1, 1, Math.PI]) for (const y of [-100, 100]) {
     input.clear(); input.engage(); input.move(150, y); input.screen = { angle, blend: 1 }
     const from = input.command(0, 'a', 'mouse')
@@ -230,20 +210,11 @@ it.each(aircraftIds)('%s keeps natural recovery active immediately after automat
   expect(Math.abs(trace.samples.at(-1)!.state.rates.pitch)).toBeLessThan(Math.abs(state.rates.pitch))
 })
 
-it('automatic permission ignores legacy eligibility gates', () => {
-  const p = getFlightProfile('f22'), original = p.maneuver.psmEnabled
-  const initial = createAircraft('f22'); initial.position.y = 100; initial.velocity.x = 40
-  const command = { ...neutralCommand(0, initial.id), pitch: 1, afterburner: true, airbrake: true }
-  try {
-    const enabled = structuredClone(initial), disabled = structuredClone(initial)
-    stepFlight(enabled, command, dt)
-    p.maneuver.psmEnabled = false
-    stepFlight(disabled, command, dt)
-    expect(disabled.limiterOpen).toBeGreaterThan(0)
-    expect(disabled.flightForces).toEqual(enabled.flightForces)
-    expect(disabled.orientation).toEqual(enabled.orientation)
-    expect(disabled.velocity).toEqual(enabled.velocity)
-  } finally { p.maneuver.psmEnabled = original }
+it('automatic permission opens outside the retired C altitude and speed gates', () => {
+  // Below the old 150 m minimum and 65 m/s entry band.
+  const state = createAircraft('f22'); state.position.y = 100; state.velocity.x = 40
+  stepFlight(state, { ...neutralCommand(0, state.id), pitch: 1, afterburner: true, airbrake: true }, dt)
+  expect(state.limiterOpen).toBeGreaterThan(0)
 })
 
 it('the reverse-path alignment transition is continuous at the former binary incidence boundary', () => {

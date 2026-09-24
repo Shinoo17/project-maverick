@@ -63,10 +63,6 @@ export const f22Profile: AircraftFlightProfile = {
   },
   maneuver: {
     ...maneuverDefaults,
-    psmEnabled: true,
-    entryMin: 65,
-    entryMax: 115,
-    minAltitude: 150,
     recoveryAcceleration: 70,
   },
   thrustVectoring: f22TvcProfile,

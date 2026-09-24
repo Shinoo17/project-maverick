@@ -10,9 +10,15 @@ import { simulationSpeed } from '../../src/game/flight/speedLimits'
 import { observeAirflow } from '../../src/game/flight/airflow'
 
 export const aircraftIds = ['f22', 'su57'] as const
-export const scenarioNames = ['hardTurn900', 'fullStick500', 'cobraC', 'kulbitC', 'reversal180C', 'tailSlide', 'pedalC', 'release45', 'sideslip60'] as const
-export const automaticScenarioNames = ['cobra', 'kulbit', 'reversal180', 'pedal', 'psmIntent450', 'psmIntent450C'] as const
-export type ScenarioName = typeof scenarioNames[number] | typeof automaticScenarioNames[number]
+/** Phase 0 golden archive names. Their recorded inputs are replayed only; `*C` tracks held the
+ * C key, which Phase 6 removed. Never run an archived name live: use liveScenario(). */
+export const archivedScenarioNames = ['hardTurn900', 'fullStick500', 'cobraC', 'kulbitC', 'reversal180C', 'tailSlide', 'pedalC', 'release45', 'sideslip60'] as const
+export const scenarioNames = ['hardTurn900', 'fullStick500', 'cobra', 'kulbit', 'reversal180', 'tailSlide', 'pedal', 'release45', 'sideslip60', 'psmIntent450'] as const
+export type ArchivedScenarioName = typeof archivedScenarioNames[number]
+export type ScenarioName = typeof scenarioNames[number]
+/** The automatic twin of an archived track: the same scripted stick and throttle, with the
+ * held C key mapped to Airbrake + Afterburner (the Phase 4 convention). */
+export const liveScenario = (name: ArchivedScenarioName): ScenarioName => (name.endsWith('C') ? name.slice(0, -1) : name) as ScenarioName
 export type Sample = { step: number; time: number; state: AircraftState; noseRotationDeg: number }
 export type CommandRun = { startStep: number; steps: number; command: PilotCommand }
 export interface Trace {
@@ -40,14 +46,6 @@ export function createAircraft(aircraftId: string) {
 }
 
 export function scenarioSetup(name: ScenarioName, aircraftId: string): { state: AircraftState; seconds: number; controller: Controller } {
-  if (name === 'cobra' || name === 'kulbit' || name === 'reversal180' || name === 'pedal') {
-    const legacy = scenarioSetup(`${name}C` as ScenarioName, aircraftId)
-    const controller: Controller = (state, time, rotation) => {
-      const command = legacy.controller(state, time, rotation)
-      return { ...command, psmArm: false, airbrake: !!command.psmArm, afterburner: !!command.psmArm }
-    }
-    return { ...legacy, controller }
-  }
   const state = createAircraft(aircraftId)
   state.position = { x: 0, y: name === 'tailSlide' ? 2500 : 2000, z: 0 }
   const kph = name === 'hardTurn900' ? 900 : name === 'fullStick500' ? 500 : 450
@@ -67,24 +65,26 @@ export function scenarioSetup(name: ScenarioName, aircraftId: string): { state: 
   }
   const flight = getFlightProfile(aircraftId).flight
   state.enginePower = flight.drag * new Vector3().copy(state.velocity).lengthSq() / dryThrustLimit(flight, state.speedLimits)
-  const seconds = ['kulbitC', 'psmIntent450', 'psmIntent450C'].includes(name) ? 8 : name === 'release45' ? 2 : name === 'sideslip60' ? 1
-    : ['hardTurn900', 'fullStick500', 'pedalC'].includes(name) ? 3 : 10
+  const seconds = ['kulbit', 'psmIntent450'].includes(name) ? 8 : name === 'release45' ? 2 : name === 'sideslip60' ? 1
+    : ['hardTurn900', 'fullStick500', 'pedal'].includes(name) ? 3 : 10
   let cobraStage = 0
   let reversalReleased = false
+  // Phase 0 stick scripts. Where the archive held C, the live track holds Airbrake + Afterburner.
+  const held = (hold: boolean) => ({ airbrake: hold, afterburner: hold })
   const controller: Controller = (current, time, rotation) => {
     switch (name) {
-      case 'psmIntent450': case 'psmIntent450C': return { pitch: 1, airbrake: true, afterburner: true, psmArm: name.endsWith('C') }
+      case 'psmIntent450': return { pitch: 1, ...held(true) }
       case 'hardTurn900': case 'fullStick500': return { pitch: 1 }
-      case 'kulbitC': return { psmArm: true, pitch: 1, speedAdjust: 1, afterburner: true }
-      case 'pedalC': return { psmArm: true, yaw: 1, speedAdjust: 1 }
-      case 'reversal180C':
+      case 'kulbit': return { pitch: 1, speedAdjust: 1, ...held(true) }
+      case 'pedal': return { yaw: 1, speedAdjust: 1, ...held(true) }
+      case 'reversal180':
         reversalReleased ||= rotation >= 180
-        return { psmArm: !reversalReleased, pitch: reversalReleased ? 0 : 1, speedAdjust: 1 }
-      case 'cobraC': {
+        return { pitch: reversalReleased ? 0 : 1, speedAdjust: 1, ...held(!reversalReleased) }
+      case 'cobra': {
         const incidence = observeAirflow(current, getFlightProfile(current.aircraftId)).incidenceDeg
         if (cobraStage === 0 && (incidence >= 90 || time >= 2.5)) cobraStage = 1
         if (cobraStage === 1 && (incidence <= 25 || time >= 5)) cobraStage = 2
-        return { psmArm: cobraStage < 2, pitch: cobraStage === 0 ? 1 : cobraStage === 1 ? -1 : 0, speedAdjust: 1 }
+        return { pitch: cobraStage === 0 ? 1 : cobraStage === 1 ? -1 : 0, speedAdjust: 1, ...held(cobraStage < 2) }
       }
       default: return {}
     }
@@ -150,7 +150,10 @@ export function replayGolden(golden: Golden, observer?: StepObserver) {
   return runTrack(initial, golden.totalSteps * FLIGHT_STEP, (_state, time) => {
     const step = Math.round(time / FLIGHT_STEP)
     while (step >= golden.commands[runIndex].startStep + golden.commands[runIndex].steps) runIndex++
-    return golden.commands[runIndex].command
+    // Phase 0 archives still carry the retired psmArm (C) and highG (Space) fields.
+    // Drop them so no removed command field reaches the simulation, even unread.
+    const { psmArm: _c, highG: _space, ...command } = golden.commands[runIndex].command as PilotCommand & { psmArm?: boolean; highG?: boolean }
+    return command
   }, observer, golden.scenario)
 }
 

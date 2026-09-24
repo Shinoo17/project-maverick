@@ -1,4 +1,5 @@
-// Migrated intact from tests/stall.test.ts: Rev. 3 Phase 2 replaces these feel assumptions.
+// Migrated from tests/stall.test.ts: Rev. 3 Phase 2 replaces these feel assumptions.
+// Phase 6: the C hold became Airbrake (Space); phase lifecycle and completion-counter checks retired.
 import { describe, it, expect } from 'vitest'
 import { reportExpect } from './legacyFeel'
 const feel = reportExpect('stall')
@@ -61,9 +62,8 @@ describe('legacy stall tuning expectations (report only)', () => {
       const before = new Quaternion().copy(s.orientation)
       const input = tick < 90 ? { pitch: 1, yaw: 0.4, roll: 0.3 }
         : tick < 150 ? { pitch: 0, yaw: 1, roll: -0.5 } : { pitch: -1, yaw: -0.6, roll: 0.5 }
-      stepFlight(s, { ...neutralCommand(tick, s.id), ...input, psmArm: true, speedAdjust: 1 }, dt)
+      stepFlight(s, { ...neutralCommand(tick, s.id), ...input, airbrake: true, speedAdjust: 1 }, dt)
       feel(before.angleTo(new Quaternion().copy(s.orientation))).toBeLessThan(0.04)
-      expect(s.maneuver.phase).toBe('active')
       expect(s.alive).toBe(true)
       peakStall = Math.max(peakStall, s.stall.severity)
       pitchTravel += Math.abs(s.rates.pitch) * dt
@@ -76,7 +76,6 @@ describe('legacy stall tuning expectations (report only)', () => {
     feel(s.rates.yaw).toBeLessThan(-0.5)
     fly(s, 12, { speedAdjust: 1 })
     feel(s.stall.severity).toBe(0)
-    expect(s.maneuver.phase).toBe('normal')
     feel(s.maneuver.alpha).toBeLessThan(10)
   })
   it.each(['f22', 'su57'])('allows a pilot-controlled pedal turn and recovery for %s', id => {
@@ -88,16 +87,12 @@ describe('legacy stall tuning expectations (report only)', () => {
       if (heading < -0.1) heading += Math.PI * 2
       const active = tick < 355
       const yaw = Math.max(-1, Math.min(1, (Math.PI - heading) * 2 - s.rates.yaw * 0.6))
-      stepFlight(s, { ...neutralCommand(tick, s.id), psmArm: active, yaw: active ? yaw : 0, speedAdjust: 1 }, dt)
+      stepFlight(s, { ...neutralCommand(tick, s.id), airbrake: active, yaw: active ? yaw : 0, speedAdjust: 1 }, dt)
       peakStall = Math.max(peakStall, s.stall.severity)
     }
     feel(peakStall).toBe(1)
     feel(s.velocity.x).toBeLessThan(-150)
     feel(s.stall.severity).toBe(0)
-    // Phase 3 removed generic powered yaw. Preserve the old desired completion
-    // as feel, while enforcing the actual detector gate/lifecycle contract.
-    expect(s.maneuver.completed).toBe(s.maneuver.phase === 'normal' && s.maneuver.peakAlpha >= 70 ? 1 : 0)
-    feel(s.maneuver.completed).toBe(1)
     expect(s.alive).toBe(true)
   })
 })

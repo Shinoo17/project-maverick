@@ -121,7 +121,7 @@ describe('stall advisories', () => {
     expect(flightWarning(state)).toBe(activity === 0 ? 'hudStall' : null)
   })
 
-  it('uses continuous flow labels independent of legacy phase, with terrain/boundary priority', () => {
+  it('uses continuous flow labels, with terrain/boundary priority', () => {
     const state = aircraft()
     expect(flightWarning(null)).toBeNull()
     expect(flightWarning(state)).toBeNull()
@@ -130,7 +130,6 @@ describe('stall advisories', () => {
     expect(flightWarning(state)).toBe('hudStall')
     state.orientation = pose(0, 0)
     expect(flightWarning(state)).toBe('hudStallRecovering')
-    state.maneuver.phase = 'normal'
     state.intent.activity = 1
     state.orientation = pose(0, 40)
     state.velocity.x = 40
@@ -212,7 +211,7 @@ describe('HUD glass mapping', () => {
     expect(read().burnerState).toBe('depleted')
     state.maneuver.burnerLocked = false; state.maneuver.burnerActive = true
     expect(read().burnerState).toBe('engaged')
-    state.maneuver.phase = 'normal'; state.intent.activity = 1; state.orientation = pose(0, 45)
+    state.intent.activity = 1; state.orientation = pose(0, 45)
     expect(read().psm).toBe(true)
   })
 })
@@ -227,7 +226,7 @@ describe('nose pipper painting', () => {
       stroke() {}, strokeText() {},
     }
     const canvas = { getContext: () => ctx } as unknown as HTMLCanvasElement
-    const painter = createGlassPainter(canvas, { speedBand: null })
+    const painter = createGlassPainter(canvas)
     painter.resize(width, height, 1)
     const state = aircraft(), camera = new PerspectiveCamera(60, width / height, 0.5, 14000)
     state.position = { x: 0, y: 0, z: 0 }

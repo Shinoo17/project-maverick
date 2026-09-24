@@ -15,8 +15,8 @@ function actuate(s: ReturnType<typeof state>, input: ReturnType<typeof command>,
 }
 
 describe('F-22 continuous simulation TVC', () => {
-  it('has no phase/speed enable gate in the actuator', () => {
-    const normal = state(), active = state(); active.maneuver.phase = 'active'
+  it('has no speed or envelope enable gate in the actuator', () => {
+    const normal = state(), active = state(); active.velocity.x *= 3; active.limiterOpen = 1
     actuate(normal, command(1), 3); actuate(active, command(1), 3)
     expect(normal.thrustVectoring).toEqual(active.thrustVectoring)
     expect(normal.thrustVectoring.left).toBeGreaterThan(19.9)
@@ -32,9 +32,9 @@ describe('F-22 continuous simulation TVC', () => {
     stepFlight(yaw, command(0, 0, 1), FLIGHT_STEP)
     expect(yaw.rates.yaw).toBeGreaterThan(0)
   })
-  it('slews with inertia to near both limits and returns smoothly on release in every phase', () => {
-    for (const phase of ['normal', 'active', 'recovery'] as const) {
-      const s = state(); s.maneuver.phase = phase
+  it('slews with inertia to near both limits and returns smoothly on release at any limiter opening', () => {
+    for (const limiterOpen of [0, 0.5, 1]) {
+      const s = state(); s.limiterOpen = limiterOpen
       stepThrustVectoring(s, f22TvcTargets(command(1), 1), FLIGHT_STEP)
       expect(s.thrustVectoring.left).toBeGreaterThan(0)
       expect(s.thrustVectoring.left).toBeLessThanOrEqual(f22TvcProfile.actuatorRate * FLIGHT_STEP)
@@ -81,7 +81,7 @@ describe('F-22 continuous simulation TVC', () => {
     stepFlight(off, command(), FLIGHT_STEP)
     expect(off.enginePower).toBe(0); expect(off.rates.pitch).toBe(0)
   })
-  it('sends each actual simulation angle to exhaust regardless of pitch rate or maneuver phase', () => {
+  it('sends each actual simulation angle to exhaust regardless of pitch rate', () => {
     const s = state(); s.thrustVectoring = { left: 13, right: -7, authority: .8 }
     s.rates.pitch = -100; s.rates.roll = 100
     const before = structuredClone(s), angles = flightExhaustConditions(s).vectorAngles!
@@ -91,7 +91,7 @@ describe('F-22 continuous simulation TVC', () => {
   })
   it('freezes, single-steps and resets the actuators with the simulation clock', () => {
     const r = runtime(); r.reset('cobra'); r.start()
-    const powered = { ...command(1, 1), psmArm: true, afterburner: true }
+    const powered = { ...command(1, 1), airbrake: true, afterburner: true }
     r.advance(.5, () => powered); r.pause()
     const paused = r.snapshot()
     expect(paused.aircraft[0].thrustVectoring.right).toBeGreaterThan(0)

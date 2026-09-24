@@ -1,5 +1,14 @@
 # Flight instrumentation and Phase 3 allocation
 
+> **Phase 6 (`p6-legacy-gates-1`, command schema 2):** the C debug limiter and Space High-G
+> command are gone. `archivedScenarioNames` (including `cobraC`, `kulbitC`, `reversal180C`,
+> `pedalC`) name the Phase 0 golden archives and are replayed only; their recorded
+> `psmArm`/`highG` fields are dropped on replay. Live runs use `scenarioNames`, where each
+> archived `*C` track becomes its automatic twin via `liveScenario()` (held C maps to
+> Airbrake + Afterburner). `FLIGHT_GOLDEN=update` writes goldens under the live names and never
+> overwrites the `*C` archives. B17 and the manual High-G fixture are retired; see
+> [the Phase 6 report](../../docs/psm-phase6-implementation.md).
+
 Current physics: `p3-flow-effectiveness-4`. Phase 0 archives (`p3-powered-psm-1`)
 remain unchanged. See [the Phase 3 report](../../docs/psm-phase3-implementation.md)
 for ownership contracts, signed capacity, gain calibration, regressions and discrepancies.
@@ -31,7 +40,7 @@ fraction of the same airframe at beta 0. They exist because B20's one-second spe
 loss cannot show whether a broadside aircraft still commands attached-flow authority.
 Report only; target ranges wait for the Phase 8 playtest.
 
-`releaseSafety.ts` shares the five-second C+pull+W reproduction. Powered CI requires
+`releaseSafety.ts` shares the five-second Airbrake+pull+W reproduction (C+pull+W before Phase 6). Powered CI requires
 recovery before any terminal collision; it permits a recovered, unattended nose-down
 flight to reach terrain later in the 40 s observation. The unpowered 14 s liveness
 window remains hard. A future recovery assist must not be silently simulated here.

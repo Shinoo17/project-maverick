@@ -171,7 +171,7 @@ function headingLabel(value: number) {
   return pad(Math.round(heading / 10) % 36, 2)
 }
 
-export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { speedBand: { min: number; max: number } | null }) {
+export function createGlassPainter(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d')!
   let width = 0, height = 0
   let layout = glassLayout(1, 1)
@@ -327,8 +327,8 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
   }
 
   // --- Tapes ------------------------------------------------------------------
-  function drawTape({ x, value, side, tape, label, subreadout, live, digits, band }: {
-    x: number; value: number; side: 'left' | 'right'; tape: Tape; label: string; subreadout?: string; live: boolean; digits: number; band?: { min: number; max: number } | null
+  function drawTape({ x, value, side, tape, label, subreadout, live, digits }: {
+    x: number; value: number; side: 'left' | 'right'; tape: Tape; label: string; subreadout?: string; live: boolean; digits: number
   }) {
     const top = layout.cy - layout.tapeHeight / 2
     const bottom = layout.cy + layout.tapeHeight / 2
@@ -336,22 +336,6 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
     const pixelsPerUnit = layout.tapeHeight / tape.span
 
     line(x, top, x, bottom, 1.4)
-
-    // The PSM entry band as a bracket inboard of the rail; it brightens when the aircraft is inside.
-    if (live && band) {
-      const bandTop = layout.cy - (band.max - value) * pixelsPerUnit
-      const bandBottom = layout.cy - (band.min - value) * pixelsPerUnit
-      const y1 = Math.max(top, Math.min(bottom, bandTop))
-      const y2 = Math.max(top, Math.min(bottom, bandBottom))
-      if (y2 - y1 > 1) {
-        const bandX = x - dir * 6
-        const inside = value >= band.min && value <= band.max
-        const color = inside ? HUD_GREEN : HUD_GREEN_DIM
-        line(bandX, y1, bandX, y2, inside ? 3 : 2, color)
-        if (bandTop >= top) line(bandX, y1, bandX - dir * 5, y1, 1.4, color)
-        if (bandBottom <= bottom) line(bandX, y2, bandX - dir * 5, y2, 1.4, color)
-      }
-    }
 
     if (live) {
       ctx.save()
@@ -519,7 +503,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement, { speedBand }: { s
       drawVelocityMarker(state, state.camera)
     }
     drawTape({
-      x: layout.cx - layout.half * layout.tapeOffset, value: state.speed, side: 'left', tape: SPEED_TAPE, band: speedBand,
+      x: layout.cx - layout.half * layout.tapeOffset, value: state.speed, side: 'left', tape: SPEED_TAPE,
       label: 'KM/H', subreadout: state.live ? `PWR ${Math.round(state.power * 100)}%` : 'PWR –––', digits: 4, live: state.live,
     })
     drawTape({

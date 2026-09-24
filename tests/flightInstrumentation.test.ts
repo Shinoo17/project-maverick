@@ -107,7 +107,7 @@ describe.each([...aircraftIds, 'f22-notvc'])('%s allocation ledger', aircraftId 
     const state = createAircraft(aircraftId)
     state.velocity.x = 20
     for (let step = 0; step < 240; step++) {
-      stepFlight(state, { ...neutralCommand(step, state.id), pitch: 1, yaw: 0.5, psmArm: true, afterburner: true }, FLIGHT_STEP)
+      stepFlight(state, { ...neutralCommand(step, state.id), pitch: 1, yaw: 0.5, airbrake: true, afterburner: true }, FLIGHT_STEP)
       const before = structuredClone(state), observation = flightInstrumentation(state)
       expect(state).toEqual(before)
       expect(observation.lastStep).toEqual(state.flightForces)

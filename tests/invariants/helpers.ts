@@ -63,11 +63,10 @@ export function goldenAtFps(golden: Golden, fps: number) {
   return samples
 }
 
-/** I7: authored exponential bounds each automatic substep. The tolerance is
- * floating-point roundoff only, not a gameplay epsilon. Debug C may step open. */
+/** I7: authored exponential bounds every substep. The tolerance is
+ * floating-point roundoff only, not a gameplay epsilon. No manual open exists. */
 export function assertLimiterStep(state: AircraftState, previous: AircraftState) {
   const f = state.flightForces!, transition = f.limiterStep
-  if (!transition.automatic) return
   const b = getFlightProfile(state.aircraftId).breakout
   const from = previous.limiterOpen, target = transition.target
   const rate = target > from ? b.openRate * (1 + b.brakeBoost * state.intent.brakeIntent + b.powerBoost * state.intent.powerIntent) : b.closeRate

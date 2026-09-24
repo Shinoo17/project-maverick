@@ -19,11 +19,11 @@ const state = () => {
   return s
 }
 describe('Su-57 control allocation', () => {
-  it('renders actual nozzle angles regardless of body rate, speed or PSM phase', () => {
+  it('renders actual nozzle angles regardless of body rate, speed or limiter', () => {
     const s = state()
     s.thrustVectoring = { left: 12, right: -9, authority: 0.7 }
     const expected = su57ControlTargets(s)
-    s.rates.pitch = -100; s.rates.yaw = 100; s.velocity.x = 20; s.maneuver.phase = 'active'
+    s.rates.pitch = -100; s.rates.yaw = 100; s.velocity.x = 20; s.limiterOpen = 1
     expect(su57ControlTargets(s).left).toEqual(expected.left)
     expect(su57ControlTargets(s).right).toEqual(expected.right)
     expect(Math.hypot(expected.left.pitch, expected.left.yaw)).toBeCloseTo(12)
@@ -43,7 +43,7 @@ describe('Su-57 control allocation', () => {
     expect(force.acceleration.z).toBeLessThan(0)
   })
   it('never invents recovery nozzle motion from slip or angular velocity', () => {
-    const s = state(); s.maneuver.phase = 'recovery'; s.maneuver.alpha = 60
+    const s = state(); s.maneuver.alpha = 60
     s.velocity = { x: 40, y: -60, z: -20 }; s.rates.pitch = 1
     const t = su57ControlTargets(s)
     expect(t.left.pitch).toBe(0); expect(t.left.yaw).toBe(0)
@@ -107,7 +107,7 @@ describe('Su-57 shipped model articulation', () => {
     const mounts = ['L', 'R'].map(side => root.getObjectByName(`NozzleMount_${side}`)!.quaternion.clone())
     s.enginePower = 1; rig(s, 0, true)
     const neutral = [rig.exhaust!.left.origin.clone(), rig.exhaust!.right.origin.clone()]
-    s.maneuver.phase = 'active'; s.rates.pitch = flightProfile.pitchRate
+    s.rates.pitch = flightProfile.pitchRate
     s.thrustVectoring.left = s.thrustVectoring.right = 18
     rig(s, 0, true)
     expect(rig.exhaust!.left.origin.y).toBeGreaterThan(neutral[0].y)
@@ -171,7 +171,7 @@ describe('Su-57 shipped model articulation', () => {
     const body = root.getObjectByName('Body')!, bodyPose = body.matrix.clone()
     rig(s, 0, true)
     const gimbal = root.getObjectByName('Gimbal_L')!, initial = gimbal.quaternion.clone()
-    s.maneuver.phase = 'active'; s.rates.pitch = flightProfile.pitchRate; s.enginePower = 1
+    s.rates.pitch = flightProfile.pitchRate; s.enginePower = 1
     rig(s, 0)
     expect(gimbal.quaternion.angleTo(initial)).toBeLessThan(1e-7)
     stepThrustVectoring(s, { left: 18, right: 18 }, 1 / 120)

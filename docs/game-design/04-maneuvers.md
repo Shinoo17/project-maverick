@@ -1,6 +1,8 @@
 # 04 — High-G, Airbrake, Cobra และ Thrust Vectoring
 
-> Historical milestone/design notes. Current PSM uses held C, thrust-dependent control, independent airbrake and no active timer/cooldown. Both aircraft now use simulation TVC. See [current flight rules](../flight-profiles.md).
+> **Current (PSM Phase 6, 25 Sep 2026):** there is no PSM mode, state machine, arm key or High-G key. High AoA emerges from the continuous envelope: Space (Airbrake) + pull/yaw at 350–700 ARCADE km/h opens the incidence limiter; full stick at high speed becomes an automatic hard turn; a centred stick lets natural aero and delayed recovery assist bring the nose back. C and X are unbound. See [current flight rules](../flight-profiles.md) and the [Phase 6 report](../psm-phase6-implementation.md).
+>
+> Everything below is historical milestone/design notes (P2 hold-C PSM, manual High-G). It no longer describes the game.
 
 
 [กลับ Master Plan](../../MASTER_PLAN.md) · P2 · พึ่ง flight ใน 03 และ input ใน 02

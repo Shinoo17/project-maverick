@@ -9,10 +9,8 @@ import { observeAirflow } from '../src/game/flight/airflow'
 import { interpretEnvelope } from '../src/game/flight/envelope'
 import { measureControlDemand, requestControl } from '../src/game/flight/controller'
 import { computeBudget } from '../src/game/flight/authority'
-import { stepFlight } from '../src/game/flight/stepFlight'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { tvcMomentCapacity, poweredThrustForces } from '../src/game/flight/thrustVectoring'
-import { assertLimiterStep } from './invariants/helpers'
 
 it('low-speed rate requests are independent of floor tuning and activate at the authored boundary', () => {
   const state = createAircraft('f22'), profile = structuredClone(getFlightProfile('f22'))
@@ -50,25 +48,6 @@ it('fractional limiter permission is continuous and changes no capability budget
     expect(envelope.alphaLimitDeg - prior).toBeCloseTo(i === 0 ? 0 : (profile.aero.maxControllableAlphaDeg - profile.aero.alphaNormalDeg) / 100, 12)
     expect(computeBudget(flow, aeroFlowEffectiveness(flow, profile.aero), 35, profile)).toEqual(budget)
     prior = envelope.alphaLimitDeg
-  }
-})
-
-it('debug C may step open; release rejoins the continuous automatic path without changing capability', () => {
-  const state = createAircraft('f22'); state.velocity.x = 25
-  for (const open of [false, false, true, true, false, false]) {
-    const previous = structuredClone(state)
-    const alternate = structuredClone(state), command = { ...neutralCommand(0, state.id), pitch: 1, psmArm: open }
-    stepFlight(state, command, 1 / 120)
-    stepFlight(alternate, { ...command, psmArm: !open }, 1 / 120)
-    if (open) expect(state.limiterOpen).toBe(1)
-    else {
-      assertLimiterStep(state, previous)
-      if (previous.limiterOpen === 1) {
-        expect(state.limiterOpen).toBeLessThan(1)
-        expect(state.limiterOpen).toBeGreaterThan(state.flightForces!.limiterStep.target)
-      }
-    }
-    expect(state.flightForces!.budget).toEqual(alternate.flightForces!.budget)
   }
 })
 

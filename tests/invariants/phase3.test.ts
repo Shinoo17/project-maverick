@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
-import { createAircraft, runTrack, runScenario, scenarioNames, automaticScenarioNames } from '../../benchmarks/flight/harness'
+import { createAircraft, runTrack, runScenario, scenarioNames } from '../../benchmarks/flight/harness'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { computeBudget } from '../../src/game/flight/authority'
 import { aeroFlowEffectiveness } from '../../src/game/flight/aerodynamics'
@@ -48,7 +48,7 @@ function audit(state: ReturnType<typeof createAircraft>, previous: ReturnType<ty
 }
 
 describe.each(ids)('%s Phase 3 hard invariants', id => {
-  it.each([...scenarioNames, ...automaticScenarioNames.filter(name => !name.endsWith('C'))])('I10–I19 allocation/moment/work/path trace: %s', scenario => { runScenario(scenario, id, audit) })
+  it.each(scenarioNames)('I10–I19 allocation/moment/work/path trace: %s', scenario => { runScenario(scenario, id, audit) })
   it.each([1, 42, 991])('I10–I19 low/reverse-speed mixed-input fuzz seed %s', seed => {
     const random = mulberry32(seed), state = createAircraft(id)
     state.position.y = 4000
@@ -56,11 +56,13 @@ describe.each(ids)('%s Phase 3 hard invariants', id => {
     const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), random() * Math.PI)
     state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
     let input = {}
-    runTrack(state, 4, (_s, time) => {
+    const trace = runTrack(state, 4, (_s, time) => {
       if (Math.round(time * 120) % 15 === 0) input = { pitch: random() * 2 - 1, yaw: random() * 2 - 1, roll: random() * 2 - 1,
-        speedAdjust: random() * 2 - 1, afterburner: true, airbrake: random() > 0.5, psmArm: true }
+        speedAdjust: random() * 2 - 1, afterburner: true, airbrake: random() > 0.5 }
       return input
     }, audit)
+    // Coverage: C used to force the limiter open here. Automatic permission must still reach it.
+    expect(Math.max(...trace.samples.map(sample => sample.state.limiterOpen))).toBeGreaterThan(0.9)
   })
 })
 it.each(['f22', 'su57'])('I9/I10: %s signed capacity scales with thrust and bounds the full actual-angle grid', id => {
@@ -104,20 +106,21 @@ it('I16: budget ignores command and intent ignores aircraft capability/governor 
   const source = readFileSync(new URL('../../src/game/flight/authority.ts', import.meta.url), 'utf8')
   expect(source).not.toMatch(/from ['"].*(?:commands|intent|WorldState)['"]/)
 })
-it('I2/I3: non-TVC replay stays exact at 30/60/144 FPS with debug limiter and burner', () => {
-  const input = (tick: number, id: string) => ({ ...neutralCommand(tick, id), psmArm: true, pitch: 1, speedAdjust: 1, afterburner: true, airbrake: true })
+it('I2/I3: non-TVC replay stays exact at 30/60/144 FPS with airbrake and burner', () => {
+  const input = (tick: number, id: string) => ({ ...neutralCommand(tick, id), pitch: 1, speedAdjust: 1, afterburner: true, airbrake: true })
   const base = runAtFps(60, 'f22-notvc', input, 3)
   expect(runAtFps(30, 'f22-notvc', input, 3)).toEqual(base)
   expect(runAtFps(144, 'f22-notvc', input, 3)).toEqual(base)
 })
 
-it('I13/I14: C and burner cannot create powered rotation in a fixed zero-q no-TVC rig', () => {
+it('I13/I14: a fully open limiter and burner cannot create powered rotation in a fixed zero-q no-TVC rig', () => {
   const idle = createAircraft('f22-notvc'), powered = structuredClone(idle), p = getFlightProfile('f22-notvc')
   for (let i = 0; i < 600; i++) {
     for (const [state, afterburner] of [[idle, false], [powered, true]] as const) {
       state.velocity = { x: 0, y: 0, z: 0 }; state.orientation = { x: 0, y: 0, z: 0, w: 1 }; state.position.y = 4000
-      state.stall.severity = 1
-      stepFlight(state, { ...neutralCommand(i, state.id), pitch: 1, yaw: 1, roll: 1, psmArm: afterburner,
+      // Seed the limiter fully open: the permission C used to force, now with no back door.
+      state.stall.severity = 1; state.limiterOpen = 1
+      stepFlight(state, { ...neutralCommand(i, state.id), pitch: 1, yaw: 1, roll: 1,
         afterburner, speedAdjust: afterburner ? 1 : 0, airbrake: true }, 1 / 120)
       expect(state.flightForces!.budget.poweredControlAvailable).toBe(0)
       for (const axis of axes) {

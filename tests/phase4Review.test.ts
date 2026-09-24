@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest'
-import { energySweep, partialEntryComparison, entryDiagnostics } from '../benchmarks/flight/permissionProbes'
+import { energySweep, partialEntry, entryDiagnostics } from '../benchmarks/flight/permissionProbes'
 import { createAircraft, runScenario, runTrack, scenarioSetup } from '../benchmarks/flight/harness'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { measureControlDemand, requestControl } from '../src/game/flight/controller'
@@ -26,10 +26,9 @@ it('automatic permission changes the flown outcome compared with a closed limite
   expect(peak(free)).toBeGreaterThan(peak(closed) + getFlightProfile('f22').aero.alphaNormalDeg)
 })
 
-it.each(['f22', 'su57', 'f22-notvc'])('%s B17 partial entry exercises unsaturated control and different applied drive', id => {
-  const [auto, debug] = partialEntryComparison(id).map(entryDiagnostics)
-  expect(auto.unsaturatedPitchSteps).toBeGreaterThan(0)
-  expect(auto.firstPitchDrive).not.toBe(debug.firstPitchDrive)
+// The C half of B17 retired in Phase 6; the automatic partial entry keeps its rig check.
+it.each(['f22', 'su57', 'f22-notvc'])('%s partial entry exercises unsaturated control', id => {
+  expect(entryDiagnostics(partialEntry(id)).unsaturatedPitchSteps).toBeGreaterThan(0)
 })
 
 it.each([false, true])('B16 rig sees the intended reversal and responds to a near-corner ripple (boosted=%s)', boosted => {
@@ -95,7 +94,7 @@ it('rate and drag follow hardTurnBlend independently of the G allowance curve', 
   const initial = createAircraft('f22'), profile = getFlightProfile('f22')
   initial.velocity.x = 100
   const flow = observeAirflow(initial, profile)
-  const command = { ...neutralCommand(0, initial.id), pitch: 0.2, yaw: 0.1, psmArm: true }
+  const command = { ...neutralCommand(0, initial.id), pitch: 0.2, yaw: 0.1 }
   const blend = 0.4
   const envelope = { ...interpretEnvelope(initial, flow, profile), limiterOpen: 1,
     alphaLimitDeg: profile.aero.maxControllableAlphaDeg, hardTurnBlend: blend }
@@ -104,7 +103,7 @@ it('rate and drag follow hardTurnBlend independently of the G allowance curve', 
   // Open permission removes closed-turn clipping, isolating the rate multipliers.
   for (const gAllowance of [1, 1 + (profile.breakout.hardTurnG - 1) * blend ** 2, 2.5]) {
     const control = requestControl(command, initial.rates, flow, { ...envelope, gAllowance }, profile, dt, demand)
-    expect(control.highG).toBe(blend)
+    expect(control.hardTurn).toBe(blend)
     expect(control.request.pitch / plain.request.pitch).toBeCloseTo(1 + blend * (profile.maneuver.highGRate - 1), 14)
     expect(control.request.yaw / plain.request.yaw).toBeCloseTo(1 + blend * 0.4, 14)
   }

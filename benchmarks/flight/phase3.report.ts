@@ -1,12 +1,13 @@
 import { it } from 'vitest'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { Quaternion, Vector3 } from 'three'
-import { createAircraft, runScenario, runTrack, type Trace, type ScenarioName } from './harness'
+import { createAircraft, liveScenario, runScenario, runTrack, type ArchivedScenarioName, type Trace } from './harness'
 import { measure, firstTime } from './metrics'
 import { getFlightProfile, flightProfileVersion } from '../../src/game/flight/profile'
 import { tvcMomentCapacity } from '../../src/game/flight/thrustVectoring'
 import { stepSpeed } from '../../src/game/flight/speed'
 import { neutralCommand } from '../../src/game/runtime/commands'
+import { envelopeLabel } from '../../src/game/flight/envelope'
 import { runPsmNeutralRelease } from './releaseSafety'
 import phase2 from './phase2-metrics.json'
 
@@ -38,25 +39,26 @@ const handoffMetrics = (trace: Trace) => {
 it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression deltas', () => {
   const results = ['f22', 'su57', 'f22-notvc'].map(id => {
     const p = getFlightProfile(id)
-    const metrics = (['cobraC', 'kulbitC', 'pedalC'] as const).flatMap(scenario => measure(runScenario(scenario, id)))
+    const metrics = (['cobra', 'kulbit', 'pedal'] as const).flatMap(scenario => measure(runScenario(scenario, id)))
     const initial = createAircraft(id); initial.position.y = 4000; initial.velocity.x = 450 / 5.4
-    const pull = runTrack(initial, 8, () => ({ pitch: 1, psmArm: true, speedAdjust: 1, afterburner: true, airbrake: true }))
+    // Phase 6: probes that held C now hold Airbrake, the automatic entry key.
+    const pull = runTrack(initial, 8, () => ({ pitch: 1, speedAdjust: 1, afterburner: true, airbrake: true }))
     // Same post-stall pitch incidence, speed, neutral engine spool and Q/E input for each airframe.
-    const pedal = runTrack(highSeed(id), 2, () => ({ yaw: 1, psmArm: true, speedAdjust: 1, afterburner: true }))
+    const pedal = runTrack(highSeed(id), 2, () => ({ yaw: 1, airbrake: true, speedAdjust: 1, afterburner: true }))
     const shares = { aero: 0, tvc: 0, floor: 0, unmet: 0 }
     for (const sample of pedal.samples.slice(1)) for (const key of ['aero', 'tvc', 'floor', 'unmet'] as const) shares[key] += Math.abs(sample.state.flightForces!.allocation[key].yaw) / (pedal.samples.length - 1)
     const handoff = pull.samples.findIndex(sample => (sample.state.flightForces?.allocation.tvc.pitch ?? 0) > 1e-6)
     const before = handoff < 0 ? null : Math.max(...pull.samples.slice(Math.max(0, handoff - 24), handoff + 1).map(sample => sample.state.rates.pitch))
     const after = handoff < 0 ? null : Math.min(...pull.samples.slice(handoff, handoff + 61).map(sample => sample.state.rates.pitch))
-    // Establish attached aerodynamic control before opening debug permission.
+    // Establish attached aerodynamic control before the Airbrake opens permission.
     // This probes a substantial aero -> TVC handoff, unlike the low-q pull.
     const moderate = createAircraft(id); moderate.position.y = 4000; moderate.velocity = { x: 140, y: 0, z: 0 }
-    const moderateTrace = runTrack(moderate, 4, (_state, time) => ({ pitch: 1, psmArm: time >= 1, speedAdjust: 1, afterburner: true }))
+    const moderateTrace = runTrack(moderate, 4, (_state, time) => ({ pitch: 1, airbrake: time >= 1, speedAdjust: 1, afterburner: true }))
     const brakeState = highSeed(id, 70, 80)
     brakeState.enginePower = 65 / 50; brakeState.engine.actualThrust = 65; brakeState.speedDrive = 1; brakeState.maneuver.airbrake = 1
-    const brake = runTrack(brakeState, 0.5, () => ({ pitch: 1, psmArm: true, speedAdjust: 1, afterburner: true, airbrake: true }))
+    const brake = runTrack(brakeState, 0.5, () => ({ pitch: 1, speedAdjust: 1, afterburner: true, airbrake: true }))
     const low = highSeed(id, 5, 90); low.enginePower = 65 / 50; low.engine.actualThrust = 65
-    const lowTrace = runTrack(low, 1, () => ({ psmArm: true, pitch: 1, afterburner: true, speedAdjust: 1 }))
+    const lowTrace = runTrack(low, 1, () => ({ airbrake: true, pitch: 1, afterburner: true, speedAdjust: 1 }))
     const first = lowTrace.samples[1].state, last = lowTrace.samples.at(-1)!.state
     const governor = [0, 80].map(alpha => {
       const state = highSeed(id, 100, alpha)
@@ -72,7 +74,7 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
         finalYawRateDeg: pedal.samples.at(-1)!.state.rates.yaw * 180 / Math.PI, meanAllocationRadPerSec2: shares },
       handoff: { rateDipRadPerSec: before === null ? null : Math.max(0, before - after!), onsetSeconds: handoff < 0 ? null : pull.samples[handoff].time,
         window: 'pre-onset peak over 0.2 s minus minimum over following 0.5 s' },
-      moderateHandoff: { ...handoffMetrics(moderateTrace), seed: '140 m/s attached pull, C opens at 1 s, W+Shift held' },
+      moderateHandoff: { ...handoffMetrics(moderateTrace), seed: '140 m/s attached pull, Airbrake from 1 s, W+Shift held' },
       limiterPull: { rotation3s: pull.samples[360].noseRotationDeg, rotation8s: pull.samples.at(-1)!.noseRotationDeg,
         time180: firstTime(pull.samples, s => s.noseRotationDeg >= 180), time360: firstTime(pull.samples, s => s.noseRotationDeg >= 360) },
       brakeBurner: { speedLossMps: speed(brakeState) - speed(brake.samples.at(-1)!.state), initialIncidence: 80,
@@ -87,8 +89,8 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
           const a = lowTrace.samples[i].state, b = sample.state, work = b.flightForces!.translation
           return (speed(b) ** 2 - speed(a) ** 2) / 2 + p.flight.gravity * (b.position.y - a.position.y) - work.thrustWork + work.dragWork
         })) },
-      release: final && release ? { firstNormal: firstTime(release.trace.samples, sample => sample.state.maneuver.phase === 'normal'),
-        seconds: release.trace.samples.at(-1)!.time, phase: final.maneuver.phase, speed: speed(final), incidence: final.maneuver.alpha,
+      release: final && release ? { firstNormal: firstTime(release.trace.samples, sample => !!sample.state.flightForces && envelopeLabel(sample.state.flightForces.envelope, sample.state.intent.activity) === 'NORMAL'),
+        seconds: release.trace.samples.at(-1)!.time, speed: speed(final), incidence: final.maneuver.alpha,
         rate: final.rates, alive: final.alive, stopReason: final.stopReason ?? null } : null }
   })
   const calibration = ['f22', 'su57'].flatMap(id => {
@@ -96,14 +98,14 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
     try {
       return [1, 1.5, 2, 2.5, 3].map(gain => {
         p.gain = gain
-        const cobra = runScenario('cobraC', id), kulbit = runScenario('kulbitC', id)
+        const cobra = runScenario('cobra', id), kulbit = runScenario('kulbit', id)
         return { id, gain, selected: gain === original, cobra: summary(cobra), kulbit: summary(kulbit),
           initialPitchRateAt02s: cobra.samples[24].state.rates.pitch }
       })
     } finally { p.gain = original }
   })
   const regression = phase2.results.flatMap(aircraft => aircraft.scenarios.flatMap(scenario => {
-    const rows = measure(runScenario(scenario.scenario as ScenarioName, aircraft.aircraftId))
+    const rows = measure(runScenario(liveScenario(scenario.scenario as ArchivedScenarioName), aircraft.aircraftId))
     return rows.map(current => { const prior = scenario.metrics.find(row => row.id === current.id)?.value ?? null
       return { id: aircraft.aircraftId, scenario: scenario.scenario, metric: current.id, phase2: prior, phase3: current.value,
         delta: prior === null || current.value === null ? null : current.value - prior } })

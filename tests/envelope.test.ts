@@ -67,7 +67,7 @@ describe('independent incidence envelope', () => {
     const profile = getFlightProfile(id), original = { ...profile.aero }
     const other = getFlightProfile(id === 'f22' ? 'su57' : 'f22')
     const otherBefore = structuredClone(other), defaultsBefore = { ...aeroDefaults }
-    const baseline = runScenario('cobraC', id)
+    const baseline = runScenario('cobra', id)
     const state = createAircraft(id)
     state.velocity = { x: 0, y: 0, z: 100 }
     const before = interpretEnvelope(state, observeAirflow(state, profile), profile)
@@ -77,7 +77,7 @@ describe('independent incidence envelope', () => {
       const tuned = interpretEnvelope(state, observeAirflow(state, profile), profile)
       expect(tuned.highAoa).not.toBe(before.highAoa)
       expect(tuned.alphaLimitDeg).not.toBe(before.alphaLimitDeg)
-      expect(runScenario('cobraC', id).samples.at(-1)!.state.orientation).not.toEqual(baseline.samples.at(-1)!.state.orientation)
+      expect(runScenario('cobra', id).samples.at(-1)!.state.orientation).not.toEqual(baseline.samples.at(-1)!.state.orientation)
       expect(other).toEqual(otherBefore)
       expect(aeroDefaults).toEqual(defaultsBefore)
     } finally { Object.assign(profile.aero, original) }

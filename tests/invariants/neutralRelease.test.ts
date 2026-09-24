@@ -5,11 +5,13 @@ import { aircraftIds, createAircraft } from '../../benchmarks/flight/harness'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { stepFlight } from '../../src/game/flight/stepFlight'
 import { observeAirflow } from '../../src/game/flight/airflow'
+import { envelopeLabel } from '../../src/game/flight/envelope'
 import { neutralCommand } from '../../src/game/runtime/commands'
 import { FLIGHT_STEP as dt } from '../../src/game/runtime/clock'
 import { assertAircraftValid, assertActuatorStep } from './helpers'
 
 const axes = ['pitch', 'yaw', 'roll'] as const
+const label = (state: ReturnType<typeof createAircraft>) => envelopeLabel(state.flightForces!.envelope, state.intent.activity)
 const epsilon = 1e-9
 const valid = (state: ReturnType<typeof createAircraft>, previous: ReturnType<typeof createAircraft>) => {
   assertAircraftValid(state)
@@ -22,7 +24,6 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
     const state = createAircraft(id), p = getFlightProfile(id).flight
     state.position.y = 4000
     state.stall.severity = 1
-    state.maneuver.phase = 'active'; state.maneuver.blend = 1
     state.rates = { pitch: 2.9, yaw: -2.3, roll: 1.7 }
     const response = { pitch: p.neutralResponse, yaw: p.neutralResponse, roll: p.neutralRollResponse }
     // Fixed-flow rig isolates the no-authority limit; the bounded settling time
@@ -45,12 +46,12 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
     for (const axis of axes) expect(Math.abs(state.rates[axis])).toBeLessThan(epsilon)
   })
 
-  it.each([0, 1])('released five-second C pull remains recoverable (speedAdjust=%s)', speedAdjust => {
+  it.each([0, 1])('released five-second Airbrake pull remains recoverable (speedAdjust=%s)', speedAdjust => {
     let sawRecovery = false, recovered = false
     const { held, trace } = runPsmNeutralRelease(id, speedAdjust, speedAdjust === 1 ? 40 : 14, (state, previous) => {
       assertAircraftValid(state); assertActuatorStep(state, previous)
-      sawRecovery ||= state.maneuver.phase === 'recovery'
-      recovered ||= sawRecovery && state.maneuver.phase === 'normal'
+      sawRecovery ||= label(state) === 'RECOVERING' || label(state) === 'DEPARTED'
+      recovered ||= sawRecovery && label(state) === 'NORMAL'
       if (!state.alive) {
         // A recovered, nose-down aircraft can later hit terrain without pilot
         // input. Phase 5 recovery aligns the nose with the airflow; it never levels attitude.
@@ -59,18 +60,16 @@ describe.each(aircraftIds)('%s neutral release safety', id => {
       }
     })
     const release = held.samples.at(-1)!.state
-    expect(release.maneuver.phase).toBe('active')
+    // Coverage: the Airbrake hold must actually open the envelope it replaced C for.
+    expect(Math.max(...held.samples.map(sample => sample.state.limiterOpen))).toBeGreaterThan(0.9)
     // Rev. 4 permits real deep entry in this fixture; peak incidence is now
     // report-only. Keep the recovery and capability checks below unchanged.
     // Neutral-throttle window retains the old 14 s fixture duration; a 40 s
-    // unpowered descent can legitimately reach terrain. Keep liveness hard for C. Settling/normal times are
+    // unpowered descent can legitimately reach terrain. Keep liveness hard. Settling/normal times are
     // separately reported; no new four/six-second tuning acceptance is imposed.
     const final = trace.samples.at(-1)!.state
     expect(Math.abs(final.rates.pitch)).toBeLessThan(Math.abs(release.rates.pitch))
-    if (speedAdjust === 1) {
-      expect(final.maneuver.phase).toBe('normal')
-      expect(final.maneuver.completed).toBe(release.maneuver.completed + +(release.maneuver.peakAlpha >= 70))
-    }
+    if (speedAdjust === 1) expect(recovered).toBe(true)
   })
 
   it('keeps the reverse-flow neutral fixture energy bound in CI', () => {

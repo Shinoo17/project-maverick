@@ -28,11 +28,11 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const airflowStart = observeAirflow(state, profile)
   const speed = airflowStart.airspeed
   stepStall(state, stallProfile, airflowStart, dt)
-  stepManeuvers(state, command, dt, airflowStart)
+  stepManeuvers(state, command, dt)
   const m = state.maneuver
   const demand = measureControlDemand(command, airflowStart, state.stall.severity, profile, state.limiterOpen)
   state.intent = readIntent(command, state.intent, dt, demand.saturationRatio, profile.breakout.handoffSeconds)
-  const { envelope, limiterStep } = stepEnvelope(state, airflowStart, profile, dt, command.psmArm && maneuverProfile.psmEnabled)
+  const { envelope, limiterStep } = stepEnvelope(state, airflowStart, profile, dt)
   const rates = state.rates, ratesBefore = { ...rates }
   // One evaluation per substep feeds both the natural layer and the capability
   // budget; authority.ts stays free of any aerodynamics import.
@@ -91,7 +91,6 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const reattachment = 1 - MathUtils.smoothstep(airflowStart.incidenceDeg, aero.alphaNormalDeg, aero.alphaCriticalDeg)
   const pathGrip = MathUtils.lerp(maneuverProfile.activeGrip, maneuverProfile.recoveryGrip, reattachment)
   const surfaceControl = demand.surfaceControl
-  if (m.phase === 'active') m.rotation += Math.hypot(rates.pitch, rates.yaw) * dt
   const angular = new Vector3(rates.roll, -rates.yaw, rates.pitch)
   const orientation = new Quaternion().copy(state.orientation)
   const previousForward = new Vector3(1, 0, 0).applyQuaternion(orientation)
@@ -126,7 +125,7 @@ export function stepFlight(state: AircraftState, command: PilotCommand, dt: numb
   const assist = lateral.clone().sub(physical).clampLength(0, p.pathAssistAcceleration).multiplyScalar(envelope.pathAssistWeight)
   lateral.copy(physical).add(assist)
   state.flightForces.path = { attachedAlignment, anticipation, looseResponse, physical, assist, assistWeight: envelope.pathAssistWeight, total: lateral.clone() }
-  const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + control.highG * (maneuverProfile.highGDrag - 1))
+  const turnLoss = p.turnDrag * (rates.pitch ** 2 + rates.yaw ** 2) * (1 + control.hardTurn * (maneuverProfile.highGDrag - 1))
   const stallDrag = 1 + state.stall.severity * (stallProfile.dragMultiplier - 1)
   const drag = p.drag * speed * speed * stallDrag + turnLoss + natural.alphaDrag + natural.betaDrag
   const engineForce = vectoredThrust

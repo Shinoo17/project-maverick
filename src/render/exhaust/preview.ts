@@ -94,7 +94,6 @@ function frame(now: number) {
   const aoa = Number(params.get('aoa') ?? (scenario === 'cobra' ? 90 : scenario === 'recovery' ? 60 : 0))
   state.velocity = { x: speed, y: scenario === 'recovery' ? -80 : 0, z: 0 }
   state.maneuver.alpha = aoa
-  state.maneuver.phase = scenario === 'cobra' ? 'active' : scenario === 'recovery' ? 'recovery' : 'normal'
   state.rates.pitch = pitch * flightProfile.pitchRate; state.rates.roll = roll * flightProfile.rollRate
   state.rates.yaw = scenario === 'yaw' ? flightProfile.yawRate : 0
   actuatorTime += dt

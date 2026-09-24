@@ -57,7 +57,7 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     for (const group of [n.restoring, n.damping]) for (const value of Object.values(group)) expect(Math.abs(value)).toBe(0)
   })
 
-  it.each(scenarioNames)('I7: separation and legacy observer memory obey authored substep bounds: %s', scenario => {
+  it.each(scenarioNames)('I7: separation obeys authored substep bounds: %s', scenario => {
     const profile = getFlightProfile(id)
     runScenario(scenario, id, (state, previous) => {
       const flow = observeAirflow(previous, profile)
@@ -66,22 +66,19 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
       expect(Math.abs(state.stall.severity - previous.stall.severity)).toBeLessThanOrEqual(1 - Math.exp(-dt / tau) + epsilon)
       expect(state.stall.severity).toBeGreaterThanOrEqual(0)
       expect(state.stall.severity).toBeLessThanOrEqual(1)
-      // Legacy observer memory retains its exponential response until Phase 6; it no longer sets path grip.
-      expect(Math.abs(state.maneuver.blend - previous.maneuver.blend)).toBeLessThanOrEqual(1 - Math.exp(-Math.log(100) * dt / profile.maneuver.blendSeconds) + 1e-9)
     })
   })
 
-  it('I8: natural contributions ignore commands, phase labels, burner, TVC and PSM capability', () => {
+  it('I8: natural contributions ignore commands, burner and TVC', () => {
     const profile = getFlightProfile(id), { state } = scenarioSetup('release45', id)
     state.rates = { pitch: 0.3, yaw: -0.2, roll: 0.1 }
     const copy = structuredClone(state)
-    copy.maneuver.phase = 'active'; copy.maneuver.blend = 1
     copy.maneuver.burnerActive = true; copy.enginePower = 1
     stepFlight(state, neutralCommand(0, state.id), dt)
-    stepFlight(copy, { ...neutralCommand(0, copy.id), psmArm: true, pitch: 1, yaw: 1, roll: 1, afterburner: true, highG: true, airbrake: true }, dt)
+    stepFlight(copy, { ...neutralCommand(0, copy.id), pitch: 1, yaw: 1, roll: 1, afterburner: true, airbrake: true }, dt)
     for (const key of ['naturalRestoring', 'naturalDeparture', 'naturalDamping', 'alphaDrag', 'betaDrag', 'separation'] as const) expect(copy.flightForces![key]).toEqual(state.flightForces![key])
     const stripped = structuredClone(profile)
-    stripped.maneuver.psmEnabled = false; stripped.thrustVectoring = null
+    stripped.thrustVectoring = null
     const flow = observeAirflow(copy, profile)
     expect(naturalAerodynamics(flow, 1, aeroFlowEffectiveness(flow, stripped.aero), copy.rates, stripped.aero)).toEqual(naturalAerodynamics(flow, 1, aeroFlowEffectiveness(flow, profile.aero), copy.rates, profile.aero))
   })

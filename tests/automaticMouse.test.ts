@@ -11,7 +11,7 @@ it('the flow-blended positional mouse produces identical commands and flight at 
     const runtime = new GameRuntime({ mode: 'playground', aircraftIds: ['f22'] })
     runtime.reset('recovery'); runtime.start()
     const input = new FlightInput(); input.engage(); input.move(0, -input.gate.radius)
-    input.press('KeyX'); input.press('ShiftLeft')
+    input.press('Space'); input.press('ShiftLeft')
     let peakBlend = 0
     for (let frame = 0; frame < 4 * fps; frame++) runtime.advance(1 / fps, (tick, id) => {
       const state = runtime.snapshot().aircraft[0], profile = getFlightProfile(state.aircraftId)

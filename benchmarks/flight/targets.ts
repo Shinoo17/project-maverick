@@ -10,7 +10,6 @@ export const targets: Record<string, Target> = {
   'B12.fullStick500.limiterOpen': { max: 0.35 },
   'B14.psmIntent.timeTo70': { max: 1.2 },
   'B16.limiter.chatterCount': { max: 2 },
-  'B17.cVsAuto.peakDelta': { max: 15 },
   'B1.cobra.peakAoa': { min: 75, max: 95 },
   'B2.cobra.timeTo90': { min: 0.7, max: 1.2 },
   'B4.cobra.headingChange': { max: 20 },

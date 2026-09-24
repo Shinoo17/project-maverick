@@ -40,12 +40,10 @@ export class FlightCamera {
     if (this.diagnostic && diagnosticBounds) { this.diagnosticView(camera, state, diagnosticBounds); return }
     const q = new Quaternion().copy(state.orientation), position = new Vector3().copy(state.position)
     const forward = new Vector3(1, 0, 0).applyQuaternion(q)
-    const maneuvering = state.maneuver.phase === 'active' || state.maneuver.phase === 'recovery'
     const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
-    // Presentation only: reveal real nose/path separation without requiring C.
-    // Keep the legacy phase fallback and ignore unreliable angles near rest.
-    const decoupling = MathUtils.smoothstep(airflow.incidenceDeg, DECOUPLING_START_DEG, DECOUPLING_FULL_DEG) * airflow.confidence
-    const cinematicTarget = Math.max(decoupling, maneuvering ? 1 : 0)
+    // Presentation only: reveal real nose/path separation from airflow alone,
+    // ignoring unreliable angles near rest. No maneuver phase exists.
+    const cinematicTarget = MathUtils.smoothstep(airflow.incidenceDeg, DECOUPLING_START_DEG, DECOUPLING_FULL_DEG) * airflow.confidence
     this.cinematic = reducedMotion ? 0 : this.cinematic + (cinematicTarget - this.cinematic) * (1 - Math.exp(-4 * dt))
     const path = new Vector3().copy(state.velocity).normalize()
     forward.lerp(path, this.cinematic * 0.88).normalize()

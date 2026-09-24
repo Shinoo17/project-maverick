@@ -24,7 +24,7 @@ export function energySweep(aircraftId: string, boosted: boolean, rippleFraction
     const flow = observeAirflow(state, p)
     const demand = measureControlDemand(command, flow, 0, p, state.limiterOpen)
     state.intent = readIntent(command, state.intent, dt, demand.saturationRatio)
-    stepEnvelope(state, flow, p, dt, false)
+    stepEnvelope(state, flow, p, dt)
     samples.push({ time, q, limiterOpen: state.limiterOpen })
   }
   const values = samples.map(s => s.limiterOpen)
@@ -35,11 +35,10 @@ export function energySweep(aircraftId: string, boosted: boolean, rippleFraction
     chatterCount: intendedReversalObserved ? directionChanges - 1 : null, samples }
 }
 
-export function partialEntryComparison(aircraftId: string) {
+/** Partial-stick automatic entry. Its Phase 4 C twin (B17) retired with the C key in Phase 6. */
+export function partialEntry(aircraftId: string) {
   const { state, seconds } = scenarioSetup('psmIntent450', aircraftId)
-  return [false, true].map(psmArm => runTrack(state, seconds,
-    () => ({ pitch: 0.7, airbrake: true, afterburner: true, psmArm }), undefined,
-    psmArm ? 'psmPartial450C' : 'psmPartial450'))
+  return runTrack(state, seconds, () => ({ pitch: 0.7, airbrake: true, afterburner: true }), undefined, 'psmPartial450')
 }
 
 /** Report whether the comparison actually exercises available controller range. */
@@ -68,7 +67,7 @@ export function limiter90SpeedBoundary(aircraftId: string) {
     for (let tick = 0; tick < holdSeconds / dt; tick++) {
       // S affects only G; this rig isolates low-energy limiter permission.
       state.intent = readIntent(command, state.intent, dt, 0)
-      stepEnvelope(state, flow, p, dt, false)
+      stepEnvelope(state, flow, p, dt)
     }
     return state.limiterOpen
   }

@@ -27,8 +27,8 @@ describe.each(aircraftIds)('%s Phase 0 invariants', aircraftId => {
     runTrack(state, 6, (_state, time) => {
       if (Math.round(time * 120) % 30 === 0) command = {
         pitch: random() * 2 - 1, yaw: random() * 2 - 1, roll: random() * 2 - 1,
-        speedAdjust: random() * 2 - 1, psmArm: random() > 0.5, afterburner: random() > 0.5,
-        airbrake: random() > 0.5, highG: random() > 0.5,
+        speedAdjust: random() * 2 - 1, afterburner: random() > 0.5,
+        airbrake: random() > 0.5,
       }
       return command
     }, observe)
@@ -51,8 +51,8 @@ describe.each(aircraftIds)('%s Phase 0 invariants', aircraftId => {
       const trace = runTrack(state, 6, (_state, time) => {
         if (Math.round(time * 120) % 30 === 0) command = {
           pitch: random() * 2 - 1, yaw: random() * 2 - 1, roll: random() * 2 - 1,
-          speedAdjust: random() * 2 - 1, psmArm: random() > 0.5, afterburner: random() > 0.5,
-          airbrake: random() > 0.5, highG: random() > 0.5,
+          speedAdjust: random() * 2 - 1, afterburner: random() > 0.5,
+          airbrake: random() > 0.5,
         }
         return command
       }, observe)
@@ -62,9 +62,9 @@ describe.each(aircraftIds)('%s Phase 0 invariants', aircraftId => {
   })
   it('I2/I3: runtime determinism and public replay/version contract', () => {
     const pattern = (tick: number, id: string): PilotCommand => ({ ...neutralCommand(tick, id),
-      psmArm: tick >= 45 && tick < 240, pitch: tick < 150 ? 1 : tick < 240 ? -1 : 0,
+      pitch: tick < 150 ? 1 : tick < 240 ? -1 : 0,
       yaw: tick >= 240 ? 0.5 : 0, speedAdjust: tick < 45 ? -1 : 1,
-      afterburner: tick >= 150 && tick < 240, airbrake: tick < 45, highG: tick < 45,
+      afterburner: tick >= 150 && tick < 240, airbrake: tick < 45 || (tick >= 90 && tick < 240),
     })
     const at60 = runAtFps(60, aircraftId, pattern)
     expect(runAtFps(30, aircraftId, pattern)).toEqual(at60)
@@ -73,10 +73,12 @@ describe.each(aircraftIds)('%s Phase 0 invariants', aircraftId => {
     expect(runFlightReplay(at60.replay)).toEqual(runFlightReplay(at60.replay))
     expect(() => runFlightReplay({ ...at60.replay, profileVersion: 'wrong-version' })).toThrow('Unsupported flight replay')
     expect(() => runFlightReplay({ ...at60.replay, schemaVersion: 999 })).toThrow('Unsupported flight replay')
+    // Phase 6: schema 1 commands carried psmArm/highG and a different Space meaning.
+    expect(() => runFlightReplay({ ...at60.replay, schemaVersion: 1 })).toThrow('Unsupported flight replay')
   })
   it('observation at every substep leaves the complete trace unchanged', () => {
-    const plain = runScenario('cobraC', aircraftId)
-    const observed = runScenario('cobraC', aircraftId, state => { flightInstrumentation(state) })
+    const plain = runScenario('cobra', aircraftId)
+    const observed = runScenario('cobra', aircraftId, state => { flightInstrumentation(state) })
     expect(observed).toEqual(plain)
   })
 })

@@ -51,7 +51,7 @@ export function FlightPage() {
       if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); pause(); return }
       if (e.code === 'KeyR' && !e.repeat) { e.preventDefault(); session.input.clear(); if (session.preset === 'mouse') session.input.engage(); session.resetId++; session.runtime?.reset(); setCameraChanged(false); return }
       if (e.code === 'KeyV') { if (!e.repeat) { session.cameraMode = session.cameraMode === 'horizon' ? 'aircraft' : 'horizon'; setCameraMode(session.cameraMode); setCameraChanged(true) }; return }
-      if (['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'KeyX', 'KeyC', 'Space', 'ShiftLeft', 'ShiftRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); session.input.press(e.code) }
+      if (['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'Space', 'ShiftLeft', 'ShiftRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); session.input.press(e.code) }
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
     const move = (e: MouseEvent) => { if (session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.move(e.movementX, e.movementY) }
@@ -104,7 +104,7 @@ export function FlightPage() {
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
-      <FlightInstruments aircraftId={aircraftId} driver={indicators.hud} />
+      <FlightInstruments driver={indicators.hud} />
       <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
       <div className="flight-actions"><span>{t(cameraMode === 'horizon' ? 'horizonCamera' : 'aircraftCamera')}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />

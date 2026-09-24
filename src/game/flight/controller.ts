@@ -9,7 +9,7 @@ function turnRatePermission(speedAuthority: number, alphaLimitDeg: number, norma
   return speedAuthority + (incidencePermission - speedAuthority) * limiterOpen
 }
 
-/** Feedback against normal path support, before automatic or manual G permission.
+/** Feedback against normal path support, before automatic G permission.
  * Available path support falls continuously with q/separation. This is a rate
  * limit observation, not an engine/TVC capability read by PilotIntent. */
 export function measureControlDemand(command: PilotCommand, flow: AirflowState, separation: number, profile: AircraftFlightProfile, limiterOpen = 0) {
@@ -40,10 +40,10 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
   const { speedAuthority } = demand
   const normalLimit = demand.normalLimit * envelope.gAllowance
   const closedTurnBudget = demand.closedTurnBudget * envelope.gAllowance
-  const highG = envelope.hardTurnBlend
+  const hardTurn = envelope.hardTurnBlend
   const ratePermission = turnRatePermission(speedAuthority, envelope.alphaLimitDeg, profile.aero.alphaNormalDeg, envelope.limiterOpen)
-  const target = { pitch: command.pitch * p.pitchRate * ratePermission * (1 + highG * (profile.maneuver.highGRate - 1)),
-    yaw: command.yaw * p.yawRate * ratePermission * (1 + highG * 0.4),
+  const target = { pitch: command.pitch * p.pitchRate * ratePermission * (1 + hardTurn * (profile.maneuver.highGRate - 1)),
+    yaw: command.yaw * p.yawRate * ratePermission * (1 + hardTurn * 0.4),
     roll: command.roll * p.rollRate * (speedAuthority + (1 - speedAuthority) * envelope.limiterOpen) }
   const requestedTurn = Math.hypot(command.pitch * p.pitchRate * speedAuthority, command.yaw * p.yawRate * speedAuthority)
   const closedScale = requestedTurn > 0 ? Math.min(1, closedTurnBudget / requestedTurn) : 1
@@ -90,7 +90,7 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
       request[axis] = target[axis] * blend / dt
     }
   }
-  return { request, recoveryRequest, servoDamping, normalLimit, highG }
+  return { request, recoveryRequest, servoDamping, normalLimit, hardTurn }
 }
 
 /** Project only the outward component of the COMBINED requested nose rotation.

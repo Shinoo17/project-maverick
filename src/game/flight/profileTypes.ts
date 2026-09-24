@@ -120,17 +120,6 @@ export interface StallProfile {
 }
 
 export interface ManeuverProfile {
-  /** Enable the temporary debug C comparison path. Automatic permission is independent. */
-  psmEnabled: boolean
-  // PSM entry envelope: speed in m/s, altitude in metres.
-  entryMin: number
-  entryMax: number
-  minAltitude: number
-
-  /** Leave PSM above this speed (m/s); must exceed entryMax for hysteresis. */
-  exitSpeed: number
-  /** Seconds for 99% of the legacy path-grip blend. Not angular authority or a duration limit. */
-  blendSeconds: number
   /** Separated-flow alignment response (1/s), independent of normal flight. */
   pathResponse: number
   /** Dimensionless grip endpoints: high incidence and reattachment. */
@@ -140,15 +129,9 @@ export interface ManeuverProfile {
   recoveryAcceleration: number
   /** High-incidence separated-flow lateral budget (m/s²). */
   lateralAcceleration: number
-  /** Keep the original 0.3 radians exactly; 17° was a rounded design label. */
-  recoveryIncidenceRad: number
-  recoverySpeedMps: number
-  /** High-G speed band and edge transition width, all in simulation m/s. */
-  highGMinSpeedMps: number
-  highGMaxSpeedMps: number
-  highGSpeedFadeMps: number
 
-  // High-G rate/drag multipliers and afterburner time budgets (s).
+  // Automatic hard-turn rate/drag multipliers (EnvelopeFactors.hardTurnBlend)
+  // and afterburner time budgets (s).
   highGRate: number
   highGDrag: number
   burnerSeconds: number

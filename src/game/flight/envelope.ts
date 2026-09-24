@@ -26,9 +26,8 @@ export interface LimiterStep {
   previous: number
   target: number
   rate: number
-  automatic: boolean
 }
-type EnvelopeState = Pick<AircraftState, 'stall' | 'maneuver' | 'limiterOpen' | 'pathAssistWeight' | 'intent' | 'orientation'>
+type EnvelopeState = Pick<AircraftState, 'stall' | 'limiterOpen' | 'pathAssistWeight' | 'intent' | 'orientation'>
 
 /** 1 at knife-edge above the speed band, 0 wings-level or inverted. */
 export function bankedDriftWeight(orientation: EnvelopeState['orientation'], flow: AirflowState, profile: AircraftFlightProfile) {
@@ -57,8 +56,7 @@ export function interpretEnvelope(state: EnvelopeState, flow: AirflowState, prof
   // Owner-approved P4-1 resolution: saturation gates G, not low-energy breakout.
   // At intended entry speeds, faithful S can be zero while E is high.
   const intent = MathUtils.clamp(D * permission, 0, 1)
-  // Space remains a smoothed manual request into the same allowance as automatic G.
-  const hardTurn = Math.max(D * S * (1 - E), state.maneuver.highG)
+  const hardTurn = D * S * (1 - E)
   const bankedDrift = bankedDriftWeight(state.orientation, flow, profile)
   const r = profile.recovery
   return {
@@ -76,13 +74,12 @@ export function interpretEnvelope(state: EnvelopeState, flow: AirflowState, prof
   }
 }
 
-export function stepEnvelope(state: EnvelopeState, flow: AirflowState, profile: AircraftFlightProfile, dt: number, debugOpen: boolean) {
+export function stepEnvelope(state: EnvelopeState, flow: AirflowState, profile: AircraftFlightProfile, dt: number) {
   const envelope = interpretEnvelope(state, flow, profile), b = profile.breakout
   const previous = state.limiterOpen, target = envelope.limiterTarget
   const rate = target > previous ? b.openRate * (1 + b.brakeBoost * state.intent.brakeIntent + b.powerBoost * state.intent.powerIntent) : b.closeRate
-  // C alone may jump open for comparison; every automatic step, including release
-  // from C, follows the same exponential. No threshold latch or snap-to-zero.
-  state.limiterOpen = debugOpen ? 1 : previous + (target - previous) * (1 - Math.exp(-rate * dt))
+  // Every step follows the same exponential. No threshold latch, snap-to-zero or manual open.
+  state.limiterOpen = previous + (target - previous) * (1 - Math.exp(-rate * dt))
   const assistRelease = state.limiterOpen * Math.max(state.intent.brakeIntent,
     state.intent.decelerationIntent * 0.65, envelope.continuation) * flow.confidence
   const assistTarget = 1 - assistRelease * (1 - envelope.bankedDrift * profile.bankedDrift.pathGrip)
@@ -90,7 +87,7 @@ export function stepEnvelope(state: EnvelopeState, flow: AirflowState, profile: 
   envelope.pathAssistWeight = state.pathAssistWeight
   envelope.limiterOpen = state.limiterOpen
   envelope.alphaLimitDeg = alphaLimit(state.limiterOpen, envelope.bankedDrift, profile)
-  return { envelope, limiterStep: { previous, target, rate, automatic: !debugOpen } satisfies LimiterStep }
+  return { envelope, limiterStep: { previous, target, rate } satisfies LimiterStep }
 }
 
 export type EnvelopeLabel = 'NORMAL' | 'HIGH_AOA' | 'POST_STALL' | 'RECOVERING' | 'DEPARTED'

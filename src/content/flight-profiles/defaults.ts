@@ -51,27 +51,13 @@ export const stallDefaults = {
   separationRecoverySeconds: 1.2,
 } satisfies Partial<StallProfile>
 
-// C comparison remains opt-in. Path parameters now describe continuous flow;
-// automatic permission and physical capability do not depend on psmEnabled.
+// Path parameters describe continuous flow; there is no PSM entry envelope.
 export const maneuverDefaults: ManeuverProfile = {
-  psmEnabled: false,
-  entryMin: 65,
-  entryMax: 115,
-  minAltitude: 150,
-
-  exitSpeed: 135,
-  blendSeconds: 0.6,
-
   pathResponse: 1.5,
   activeGrip: 0.08,
   recoveryGrip: 2.5,
   recoveryAcceleration: 70,
   lateralAcceleration: 55,
-  recoveryIncidenceRad: 0.3,
-  recoverySpeedMps: 60,
-  highGMinSpeedMps: 75,
-  highGMaxSpeedMps: 190,
-  highGSpeedFadeMps: 15,
 
   highGRate: 1.4,
   highGDrag: 2,

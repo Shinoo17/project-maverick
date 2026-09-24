@@ -2,7 +2,7 @@ import type { SessionConfig } from '../../content/schemas'
 import { validateSession } from '../../content/validate'
 import type { WorldState } from '../state/WorldState'
 import { FixedClock, FLIGHT_STEP } from './clock'
-import { neutralCommand, type PilotCommand } from './commands'
+import { commandSchemaVersion, neutralCommand, type PilotCommand } from './commands'
 import { stepFlight } from '../flight/stepFlight'
 import { createPracticeState, practiceSpawns, stepPractice, type PracticePreset } from '../playground/practice'
 import { createThrustVectoringState } from '../flight/thrustVectoring'
@@ -84,7 +84,7 @@ export class GameRuntime {
     this.status = 'paused'; this.clock.reset()
   }
   exportReplay() {
-    return { schemaVersion: 1, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track) }
+    return { schemaVersion: commandSchemaVersion, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track) }
   }
   reset(preset: PracticePreset = this.preset) {
     if (this.status === 'disposed') return

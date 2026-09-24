@@ -15,7 +15,6 @@ import { Quaternion, Vector3, type Camera } from 'three'
 import type { AircraftState, Vec3 } from '../../game/state/WorldState'
 import { arcadeSpeed } from '../../game/flight/speed'
 import { getFlightProfile } from '../../game/flight/profile'
-import { aircraft } from '../../content/aircraft'
 import { trainingMap } from '../../content/maps'
 import { burnerStatus, flightAttitude } from './telemetry'
 import { createGlassPainter, type BurnerState, type GlassState } from './hudPainter'
@@ -54,13 +53,12 @@ export function glassState({ camera, state, position, orientation, velocity }: H
   }
 }
 
-export const FlightInstruments = memo(function FlightInstruments({ driver, aircraftId = aircraft[0].id }: { driver: RefObject<HudDriver | null>; aircraftId?: string }) {
+export const FlightInstruments = memo(function FlightInstruments({ driver }: { driver: RefObject<HudDriver | null> }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const element = canvas.current, frame = element?.parentElement
     if (!element || !frame) return
-    const maneuverProfile = getFlightProfile(aircraftId).maneuver
-    const painter = createGlassPainter(element, { speedBand: maneuverProfile.psmEnabled ? { min: arcadeSpeed(maneuverProfile.entryMin), max: arcadeSpeed(maneuverProfile.entryMax) } : null })
+    const painter = createGlassPainter(element)
     let last: GlassState = standby
     // Sized from the HUD's own box, so a point projected through the flight camera lands on
     // the same pixel as the WebGL view; the ratio is re-read on zoom or display changes.
@@ -76,7 +74,7 @@ export const FlightInstruments = memo(function FlightInstruments({ driver, aircr
     observer.observe(frame)
     driver.current = hudFrame => { last = glassState(hudFrame); painter.draw(last) }
     return () => { observer.disconnect(); driver.current = null }
-  }, [driver, aircraftId])
+  }, [driver])
   return <canvas ref={canvas} className="hud-glass" aria-hidden="true" />
 })
 

@@ -1,15 +1,6 @@
-import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { flightDefaults, maneuverDefaults, stallDefaults } from '../src/content/flight-profiles/defaults'
 import { flightProfiles, getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
-import { stepFlight } from '../src/game/flight/stepFlight'
-import { stepManeuvers } from '../src/game/flight/maneuvers'
-import { GameRuntime } from '../src/game/runtime/GameRuntime'
-import { neutralCommand } from '../src/game/runtime/commands'
-
-function createState() {
-  return new GameRuntime({ mode: 'playground', aircraftIds: ['su57'] }).snapshot().aircraft[0]
-}
 
 describe('aircraft flight configuration', () => {
   it('validates every registered profile', () => {
@@ -29,7 +20,7 @@ describe('aircraft flight configuration', () => {
     try {
       f22.flight.acceleration = 10
       f22.flight.rateResponse = 2
-      f22.maneuver.entryMin = 90
+      f22.maneuver.lateralAcceleration = 90
       f22.maneuver.activeGrip = 0.2
       f22.stall.stallSpeedKph = 200
       f22.stall.separationEntrySeconds = 1
@@ -40,106 +31,6 @@ describe('aircraft flight configuration', () => {
       Object.assign(f22.maneuver, previousManeuver)
       Object.assign(f22.stall, previousStall)
     }
-  })
-
-  it('defaults to no PSM while retaining normal flight, high-G and afterburner', () => {
-    const profile = getFlightProfile('su57')
-    const previous = profile.maneuver
-    profile.maneuver = { ...maneuverDefaults }
-    try {
-      expect(profile.maneuver.psmEnabled).toBe(false)
-      const plain = createState()
-      plain.velocity.x = 100
-      const held = structuredClone(plain)
-      for (let tick = 0; tick < 120; tick++) {
-        const command = { ...neutralCommand(tick, plain.id), pitch: 0.3 }
-        stepFlight(plain, command, 1 / 60)
-        stepFlight(held, { ...command, psmArm: true }, 1 / 60)
-        expect(held.maneuver.phase).toBe('normal')
-        expect(held.maneuver.blocked).toBe('unsupported')
-      }
-      expect(held.position).toEqual(plain.position)
-      expect(held.velocity).toEqual(plain.velocity)
-      expect(held.orientation).toEqual(plain.orientation)
-
-      const state = createState()
-      stepFlight(state, {
-        ...neutralCommand(0, state.id),
-        psmArm: true,
-        pitch: 0.5,
-        highG: true,
-        afterburner: true,
-      }, 1 / 60)
-      expect(state.maneuver.phase).toBe('normal')
-      expect(state.maneuver.highG).toBeGreaterThan(0)
-      expect(state.maneuver.burnerActive).toBe(true)
-    } finally {
-      profile.maneuver = previous
-    }
-  })
-
-  it('supports narrower legacy presentation gates without returning generic powered rates', () => {
-    const profile = getFlightProfile('su57')
-    const previous = profile.maneuver
-    profile.maneuver = {
-      ...maneuverDefaults,
-      psmEnabled: true,
-      entryMin: 95,
-      entryMax: 105,
-      minAltitude: 400,
-      exitSpeed: 115,
-    }
-    try {
-      validateFlightProfile(profile)
-      for (const [speed, altitude, blocked] of [
-        [94, 400, 'speed'],
-        [106, 400, 'speed'],
-        [100, 399, 'altitude'],
-        [95, 400, 'none'],
-        [105, 400, 'none'],
-      ] as const) {
-        const state = createState()
-        state.position.y = altitude
-        state.velocity.x = speed
-        const command = { ...neutralCommand(0, state.id), psmArm: true, pitch: 1 }
-        stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
-        expect(state.maneuver.blocked).toBe(blocked)
-        expect(state.maneuver.phase).toBe(blocked === 'none' ? 'active' : 'normal')
-      }
-
-      const state = createState()
-      const command = { ...neutralCommand(0, state.id), psmArm: true, pitch: 1, yaw: 1 }
-      state.velocity.x = 100
-      const assist = stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
-      expect(assist).not.toHaveProperty('pitch')
-      expect(assist).not.toHaveProperty('yaw')
-      for (let tick = 0; tick < 600; tick++) stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
-      expect(state.maneuver.phase).toBe('active')
-      state.velocity.x = 116
-      stepManeuvers(state, command, 1 / 60, observeAirflow(state, profile))
-      expect(state.maneuver.phase).toBe('recovery')
-      state.velocity.x = 100
-      for (let tick = 0; tick < Math.ceil(Math.log(1e9) * profile.maneuver.blendSeconds * 60) + 2; tick++) stepManeuvers(state, { ...command, psmArm: false }, 1 / 60, observeAirflow(state, profile))
-      expect(state.maneuver.phase).toBe('normal')
-    } finally {
-      profile.maneuver = previous
-    }
-  })
-
-  it('allows disabled PSM budgets but rejects an unusable enabled envelope', () => {
-    const profile = structuredClone(getFlightProfile('su57'))
-    Object.assign(profile.maneuver, {
-      psmEnabled: false,
-      entryMin: 0,
-      entryMax: 0,
-
-    })
-    expect(() => validateFlightProfile(profile)).not.toThrow()
-    profile.maneuver.psmEnabled = true
-    expect(() => validateFlightProfile(profile)).toThrow('maneuver.entryMin')
-
-    profile.maneuver = { ...maneuverDefaults, psmEnabled: true, entryMin: 100, entryMax: 95 }
-    expect(() => validateFlightProfile(profile, 'test-aircraft')).toThrow('test-aircraft.maneuver.entryMax')
   })
 
   it.each([

@@ -1,7 +1,6 @@
 import { observeAirflow } from '../../game/flight/airflow'
 import { envelopeLabel, interpretEnvelope } from '../../game/flight/envelope'
 import { flightInstrumentation } from '../../game/flight/instrumentation'
-import { arcadeSpeed } from '../../game/flight/speed'
 import { getFlightProfile } from '../../game/flight/profile'
 import { aircraft } from '../../content/aircraft'
 import { useTranslation } from 'react-i18next'
@@ -11,7 +10,7 @@ export const lessonLabels = ['lesson0', 'lesson1', 'lesson2', 'lesson3', 'lesson
 const lessonHints = ['lessonHint1', 'lessonHint1', 'lessonHint2', 'lessonHint3', 'lessonHint4', 'lessonHint5', 'lessonHint6'] as const
 export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: { state: AircraftState | null; practice?: PracticeState; lesson: number; cameraChanged: boolean; lab: boolean }) {
   const { t } = useTranslation()
-  const profile = getFlightProfile(state?.aircraftId ?? aircraft[0].id), maneuverProfile = profile.maneuver
+  const profile = getFlightProfile(state?.aircraftId ?? aircraft[0].id)
   const instrumentation = lab && state ? flightInstrumentation(state) : null
   const axes = (value: { pitch: number; yaw: number; roll: number }, scale = 1) => [value.pitch, value.yaw, value.roll].map(v => (v * scale).toFixed(2)).join(' / ')
   const length = (v: { x: number; y: number; z: number }) => Math.hypot(v.x, v.y, v.z).toFixed(2)
@@ -20,20 +19,16 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
     !!practice && practice.rings > 0 && Math.min(practice.pitch, practice.roll, practice.yaw) > 0.2,
     !!practice && practice.brakeSeconds >= 1,
     !!practice && practice.highGDegrees >= 90,
-    !!practice?.recovered, (m?.completed ?? 0) > 0][lesson]
+    !!practice?.recovered, (practice?.highAoaRecoveries ?? 0) > 0][lesson]
   const status = state ? envelopeLabel(interpretEnvelope(state, observeAirflow(state, profile), profile), state.intent.activity) : 'NORMAL'
   const speed = state ? Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z) : 0
-  const low = !!state && state.position.y < maneuverProfile.minAltitude
-  const outsideSpeed = speed < maneuverProfile.entryMin || speed > maneuverProfile.entryMax
-  const psmReady = maneuverProfile.psmEnabled && !!state && !low && !outsideSpeed
   return <>
     <section className="maneuver-instrument" data-details={lab || lesson > 0} data-phase={status} aria-label={t('maneuver')}>
       <div className="maneuver-status"><span>{t('maneuver')}</span><strong>{t(`envelope_${status}`)}</strong></div>
       <p>{t(status === 'RECOVERING' || status === 'DEPARTED' ? 'hudStallRecovering' : 'automaticPsmHint')}</p>
-      {lab && maneuverProfile.psmEnabled && <div className="psm-speed-band" data-ready={psmReady}>{t('debugC')} · {t('psmBand', { min: Math.round(arcadeSpeed(maneuverProfile.entryMin)), max: Math.round(arcadeSpeed(maneuverProfile.entryMax)) })}</div>}
       <div className="maneuver-readings"><span>{t('noseOffPath')} <b>{state ? `${(m?.alpha ?? 0).toFixed(0)}°` : '—'}</b></span></div>
     </section>
-    {lesson > 0 && <section className="flight-lesson" aria-label={t('practiceLesson')}><span>{t(lessonLabels[lesson])}</span><strong role="status">{complete ? t('lessonDone') : t(lessonHints[lesson])}</strong><small>{t('ringsPassed', { count: practice?.rings ?? 0 })} · {t('psmCompleted', { count: m?.completed ?? 0 })}</small></section>}
+    {lesson > 0 && <section className="flight-lesson" aria-label={t('practiceLesson')}><span>{t(lessonLabels[lesson])}</span><strong role="status">{complete ? t('lessonDone') : t(lessonHints[lesson])}</strong><small>{t('ringsPassed', { count: practice?.rings ?? 0 })} · {t('psmCompleted', { count: practice?.highAoaRecoveries ?? 0 })}</small></section>}
     {lab && state && instrumentation && <dl className="flight-lab" aria-label={t('flightLab')}>
       <div><dt>{t('worldSpeed')}</dt><dd>{speed.toFixed(1)} m/s</dd></div>
       <div><dt>{t('pathTurn')}</dt><dd>{m!.pathRate.toFixed(1)} °/s</dd></div>
@@ -79,7 +74,6 @@ export function PlaygroundHud({ state, practice, lesson, cameraChanged, lab }: {
       <div><dt>{t('labPowerIntent')}</dt><dd>{state.intent.powerIntent.toFixed(2)}</dd></div>
       <div><dt>{t('labSeparation')}</dt><dd>{instrumentation.envelope.separation.toFixed(3)}</dd></div>
       <div><dt>{t('labLimiter')}</dt><dd>{instrumentation.envelope.limiterOpen.toFixed(3)}</dd></div>
-      <div><dt>{t('lastCobra')}</dt><dd>{m!.peakAlpha.toFixed(0)}° · {m!.entrySpeed.toFixed(0)} → {m!.exitSpeed.toFixed(0)} m/s</dd></div>
     </dl>}
   </>
 }

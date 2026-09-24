@@ -115,19 +115,6 @@ describe('forgiving stall flight', () => {
     }
   })
 
-  it('works with PSM disabled, without granting assist to a held C', () => {
-    const profile = getFlightProfile('su57'), previous = profile.maneuver.psmEnabled
-    profile.maneuver.psmEnabled = false
-    try {
-      const plain = pose(240, 0, 'su57'), held = structuredClone(plain)
-      fly(plain, 2, { pitch: 0.3 })
-      fly(held, 2, { pitch: 0.3, psmArm: true })
-      expect(held).toEqual(plain)
-      expect(held.stall.severity).toBeGreaterThan(0)
-      expect(held.maneuver.phase).toBe('normal')
-      expect(held.maneuver.blocked).toBe('unsupported')
-    } finally { profile.maneuver.psmEnabled = previous }
-  })
 
 })
 

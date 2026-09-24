@@ -28,10 +28,9 @@ function fly(state: ReturnType<typeof aircraft>, seconds: number, command: Parti
 describe('normal flight grip', () => {
   it('keeps the path with the nose throughout sustained and combined turns above the stall envelope', () => {
     for (const speed of [90, 130, 160, 200, 240]) {
-      for (const command of [{ pitch: 1 }, { yaw: -1 }, { pitch: 1, yaw: 1, roll: 0.4 }, { pitch: 1, highG: true }]) {
+      for (const command of [{ pitch: 1 }, { yaw: -1 }, { pitch: 1, yaw: 1, roll: 0.4 }]) {
         const state = aircraft(speed)
         expect(fly(state, 6, command).peakSlip, `speed=${speed}, command=${JSON.stringify(command)}`).toBeLessThan(10)
-        expect(state.maneuver.phase).toBe('normal')
       }
     }
   })

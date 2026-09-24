@@ -2,7 +2,8 @@ import { runPsmNeutralRelease } from './releaseSafety'
 import { phase2Playtest, targets, targetStatus } from './targets'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { it } from 'vitest'
-import { aircraftIds, scenarioNames, runScenario, runTrack, replayGolden, scenarioSetup, type Golden } from './harness'
+import { aircraftIds, archivedScenarioNames, liveScenario, runScenario, runTrack, replayGolden, scenarioSetup, type Golden } from './harness'
+import { envelopeLabel } from '../../src/game/flight/envelope'
 import { measure } from './metrics'
 import { observeAirflow } from '../../src/game/flight/airflow'
 import { getFlightProfile, flightProfileVersion } from '../../src/game/flight/profile'
@@ -15,8 +16,9 @@ it('reports Phase 2 deltas, ablations and exact substep force ledgers without fe
   const baseline = JSON.parse(readFileSync(new URL('./phase1-metrics.json', import.meta.url), 'utf8')) as {
     results: { aircraftId: string; scenarios: { scenario: string; metrics: { id: string; value: number | null }[] }[] }[]
   }
-  const comparisons = aircraftIds.flatMap(id => scenarioNames.map(scenario => {
-    const trace = runScenario(scenario, id)
+  // Phase 6: an archived *C track is compared with its automatic twin; C no longer exists.
+  const comparisons = aircraftIds.flatMap(id => archivedScenarioNames.map(scenario => {
+    const trace = runScenario(liveScenario(scenario), id)
     const golden: Golden = JSON.parse(readFileSync(new URL(`./golden/${scenario}.${id}.json`, import.meta.url), 'utf8'))
     const replay = replayGolden(golden)
     const old = baseline.results.find(a => a.aircraftId === id)!.scenarios.find(s => s.scenario === scenario)!
@@ -54,7 +56,7 @@ it('reports Phase 2 deltas, ablations and exact substep force ledgers without fe
       legacyPsm: forward.angleTo(oldPath) * 180 / Math.PI,
       legacyTelemetry: forward.angleTo(velocity) * 180 / Math.PI }
   }
-  const observationMigration = aircraftIds.flatMap(id => scenarioNames.map(scenario => {
+  const observationMigration = aircraftIds.flatMap(id => archivedScenarioNames.map(scenario => {
     const golden: Golden = JSON.parse(readFileSync(new URL(`./golden/${scenario}.${id}.json`, import.meta.url), 'utf8'))
     const values = golden.samples.map(sample => migrationAt(sample.state, id))
     return { aircraftId: id, scenario,
@@ -102,18 +104,18 @@ it('reports Phase 2 deltas, ablations and exact substep force ledgers without fe
     const { trace } = runPsmNeutralRelease(id, speedAdjust)
     // Tuning threshold only: actual no-q contraction is checked from profile + epsilon in CI.
     const settledRate = 0.05
+    const label = (sample: typeof trace.samples[number]) => sample.state.flightForces ? envelopeLabel(sample.state.flightForces.envelope, sample.state.intent.activity) : null
     const lastUnsettled = trace.samples.reduce((last, s, i) => Math.hypot(...Object.values(s.state.rates)) > settledRate ? i : last, -1)
     const snapshot = (sample: typeof trace.samples[number]) => ({ time: sample.time,
       ...observeAirflow(sample.state, getFlightProfile(id)), rates: sample.state.rates,
-      separation: sample.state.stall.severity, phase: sample.state.maneuver.phase,
-      completed: sample.state.maneuver.completed, altitude: sample.state.position.y,
+      separation: sample.state.stall.severity, label: label(sample), altitude: sample.state.position.y,
       lastStep: sample.state.flightForces ?? null,
     })
-    writeFileSync(new URL(`traces/neutralAfterC5.${id}.W${speedAdjust}.jsonl`, out), trace.samples.map(s => JSON.stringify(snapshot(s))).join('\n') + '\n')
+    writeFileSync(new URL(`traces/neutralAfterBrake5.${id}.W${speedAdjust}.jsonl`, out), trace.samples.map(s => JSON.stringify(snapshot(s))).join('\n') + '\n')
     const final = trace.samples.at(-1)!
     return { aircraftId: id, speedAdjust, settledRate,
       settledAt: trace.samples[lastUnsettled + 1]?.time ?? null,
-      normalAt: trace.samples.find(s => s.state.maneuver.phase === 'normal')?.time ?? null,
+      normalAt: trace.samples.find(s => label(s) === 'NORMAL')?.time ?? null,
       alive: final.state.alive, stopReason: final.state.stopReason ?? null, duration: final.time,
       samples: [0, 2, 4, 6, 10, 20, 40].map(time => trace.samples.find(s => s.time === time))
         .filter((s): s is typeof trace.samples[number] => !!s).map(snapshot), final: snapshot(final) }
@@ -127,12 +129,13 @@ it('reports Phase 2 deltas, ablations and exact substep force ledgers without fe
   for (const row of comparisons) for (const metric of row.metrics) md.push(`| ${row.aircraftId} / ${row.scenario} / ${metric.id} (${metric.unit}) | ${fmt(metric.before)} | ${fmt(metric.after)} | ${fmt(metric.delta)} | ${fmt(metric.openLoopAfter)} |`)
   md.push('', '## Tail slide extended to 30 s', '', '| Aircraft | Entry pitch | Reverse at | Head below horizon | After apex | Peak °/s |', '|---|---:|---:|---:|---:|---:|')
   for (const t of tailSlides) md.push(`| ${t.aircraftId} | ${t.pitch} | ${fmt(t.firstReverse)} | ${fmt(t.flipTime)} | ${fmt(t.flipAfterApex)} | ${fmt(t.maxRate)} |`)
-  md.push('', '## Neutral release after C + pull + W for 5 s', '',
-    '| Aircraft | W after release | Settled below 0.05 rad/s | First normal | Last pitch rate | Stop |',
+  md.push('', '## Neutral release after Airbrake + pull + W for 5 s', '',
+    '| Aircraft | W after release | Settled below 0.05 rad/s | First NORMAL label | Last pitch rate | Stop |',
     '|---|---:|---:|---:|---:|---|')
   for (const row of psmReleases) md.push(`| ${row.aircraftId} | ${row.speedAdjust} | ${fmt(row.settledAt)} | ${fmt(row.normalAt)} | ${fmt(row.final.rates.pitch)} | ${row.stopReason ?? 'alive'} at ${fmt(row.duration)} s |`)
   md.push('', 'Release ablations and tail-slide samples: phase2.json. Every substep ledger: traces/*.jsonl.',
     'Ledger controller includes stabilityDamping; add controller + tvc + naturalRestoring + naturalDamping once to reconstruct rate change.',
-    'B8 reports incidence reduction during a 0.2 s neutral/no-C window inside the Phase 5 recovery delay. B9 and Phase 2 acceptance remain pending owner playtest.')
+    'Phase 6: archived *C scenarios run live as their automatic twins (Airbrake + Afterburner for C); the archived-input column replays the recorded stick without C.',
+    'B8 reports incidence reduction during a 0.2 s neutral window inside the Phase 5 recovery delay. B9 and Phase 2 acceptance remain pending owner playtest.')
   writeFileSync(new URL('phase2.md', out), md.join('\n') + '\n')
 })

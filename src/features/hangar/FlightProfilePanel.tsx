@@ -14,8 +14,7 @@ export function FlightProfilePanel({ aircraft }: { aircraft: AircraftDefinition 
     [text.profileYaw, `${Math.round(flight.yawRate * 180 / Math.PI)} °/s`],
     [text.profilePsm, thrustVectoring ? `${dryYawCapacity.toFixed(2)} rad/s²` : text.profileUnsupported],
     [text.profileRecovery, `${maneuver.recoveryAcceleration.toFixed(1)} m/s²`],
-    [text.profileRecoveryCondition, `< ${(maneuver.recoveryIncidenceRad * 180 / Math.PI).toFixed(2)}° · > ${Math.round(arcadeSpeed(maneuver.recoverySpeedMps))} ${text.arcadeUnit}`],
-    [text.profilePsmControl, maneuver.psmEnabled ? text.profileHoldC : text.profileUnsupported],
+    [text.profilePsmControl, text.profileAutomatic],
   ]
   return <section id="hangar-panel-flight" aria-labelledby="hangar-tab-flight" className="hangar-section hangar-content" role="tabpanel">
     <h2>{text.gameProfile}</h2>

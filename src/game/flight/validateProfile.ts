@@ -130,18 +130,8 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
   for (const key of ['airbrakeCrossflow', 'controlPower'] as const) {
     if (flight[key] > 1) throw new Error(`${path}.flight.${key}: expected 0..1`)
   }
-  for (const key of ['lateralAcceleration', 'recoveryIncidenceRad', 'recoverySpeedMps',
-    'highGMinSpeedMps', 'highGMaxSpeedMps', 'highGSpeedFadeMps'] as const) {
-    if (!Number.isFinite(maneuver[key])) throw new Error(`${path}.maneuver.${key}: expected finite number`)
-    nonnegative(maneuver[key], `${path}.maneuver.${key}`)
-  }
-  positive(maneuver.highGSpeedFadeMps, `${path}.maneuver.highGSpeedFadeMps`)
-  if (maneuver.highGMaxSpeedMps <= maneuver.highGMinSpeedMps) {
-    throw new Error(`${path}.maneuver.highGMaxSpeedMps: must exceed highGMinSpeedMps`)
-  }
-  if (maneuver.recoveryIncidenceRad > Math.PI) {
-    throw new Error(`${path}.maneuver.recoveryIncidenceRad: must not exceed PI`)
-  }
+  if (!Number.isFinite(maneuver.lateralAcceleration)) throw new Error(`${path}.maneuver.lateralAcceleration: expected finite number`)
+  nonnegative(maneuver.lateralAcceleration, `${path}.maneuver.lateralAcceleration`)
 
   for (const key of ['minPoweredMps', 'maxThrust', 'gravity', 'pitchRate', 'yawRate', 'rollRate'] as const) {
     positive(flight[key], `${path}.flight.${key}`)
@@ -172,20 +162,8 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
 
   positive(maneuver.burnerSeconds, `${path}.maneuver.burnerSeconds`)
   positive(maneuver.burnerRecharge, `${path}.maneuver.burnerRecharge`)
-  positive(maneuver.blendSeconds, `${path}.maneuver.blendSeconds`)
   for (const [key, value] of Object.entries(maneuver)) {
     if (typeof value === 'number') nonnegative(value, `${path}.maneuver.${key}`)
-  }
-  // Disabled aircraft may leave PSM budgets at zero; shared high-G/burner tuning
-  // remains valid independently. Enabled PSM requires a usable entry envelope.
-  if (maneuver.psmEnabled) {
-    positive(maneuver.entryMin, `${path}.maneuver.entryMin`)
-    if (maneuver.entryMax <= maneuver.entryMin) {
-      throw new Error(`${path}.maneuver.entryMax: must exceed entryMin`)
-    }
-    if (maneuver.exitSpeed <= maneuver.entryMax) {
-      throw new Error(`${path}.maneuver.exitSpeed: must exceed entryMax`)
-    }
   }
 
   if (thrustVectoring) {

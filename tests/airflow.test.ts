@@ -99,7 +99,7 @@ describe('shared airflow observation', () => {
     state.position.y = 2000
     state.velocity = { x: 85, y: -35, z: 20 }
     const start = observeAirflow(state, profile)
-    stepFlight(state, { ...neutralCommand(0, state.id), pitch: 1, psmArm: true, speedAdjust: 1 }, FLIGHT_STEP)
+    stepFlight(state, { ...neutralCommand(0, state.id), pitch: 1, airbrake: true, speedAdjust: 1 }, FLIGHT_STEP)
     const end = observeAirflow(state, profile), telemetry = flightInstrumentation(state)
     expect(state.stall.aoaDeg).toBe(start.alphaDeg)
     expect(end.alphaDeg).not.toBe(start.alphaDeg)
@@ -113,22 +113,18 @@ describe('shared airflow observation', () => {
 })
 
 describe('read-only envelope observation', () => {
-  it('keeps debug limiter permission independent of legacy path smoothing', () => {
+  it('reads flow, separation and pilot intent only; no manual G or phase input remains', () => {
     const state = createAircraft('f22'), profile = getFlightProfile('f22')
     state.velocity = { x: 0, y: -100, z: 0 }
     state.stall.severity = 0.4
-    state.maneuver.blend = 0.6
-    state.maneuver.highG = 0.5
-    state.maneuver.phase = 'recovery'
     const flow = observeAirflow(state, profile)
     expect(interpretEnvelope(state, flow, profile)).toEqual({
       highAoa: 1, separation: 0.4, intent: 0, limiterOpen: 0, limiterTarget: 0,
       energyPermission: 1 - MathUtils.smoothstep(flow.dynamicPressure, profile.breakout.qLow, profile.breakout.qHigh),
-      alphaLimitDeg: 20, gAllowance: 1.3, hardTurnBlend: 0.5, continuation: 0, pathAssistWeight: 1, bankedDrift: 0, recoveryAssist: 0,
+      alphaLimitDeg: 20, gAllowance: 1, hardTurnBlend: 0, continuation: 0, pathAssistWeight: 1, bankedDrift: 0, recoveryAssist: 0,
     })
     state.velocity = { x: 0, y: 0, z: 0 }
     expect(interpretEnvelope(state, observeAirflow(state, profile), profile).highAoa).toBe(0)
-    state.maneuver.phase = 'normal'
     expect(interpretEnvelope(state, flow, profile)).not.toHaveProperty('stabilityAssist')
   })
 
@@ -145,8 +141,8 @@ describe('read-only envelope observation', () => {
   })
 
   it.each(aircraftIds)('%s observations at every substep leave the full flight trace unchanged', id => {
-    const plain = runScenario('kulbitC', id)
-    const observed = runScenario('kulbitC', id, state => {
+    const plain = runScenario('kulbit', id)
+    const observed = runScenario('kulbit', id, state => {
       const profile = getFlightProfile(id), flow = observeAirflow(state, profile)
       interpretEnvelope(state, flow, profile)
       flightVaporConditions(state)

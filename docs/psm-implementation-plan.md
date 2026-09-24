@@ -1,6 +1,6 @@
 # PSM / High-AoA / TVC — Implementation Plan (Rev. 4)
 
-> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5 recovery assist is delivered; see [Phase 5 report](psm-phase5-implementation.md). Phase 6–9 remain pending. The original planning status below is historical.
+> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5 recovery assist is delivered; see [Phase 5 report](psm-phase5-implementation.md). Phase 6 legacy-gate removal is delivered; see [Phase 6 report](psm-phase6-implementation.md). Phase 7–9 remain pending. The original planning status below is historical.
 
 > **Rev. 4 — 21 ก.ย. 2026: owner อนุมัติทิศทาง Jet Drift / Implicit PSM แล้ว**
 > เริ่มงานถัดไปจาก [Jet Drift implementation amendment](jet-drift-implementation-plan.md): baseline capture → Phase 4.5A (entry/path assist) → 4.5B (continuation/cross-axis) → 4.5C (braking/power/work) → 5 → 6 → 8 → 7 → 9.
@@ -502,6 +502,9 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **ไฟล์:** `recovery.ts` (ใหม่), `envelope.ts`, `stepFlight.ts`, profiles
 
 ### Phase 6 — Remove legacy gates
+
+**Status: delivered** (`p6-legacy-gates-1`, command schema 2, [report](psm-phase6-implementation.md)). `maneuvers.ts` keeps airbrake smoothing only; burner stays in `engine.ts`. The FlightCamera phase fallback was removed here, not in Phase 7, because the phase field no longer exists. Human playtest pending.
+
 - `PilotCommand`: ลบ `psmArm`, `highG` (replay format → bump schema/profile version)
 - ลบ phase machine (`maneuvers.ts` เหลือ burner/airbrake หรือย้ายเข้า `engine.ts`)
 - Space = Air Brake; X ว่าง; Shift contextual (burner boost ใน §2 + governor); Q/E ramp
@@ -571,7 +574,7 @@ ID คงที่; คอลัมน์ Phase = phase ที่เริ่ม
 | I18 | **Specific-energy bound (Rev. 4)**: Δ(v²/2 + g·h) ≤ ∫(a_thrust · v)dt − dissipated drag/brake work + ε ต่อ step. ใช้ force/displacement integration ที่สอดคล้องกัน; vector brake ต้อง dissipative. แก้หน่วยจากสูตรเดิมที่ขาด speed ใน thrust work | ทุก tick; vector work coverage เพิ่ม 4.5C | 3 / 4.5C |
 | I19 | **No instant path reversal จาก engine/lateral force**: ส่วนของ velocity heading rate ที่มาจาก engine force + lateral path force ≤ cap จาก profile (`pathRateFloorMps`) ทุก speed — **ไม่รวม gravity** (ที่ 5 m/s gravity เดียวก็หมุน velocity ได้ ≈ g/v ≈ 2 rad/s ซึ่งถูกต้อง) | fuzz ที่ speed 0–20 m/s + burner; วัดจาก force decomposition ต่อ step | 3 |
 | I20 | **Recovery ไม่แย่ง**: input activity เกิน threshold → `recoveryAssist = 0` | ทุก tick | 5 |
-| I21 | **No legacy gates**: `PilotCommand` ไม่มี `psmArm`/`highG`; flight ไม่อ่าน `maneuver.phase`; `FlightCamera` ไม่อ่าน phase | type + grep test | 6 (camera: 7) |
+| I21 | **No legacy gates**: `PilotCommand` ไม่มี `psmArm`/`highG`; flight ไม่อ่าน `maneuver.phase`; `FlightCamera` ไม่อ่าน phase | type + grep test (`tests/invariants/phase6.test.ts`) | 6 (camera ด้วย เพราะ field phase ถูกลบใน 6) |
 | I22 | **Detector pure**: มี/ไม่มี detector → state hash เท่ากัน | trace | 9 |
 
 ### 5.2 Tuning Benchmarks

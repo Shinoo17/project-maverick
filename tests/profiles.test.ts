@@ -3,7 +3,7 @@ import { aircraft } from '../src/content/aircraft'
 import type { AircraftDefinition } from '../src/content/schemas'
 import { validateAircraft, validateSession } from '../src/content/validate'
 import { availableWeapons, fullArmament, weaponStations } from '../src/content/weapons'
-import { flightProfiles, getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
+import { getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { runFlightReplay } from '../src/game/playground/replay'
@@ -37,17 +37,6 @@ describe('aircraft profiles', () => {
     const [f22, su57] = runtime.snapshot().aircraft
     expect(f22.velocity.x).toBeGreaterThan(su57.velocity.x)
     expect(getFlightProfile('su57').flight.yawRate).toBeGreaterThan(getFlightProfile('f22').flight.yawRate)
-  })
-  it('disables PSM through capability data', () => {
-    const profile = flightProfiles['felon-agility'], previous = profile.maneuver
-    profile.maneuver = { ...previous, psmEnabled: false }
-    try {
-      const runtime = new GameRuntime({ mode: 'playground', aircraftIds: ['su57'] })
-      runtime.reset('cobra'); runtime.start()
-      runtime.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), psmArm: true, pitch: 1 }))
-      expect(runtime.snapshot().aircraft[0].maneuver.phase).toBe('normal')
-      expect(runtime.snapshot().aircraft[0].maneuver.blocked).toBe('unsupported')
-    } finally { profile.maneuver = previous }
   })
   it('rejects broken profile references and nonfinite tuning', () => {
     expect(() => validateAircraft([{ ...aircraft[0], flightProfileId: 'missing' } as unknown as AircraftDefinition])).toThrow('flightProfileId')

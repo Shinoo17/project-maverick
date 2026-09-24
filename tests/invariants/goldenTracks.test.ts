@@ -1,12 +1,12 @@
 import { goldenComparisonPolicy, phase0ArchiveVersion } from '../../benchmarks/flight/goldenPolicy'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { aircraftIds, scenarioNames, replayGolden, compareRecordedLeaves, createAircraft, type Golden } from '../../benchmarks/flight/harness'
+import { aircraftIds, archivedScenarioNames, replayGolden, compareRecordedLeaves, createAircraft, type Golden } from '../../benchmarks/flight/harness'
 import { flightProfileVersion } from '../../src/game/flight/profile'
 import { goldenAtFps } from './helpers'
 
 describe.each(aircraftIds)('%s Phase 0 golden tracks', aircraftId => {
-  it.each(scenarioNames)('%s preserves archived commands and is exact at 30/60/144 FPS', scenario => {
+  it.each(archivedScenarioNames)('%s preserves archived commands and is exact at 30/60/144 FPS', scenario => {
     const golden: Golden = JSON.parse(readFileSync(new URL(`../../benchmarks/flight/golden/${scenario}.${aircraftId}.json`, import.meta.url), 'utf8'))
     // I4 deliberately retired in Phase 2: natural aero changes physics. Preserve
     // Phase 0 outputs for benchmark deltas; never silently replace the archive.

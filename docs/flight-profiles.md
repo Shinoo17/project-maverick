@@ -5,12 +5,13 @@ These are arcade game settings, not real aircraft specifications.
 
 - `flight`: normal-flight speed, energy and handling.
 - `stall`: low-speed/high-incidence envelope and gradual loss/recovery of control.
-- `maneuver`: PSM capability, entry/exit conditions, powered control rates, high-G and afterburner.
+- `maneuver`: legacy path-grip terms, the automatic hard-turn rate/drag multipliers and afterburner budget.
+- `breakout`, `bankedDrift`, `recovery`: automatic high-AoA permission, knife-edge drift cap and neutral-stick recovery assist.
+- `aero`, `arcadeControlFloor`: natural aerodynamics, control effectiveness and the near-rest gap-fill floor.
 - `thrustVectoring`: twin-engine TVC geometry/actuators (vertical or canted planes), or `null`.
 
 `src/game/flight/profileTypes.ts` documents the fields and units. Top speeds use
-displayed ARCADE km/h. The minimum powered speed and PSM entry speeds still use
-simulation m/s; angular rates use rad/s, and durations use seconds.
+displayed ARCADE km/h. The minimum powered speed still uses simulation m/s; angular rates use rad/s, and durations use seconds.
 
 ## Set top speeds
 
@@ -33,8 +34,9 @@ afterburner limit of 1400 on the HUD.
 - Releasing or exhausting afterburner sheds excess speed gradually toward the
   normal limit. Velocity is never snapped down to a cap.
 - Climbing, turning and PSM still consume energy. A dive can exceed a powered limit.
-- X adds braking without cutting engine thrust. W + X and Shift + X work together,
-  including during PSM. More thrust can outweigh the brake; X does not promise deceleration.
+- Space (Airbrake) adds braking without cutting engine thrust. W + Space and Shift + Space
+  work together, including at high AoA. More thrust can outweigh the brake; Space does not
+  promise deceleration. Before Phase 6 the Airbrake was on X; X is now unbound.
 - S still decelerates toward `minPoweredMps`; airbrake and flight energy losses
   can take the aircraft below that value.
 
@@ -85,9 +87,10 @@ spreads these into its own objects and explicitly defines its flight performance
 No aircraft inherits from another aircraft. Editing F-22 tuning does not change Su-57.
 Editing a shared default affects every aircraft that does not override that field.
 
-Defaults disable PSM. A new aircraft must explicitly set `psmEnabled: true` to
-enable it. Leave the flag false for aircraft that cannot perform PSM; high-G and
-afterburner still work. There is no need to zero the unused PSM fields.
+There is no PSM switch. High-AoA flight is available to every aircraft through the
+continuous envelope; what it can do there comes from its `aero`, engine and
+`thrustVectoring` capability. An aircraft with `thrustVectoring: null` has no powered
+rotation (see `f22-notvc`).
 
 ## Tune stall
 
@@ -143,7 +146,7 @@ Speed uses the same conversion as `topSpeedKph`: 300 on the HUD is about 55.56
 simulation m/s. `minPoweredMps: 65` still limits S to 351 on the HUD, so holding S
 alone does not stall these aircraft. Airbrake, climbing or maneuver losses can.
 Session overrides still only change top speeds, which must leave enough normal
-speed for stall recovery. They do not scale stall or PSM thresholds automatically.
+speed for stall recovery. They do not scale stall or breakout thresholds automatically.
 
 Either low speed or high absolute AoA starts stall. Once severity is nonzero,
 **both recovery thresholds** must be satisfied for it to fade. Those thresholds
@@ -158,13 +161,11 @@ rotation or triggers a scripted spin. The default retains enough control to
 align the nose with the flight path and regain speed with W. At zero speed,
 gravity still makes the aircraft fall; the normal energy correction cannot freeze it.
 
-PSM capability is independent of stall. Active PSM blends toward its authored pitch,
-yaw and roll rates in proportion to actual engine thrust, allowing Cobra, pedal
-turns and mixed-axis maneuvers. No thrust means no powered rate assistance;
-remaining surface control and damping still work.
-Recovery assist follows the pilot's chosen nose and blends back into normal
-control, including roll. Stall still costs energy and height during PSM. Physical
-TVC continues to apply actual actuator torque and still needs engine thrust.
+High-AoA capability is independent of stall. Angular authority comes from
+airflow-derived aero effectiveness plus TVC torque from actual engine thrust, allocated
+per axis. No thrust means no TVC; remaining surface control and damping still work.
+Recovery assist starts only after the pilot centres the stick (`recovery.delaySeconds`)
+and uses real aero/TVC authority only. Stall still costs energy and height at high AoA.
 No aircraft-name branches or automatic maneuver selection are involved.
 
 ### Debug and tune
@@ -175,83 +176,52 @@ No aircraft-name branches or automatic maneuver selection are involved.
   `aoa` and `speed+aoa` identify unmet thresholds. AoA is sampled at the start of
   each fixed flight step, not from the interpolated rendering pose.
 - The existing `maneuver.alpha` / nose-path reading includes yaw and remains the
-  PSM metric. Use the separate **Stall AoA** reading when tuning stall.
-- Player advisories explain recovery after leaving active PSM. Active PSM hides
-  stall/low-energy advice, but never hides low-altitude or boundary warnings.
+  high-AoA metric. Use the separate **Stall AoA** reading when tuning stall.
+- Player advisories follow the continuous envelope label (NORMAL / HIGH_AOA /
+  POST_STALL / RECOVERING / DEPARTED). Low-altitude and boundary warnings always win.
 - Start with the four envelope values. For gentler onset, increase `separationEntrySeconds`;
   for easier handling in stall, increase `controlAuthority`; for less energy loss,
-  lower `dragMultiplier` toward 1. Tune PSM rates/grip separately.
-- The existing recovery practice spawn plus X enters low-speed stall; release X
-  and hold W to recover. Use the Cobra spawn with C + W and pitch/yaw/roll to test PSM.
-- Flight Lab also shows **PSM thrust authority** (`maneuver.controlAuthority`,
-  actual thrust / `fullControlThrust`, capped at 100%) and actual left/right nozzle
-  angles. Authority is available power, not a timer or remaining charge.
-  `maneuver.blend` is the continuous entry/release blend in snapshots.
+  lower `dragMultiplier` toward 1. Tune breakout and TVC separately.
+- The existing recovery practice spawn plus Space enters low-speed stall; release Space
+  and hold W to recover. Use the Cobra spawn with Space + pull (W or Shift for thrust)
+  to test high-AoA entry; centre the stick to recover.
+- Flight Lab also shows **Powered control available** (normalized TVC capacity from
+  actual thrust), the aero/TVC/floor allocation, the limiter and actual left/right
+  nozzle angles. Authority is available power, not a timer or remaining charge.
 - Pause/single-step freezes/advances stall with the simulation. Reset clears it;
-  exported replays reproduce it. The physics version is `p3-powered-psm-1`;
-  replays from previous physics versions are rejected.
+  exported replays reproduce it. The physics version is `flightProfileVersion` in
+  `src/game/flight/profile.ts` and the command schema is `commandSchemaVersion` in
+  `src/game/runtime/commands.ts`; replays with either one different are rejected.
 - `hud-preview.html?t=4&lab&stall&lang=th` shows the warning and debug layout without
   WebGL; replace `stall` with `recovering` to inspect recovery text. These are
   explicit visual fixtures, not simulation tests.
 
-## Aircraft with limited PSM
+## High-AoA entry and recovery (automatic)
 
-Use the existing fields to define the limitation rather than adding an aircraft-name
-check or a separate difficulty system. For example, this maneuver block gives an
-aircraft a narrow entry window and reduced powered rotation rates:
+There is no PSM mode, arm key or phase. The limiter that gates incidence opens and
+closes continuously on every step:
 
-```ts
-maneuver: {
-  ...maneuverDefaults,
-  psmEnabled: true,
-  entryMin: 95,          // m/s; minimum entry speed, inclusive
-  entryMax: 105,         // m/s; maximum entry speed, inclusive
-  minAltitude: 400,      // metres
-  pitchRate: 1.0,        // rad/s
-  yawRate: 0.8,          // rad/s
-  rollRate: 1.2,         // rad/s
-  exitSpeed: 120,        // m/s; must exceed entryMax (hysteresis)
-  blendSeconds: 0.6,     // seconds to enter/release, not an active duration
-  fullControlThrust: 30, // m/s² of actual thrust for full rate assistance
-},
-```
+- **Entry.** At low dynamic pressure (`breakout.qLow`–`qHigh`, about 350–700 on the
+  HUD), pitch or yaw demand opens the limiter. Space (Airbrake), S and Shift/W raise
+  the opening weight and rate (`brakeWeight`, `decelerationWeight`, `powerWeight`,
+  `comboWeight`, `brakeBoost`, `powerBoost`). No key is required, and none opens it by itself.
+- **High speed.** Full demand with a saturated turn becomes a harder G turn
+  (`breakout.hardTurnG`, with `maneuver.highGRate` / `highGDrag` as the rate and drag
+  multipliers). Before Phase 6 Space requested this manually; that command is gone.
+- **Continuation.** Partial stick, roll and short axis handoffs (`breakout.handoffSeconds`)
+  keep the limiter open.
+- **Recovery.** With a centred stick, natural aerodynamics act at once; recovery assist
+  ramps in after `recovery.delaySeconds` and stops on the same step as any stick input.
+- **Limits.** Authority is always the aircraft's real aero + TVC budget. Permission
+  never adds authority, and `arcadeControlFloor` only fills gaps near rest.
 
-These numbers are an example, not a balanced preset. Tune and flight-test each
-aircraft. Entry speed limits apply when arming/entering PSM; they are not exit
-thresholds once the maneuver is active. `activeGrip`, `recoveryGrip` and
-`recoveryAcceleration` control airflow alignment during PSM and recovery.
-
-PSM and physical thrust vectoring are independent: `thrustVectoring: null` does
-not disable the explicitly enabled arcade PSM assist. Conversely, `psmEnabled: false`
-does not disable TVC or stall handling.
-
-## Hold C, manage thrust, release to recover
-
-- `normal → armed`: hold C inside the per-aircraft entry speed/altitude envelope.
-- `armed → active`: steer any axis (pitch/yaw/roll magnitude > 0.35).
-  C alone never supplies thrust, applies brakes or chooses a maneuver.
-- Hold C to continue. There is no active time limit, rotation cap or cooldown.
-  Low speed/altitude do not cut active control off; energy loss and terrain still apply.
-- Release C, or exceed `exitSpeed`, to enter recovery. `blendSeconds` smoothly
-  returns control/path grip to normal. The aircraft does not snap its nose back.
-- Press C again during recovery inside the entry envelope to continue the same
-  maneuver. Blend and peak/rotation history are preserved; speed, thrust and stall
-  are never reset. Overspeed cannot chatter between states because `exitSpeed`
-  exceeds `entryMax`.
-- Recovery finishes when nose/path separation is < 0.3 radians and speed > 60 m/s
-  for 0.3 seconds, with the control blend returned to zero. Only a recovered maneuver
-  that reached 70° nose/path separation increments the completion count.
-- Use W for powered control; Shift adds thrust while its existing resource lasts.
-  X adds drag independently. These are arcade speed controls, not a persistent
-  throttle lever: releasing W returns to speed-hold thrust, which is weak at low speed.
-- PSM authority uses **this step's thrust**, not yesterday's engine readout or a
-  minimum magical control floor. Normal surface authority remains speed/stall-dependent.
-  Direction-changing forces cannot add speed for free when switching modes.
+To limit an aircraft, lower its capability (`aero.controlAcceleration`, `thrustVectoring`
+gain or travel, engine thrust), not a per-aircraft entry gate.
 
 ## Twin-engine thrust vectoring
 
 The same solver handles both profiles, summing nozzle thrust vectors and `r × F`
-moments at the engine mounts. TVC acts continuously outside PSM, including at full
+moments at the engine mounts. TVC acts continuously at every incidence, including at full
 stall; it needs engine thrust and does not replace lift or guarantee altitude hold.
 At zero speed, W/Shift can provide thrust and rotate the aircraft while it falls.
 The remaining surface controls and rate damping keep recovery approachable.

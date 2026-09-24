@@ -64,10 +64,6 @@ export const su57Profile: AircraftFlightProfile = {
   },
   maneuver: {
     ...maneuverDefaults,
-    psmEnabled: true,
-    entryMin: 65,
-    entryMax: 115,
-    minAltitude: 150,
     recoveryAcceleration: 66.5,
   },
   thrustVectoring: su57TvcProfile,

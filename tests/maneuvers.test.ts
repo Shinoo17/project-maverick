@@ -1,68 +1,15 @@
 // Superseded Phase 2 feel fixtures are retained in benchmarks/flight/legacyManeuvers.report.ts.
-import { getFlightProfile } from '../src/game/flight/profile'
-import { observeAirflow } from '../src/game/flight/airflow'
 import { describe, expect, it } from 'vitest'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
-import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
-import { stepManeuvers } from '../src/game/flight/maneuvers'
+import { neutralCommand } from '../src/game/runtime/commands'
 import { stepFlight } from '../src/game/flight/stepFlight'
 const make = () => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'] })
-const speed = (v: { x: number; y: number; z: number }) => Math.hypot(v.x, v.y, v.z)
-describe('P2 maneuvers', () => {
-  it('never pitches, brakes or accelerates merely from holding C', () => {
-    for (const entry of [105, 130]) {
-      const plain = make().snapshot().aircraft[0], armed = make().snapshot().aircraft[0]
-      plain.velocity.x = armed.velocity.x = entry
-      for (let i = 0; i < 360; i++) {
-        stepFlight(plain, neutralCommand(i, plain.id), 1 / 120)
-        stepFlight(armed, { ...neutralCommand(i, armed.id), psmArm: true }, 1 / 120)
-      }
-      expect(armed.position).toEqual(plain.position); expect(armed.orientation).toEqual(plain.orientation)
-      expect(armed.velocity).toEqual(plain.velocity); expect(armed.maneuver.airbrake).toBe(0)
-      expect(armed.maneuver.phase).toBe(entry === 105 ? 'armed' : 'normal')
-    }
-  })
-
-  it('enforces entry speed/altitude and keeps a held maneuver active beyond old budgets', () => {
-    for (const [entry, altitude] of [[64, 400], [116, 400], [105, 149]]) {
-      const s = make().snapshot().aircraft[0]; s.velocity.x = entry; s.position.y = altitude
-      stepFlight(s, { ...neutralCommand(0, s.id), psmArm: true, pitch: 1, speedAdjust: 1 }, 1 / 120)
-      expect(s.maneuver.phase).toBe('normal')
-    }
-    for (const entry of [65, 115]) {
-      const s = make().snapshot().aircraft[0]; s.velocity.x = entry
-      stepFlight(s, { ...neutralCommand(0, s.id), psmArm: true, pitch: 1, speedAdjust: 1 }, 1 / 120)
-      expect(s.maneuver.phase).toBe('active')
-    }
-    const safe = make().snapshot().aircraft[0]
-    safe.velocity.x = 105
-    const held = { ...neutralCommand(0, safe.id), psmArm: true, pitch: 1 }
-    for (let i = 0; i < 1800; i++) {
-      safe.maneuver.rotation += 0.1
-      stepManeuvers(safe, held, 1 / 120, observeAirflow(safe, getFlightProfile(safe.aircraftId)))
-    }
-    expect(safe.maneuver.phase).toBe('active')
-    expect(safe.maneuver.timer).toBeGreaterThan(14)
-    stepManeuvers(safe, neutralCommand(0, safe.id), 1 / 120, observeAirflow(safe, getFlightProfile(safe.aircraftId)))
-    expect(safe.maneuver.phase).toBe('recovery')
-    stepManeuvers(safe, held, 1 / 120, observeAirflow(safe, getFlightProfile(safe.aircraftId)))
-    expect(safe.maneuver.phase).toBe('active')
-  })
-  it('releases armed mode immediately and freezes maneuver timers while paused', () => {
+describe('P2 maneuvers (Phase 6: no PSM phase, entry envelope or C)', () => {
+  it('freezes flight state while paused and resets to the spawn', () => {
     const r = make(); r.reset('cobra'); r.start()
-    r.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), psmArm: true }))
-    expect(r.snapshot().aircraft[0].maneuver.phase).toBe('armed')
-    r.advance(1 / 60); expect(r.snapshot().aircraft[0].maneuver.phase).toBe('normal')
-    r.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), psmArm: true, pitch: 1 }))
+    r.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), airbrake: true, pitch: 1 }))
     const paused = r.snapshot(); r.pause(); r.advance(1); expect(r.snapshot()).toEqual(paused)
     r.reset('free'); expect(r.snapshot()).toEqual(make().snapshot())
-  })
-  it('Space requests extra G at partial demand, with no effect on neutral input', () => {
-    const fly = (extra: Partial<PilotCommand>) => { const s = make().snapshot().aircraft[0]; for (let i = 0; i < 120; i++) stepFlight(s, { ...neutralCommand(i, s.id), ...extra }, 1 / 120); return s }
-    const normal = fly({ pitch: 0.5 }), hard = fly({ pitch: 0.5, highG: true })
-    expect(hard.rates.pitch).toBeGreaterThan(normal.rates.pitch)
-    expect(speed(hard.velocity)).toBeLessThan(speed(normal.velocity))
-    expect(speed(fly({ highG: true }).velocity)).toBeCloseTo(130)
   })
   it('drains burner, enforces recharge lock and permits airbrake with burner', () => {
     const s = make().snapshot().aircraft[0]
@@ -74,7 +21,7 @@ describe('P2 maneuvers', () => {
     expect(s.maneuver.burnerActive).toBe(true); expect(s.enginePower).toBeGreaterThan(0)
   })
   it('replays PSM and burner identically at 30/60/144 render FPS', () => {
-    const snapshots = [30, 60, 144].map(fps => { const r = make(); r.reset('cobra'); r.start(); for (let i = 0; i < fps * 12; i++) r.advance(1 / fps, (tick, id) => ({ ...neutralCommand(tick, id), psmArm: tick < 130, pitch: tick < 50 ? 1 : tick < 100 ? -1 : 0, afterburner: tick > 300 && tick < 500 })); return r.snapshot() })
+    const snapshots = [30, 60, 144].map(fps => { const r = make(); r.reset('cobra'); r.start(); for (let i = 0; i < fps * 12; i++) r.advance(1 / fps, (tick, id) => ({ ...neutralCommand(tick, id), airbrake: tick < 130, pitch: tick < 50 ? 1 : tick < 100 ? -1 : 0, afterburner: tick > 300 && tick < 500 })); return r.snapshot() })
     expect(snapshots[1]).toEqual(snapshots[0]); expect(snapshots[2]).toEqual(snapshots[0])
   })
 })
@@ -82,13 +29,16 @@ describe('P2 maneuvers', () => {
 import { FlightInput } from '../src/game/input/FlightInput'
 import { runFlightReplay } from '../src/game/playground/replay'
 describe('P2 playground lifecycle', () => {
-  it('keeps C as debug input while incidence continuously blends the inverted mouse frame', () => {
-    const input = new FlightInput(); input.press('KeyC'); input.held.delete('KeyC')
-    expect(input.command(0, 'a', 'keyboard').psmArm).toBe(false)
+  it('maps Space to the airbrake, leaves X and C unbound, and blends the inverted mouse frame with incidence', () => {
+    const input = new FlightInput()
+    for (const code of ['KeyX', 'KeyC']) {
+      input.press(code); expect(input.command(0, 'a', 'keyboard')).toEqual(neutralCommand(0, 'a')); input.held.delete(code)
+    }
+    input.press('Space'); expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true }); input.held.delete('Space')
     input.engage(); input.move(0, -input.gate.radius); input.screen = { angle: Math.PI, blend: 1 }
     expect(input.command(0, 'a', 'mouse').pitch).toBe(-1)
-    input.press('KeyC'); expect(input.command(1, 'a', 'mouse').pitch).toBe(-1)
-    input.held.delete('KeyC'); input.highAoa = 0.5
+    input.press('Space'); expect(input.command(1, 'a', 'mouse').pitch).toBe(-1)
+    input.held.delete('Space'); input.highAoa = 0.5
     expect(input.command(2, 'a', 'mouse').pitch).toBeCloseTo(0, 12)
     input.highAoa = 1
     expect(input.command(2, 'a', 'mouse').pitch).toBe(1)
@@ -100,7 +50,7 @@ describe('P2 playground lifecycle', () => {
     r.singleStep(); expect(r.snapshot().tick).toBe(1)
     r.advance(1); expect(r.snapshot().tick).toBe(1)
     r.resume(); r.singleStep(); expect(r.snapshot().tick).toBe(1)
-    for (let i = 0; i < 600; i++) r.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), psmArm: tick > 2 && tick < 130, pitch: tick < 50 ? 1 : tick < 100 ? -1 : 0 }))
+    for (let i = 0; i < 600; i++) r.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), airbrake: tick > 2 && tick < 130, pitch: tick < 50 ? 1 : tick < 100 ? -1 : 0 }))
     expect(runFlightReplay(r.exportReplay())).toEqual(r.snapshot())
     r.reset(); const first = r.snapshot(); r.reset(); expect(r.snapshot()).toEqual(first)
     expect(r.exportReplay().commands).toHaveLength(0)

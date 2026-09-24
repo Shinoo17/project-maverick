@@ -13,7 +13,8 @@ export const firstTime = (samples: Sample[], test: (sample: Sample) => boolean) 
 export function measure(trace: Trace) {
   const { samples, commands, scenario, initialState } = trace
   const entry = samples[0]
-  const release = commands.find(run => (scenario.endsWith('C') ? !run.command.psmArm : run.command.pitch === 0 && run.command.yaw === 0) && run.startStep > 0)?.startStep
+  // Archived *C tracks released C together with the stick, so the neutral-stick rule finds the same step.
+  const release = commands.find(run => run.command.pitch === 0 && run.command.yaw === 0 && run.startStep > 0)?.startStep
   const maneuver = release === undefined ? samples : samples.filter(sample => sample.step <= release)
   const headingChange = (sample: Sample) => speed(entry) < 1 || speed(sample) < 1 ? null
     : new Vector3().copy(entry.state.velocity).angleTo(new Vector3().copy(sample.state.velocity)) * 180 / Math.PI
@@ -24,8 +25,6 @@ export function measure(trace: Trace) {
     add('B2.cobra.timeTo90', firstTime(maneuver, sample => incidence(sample) >= 90), 's')
     add('B3.cobra.speedLoss', arcadeSpeed(speed(entry) - Math.min(...maneuver.map(speed))), 'arcade km/h')
     add('B4.cobra.headingChange', headingChange(maneuver.at(-1)!), 'deg')
-    const normal = release === undefined ? undefined : samples.find(sample => sample.step > release && sample.state.maneuver.phase === 'normal')
-    if (scenario === 'cobraC') add('legacy.recovery.backToNormal', normal ? normal.time - samples[release!].time : null, 's after C release')
   }
   if ((scenario === 'kulbitC' || scenario === 'kulbit')) add('B5.kulbit.time360', firstTime(samples, sample => sample.noseRotationDeg >= 360), 's')
   if (scenario === 'hardTurn900') {
@@ -54,7 +53,7 @@ export function measure(trace: Trace) {
     add('B12.fullStick500.peakIncidence', peak(samples, incidence), 'deg')
     add('B12.fullStick500.limiterOpen', peak(samples, s => s.state.limiterOpen), 'fraction')
   }
-  if (scenario === 'psmIntent450' || scenario === 'psmIntent450C') {
+  if (scenario === 'psmIntent450') {
     add('B14.psmIntent.timeTo70', firstTime(samples, sample => incidence(sample) >= 70), 's')
     add('psmIntent.timeToLimiter90', firstTime(samples, s => s.state.limiterOpen >= 0.9), 's')
     add('psmIntent.peakIncidence', peak(samples, incidence), 'deg')

@@ -3,6 +3,7 @@
  */
 export const phase0ArchiveVersion = 'p3-powered-psm-1'
 const retiredI4: Record<string, { archiveVersion: string; reason: string }> = {
+  'p6-legacy-gates-1': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 6 removes the C debug limiter and the Space High-G command, so archived psmArm/highG inputs no longer act. Phase 0 archived inputs remain safety tracks, not output equivalence.' },
   'p5-recovery-assist-1': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 5 delayed recovery assist steers the nose toward the airflow after neutral release at high incidence. Phase 0 archived inputs remain safety tracks, not output equivalence.' },
   'p4.7-banked-drift-1': { archiveVersion: phase0ArchiveVersion, reason: 'Knife-edge incidence cap turns high-bank pull into a horizontal drift instead of a cobra. Phase 0 archived inputs remain safety tracks, not output equivalence.' },
   'p4.6-reverse-departure-1': { archiveVersion: phase0ArchiveVersion, reason: 'Reverse-flow departure bias intentionally changes nose-drop behavior past 90 degrees incidence. Phase 0 archived inputs remain safety tracks, not output equivalence.' },

@@ -3,31 +3,23 @@ import { PerspectiveCamera } from 'three'
 import { createAircraft } from '../benchmarks/flight/harness'
 import { FlightCamera } from '../src/render/FlightCamera'
 
-it('shows actual decoupling without C, retains phase fallback, and respects reduced motion', () => {
+it('shows actual decoupling from airflow alone and respects reduced motion', () => {
   const state = createAircraft('f22')
   state.position.y = 2000
   state.velocity = { x: 0, y: 0, z: 100 }
-  const render = (phase: typeof state.maneuver.phase, reduced = false) => {
-    state.maneuver.phase = phase
+  const render = (reduced = false) => {
     const before = structuredClone(state), camera = new PerspectiveCamera(), rig = new FlightCamera()
     for (let frame = 0; frame < 180; frame++) rig.update(camera, state, 'horizon', 1 / 60, reduced)
     expect(state).toEqual(before)
     expect([...camera.position.toArray(), ...camera.quaternion.toArray()].every(Number.isFinite)).toBe(true)
     return camera
   }
-  const normal = render('normal'), active = render('active'), recovery = render('recovery')
-  expect(normal.position.toArray()).toEqual(active.position.toArray())
-  expect(normal.quaternion.toArray()).toEqual(recovery.quaternion.toArray())
-  expect(normal.position.z).toBeLessThan(-20)
-  const reduced = render('normal', true)
-  expect(reduced.position.z).toBe(0)
-  expect(render('active', true).position.toArray()).toEqual(reduced.position.toArray())
+  expect(render().position.z).toBeLessThan(-20)
+  expect(render(true).position.z).toBe(0)
 
-  // Unreliable incidence at 1 m/s does not turn on cinematic by itself.
+  // Unreliable incidence at 1 m/s does not turn on cinematic; no phase fallback remains.
   state.velocity.z = 1
-  expect(render('normal').position.z).toBe(0)
-  // C keeps its old camera behavior even at low speed.
-  expect(render('active').position.z).toBeLessThan(-20)
+  expect(render().position.z).toBe(0)
 })
 
 it('diagnostic framing checks projected subject corners at high incidence/aspect ratios without touching simulation', async () => {

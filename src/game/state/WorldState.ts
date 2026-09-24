@@ -28,7 +28,7 @@ export interface AircraftState {
   enginePower: number
   engine: EngineState
   intent: PilotIntent
-  /** Continuous automatic permission; C may force it open for debug comparison. */
+  /** Continuous automatic permission. No manual override exists. */
   limiterOpen: number
   /** Smoothed explicit translational assistance permission. */
   pathAssistWeight: number
