@@ -29,6 +29,20 @@ export function flightWarning(state: AircraftState | null) {
   return null
 }
 
+/*
+Terrain and the boundary end the flight: they blink. Stall, recovery and low-energy plates are
+advisories: steady, and held briefly after their condition clears, so a label crossing its
+threshold does not flicker the plate at the 10 Hz telemetry rate.
+*/
+export type FlightWarning = NonNullable<ReturnType<typeof flightWarning>>
+export const warningSeverity = (warning: FlightWarning) => warning === 'boundaryWarning' || warning === 'lowAltitude' ? 'hazard' : 'advisory'
+export const ADVISORY_HOLD_MS = 800
+export interface HeldWarning { warning: FlightWarning | null; until: number }
+export function holdWarning(shown: HeldWarning, next: FlightWarning | null, now: number): HeldWarning {
+  if (next) return { warning: next, until: warningSeverity(next) === 'advisory' ? now + ADVISORY_HOLD_MS : now }
+  return shown.warning && now < shown.until ? shown : { warning: null, until: now }
+}
+
 // Range convention: +X is north, +Z east, +Y up. Read the nose, not velocity
 // (the two deliberately separate in PSM). Positive bank means right wing down.
 export function flightAttitude(orientation: AircraftState['orientation']) {

@@ -13,6 +13,7 @@ green pass under every mark keeps it legible over sky and ground without a CSS f
 nothing is recomposited when the frame changes.
 */
 import { MathUtils, Vector3, type Camera } from 'three'
+import type { EnvelopeLabel } from '../../game/flight/envelope'
 
 const HUD_GREEN = 'rgba(98, 255, 132, 0.98)'
 const HUD_GREEN_DIM = 'rgba(98, 255, 132, 0.66)'
@@ -43,6 +44,8 @@ const EDGE_CAUTION = 620
 const RESERVE_CAUTION = 0.25
 // The heading readout sits above its own tape; this keeps it under the identity and pause plates.
 const TOP_CLEARANCE = 100
+// The ladder is clipped to ±this share of the half-frame.
+const LADDER_CLIP = 0.62
 
 export type BurnerState = 'ready' | 'engaged' | 'depleted' | 'inhibited' | 'recharging'
 const AFTERBURNER_LABELS: Record<BurnerState, string> = {
@@ -74,7 +77,45 @@ export interface GlassState {
   burnerState: BurnerState
   airbrake: boolean
   highG: boolean
+  /** Any high-AoA regime (HIGH_AOA, POST_STALL or RECOVERING). */
   psm: boolean
+  /** Continuous-envelope label; sets the regime tone and flag. Presentation only. */
+  regime: EnvelopeLabel
+  /** Nose/path incidence and the airframe's authored alpha marks, in degrees. */
+  incidence: number
+  alphaNormal: number
+  alphaCritical: number
+  /** The limiter's current permitted alpha: rises from alphaNormal as the envelope opens. */
+  alphaLimit: number
+  alphaMax: number
+}
+
+/*
+Regime tone stays inside the one phosphor family: brightness carries the regime. Attached flight
+keeps the quiet dim green; a drift the pilot is flying reads bright; post-stall and departure use
+the alert green; recovery sits between. Only terrain and the boundary blink (flight.css).
+*/
+const REGIME_TONE: Record<EnvelopeLabel, string> = {
+  NORMAL: HUD_GREEN_DIM, HIGH_AOA: HUD_GREEN, POST_STALL: HUD_GREEN_ALERT, RECOVERING: HUD_GREEN_CAUTION, DEPARTED: HUD_GREEN_ALERT,
+}
+const REGIME_FLAG: Record<EnvelopeLabel, string> = {
+  NORMAL: '', HIGH_AOA: 'HI AOA', POST_STALL: 'POST STALL', RECOVERING: 'RECOVER', DEPARTED: 'DEPART',
+}
+export const regimeTone = (regime: EnvelopeLabel) => REGIME_TONE[regime]
+export const regimeFlag = (regime: EnvelopeLabel) => REGIME_FLAG[regime]
+
+/*
+AoA bracket, screen-fixed just inboard of the speed tape so it never chases the FPM off screen.
+The lower half of the scale is attached flow up to alphaCritical; the upper half runs on to the
+airframe's controllable limit, so 20–30° is not crushed under a 180° scale. It fades in from 60%
+of alphaNormal and is absent in ordinary flight. Fractions are 0 (bottom) to 1 (top).
+*/
+export function aoaBracket(state: Pick<GlassState, 'incidence' | 'alphaNormal' | 'alphaCritical' | 'alphaLimit' | 'alphaMax'>) {
+  const opacity = MathUtils.smoothstep(state.incidence, state.alphaNormal * 0.6, state.alphaNormal)
+  if (opacity <= 0) return null
+  const critical = Math.max(state.alphaCritical, 1), top = Math.max(state.alphaMax, critical + 1)
+  const scale = (deg: number) => deg <= critical ? 0.5 * Math.max(0, deg) / critical : Math.min(1, 0.5 + 0.5 * (deg - critical) / (top - critical))
+  return { opacity, caret: scale(state.incidence), normal: scale(state.alphaNormal), critical: 0.5, limit: scale(state.alphaLimit), beyond: state.incidence > top }
 }
 
 /*
@@ -92,9 +133,15 @@ export function glassLayout(width: number, height: number) {
   // How far below its first row the status block still draws.
   const depth = tight ? 86 : compact ? 104 : 42
   const statusFirst = Math.min(cy + tapeHeight / 2 + 46, height - depth - 14)
+  const tapeOffset = compact ? 0.62 : 0.72
+  // The AoA bracket lives in the gap between the speed tape and the ladder's clip. Compact
+  // frames have no gap (the tape sits on the clip edge), so the bracket is left out there.
+  const aoaGap = half * (tapeOffset - LADDER_CLIP)
   return {
     width, height, cx, cy, half, compact, tight, tapeHeight, rise,
-    tapeOffset: compact ? 0.62 : 0.72,
+    tapeOffset,
+    aoaScaleX: compact ? null : cx - half * tapeOffset + aoaGap * 0.35,
+    aoaUnit: aoaGap / 10,
     ladderTop: cy - (rise - 34),
     ladderBottom: cy + tapeHeight / 2 + 22,
     statusFirst,
@@ -237,7 +284,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   function drawLadder(state: GlassState, camera: Camera) {
     ctx.save()
     ctx.beginPath()
-    ctx.rect(layout.cx - layout.half * 0.62, layout.ladderTop, layout.half * 1.24, layout.ladderBottom - layout.ladderTop)
+    ctx.rect(layout.cx - layout.half * LADDER_CLIP, layout.ladderTop, layout.half * LADDER_CLIP * 2, layout.ladderBottom - layout.ladderTop)
     ctx.clip()
     for (let angle = -LADDER_LIMIT; angle <= LADDER_LIMIT; angle += LADDER_STEP) {
       const rung = projectRung(camera, state.position, state.forward, angle, width, height)
@@ -308,10 +355,11 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     if (!point) return
     const { x, y, onScreen, angle } = point
     const r = Math.max(layout.half * 0.018, 6)
+    const separated = state.regime === 'POST_STALL' || state.regime === 'DEPARTED'
     ctx.save()
     ctx.translate(x, y)
-    ctx.lineWidth = 1.6
-    ctx.strokeStyle = HUD_GREEN
+    ctx.lineWidth = separated ? 2 : 1.6
+    ctx.strokeStyle = separated ? HUD_GREEN_ALERT : HUD_GREEN
     ctx.beginPath()
     if (onScreen) {
       ctx.moveTo(0, -r); ctx.lineTo(r, 0)
@@ -323,6 +371,35 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)
     }
     ctx.stroke()
+    ctx.restore()
+  }
+
+  function drawAoaBracket(state: GlassState) {
+    const bracket = aoaBracket(state)
+    if (!bracket || layout.aoaScaleX === null) return
+    // Everything stays within [x − 2u, x + 5u], inside the tape/ladder gap (glassLayout).
+    const x = layout.aoaScaleX, u = layout.aoaUnit
+    const span = layout.tapeHeight * 0.36
+    const bottom = layout.cy + span / 2
+    const at = (fraction: number) => bottom - fraction * span
+    const tone = regimeTone(state.regime)
+    ctx.save()
+    ctx.globalAlpha = bracket.opacity
+    line(x, at(0), x, at(1), 1.2, HUD_GREEN_DIM)
+    // The bracket: attached limit to critical alpha, the band where the airframe leaves the path.
+    line(x, at(bracket.normal), x + 2 * u, at(bracket.normal), 1.4, HUD_GREEN_DIM)
+    line(x + 2 * u, at(bracket.normal), x + 2 * u, at(bracket.critical), 1.4, HUD_GREEN_DIM)
+    line(x, at(bracket.critical), x + 2 * u, at(bracket.critical), 1.4, HUD_GREEN_DIM)
+    // What the limiter permits now.
+    line(x - 2 * u, at(bracket.limit), x, at(bracket.limit), 1.6, HUD_GREEN_CAUTION)
+    // Caret points at the scale from inboard; a second bar above it when past the scale.
+    const y = at(bracket.caret)
+    luminous(() => {
+      ctx.beginPath()
+      ctx.moveTo(x + 5 * u, y - 5); ctx.lineTo(x + 2.8 * u, y); ctx.lineTo(x + 5 * u, y + 5)
+      if (bracket.beyond) { ctx.moveTo(x + 2.8 * u, y - 8); ctx.lineTo(x + 5 * u, y - 8) }
+      ctx.stroke()
+    }, 1.6, tone)
     ctx.restore()
   }
 
@@ -438,11 +515,12 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     const verticalSpeed = live ? signed(state.verticalSpeed) : '––'
     const aoa = live ? signed(state.aoa) : '––'
     const g = live ? state.gLoad.toFixed(1) : '–.–'
-    const aoaColor = live && Math.abs(state.aoa) > 26 ? HUD_GREEN_CAUTION : HUD_GREEN_DIM
+    const aoaColor = !live ? HUD_GREEN_DIM : state.regime !== 'NORMAL' ? regimeTone(state.regime) : Math.abs(state.aoa) > 26 ? HUD_GREEN_CAUTION : HUD_GREEN_DIM
     const attitudeRow = layout.tight ? second + 21 : first
     text(`PITCH ${pitch}°   BANK ${bank}°`, right, attitudeRow, display(12), HUD_GREEN_DIM, align)
     const aoaRow = layout.tight ? attitudeRow + 40 : layout.compact ? second + 80 : second
-    const flags = `${state.psm ? '   PSM' : ''}${state.highG ? '   HI-G' : ''}${state.airbrake ? '   BRAKE' : ''}`
+    const regime = regimeFlag(state.regime)
+    const flags = `${regime ? `   ${regime}` : ''}${state.highG ? '   HI-G' : ''}${state.airbrake ? '   BRAKE' : ''}`
     text(`α ${aoa}°   ${g}G${live ? flags : ''}`, right, aoaRow, display(12), aoaColor, align)
 
     // Distance to the training boundary: this range has no tacmap to carry it.
@@ -502,6 +580,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       drawNosePipper(state, state.camera)
       drawVelocityMarker(state, state.camera)
     }
+    if (state.live) drawAoaBracket(state)
     drawTape({
       x: layout.cx - layout.half * layout.tapeOffset, value: state.speed, side: 'left', tape: SPEED_TAPE,
       label: 'KM/H', subreadout: state.live ? `PWR ${Math.round(state.power * 100)}%` : 'PWR –––', digits: 4, live: state.live,

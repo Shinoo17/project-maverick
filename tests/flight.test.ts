@@ -106,6 +106,11 @@ describe('P1 flight acceptance', () => {
     for (let i = 0; i <= 960; i++) {
       const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.min(i, 360) * Math.PI / 360)
       state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
+      // Attached flow along the nose: this case is about the vertical crossing. Since Phase 7 the
+      // view runs down the flight path once decoupled, so a nose turned against a fixed velocity
+      // would be testing reverse flow instead.
+      const nose = new Vector3(1, 0, 0).applyQuaternion(q).multiplyScalar(100)
+      state.velocity = { x: nose.x, y: nose.y, z: nose.z }
       rig.update(camera, state, 'horizon', 1 / 60)
     }
     expect(new Vector3(0, 1, 0).applyQuaternion(camera.quaternion).y).toBeGreaterThan(0.95)

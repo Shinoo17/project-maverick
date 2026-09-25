@@ -13,7 +13,7 @@ import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { FlightSession } from './session'
 import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
-import { flightWarning } from './telemetry'
+import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
 import { practiceSpawns, type PracticePreset } from '../../game/playground/practice'
 import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
@@ -33,6 +33,7 @@ export function FlightPage() {
   const [webgl] = useState(supportsWebGL2)
   const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), hud: createRef<HudDriver>() }), [])
   const surface = useRef<HTMLDivElement>(null), dialog = useRef<HTMLDialogElement>(null)
+  const heldWarning = useRef<HeldWarning>({ warning: null, until: 0 })
   const pause = useCallback(() => {
     session.running = false; session.runtime?.pause(); session.input.clear(); setRunning(false)
     if (document.pointerLockElement) document.exitPointerLock()
@@ -96,7 +97,8 @@ export function FlightPage() {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const stopped = telemetry && !telemetry.alive
-  const warning = flightWarning(telemetry)
+  heldWarning.current = holdWarning(heldWarning.current, flightWarning(telemetry), performance.now())
+  const warning = heldWarning.current.warning
   return <main className="flight-root">
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
       {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
@@ -109,7 +111,7 @@ export function FlightPage() {
       <div className="flight-actions"><span>{t(cameraMode === 'horizon' ? 'horizonCamera' : 'aircraftCamera')}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
-      {running && warning && <p className="flight-warning" role="status">{t(warning)}</p>}
+      {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
       {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true">
         <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" pathLength="96" /><path d="M50 14V8M86 50H92M50 86V92M14 50H8" /></svg>
       </div>}

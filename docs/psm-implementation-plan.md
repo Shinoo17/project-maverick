@@ -1,6 +1,6 @@
 # PSM / High-AoA / TVC — Implementation Plan (Rev. 4)
 
-> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5 recovery assist is delivered; see [Phase 5 report](psm-phase5-implementation.md). Phase 6 legacy-gate removal is delivered; see [Phase 6 report](psm-phase6-implementation.md). Phase 7–9 remain pending. The original planning status below is historical.
+> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5 recovery assist is delivered; see [Phase 5 report](psm-phase5-implementation.md). Phase 6 legacy-gate removal is delivered; see [Phase 6 report](psm-phase6-implementation.md). Phase 7 camera/HUD polish is delivered ahead of Phase 8 at the owner's request; see [Phase 7 report](psm-phase7-implementation.md). Phase 8–9 remain pending. The original planning status below is historical.
 
 > **Rev. 4 — 21 ก.ย. 2026: owner อนุมัติทิศทาง Jet Drift / Implicit PSM แล้ว**
 > เริ่มงานถัดไปจาก [Jet Drift implementation amendment](jet-drift-implementation-plan.md): baseline capture → Phase 4.5A (entry/path assist) → 4.5B (continuation/cross-axis) → 4.5C (braking/power/work) → 5 → 6 → 8 → 7 → 9.
@@ -513,6 +513,8 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - **ไฟล์:** `commands.ts`, `FlightInput.ts`, `maneuvers.ts`, `practice.ts`, `replay.ts`, `PlaygroundHud.tsx`, `hudPainter.ts`, `FlightInstruments.tsx`, `FlightPage.tsx`, `locales/*`, `content/schemas.ts`, tests `maneuvers`/`poweredPsm`
 
 ### Phase 7 — Camera + HUD polish
+
+**Status: delivered** (presentation only, physics `p6-legacy-gates-1` unchanged, [report](psm-phase7-implementation.md), B21 in `benchmarks/flight/camera.report.ts`). Ran before Phase 8 at the owner's request; rerun B21 after Phase 8 tuning. Human playtest pending.
 
 > Rev. 4: ทำ final polish หลัง Phase 8; ใช้ projected aircraft bounds/FPM visibility และ playtest เลือก camera blend ไม่ตัดสิน clipping จากค่า 0.88 อย่างเดียว. Diagnostic presentation ทำก่อน 4.5 ได้.
 

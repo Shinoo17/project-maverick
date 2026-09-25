@@ -52,6 +52,8 @@
 .flight-warning, .maneuver-instrument { position: absolute; top: var(--hud-advisory-top, 78%); left: var(--hud-advisory-left, 50%); transform: translateX(var(--hud-advisory-shift, -50%)); margin: 0; }
 .flight-warning { width: max-content; max-width: min(92%, 560px); padding: 7px 16px; border: 1px solid var(--hud-ice); border-radius: 2px; color: var(--hud-ice); background: rgba(3, 9, 12, 0.86); font-size: 13px; font-weight: 700; line-height: 1.4; letter-spacing: 0.08em; animation: hud-alert 720ms steps(1, end) infinite alternate; }
 .flight-warning:empty { display: none; }
+/* Stall, recovery and low-energy plates advise rather than alarm: steady, with a quieter frame. */
+.flight-warning[data-severity="advisory"] { animation: none; border-color: var(--hud-green-dim); background: var(--hud-plate); font-weight: 600; }
 .flight-hud:has(.flight-warning:not(:empty)) .maneuver-instrument { display: none; }
 .maneuver-instrument { width: max-content; max-width: min(420px, 46%); color: var(--hud-green-dim); font-size: 11px; text-align: center; }
 .flight-hud[style*="--hud-advisory-shift: 0%"] .maneuver-instrument { text-align: left; }

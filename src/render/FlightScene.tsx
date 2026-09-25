@@ -82,7 +82,9 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     const rigDt = session.running ? Math.min(dt, .1) * session.timeScale : rigTick.current >= 0 ? Math.max(0, tick - rigTick.current) * WORLD_STEP : 0
     updateRig(state, rigDt, rigReset)
     rigTick.current = tick
-    const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha) }
+    // Velocity is interpolated with the pose, so the camera's path look and the drawn FPM agree between ticks.
+    const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha),
+      velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
     rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
@@ -97,7 +99,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
-    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) })
+    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity })
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
   })

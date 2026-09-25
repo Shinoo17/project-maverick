@@ -40,6 +40,15 @@ fraction of the same airframe at beta 0. They exist because B20's one-second spe
 loss cannot show whether a broadside aircraft still commands attached-flow authority.
 Report only; target ranges wait for the Phase 8 playtest.
 
+`camera.report.ts` reports B21 (Phase 7): the public `FlightCamera` driven from live F-22/Su-57
+traces (Cobra, Kulbit, tail slide, reversal, pedal, drift entries, handoff, roll + pull) at
+30/60/144 fps, four aspect ratios and both roll modes. It measures nose pipper/FPM visibility
+by the HUD's own on-screen rule, projected airframe extent, camera roll/view rates and the
+stick-frame mismatch (rendered screen-up versus the up the mouse mapping assumes). It is
+presentation-only. Run it alone with
+`CAMERA_REPORT_LABEL=camera npx vitest run --config vitest.bench.config.ts benchmarks/flight/camera.report.ts`;
+the label names `out/<label>.json`/`.md`, so a before/after pair can sit side by side.
+
 `releaseSafety.ts` shares the five-second Airbrake+pull+W reproduction (C+pull+W before Phase 6). Powered CI requires
 recovery before any terminal collision; it permits a recovered, unattended nose-down
 flight to reach terrain later in the 40 s observation. The unpowered 14 s liveness

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Quaternion, Vector3 } from 'three'
-import { flightAttitude, burnerStatus, flightWarning } from '../src/features/flight/telemetry'
-import { createGlassPainter, glassLayout, projectRung, projectVelocityMarker } from '../src/features/flight/hudPainter'
+import { flightAttitude, burnerStatus, flightWarning, holdWarning, warningSeverity, ADVISORY_HOLD_MS } from '../src/features/flight/telemetry'
+import { aoaBracket, createGlassPainter, glassLayout, projectRung, projectVelocityMarker, regimeFlag, regimeTone } from '../src/features/flight/hudPainter'
 import { glassState } from '../src/features/flight/FlightInstruments'
 import { arcadeSpeed } from '../src/game/flight/speed'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
@@ -269,6 +269,12 @@ describe('HUD glass layout', () => {
         expect(l.cx - tape - 92).toBeGreaterThanOrEqual(8)
         expect(l.cx + tape + 92).toBeLessThanOrEqual(width - 8)
       }
+      // The AoA bracket spans [x − 2u, x + 5u]: clear of the speed tape and of the ladder clip.
+      if (l.compact) expect(l.aoaScaleX).toBeNull()
+      else {
+        expect(l.aoaScaleX! - 2 * l.aoaUnit).toBeGreaterThan(l.cx - tape)
+        expect(l.aoaScaleX! + 5 * l.aoaUnit).toBeLessThan(l.cx - l.half * 0.62)
+      }
       if (l.tight) expect(l.advisoryLeft).toBeGreaterThan(l.cx)
       else expect(l.advisoryTop).toBeGreaterThan(l.statusFirst + 20)
       expect(l.advisoryTop + 30).toBeLessThanOrEqual(height)
@@ -306,5 +312,71 @@ describe('world-registered pitch ladder', () => {
   it('hides rungs behind the camera and has no ground track when pointing straight up', () => {
     expect(projectRung(view(-1), origin, north, 0, 1600, 900)).toBeNull()
     expect(projectRung(view(), origin, { x: 0, y: 1, z: 0 }, 0, 1600, 900)).toBeNull()
+  })
+})
+
+describe('Phase 7 regime tone, AoA bracket and advisories', () => {
+  it('carries the envelope regime and alpha marks onto the glass', () => {
+    const state = aircraft(), camera = new PerspectiveCamera(), profile = getFlightProfile(state.aircraftId)
+    const read = () => glassState({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity })
+    expect(read().regime).toBe('NORMAL')
+    expect(regimeFlag('NORMAL')).toBe('')
+    expect(read().alphaNormal).toBe(profile.aero.alphaNormalDeg)
+    expect(read().alphaMax).toBe(profile.aero.maxControllableAlphaDeg)
+    state.intent.activity = 1; state.orientation = pose(0, 45)
+    const drift = read()
+    expect(drift.regime).not.toBe('NORMAL')
+    expect(drift.incidence).toBeCloseTo(45, 0)
+    expect(regimeFlag(drift.regime)).not.toBe('')
+    // One phosphor family: every tone is the same green, only brightness moves.
+    for (const regime of ['NORMAL', 'HIGH_AOA', 'POST_STALL', 'RECOVERING', 'DEPARTED'] as const) expect(regimeTone(regime)).toMatch(/^rgba\((98|122), 255, (132|151), /)
+  })
+
+  it('hides the AoA bracket in attached flight and keeps its scale ordered and bounded', () => {
+    const marks = { alphaNormal: 20, alphaCritical: 30, alphaLimit: 20, alphaMax: 180 }
+    expect(aoaBracket({ ...marks, incidence: 0 })).toBeNull()
+    expect(aoaBracket({ ...marks, incidence: 12 })).toBeNull()
+    expect(aoaBracket({ ...marks, incidence: 16 })!.opacity).toBeLessThan(1)
+    let last = -1
+    for (const incidence of [16, 20, 25, 30, 60, 90, 180]) {
+      const bracket = aoaBracket({ ...marks, incidence })!
+      expect(bracket.caret).toBeGreaterThan(last); last = bracket.caret
+      expect(bracket.caret).toBeLessThanOrEqual(1)
+      expect(bracket.normal).toBeLessThan(bracket.critical)
+      expect(bracket.beyond).toBe(false)
+    }
+    expect(aoaBracket({ ...marks, incidence: 30 })!.caret).toBe(0.5)
+    expect(aoaBracket({ ...marks, alphaMax: 90, incidence: 120 })).toMatchObject({ caret: 1, beyond: true })
+    expect(aoaBracket({ ...marks, alphaLimit: 90, incidence: 40 })!.limit).toBeGreaterThan(aoaBracket({ ...marks, incidence: 40 })!.limit)
+  })
+
+  it('paints the high-AoA glass without new round marks that could read as a pipper', () => {
+    const ctx = {
+      arc: vi.fn(), rotate: vi.fn(), translate: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(),
+      beginPath() {}, clearRect() {}, clip() {}, closePath() {}, fill() {}, fillRect() {},
+      fillText() {}, rect() {}, restore() {}, save() {}, setLineDash() {}, setTransform() {},
+      stroke() {}, strokeText() {},
+    }
+    const painter = createGlassPainter({ getContext: () => ctx } as unknown as HTMLCanvasElement)
+    painter.resize(1600, 900, 1)
+    const state = aircraft(), camera = new PerspectiveCamera(60, 16 / 9, 0.5, 14000)
+    state.position = { x: 0, y: 0, z: 0 }; state.intent.activity = 1; state.orientation = pose(0, 45)
+    camera.lookAt(1, 0, 0); camera.updateMatrixWorld()
+    const glass = glassState({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity })
+    expect(() => painter.draw(glass)).not.toThrow()
+    expect(ctx.arc.mock.calls.filter(call => call[2] > 2).length).toBeLessThanOrEqual(1)
+  })
+
+  it('blinks only for terrain and boundary; holds advisories briefly after they clear', () => {
+    expect(warningSeverity('lowAltitude')).toBe('hazard')
+    expect(warningSeverity('boundaryWarning')).toBe('hazard')
+    for (const advisory of ['hudStall', 'hudStallRecovering', 'hudLowEnergy'] as const) expect(warningSeverity(advisory)).toBe('advisory')
+    let shown = holdWarning({ warning: null, until: 0 }, 'hudStallRecovering', 1000)
+    shown = holdWarning(shown, null, 1000 + ADVISORY_HOLD_MS - 1)
+    expect(shown.warning).toBe('hudStallRecovering')
+    expect(holdWarning(shown, null, 1000 + ADVISORY_HOLD_MS).warning).toBeNull()
+    // A new condition replaces the held plate at once; hazards are never held.
+    expect(holdWarning(shown, 'lowAltitude', 1100).warning).toBe('lowAltitude')
+    expect(holdWarning(holdWarning(shown, 'lowAltitude', 1100), null, 1101).warning).toBeNull()
   })
 })
