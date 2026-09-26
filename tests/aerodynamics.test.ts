@@ -107,7 +107,8 @@ describe.each(aircraftIds)('%s Phase 2 natural aero', id => {
     // Qualitative liveness only; flip time/amount is a benchmark, not a deadline invariant.
     expect(trace.samples.at(-1)!.state.orientation).not.toEqual(state.orientation)
     expect(trace.samples.at(-1)!.state.velocity).not.toEqual({ x: 0, y: 0, z: 0 })
-  })
+  // Two 30 s tracks cloned every substep: about 1.2 s alone, over 5 s under full-suite load.
+  }, 20000)
 
   it('retains gravity through zero without allowing drag alone to reverse the path', () => {
     const p = getFlightProfile(id), s = scenarioSetup('tailSlide', id).state

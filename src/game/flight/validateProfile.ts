@@ -58,6 +58,14 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
       if (!Number.isFinite(value) || value < 0 || value > 1) throw new Error(`${path}.flight.${key}.${axis}: expected 0..1`)
     }
   }
+  for (const axis of ['pitch', 'yaw', 'roll'] as const) {
+    if (!['speedBand', 'limiter', 'always'].includes(flight.commandedRateHoldScope?.[axis])) throw new Error(`${path}.flight.commandedRateHoldScope.${axis}: expected speedBand, limiter or always`)
+  }
+  if (!Number.isFinite(flight.counterResponseBlend) || flight.counterResponseBlend < 0) throw new Error(`${path}.flight.counterResponseBlend: expected finite nonnegative number`)
+  const holdFade = flight.commandedRateHoldIncidenceDeg
+  if (!Number.isFinite(holdFade?.full) || !Number.isFinite(holdFade?.zero) || holdFade.full < 0 || holdFade.zero <= holdFade.full || holdFade.zero > 180) {
+    throw new Error(`${path}.flight.commandedRateHoldIncidenceDeg: expected 0 <= full < zero <= 180`)
+  }
   const holdBand = flight.commandedRateHoldSpeedKph
   if (!Number.isFinite(holdBand?.full) || !Number.isFinite(holdBand?.zero) || holdBand.full < 0 || holdBand.zero <= holdBand.full) {
     throw new Error(`${path}.flight.commandedRateHoldSpeedKph: expected 0 <= full < zero`)

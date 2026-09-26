@@ -113,10 +113,16 @@ it('I2/I3: non-TVC replay stays exact at 30/60/144 FPS with airbrake and burner'
   expect(runAtFps(144, 'f22-notvc', input, 3)).toEqual(base)
 })
 
+// MR2 amendment: the pitch hold follows limiterOpen (owner decision D1(b)), and Shift opens
+// the limiter faster (Phase 4 powerBoost), so the Shift *intent* now shapes the servo's free
+// braking even at zero q. The invariant is that thrust creates no rotation, so the powered rig
+// is compared with a rig holding the same keys whose burner reserve is empty: identical intent,
+// no burner thrust. The unpowered rig keeps the capability and floor-cap checks.
 it('I13/I14: a fully open limiter and burner cannot create powered rotation in a fixed zero-q no-TVC rig', () => {
-  const idle = createAircraft('f22-notvc'), powered = structuredClone(idle), p = getFlightProfile('f22-notvc')
+  const idle = createAircraft('f22-notvc'), powered = structuredClone(idle), dry = structuredClone(idle), p = getFlightProfile('f22-notvc')
+  dry.maneuver.burner = 0; dry.maneuver.burnerLocked = true
   for (let i = 0; i < 600; i++) {
-    for (const [state, afterburner] of [[idle, false], [powered, true]] as const) {
+    for (const [state, afterburner] of [[idle, false], [powered, true], [dry, true]] as const) {
       state.velocity = { x: 0, y: 0, z: 0 }; state.orientation = { x: 0, y: 0, z: 0, w: 1 }; state.position.y = 4000
       // Seed the limiter fully open: the permission C used to force, now with no back door.
       state.stall.severity = 1; state.limiterOpen = 1
@@ -129,7 +135,8 @@ it('I13/I14: a fully open limiter and burner cannot create powered rotation in a
         expect(Math.abs(state.rates[axis])).toBeLessThanOrEqual(p.arcadeControlFloor.maxRate[axis] + 1e-9)
       }
     }
-    expect(powered.rates).toEqual(idle.rates)
-    expect(powered.flightForces!.allocation.floor).toEqual(idle.flightForces!.allocation.floor)
+    expect(powered.engine.actualThrust).toBeGreaterThan(dry.engine.actualThrust)
+    expect(powered.rates).toEqual(dry.rates)
+    expect(powered.flightForces!.allocation.floor).toEqual(dry.flightForces!.allocation.floor)
   }
 })

@@ -1,6 +1,6 @@
 # Maneuver & Control Rework — แผนใหม่ (Rev. 5 draft)
 
-> สถานะ: **D1–D6, D8, D9 ตอบแล้ว, D7 ยังเปิด** (§7). ความคืบหน้า: MR0 ([report](psm-mr0-implementation.md)), MR1 ([report](psm-mr1-implementation.md)) ส่งแล้ว
+> สถานะ: **D1–D6, D8, D9 ตอบแล้ว, D7 ยังเปิด** (§7). ความคืบหน้า: MR0 ([report](psm-mr0-implementation.md)), MR1 ([report](psm-mr1-implementation.md)), MR2 ([report](psm-mr2-implementation.md)) ส่งแล้ว; MR3 ขึ้นไปยังไม่เริ่ม
 > Baseline: commit `77333d9`, physics `p8-pedal-turn-1`, command schema 2
 > Core Separation Rules ใน [psm-implementation-plan.md §0](psm-implementation-plan.md) ยังใช้ทุกข้อ ท่าทุกท่าต้องเกิดจาก input + physics ไม่มี state, animation หรือปุ่มทำท่า
 > แผนนี้แทนงานที่เหลือของ Phase 8 (personality/effectiveness/breakout/B23) โดยรวมเข้า MR7 และมาก่อน Phase 9
@@ -266,6 +266,7 @@ Script ของทุกท่าเป็น closed-loop ใน harness (ใ�
 **ตอบแล้ว 26 ก.ย. 2026:**
 
 - **D1 = (b)**: pitch hold ถ่วงด้วย `limiterOpen`, roll hold ทุกความเร็ว. ยังต้องผ่าน evidence gates ใน MR2 ก่อนส่ง
+  - **Amendment (MR2 correction rounds)**: pitch hold fade ออกที่ incidence 45→90° (ไม่งั้น B19 notvc 322°, Cobra ตีลังกา) และ `f22-notvc` ไม่มี pitch hold (R12 drift-entry gap). ดู [MR2 report](psm-mr2-implementation.md)
 - **D2 = (a)**: อนุมัติ amend AD5, stability-axis roll weight ต่อลำ
 - **D3 = (a)**: power loop = loop แคบแบบ attached ความเร็วต่ำ thrust พาข้ามด้านบน ใช้ tuning ไม่เพิ่มกลไกปลด path grip. B29 เสนอ: เริ่ม 300–400, Shift + full pull, ครบ 360° โดยความเร็วต่ำสุด ≥ 150 และไม่ดำจนเกิน afterburner top speed
 - **D4 = (b)**: roll ~220–240°/s, ถึง 90° ≈ 0.55 s

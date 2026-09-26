@@ -39,8 +39,20 @@ export interface FlightProfile {
    * target) the servo leaves undamped. 0 damps it all, so steady rate falls to
    * authority / rateResponse when the drive is budget-limited. Grants no authority. */
   commandedRateHold: AeroAxes
+  /** What gates each axis's hold (MR2, owner decision D1(b)): 'speedBand' fades it out
+   * across commandedRateHoldSpeedKph, 'limiter' follows the envelope's limiterOpen
+   * (permission side only), 'always' is 1. Weights only; the hold never adds authority. */
+  commandedRateHoldScope: { pitch: CommandedRateHoldScope; yaw: CommandedRateHoldScope; roll: CommandedRateHoldScope }
   /** Arcade km/h band: full hold at or below `full`, none at or above `zero`. */
   commandedRateHoldSpeedKph: { full: number; zero: number }
+  /** Incidence band (degrees) for the 'limiter' scope: full hold at or below `full`, none at
+   * or above `zero`. Past it the servo brakes the commanded rate again (MR2). */
+  commandedRateHoldIncidenceDeg: { full: number; zero: number }
+  /** Counter-steer width (fraction of the target rate, ≥ 0). The drive response blends from
+   * rateResponse to the counter response as the counter-steered rate grows to this fraction
+   * of the target, so the request is continuous where the rate crosses zero. 0 is the Phase 3
+   * step switch. */
+  counterResponseBlend: number
   /** Response when reversing an existing roll, not starting one (1/s). */
   rollReversalResponse: number
   counterResponse: number
@@ -67,6 +79,7 @@ export interface FlightProfile {
 }
 
 export interface AeroAxes { pitch: number; yaw: number; roll: number }
+export type CommandedRateHoldScope = 'speedBand' | 'limiter' | 'always'
 /** Strictly increasing incidence (degrees), nonnegative stiffness at q=1 (rad/s²). */
 export type RestoringCurve = { incidenceDeg: number; stiffness: number }[]
 /** Strictly increasing incidence (degrees) spanning 0..180; effectiveness in 0..1. */

@@ -37,11 +37,20 @@ export const flightDefaults = {
   driveResponse: 8,
   releaseResponse: 6,
   rateResponse: 5,
-  // Phase 8, owner-approved for yaw only: a held pedal keeps the yaw rate it has
-  // built at low speed. Pitch and roll keep the Phase 3 behavior. The band fades
-  // the hold out before yaw entries at 350+ km/h (owner decision, 26 Sep 2026).
-  commandedRateHold: { pitch: 0, yaw: 1, roll: 0 },
+  // Commanded-rate hold: the servo stops braking the rate the pilot is commanding.
+  // Phase 8 (yaw): a held pedal keeps the yaw rate it has built at low speed; the band
+  // fades the hold out before yaw entries at 350+ km/h (owner decision, 26 Sep 2026).
+  // MR2 (owner decision D1(b), 26 Sep 2026): pitch holds as the limiter opens, so attached
+  // flight keeps the Phase 3 servo; roll holds at every speed. Owner amendment: the pitch
+  // hold fades out from 45° to 90° incidence. Without it a held pull tumbled through 180°
+  // and f22-notvc rotated 322° in 3 s (B19 < 180°).
+  commandedRateHold: { pitch: 1, yaw: 1, roll: 1 },
+  commandedRateHoldScope: { pitch: 'limiter', yaw: 'speedBand', roll: 'always' },
   commandedRateHoldSpeedKph: { full: 200, zero: 300 },
+  commandedRateHoldIncidenceDeg: { full: 45, zero: 90 },
+  // MR2 (RC4): the drive response reaches the counter response once the counter-steered
+  // rate is half the target, instead of stepping where the rate crosses zero.
+  counterResponseBlend: 0.5,
   rollReversalResponse: 18,
   counterResponse: 12,
   neutralResponse: 9,

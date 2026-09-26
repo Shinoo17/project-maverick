@@ -3,6 +3,7 @@
  */
 export const phase0ArchiveVersion = 'p3-powered-psm-1'
 const retiredI4: Record<string, { archiveVersion: string; reason: string }> = {
+  'mr2-servo-1': { archiveVersion: phase0ArchiveVersion, reason: 'MR2 extends the commanded-rate hold to pitch (weighted by limiterOpen) and roll (every speed), owner decision D1(b), and blends the counter-steer drive response continuously through zero rate (RC4). Phase 0 archived inputs remain safety tracks, not output equivalence.' },
   'p8-pedal-turn-1': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 8 yaw commanded-rate hold lets a held pedal keep the yaw rate it has built at low q, and per-axis control power lowers the thrust a yaw-only input requests. Phase 0 archived inputs remain safety tracks, not output equivalence.' },
   'p6-legacy-gates-1': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 6 removes the C debug limiter and the Space High-G command, so archived psmArm/highG inputs no longer act. Phase 0 archived inputs remain safety tracks, not output equivalence.' },
   'p5-recovery-assist-1': { archiveVersion: phase0ArchiveVersion, reason: 'Phase 5 delayed recovery assist steers the nose toward the airflow after neutral release at high incidence. Phase 0 archived inputs remain safety tracks, not output equivalence.' },

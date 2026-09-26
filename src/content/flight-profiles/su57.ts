@@ -39,7 +39,9 @@ export const su57Profile: AircraftFlightProfile = {
     neutralRollResponse: 5,
     minRateTarget: { pitch: 0.2, yaw: 0.15, roll: 0.3 },
     commandedRateHold: { ...flightDefaults.commandedRateHold },
+    commandedRateHoldScope: { ...flightDefaults.commandedRateHoldScope },
     commandedRateHoldSpeedKph: { ...flightDefaults.commandedRateHoldSpeedKph },
+    commandedRateHoldIncidenceDeg: { ...flightDefaults.commandedRateHoldIncidenceDeg },
     controlPowerAxisWeight: { ...flightDefaults.controlPowerAxisWeight },
 
     // Speed and energy.

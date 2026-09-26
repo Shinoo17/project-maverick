@@ -73,7 +73,11 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
   const r = profile.recovery, recovery = envelope.recoveryAssist * envelope.highAoa
   const naturalNorm = Math.hypot(assist.natural.pitch, assist.natural.yaw)
   const band = p.commandedRateHoldSpeedKph
-  const hold = 1 - smoothstep(arcadeSpeed(flow.airspeed), band.full, band.zero)
+  const fade = p.commandedRateHoldIncidenceDeg
+  // 'limiter' holds as the limiter opens and fades out between the incidence band's edges,
+  // so past it the servo brakes the rate again (MR2 owner amendment of D1(b)).
+  const scope = { speedBand: 1 - smoothstep(arcadeSpeed(flow.airspeed), band.full, band.zero),
+    limiter: envelope.limiterOpen * (1 - smoothstep(flow.incidenceDeg, fade.full, fade.zero)), always: 1 }
   const noseRate = assist.burnerActive || naturalNorm === 0 ? 0 : r.noseRate / naturalNorm
   for (const axis of ['pitch', 'yaw', 'roll'] as const) {
     if (command[axis] === 0) {
@@ -89,20 +93,32 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
       // no budget, no correction.
       if (recovery > 0) request[axis] = recoveryRequest[axis] = (goal - useful) * blend / dt
     } else {
-      const response = target[axis] * rates[axis] < 0 ? axis === 'roll' ? p.rollReversalResponse : p.counterResponse : p.rateResponse
-      const blend = 1 - Math.exp(-response * dt)
+      // RC4 (MR2): split the rate into the part counter-steered against the target and the
+      // part along it. The counter part is damped at the counter response; the rest at the
+      // rate response. The drive response blends between the two as the counter-steered
+      // rate grows to counterResponseBlend of the target, so neither term steps where the
+      // rate crosses zero. A zero blend width is the Phase 3 switch.
+      const counterBlend = 1 - Math.exp(-(axis === 'roll' ? p.rollReversalResponse : p.counterResponse) * dt)
+      const alongBlend = 1 - Math.exp(-p.rateResponse * dt)
+      const counter = target[axis] * rates[axis] < 0 ? rates[axis] : 0
+      const counterShare = counter === 0 ? 0 : p.counterResponseBlend > 0
+        ? smoothstep(Math.abs(counter) / Math.max(Math.abs(target[axis]), 1e-9), 0, p.counterResponseBlend) : 1
+      const driveBlend = alongBlend + (counterBlend - alongBlend) * counterShare
       // Separate the dissipative part of the existing first-order rate servo
       // from its powered drive. Only the drive needs positive authority.
       // With hold 0 a held stick cannot sustain an inherited rate once authority
-      // disappears. Hold 1 (Phase 8, owner-approved for the yaw pedal turn) leaves
-      // the rate the pilot is commanding, between zero and the target, to natural
-      // damping; excess rate and counter-steer are still damped. Where the hold-0
-      // drive is fully allocated the net response is identical for every hold. High
-      // incidence is budget-limited at any speed, so the hold fades out above the
-      // pedal speed band and yaw entries at 350+ km/h keep the Phase 3 behavior.
-      const held = hold * p.commandedRateHold[axis] * clamp(rates[axis], Math.min(0, target[axis]), Math.max(0, target[axis]))
-      servoDamping[axis] = -(rates[axis] - held) * blend / dt
-      request[axis] = (target[axis] - held) * blend / dt
+      // disappears. A hold leaves the rate the pilot is commanding, between zero and the
+      // target, to natural damping; excess rate and counter-steer are still damped. Where
+      // the hold-0 drive is fully allocated the net response is identical for every hold.
+      // High incidence is budget-limited at any speed, so each axis's hold is gated:
+      // yaw by the pedal speed band (Phase 8); pitch by the open limiter, fading out between
+      // 45° and 90° incidence so a held pull stops near the Cobra instead of tumbling and a
+      // non-TVC airframe cannot carry an entry rate over the top (B19); roll always (MR2,
+      // owner decision D1(b) and its amendment). A counter-steered rate has no held part,
+      // so the hold only ever meets the along-target drive response.
+      const held = scope[p.commandedRateHoldScope[axis]] * p.commandedRateHold[axis] * clamp(rates[axis], Math.min(0, target[axis]), Math.max(0, target[axis]))
+      servoDamping[axis] = -(counter * counterBlend + (rates[axis] - counter - held) * alongBlend) / dt
+      request[axis] = (target[axis] - held) * driveBlend / dt
     }
   }
   return { request, recoveryRequest, servoDamping, normalLimit, hardTurn }

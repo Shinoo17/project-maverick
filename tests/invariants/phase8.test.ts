@@ -51,16 +51,34 @@ describe('Phase 8 commanded-rate hold', () => {
     }
   })
 
-  it('shipping profiles hold yaw only; pitch and roll keep the Phase 3 no-sustain contract', () => {
-    for (const id of ids) expect(getFlightProfile(id).flight.commandedRateHold).toEqual({ pitch: 0, yaw: 1, roll: 0 })
-    const state = driftSpawn('su57', 150), profile = getFlightProfile('su57')
+  // MR2 (owner decision D1(b) and its amendment) extends the hold: pitch as the limiter opens,
+  // fading out from 45° to 90° incidence, and roll at every speed. Attached flight (limiter
+  // closed) and pitch past 90° keep the Phase 3 no-sustain contract.
+  it('shipping profiles hold yaw by speed, pitch by the open limiter below 90° and roll always', () => {
+    for (const id of ids) {
+      // f22-notvc has no pitch hold (MR2 owner decision): R12 drift-entry gap.
+      expect(getFlightProfile(id).flight.commandedRateHold).toEqual({ pitch: id === 'f22-notvc' ? 0 : 1, yaw: 1, roll: 1 })
+      expect(getFlightProfile(id).flight.commandedRateHoldScope).toEqual({ pitch: 'limiter', yaw: 'speedBand', roll: 'always' })
+      expect(getFlightProfile(id).flight.commandedRateHoldIncidenceDeg).toEqual({ full: 45, zero: 90 })
+    }
+    const profile = getFlightProfile('su57'), blend = 1 - Math.exp(-profile.flight.rateResponse * dt)
+    const command = (state: AircraftState) => ({ ...neutralCommand(0, state.id), pitch: 1, yaw: 1, roll: 1 })
+    const state = driftSpawn('su57', 150)
     state.rates = { pitch: 0.01, yaw: 0.01, roll: 0.01 }
-    const command = { ...neutralCommand(0, state.id), pitch: 1, yaw: 1, roll: 1 }
-    const result = control(state, command, profile), blend = 1 - Math.exp(-profile.flight.rateResponse * dt)
-    // A rate below the target: yaw is left to natural aero, pitch and roll are still damped.
+    // Closed limiter: yaw and roll are left to natural aero, pitch is still damped.
+    let result = control(state, command(state), profile)
     expect(Math.abs(result.servoDamping.yaw)).toBe(0)
+    expect(Math.abs(result.servoDamping.roll)).toBe(0)
     expect(result.servoDamping.pitch).toBeCloseTo(-0.01 * blend / dt, 12)
-    expect(result.servoDamping.roll).toBeLessThan(0)
+    // Open limiter at low incidence: pitch is held too.
+    state.limiterOpen = 1
+    result = control(state, command(state), profile)
+    expect(Math.abs(result.servoDamping.pitch)).toBe(0)
+    // Open limiter past 90° incidence: pitch is damped again.
+    const high = driftSpawn('su57', 450), a = 100 * Math.PI / 180
+    high.velocity = { x: 125 * Math.cos(a), y: -125 * Math.sin(a), z: 0 }
+    high.limiterOpen = 1; high.rates = { pitch: 0.01, yaw: 0, roll: 0 }
+    expect(control(high, { ...neutralCommand(0, high.id), pitch: 1 }, profile).servoDamping.pitch).toBeCloseTo(-0.01 * blend / dt, 12)
   })
 
   it('the hold fades out across the speed band, back to the Phase 3 servo above it', () => {
@@ -131,5 +149,42 @@ describe('Phase 8 per-axis control power', () => {
     expect(power([{ yaw: 1 }, {}])).toBeCloseTo(p.controlPower * p.controlPowerAxisWeight.yaw, 12)
     // No input history leaves the Phase 4.5C request unweighted.
     expect(power([])).toBe(p.controlPower)
+  })
+})
+
+describe('MR2 continuous counter-steer response (RC4)', () => {
+  const at = (id: string, rate: number, width: number, axis: 'pitch' | 'roll' = 'roll') => {
+    const profile = structuredClone(getFlightProfile(id)); profile.flight.counterResponseBlend = width
+    const state = driftSpawn(id, 450); state.rates = { pitch: 0, yaw: 0, roll: 0, [axis]: rate }
+    return control(state, { ...neutralCommand(0, state.id), [axis]: 1 }, profile)
+  }
+  it.each(ids)('%s: the request is continuous where a counter-steered rate crosses zero', id => {
+    for (const axis of ['pitch', 'roll'] as const) {
+      const before = at(id, -1e-7, 0.5, axis), after = at(id, 1e-7, 0.5, axis)
+      expect(Math.abs(before.request[axis] - after.request[axis])).toBeLessThan(1e-6)
+      // The Phase 3 switch (width 0) steps there.
+      expect(Math.abs(at(id, -1e-7, 0, axis).request[axis] - at(id, 1e-7, 0, axis).request[axis])).toBeGreaterThan(1)
+    }
+  })
+  it('a hard counter-steer keeps the full counter response; damping stays dissipative', () => {
+    const p = getFlightProfile('f22').flight, target = at('f22', 0, 0.5).request.roll
+    const hard = at('f22', -3, 0.5), phase3 = at('f22', -3, 0)
+    expect(hard.request.roll).toBeCloseTo(phase3.request.roll, 12)
+    expect(hard.servoDamping.roll).toBeCloseTo(phase3.servoDamping.roll, 12)
+    expect(hard.request.roll).toBeGreaterThan(target)
+    expect(hard.servoDamping.roll).toBeGreaterThan(0)
+    expect(p.counterResponseBlend).toBe(0.5)
+  })
+  it('validates the MR2 fields', () => {
+    const cases: [string, (f: ReturnType<typeof getFlightProfile>['flight']) => void][] = [
+      ['commandedRateHoldScope.pitch', f => { (f.commandedRateHoldScope as Record<string, string>).pitch = 'sometimes' }],
+      ['counterResponseBlend', f => { f.counterResponseBlend = -1 }],
+      ['commandedRateHoldIncidenceDeg', f => { f.commandedRateHoldIncidenceDeg = { full: 90, zero: 45 } }],
+      ['commandedRateHoldIncidenceDeg', f => { f.commandedRateHoldIncidenceDeg = { full: 45, zero: 200 } }],
+    ]
+    for (const [key, edit] of cases) {
+      const profile = structuredClone(getFlightProfile('f22')); edit(profile.flight)
+      expect(() => validateFlightProfile(profile, 'plane')).toThrow(`plane.flight.${key}`)
+    }
   })
 })

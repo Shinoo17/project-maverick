@@ -53,6 +53,8 @@ Immelmann and Kulbit. They add per-axis smoothness (latency, overshoot, request 
 rate zero crossing, jerk) and the RC5 mouse bank-sweep probe, and check `maneuverTargets`.
 Report only. `MANEUVER_REPORT_LABEL` names `out/<label>.json`/`.md`. `mr-baseline/` is the
 tracked copy of every report at `77333d9` that the MR evidence gates compare against.
+`mr-results/mrN/` holds each MR phase's reviewed results (markdown, maneuvers JSON and
+gzipped jet-drift metrics), next to the baseline they are compared with.
 
 `camera.report.ts` reports B21 (Phase 7): the public `FlightCamera` driven from live F-22/Su-57
 traces (Cobra, Kulbit, tail slide, reversal, pedal, drift entries, handoff, roll + pull) at

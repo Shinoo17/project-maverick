@@ -4,7 +4,7 @@ import { f22Profile } from '../../content/flight-profiles/f22'
 import type { AircraftFlightProfile } from './profileTypes'
 
 // Bump when tuning or simulation rules change; replays must use matching physics.
-export const flightProfileVersion = 'p8-pedal-turn-1'
+export const flightProfileVersion = 'mr2-servo-1'
 
 export function getFlightProfile(aircraftId: string): AircraftFlightProfile {
   return flightProfiles[getAircraft(aircraftId).flightProfileId]
