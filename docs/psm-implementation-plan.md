@@ -528,6 +528,7 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 
 > Rev. 4: ทำก่อน final Phase 7. การ tune ให้เล่นได้ใน 4.5A/B/C ต้องทำภายในแต่ละขั้น ไม่เลื่อนทั้งหมดมาที่นี่. คง F-22 commanded yaw TVC = 0 และ coupled moment bounds ตาม Phase 3 resolution; ประเมิน aero yaw และ roll + pitch แยกจาก Su-57 multi-axis TVC.
 
+- Pedal turn energy (controlPower ระหว่าง yaw, low-q yaw authority, recovery acceleration): ดู [psm-phase8-pedal-energy-findings.md](psm-phase8-pedal-energy-findings.md) และ `benchmarks/flight/pedalEnergy.report.ts`; owner decisions ในเอกสารนั้นต้องตอบก่อน tune
 - F-22, Su-57 tuning ตาม personality; non-TVC จริง (F/A-18 หรือ F-16) ต้องมี model + rig (`presentationIds` มีแค่ `f22`/`su57` [schemas.ts:4](../src/content/schemas.ts#L4))
 - **ไฟล์:** `content/flight-profiles/*`, `content/aircraft/index.ts`, `render/aircraft/*`, `docs/flight-profiles.md`
 

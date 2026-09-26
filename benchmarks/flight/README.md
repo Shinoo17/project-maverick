@@ -38,6 +38,10 @@ not the physics version being executed. Reports have a 30 s timeout because thei
 and achieved full-stick rate at beta 30/60/90 with alpha held at zero, each as a
 fraction of the same airframe at beta 0. They exist because B20's one-second speed
 loss cannot show whether a broadside aircraft still commands attached-flow authority.
+
+`pedal-energy.json`/`.md` report trim power by speed, a vertical climb → bleed → Airbrake +
+yaw → W + Shift flow, and a level 150 km/h input matrix. They are Phase 8 input; see
+[the pedal energy findings](../../docs/psm-phase8-pedal-energy-findings.md).
 Report only; target ranges wait for the Phase 8 playtest.
 
 `phase8.json`/`.md` report B11 (Phase 8 pedal turn: body yaw travel, time to 360° and
