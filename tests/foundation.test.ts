@@ -4,6 +4,7 @@ import { FixedClock } from '../src/game/runtime/clock'
 import { aircraft, getAircraft } from '../src/content/aircraft'
 import { validateAircraft, validateSession } from '../src/content/validate'
 import { parseSettings } from '../src/platform/storage'
+import { defaultMouseSettings } from '../src/game/input/mouseStick'
 
 describe('headless foundation', () => {
   it('creates independent entity IDs, even for the same aircraft, and serializes safely', () => {
@@ -59,8 +60,8 @@ describe('content and persisted settings', () => {
   })
   it('recovers from corrupt, unknown and future settings; preserves valid choices', () => {
     for (const raw of ['{', 'null', '[]', '{"version":2}', '{"version":1,"aircraftId":"missing"}']) {
-      expect(parseSettings(raw)).toEqual({ version: 1, aircraftId: 'f22', locale: 'th' })
+      expect(parseSettings(raw)).toEqual({ version: 1, aircraftId: 'f22', locale: 'th', controls: defaultMouseSettings })
     }
-    expect(parseSettings('{"version":1,"aircraftId":"su57","locale":"en"}')).toEqual({ version: 1, aircraftId: 'su57', locale: 'en' })
+    expect(parseSettings('{"version":1,"aircraftId":"su57","locale":"en"}')).toEqual({ version: 1, aircraftId: 'su57', locale: 'en', controls: defaultMouseSettings })
   })
 })

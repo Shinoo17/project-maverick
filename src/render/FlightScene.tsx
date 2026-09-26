@@ -14,13 +14,13 @@ import type { AircraftState } from '../game/state/WorldState'
 import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
 import { WORLD_STEP } from '../game/runtime/clock'
-import { screenFrame } from '../game/input/mouseStick'
+import { MOUSE_RELATIVE, MOUSE_STICK, screenFrame } from '../game/input/mouseStick'
 import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import type { HudDriver } from '../features/flight/FlightInstruments'
 
-export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null> }
+export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null> }
 interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; onReady: () => void; onTelemetry: (state: AircraftState) => void }
 function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
@@ -91,11 +91,17 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
     // The held position is already clamped to the gate, so the marker is simply where it is.
-    const marker = indicators.stick.current
+    const marker = indicators.stick.current, input = session.input
+    const reach = (input.mouse.mode === 'relative' ? MOUSE_RELATIVE : MOUSE_STICK).reach * input.gate.radius
     if (marker) {
-      marker.style.left = `${size.width / 2 + session.input.stick.px}px`
-      marker.style.top = `${size.height / 2 + session.input.stick.py}px`
+      marker.style.left = `${size.width / 2 + input.stick.px}px`
+      marker.style.top = `${size.height / 2 + input.stick.py}px`
+      // Full deflection is marked on the stick itself, so the hand learns where the edge is.
+      marker.dataset.full = String(Math.hypot(input.stick.px, input.stick.py) >= reach * 0.999)
     }
+    // The full-deflection circle, drawn where the stick reads full.
+    const gate = indicators.gate?.current
+    if (gate) gate.style.width = gate.style.height = `${2 * reach}px`
     // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.

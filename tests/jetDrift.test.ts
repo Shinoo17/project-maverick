@@ -15,12 +15,12 @@ import { stepFlight } from '../src/game/flight/stepFlight'
 import { stepSpeed } from '../src/game/flight/speed'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { FLIGHT_STEP as dt, WORLD_STEP } from '../src/game/runtime/clock'
-import { runAtFps } from './invariants/helpers'
+import { runAtFps, positionalHorizon } from './invariants/helpers'
 import { runFlightReplay } from '../src/game/playground/replay'
 
 it('real cardinal/diagonal mouse paths reach entry without changing fine aim or body-axis meaning', () => {
   for (const [x, y] of [[0, -240], [240, -240], [-240, -240]]) {
-    const input = new FlightInput(); input.engage(); input.move(x, y); input.press('Space')
+    const input = new FlightInput(positionalHorizon); input.engage(); input.move(x, y); input.press('Space')
     const command = input.command(0, 'a', 'mouse')
     expect(readIntent(command, createPilotIntent(), dt, 0).demand).toBe(1)
     expect(command.yaw).toBe(0)
@@ -28,7 +28,7 @@ it('real cardinal/diagonal mouse paths reach entry without changing fine aim or 
     centreStick(input.stick)
     expect(readIntent(input.command(2, 'a', 'mouse'), createPilotIntent(), dt, 0).activity).toBe(0)
   }
-  const input = new FlightInput(); input.engage(); input.move(0, -30)
+  const input = new FlightInput(positionalHorizon); input.engage(); input.move(0, -30)
   expect(readIntent(input.command(0, 'a', 'mouse'), createPilotIntent(), dt, 0).demand).toBe(0)
   // Q/E ramp on the command timeline (Phase 6) and reverse through exact centre.
   const pedalStep = WORLD_STEP / PEDAL_RAMP_SECONDS
@@ -138,7 +138,7 @@ it('I18 directional brake has exact dissipative impulse work and cannot reverse 
 
 it.each(driftIds)('%s actual keyboard/mouse handoffs replay with all new memory at 30/60/144 FPS', id => {
   const run = (fps: number) => {
-    const input = new FlightInput(); input.engage()
+    const input = new FlightInput(positionalHorizon); input.engage()
     return runAtFps(fps, id, (tick, entityId) => {
       input.held.clear(); centreStick(input.stick)
       if (tick < 60) { input.move(240, -240); input.press('Space') }

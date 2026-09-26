@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { FlightInput } from '../src/game/input/FlightInput'
+import { positionalHorizon } from './invariants/helpers'
 import { screenFrame } from '../src/game/input/mouseStick'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { interpretEnvelope } from '../src/game/flight/envelope'
@@ -10,7 +11,7 @@ it('the flow-blended positional mouse produces identical commands and flight at 
   const run = (fps: number) => {
     const runtime = new GameRuntime({ mode: 'playground', aircraftIds: ['f22'] })
     runtime.reset('recovery'); runtime.start()
-    const input = new FlightInput(); input.engage(); input.move(0, -input.gate.radius)
+    const input = new FlightInput(positionalHorizon); input.engage(); input.move(0, -input.gate.radius)
     input.press('Space'); input.press('ShiftLeft')
     let peakBlend = 0
     for (let frame = 0; frame < 4 * fps; frame++) runtime.advance(1 / fps, (tick, id) => {

@@ -2,6 +2,19 @@
 
 [กลับ Master Plan](../../MASTER_PLAN.md) · P1 · เจ้าของปุ่มและการ resolve input เพียงไฟล์เดียว
 
+## เมาส์หลัง MR1 · 26 กันยายน 2026
+
+ที่มา: [maneuver/control plan §4](../psm-maneuver-control-plan.md) และ [MR1 report](../psm-mr1-implementation.md). เป็น input เท่านั้น ไม่เปลี่ยน physics, `PilotCommand` หรือ command schema
+
+- **โหมด Relative (default, owner D5)**: เมาส์ขยับ stick เหมือนเดิม แต่ stick คืนกลางเองด้วย τ = 0.2 s ต่อ command tick (ไม่ใช่ต่อ frame) ขยับเร็ว = คำสั่งมาก หยุดขยับ = เครื่องหยุดหมุน สุดพิกัดที่ครึ่งหนึ่งของรัศมี gate
+- **โหมด Positional stick (option)**: ตำแหน่งตัวชี้คือคันบังคับ ปรับ shaping เป็น curve 1.5, dead zone 0.04 และสุดพิกัดที่ 35% ของด้านสั้นของจอ ครึ่งทางได้ราว 33%
+- **Control frame**: default คือ **ตัวเครื่อง** (เมาส์ขึ้น = เชิดหัวเสมอ ทุก bank และทุก incidence). Option "อิงเส้นขอบฟ้า" คือ polar mapping เดิมที่อ่านในกรอบของกล้อง
+- **Settings** (เก็บใน `maverick.settings` ฟิลด์ `controls`): โหมด, control frame, ความไว ×0.5–2, invert pitch, เมาส์ X = roll หรือ yaw
+- **ไม่มีคลิกขวาค้าง** (owner D6): สงวนไว้ให้ missile ท่าที่ต้องค้างการดึงใช้ ↑
+- HUD: วงประแสดงระยะสุดพิกัด ตัวชี้ stick สว่างขึ้นเมื่อถึงขอบ
+
+วิธีใช้ที่แนะนำ: เล็ง = ขยับน้อยๆ ใกล้กลาง + Q/E · เลี้ยว = เลื่อนข้างเพื่อเอียงแล้วดึงขึ้น, A/D หมุนเร็วสุด · high AoA = Space ค้างก่อนแล้วสะบัดขึ้น (หรือ ↑ ค้าง) · ออกจากท่า = ดันลงผ่านกลาง ปล่อย Space แล้ว W หรือ Shift
+
 ## ปุ่มที่ใช้จริงหลัง PSM Phase 6 · 25 กันยายน 2026
 
 W/S เร่ง/ลดความเร็ว; **Space ค้าง = Airbrake** และเป็นปุ่มหลักสำหรับเข้ามุมปะทะสูง (Space + ดึง/yaw ที่ 350–700 อาร์เคด กม./ชม.); Shift ค้าง = afterburner (และเพิ่ม power intent); Q/E yaw แบบ ramp เชิงเส้น 0.2 s ต่อ command tick (ปล่อยแล้วกลับศูนย์พอดี); A/D และลูกศร pitch/roll; R reset; V camera roll mode; P/Esc พัก

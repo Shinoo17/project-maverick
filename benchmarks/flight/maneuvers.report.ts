@@ -5,21 +5,29 @@ import { Quaternion, Vector3 } from 'three'
 import { bell, bellProbe, cobraEntry, cobraExit, herbst, immelmann, kulbit, loop, maneuverIds, pedalTurn, powerLoop, rollMetrics, rollSpeeds, smoothnessMetrics, spawnAt } from './maneuvers'
 import { maneuverTargets, targetStatus, type Target } from './targets'
 import { flightProfileVersion } from '../../src/game/flight/profile'
-import { createMouseStick, readStickAxes, screenFrame } from '../../src/game/input/mouseStick'
+import { createMouseStick, defaultMouseSettings, readStickAxes, screenFrame } from '../../src/game/input/mouseStick'
+import { FlightInput } from '../../src/game/input/FlightInput'
 
 /** MR0 maneuver instrumentation (docs/psm-maneuver-control-plan.md §3, §5 MR0). Report only.
  * MANEUVER_REPORT_LABEL names out/<label>.{json,md} so before/after pairs sit side by side. */
 const label = process.env.MANEUVER_REPORT_LABEL ?? 'maneuvers'
 type Row = Record<string, unknown>
 
-/** RC5: pointer held at the top-right corner (45°, full deflection) while the bank sweeps. */
+/** RC5: pointer held at the top-right corner (45°, full deflection) while the bank sweeps.
+ * `horizon`/`aircraft` read the stick in the camera's frame (pre-MR1); `body` is the MR1
+ * default control frame, fed the horizon camera's frame to show it is ignored. */
 function mouseProbe() {
   const stick = createMouseStick()
   stick.live = true; stick.x = Math.SQRT1_2; stick.y = Math.SQRT1_2
-  return [0, 45, 90, 135, 180].flatMap(bankDeg => (['horizon', 'aircraft'] as const).map(mode => {
+  return [0, 45, 90, 135, 180].flatMap(bankDeg => (['horizon', 'aircraft', 'body'] as const).map(mode => {
     const state = spawnAt('f22', 450), q = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -bankDeg * Math.PI / 180)
     state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
-    const axes = readStickAxes(stick, screenFrame(state, mode), 0)!
+    let axes: { pitch: number; roll: number }
+    if (mode === 'body') {
+      const input = new FlightInput({ ...defaultMouseSettings, mode: 'stick' }); input.setViewport(1000, 1000); input.engage()
+      input.move(Math.SQRT1_2 * input.gate.radius, -Math.SQRT1_2 * input.gate.radius); input.screen = screenFrame(state, 'horizon')
+      axes = input.command(0, 'a', 'mouse')
+    } else axes = readStickAxes(stick, screenFrame(state, mode), 0)!
     return { bankDeg, mode, pitch: Math.round(axes.pitch * 100) / 100, roll: Math.round(axes.roll * 100) / 100 }
   }))
 }

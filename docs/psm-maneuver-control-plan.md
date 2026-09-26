@@ -1,6 +1,6 @@
 # Maneuver & Control Rework — แผนใหม่ (Rev. 5 draft)
 
-> สถานะ: **D1–D6, D8, D9 ตอบแล้ว, D7 ยังเปิด** (§7). ความคืบหน้า: MR0 ส่งแล้ว ([report](psm-mr0-implementation.md))
+> สถานะ: **D1–D6, D8, D9 ตอบแล้ว, D7 ยังเปิด** (§7). ความคืบหน้า: MR0 ([report](psm-mr0-implementation.md)), MR1 ([report](psm-mr1-implementation.md)) ส่งแล้ว
 > Baseline: commit `77333d9`, physics `p8-pedal-turn-1`, command schema 2
 > Core Separation Rules ใน [psm-implementation-plan.md §0](psm-implementation-plan.md) ยังใช้ทุกข้อ ท่าทุกท่าต้องเกิดจาก input + physics ไม่มี state, animation หรือปุ่มทำท่า
 > แผนนี้แทนงานที่เหลือของ Phase 8 (personality/effectiveness/breakout/B23) โดยรวมเข้า MR7 และมาก่อน Phase 9

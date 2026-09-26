@@ -9,7 +9,7 @@ import { envelopeLabel, interpretEnvelope, stepEnvelope } from '../../src/game/f
 import { getFlightProfile, validateFlightProfile } from '../../src/game/flight/profile'
 import { readIntent, createPilotIntent } from '../../src/game/flight/intent'
 import { createAircraft, aircraftIds, runScenario, runTrack } from '../../benchmarks/flight/harness'
-import { assertAircraftValid, assertActuatorStep, assertLimiterStep, runAtFps } from './helpers'
+import { assertAircraftValid, assertActuatorStep, assertLimiterStep, runAtFps, positionalHorizon } from './helpers'
 import { runFlightReplay } from '../../src/game/playground/replay'
 import { flightInstrumentation } from '../../src/game/flight/instrumentation'
 import { flightWarning } from '../../src/features/flight/telemetry'
@@ -161,7 +161,7 @@ it('labels and presentation have no effect on an automatic flight trace', () => 
 })
 
 it('Space is Airbrake, Shift is Afterburner, X is unbound, and the positional mouse correction blends continuously', () => {
-  const input = new FlightInput(); input.press('KeyX'); input.press('Space'); input.press('ShiftLeft')
+  const input = new FlightInput(positionalHorizon); input.press('KeyX'); input.press('Space'); input.press('ShiftLeft')
   expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true, afterburner: true })
   for (const angle of [-Math.PI, -1, 1, Math.PI]) for (const y of [-100, 100]) {
     input.clear(); input.engage(); input.move(150, y); input.screen = { angle, blend: 1 }

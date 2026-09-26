@@ -6,6 +6,12 @@ import type { AircraftState } from '../../src/game/state/WorldState'
 import { getFlightProfile } from '../../src/game/flight/profile'
 import { stepFlight } from '../../src/game/flight/stepFlight'
 import { hydrateGoldenState, type Golden } from '../../benchmarks/flight/harness'
+import { defaultMouseSettings, type MouseSettings } from '../../src/game/input/mouseStick'
+
+/** The pre-MR1 mouse: positional stick read in the frame the camera holds. MR1 made the
+ * relative stick and the body frame the default (owner decision D5); tests written for the
+ * positional stick opt into it explicitly and keep testing the same behavior. */
+export const positionalHorizon: MouseSettings = { ...defaultMouseSettings, mode: 'stick', frame: 'horizon' }
 
 export function assertAircraftValid(state: AircraftState) {
   const visit = (value: unknown, path: string) => {

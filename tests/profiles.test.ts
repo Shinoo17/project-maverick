@@ -8,6 +8,7 @@ import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { runFlightReplay } from '../src/game/playground/replay'
 import { parseSettings } from '../src/platform/storage'
+import { defaultMouseSettings } from '../src/game/input/mouseStick'
 import { getExhaustProfile } from '../src/render/exhaust/profile'
 import { getVaporProfile } from '../src/render/vapor/profile'
 
@@ -91,7 +92,7 @@ describe('full aircraft armament', () => {
   })
   it('ignores retired preset fields in settings and sessions and exports clean replays', () => {
     const settings = parseSettings(JSON.stringify({ version: 1, aircraftId: 'su57', locale: 'en', loadoutByAircraft: { f22: 'f22-guns', su57: 'su57-guns' } }))
-    expect(settings).toEqual({ version: 1, aircraftId: 'su57', locale: 'en' })
+    expect(settings).toEqual({ version: 1, aircraftId: 'su57', locale: 'en', controls: defaultMouseSettings })
     const config = { mode: 'playground' as const, aircraftIds: ['su57'], loadoutIds: ['su57-guns'] }
     const runtime = new GameRuntime(config)
     expect(runtime.snapshot().aircraft[0].stores).toEqual(fullArmament(aircraft[1]))

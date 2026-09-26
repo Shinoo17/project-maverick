@@ -27,10 +27,11 @@ describe('P2 maneuvers (Phase 6: no PSM phase, entry envelope or C)', () => {
 })
 
 import { FlightInput } from '../src/game/input/FlightInput'
+import { positionalHorizon } from './invariants/helpers'
 import { runFlightReplay } from '../src/game/playground/replay'
 describe('P2 playground lifecycle', () => {
   it('maps Space to the airbrake, leaves X and C unbound, and blends the inverted mouse frame with incidence', () => {
-    const input = new FlightInput()
+    const input = new FlightInput(positionalHorizon)
     for (const code of ['KeyX', 'KeyC']) {
       input.press(code); expect(input.command(0, 'a', 'keyboard')).toEqual(neutralCommand(0, 'a')); input.held.delete(code)
     }
