@@ -1,0 +1,237 @@
+{
+  "flightProfileVersion": "p8-pedal-turn-1",
+  "pedal": [
+    {
+      "aircraft": "f22",
+      "flow": "level",
+      "startKph": 150,
+      "travel6sDeg": 140,
+      "travel8sDeg": 202,
+      "time360": null,
+      "kphAt360": null,
+      "speedLowKph": -17,
+      "speedHighKph": 63,
+      "endKph": 213,
+      "nosePitchEndDeg": -11,
+      "altitudeLossM": 188,
+      "peakControlPowerPct": 42
+    },
+    {
+      "aircraft": "f22",
+      "flow": "vertical",
+      "startKph": 150,
+      "travel6sDeg": 84,
+      "travel8sDeg": 133,
+      "time360": null,
+      "kphAt360": null,
+      "speedLowKph": -77,
+      "speedHighKph": 13,
+      "endKph": 163,
+      "nosePitchEndDeg": -43,
+      "altitudeLossM": -54,
+      "peakControlPowerPct": 42
+    },
+    {
+      "aircraft": "su57",
+      "flow": "level",
+      "startKph": 150,
+      "travel6sDeg": 392,
+      "travel8sDeg": 555,
+      "time360": 5.62,
+      "kphAt360": 161,
+      "speedLowKph": -17,
+      "speedHighKph": 12,
+      "endKph": 172,
+      "nosePitchEndDeg": -39,
+      "altitudeLossM": 169,
+      "peakControlPowerPct": 42
+    },
+    {
+      "aircraft": "su57",
+      "flow": "vertical",
+      "startKph": 150,
+      "travel6sDeg": 385,
+      "travel8sDeg": 550,
+      "time360": 5.7,
+      "kphAt360": 17,
+      "speedLowKph": -134,
+      "speedHighKph": 0,
+      "endKph": 84,
+      "nosePitchEndDeg": -52,
+      "altitudeLossM": -12,
+      "peakControlPowerPct": 42
+    },
+    {
+      "aircraft": "f22-notvc",
+      "flow": "level",
+      "startKph": 150,
+      "travel6sDeg": 140,
+      "travel8sDeg": 202,
+      "time360": null,
+      "kphAt360": null,
+      "speedLowKph": -17,
+      "speedHighKph": 63,
+      "endKph": 213,
+      "nosePitchEndDeg": -11,
+      "altitudeLossM": 188,
+      "peakControlPowerPct": 42
+    },
+    {
+      "aircraft": "f22-notvc",
+      "flow": "vertical",
+      "startKph": 150,
+      "travel6sDeg": 84,
+      "travel8sDeg": 133,
+      "time360": null,
+      "kphAt360": null,
+      "speedLowKph": -77,
+      "speedHighKph": 13,
+      "endKph": 163,
+      "nosePitchEndDeg": -43,
+      "altitudeLossM": -54,
+      "peakControlPowerPct": 42
+    }
+  ],
+  "traits": {
+    "f22": {
+      "cobraTimeTo90": 1.333,
+      "cobraSpeedLoss": 42,
+      "kulbitTime360": 3.95,
+      "timeToAlphaNormal": 0.808,
+      "release45Incidence15": 8.9
+    },
+    "su57": {
+      "cobraTimeTo90": 1.417,
+      "cobraSpeedLoss": 52,
+      "kulbitTime360": 4.167,
+      "timeToAlphaNormal": 0.842,
+      "release45Incidence15": 9.4
+    },
+    "f22-notvc": {
+      "cobraTimeTo90": null,
+      "cobraSpeedLoss": 1,
+      "kulbitTime360": null,
+      "timeToAlphaNormal": 0.817,
+      "release45Incidence15": 8.9
+    }
+  },
+  "checks": [
+    {
+      "id": "B11.pedal.su57Time360",
+      "value": 5.62,
+      "status": "ok"
+    },
+    {
+      "id": "B11.pedal.f22ToSu57Travel6s",
+      "value": 0.357,
+      "status": "ok"
+    },
+    {
+      "id": "B11.pedal.su57LevelSpeedBand",
+      "value": 17,
+      "status": "ok"
+    },
+    {
+      "id": "B22.yaw: Su-57 > F-22 (pedal travel)",
+      "value": null,
+      "status": "ok"
+    },
+    {
+      "id": "B22.pitch: F-22 ≤ Su-57 (Kulbit 360° time)",
+      "value": null,
+      "status": "ok"
+    },
+    {
+      "id": "B22.recovery: F-22 ≤ Su-57 (release45 time to alphaNormal)",
+      "value": null,
+      "status": "ok"
+    },
+    {
+      "id": "B22.stability: F-22 ≤ Su-57 (incidence 1.5 s after release45)",
+      "value": null,
+      "status": "ok"
+    }
+  ],
+  "sweep": [
+    {
+      "aircraft": "f22",
+      "yawWeight": 1,
+      "levelTime360": null,
+      "levelKphAt360": null,
+      "levelEndKph": 444,
+      "verticalTravel8s": 217,
+      "verticalLow": -24,
+      "verticalHigh": 136
+    },
+    {
+      "aircraft": "f22",
+      "yawWeight": 0.8,
+      "levelTime360": null,
+      "levelKphAt360": null,
+      "levelEndKph": 311,
+      "verticalTravel8s": 194,
+      "verticalLow": -34,
+      "verticalHigh": 50
+    },
+    {
+      "aircraft": "f22",
+      "yawWeight": 0.6,
+      "levelTime360": null,
+      "levelKphAt360": null,
+      "levelEndKph": 213,
+      "verticalTravel8s": 133,
+      "verticalLow": -77,
+      "verticalHigh": 13
+    },
+    {
+      "aircraft": "f22",
+      "yawWeight": 0.4,
+      "levelTime360": null,
+      "levelKphAt360": null,
+      "levelEndKph": 192,
+      "verticalTravel8s": 86,
+      "verticalLow": -128,
+      "verticalHigh": 0
+    },
+    {
+      "aircraft": "su57",
+      "yawWeight": 1,
+      "levelTime360": 5.32,
+      "levelKphAt360": 212,
+      "levelEndKph": 285,
+      "verticalTravel8s": 582,
+      "verticalLow": -150,
+      "verticalHigh": 0
+    },
+    {
+      "aircraft": "su57",
+      "yawWeight": 0.8,
+      "levelTime360": 5.42,
+      "levelKphAt360": 187,
+      "levelEndKph": 201,
+      "verticalTravel8s": 571,
+      "verticalLow": -150,
+      "verticalHigh": 0
+    },
+    {
+      "aircraft": "su57",
+      "yawWeight": 0.6,
+      "levelTime360": 5.62,
+      "levelKphAt360": 161,
+      "levelEndKph": 172,
+      "verticalTravel8s": 550,
+      "verticalLow": -134,
+      "verticalHigh": 0
+    },
+    {
+      "aircraft": "su57",
+      "yawWeight": 0.4,
+      "levelTime360": 6.03,
+      "levelKphAt360": 132,
+      "levelEndKph": 135,
+      "verticalTravel8s": 507,
+      "verticalLow": -143,
+      "verticalHigh": 0
+    }
+  ]
+}

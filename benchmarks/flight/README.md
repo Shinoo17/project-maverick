@@ -46,6 +46,14 @@ personality ordering against the plan's G2 table, and a yaw control-power weight
 Report only; targets are `phase8Targets` in `targets.ts`. See
 [the Phase 8 report](../../docs/psm-phase8-implementation.md).
 
+`maneuvers.json`/`.md` (MR0, [plan](../../docs/psm-maneuver-control-plan.md)) report the
+maneuver catalogue M1–M7 plus Kulbit as closed-loop recipes (`maneuvers.ts`): roll rate by
+speed, Cobra entry and exit, pedal turn, Herbst, loops and the vertical power loop, Bell,
+Immelmann and Kulbit. They add per-axis smoothness (latency, overshoot, request step at the
+rate zero crossing, jerk) and the RC5 mouse bank-sweep probe, and check `maneuverTargets`.
+Report only. `MANEUVER_REPORT_LABEL` names `out/<label>.json`/`.md`. `mr-baseline/` is the
+tracked copy of every report at `77333d9` that the MR evidence gates compare against.
+
 `camera.report.ts` reports B21 (Phase 7): the public `FlightCamera` driven from live F-22/Su-57
 traces (Cobra, Kulbit, tail slide, reversal, pedal, drift entries, handoff, roll + pull) at
 30/60/144 fps, four aspect ratios and both roll modes. It measures nose pipper/FPM visibility

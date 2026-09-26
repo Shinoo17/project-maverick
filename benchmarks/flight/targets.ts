@@ -10,7 +10,8 @@ export const targets: Record<string, Target> = {
   'B12.fullStick500.limiterOpen': { max: 0.35 },
   'B14.psmIntent.timeTo70': { max: 1.2 },
   'B16.limiter.chatterCount': { max: 2 },
-  'B1.cobra.peakAoa': { min: 75, max: 95 },
+  // D8 (26 Sep 2026): reset from 75–95°; Space + Shift already reached 110–120°.
+  'B1.cobra.peakAoa': { min: 90, max: 120 },
   'B2.cobra.timeTo90': { min: 0.7, max: 1.2 },
   'B4.cobra.headingChange': { max: 20 },
   'B5.kulbit.time360': { min: 3, max: 4.5 },
@@ -41,6 +42,34 @@ export function targetStatus(value: number | null, target?: Target): 'ok' | '⚠
 export const jetDriftTargets = {
   entry30Seconds450to600: { min: 0.4, max: 0.8 },
   entry30Speed650to700: { min: 350 },
+} satisfies Record<string, Target>
+
+/** Maneuver catalogue targets (docs/psm-maneuver-control-plan.md §3), proposed 26 Sep 2026.
+ * Report only until MR7 promotes the stable ones. D4: roll ~220–240°/s, 90° ≈ 0.55 s.
+ * D8: B1 peak incidence resets to 90–120°. B29 follows the D3 follow-up. */
+export const maneuverTargets = {
+  rollPeakRate: { min: 220, max: 240 },
+  rollTime90: { max: 0.6 },
+  cobraTime90NoShift: { max: 1.0 },
+  cobraPeakAoa: { min: 90, max: 120 },
+  cobraExitSeconds: { max: 1.2 },
+  cobraExitPathClimb: { max: 20 },
+  cobraExitAltitude: { max: 60 },
+  herbstSeconds: { max: 4 },
+  herbstAltitude: { max: 200 },
+  powerLoopSeconds: { max: 5 },
+  powerLoopWidth: { max: 160 },
+  powerLoopIncidence: { max: 30 },
+  powerLoopMinKph: { min: 150 },
+  bellMinKph: { max: 30 },
+  bellBackSlide: { min: 0, minExclusive: true },
+  bellNoseDrop: { max: 3 },
+  immelmannHalfLoop: { max: 4 },
+  immelmannRollOut: { max: 1.0 },
+  immelmannTopKph: { min: 300 },
+  kulbitTime360: { min: 3, max: 4.5 },
+  pedalSu57Time360: { max: 8 },
+  pedalRatio: { max: 0.6 },
 } satisfies Record<string, Target>
 
 /** Phase 8 owner decisions (26 Sep 2026). Report only until the pedal-turn playtest. */
