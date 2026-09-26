@@ -8,15 +8,18 @@ export const practiceSpawns = {
 } as const
 export type PracticePreset = keyof typeof practiceSpawns
 export const trainingRings = [800, 1800, 2800]
-export function createPracticeState() { return { rings: 0, pitch: 0, roll: 0, yaw: 0, brakeSeconds: 0, highGDegrees: 0, recovered: false, wasLow: false } }
+export function createPracticeState() { return { rings: 0, pitch: 0, roll: 0, yaw: 0, brakeSeconds: 0, highGDegrees: 0, recovered: false, wasLow: false, highAoaPeak: 0, highAoaRecoveries: 0 } }
 export type PracticeState = ReturnType<typeof createPracticeState>
 export function stepPractice(p: PracticeState, s: AircraftState, c: PilotCommand, previousX: number, dt: number) {
   p.pitch += Math.abs(c.pitch) * dt; p.roll += Math.abs(c.roll) * dt; p.yaw += Math.abs(c.yaw) * dt
   if (c.airbrake) p.brakeSeconds += dt
-  if (s.maneuver.highG > 0.5) p.highGDegrees += s.maneuver.pathRate * dt
+  if ((s.flightForces?.envelope.gAllowance ?? 1) > 1.3) p.highGDegrees += s.maneuver.pathRate * dt
   const speed = Math.hypot(s.velocity.x, s.velocity.y, s.velocity.z)
   if (speed < 60) p.wasLow = true
   if (p.wasLow && speed >= 90 && s.maneuver.alpha < 20 && s.alive) p.recovered = true
+  // Lesson observer only: incidence past 70° that returns to flying flight counts once.
+  p.highAoaPeak = Math.max(p.highAoaPeak, s.maneuver.alpha)
+  if (p.highAoaPeak >= 70 && s.maneuver.alpha < 20 && speed > 60 && s.alive) { p.highAoaRecoveries++; p.highAoaPeak = 0 }
   const ring = trainingRings[p.rings]
   if (ring !== undefined && previousX < ring && s.position.x >= ring) {
     // Evaluate the crossing point, not the end of the integration step.

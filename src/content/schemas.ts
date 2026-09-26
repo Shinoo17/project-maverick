@@ -6,6 +6,8 @@ export type Locale = 'th' | 'en'
 export type LocalizedText = Record<Locale, string>
 
 export interface AircraftDefinition {
+  /** Development validation variants are selectable only in Playground. */
+  playgroundOnly?: boolean
   id: AircraftId
   flightProfileId: FlightProfileId
   presentationId: typeof presentationIds[number]

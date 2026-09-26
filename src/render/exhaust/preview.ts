@@ -10,7 +10,7 @@ import { prepareAnimations } from '../aircraft/animationStages'
 import { CondensationVolume } from '../vapor/CondensationVolume'
 import { createFlightRig } from '../aircraft/flightRig'
 import { GameRuntime } from '../../game/runtime/GameRuntime'
-import { stepThrustVectoring } from '../../game/flight/thrustVectoring'
+import { stepThrustVectoring, tvcTargets } from '../../game/flight/thrustVectoring'
 import { FLIGHT_STEP } from '../../game/runtime/clock'
 import { getFlightProfile } from '../../game/flight/profile'
 import { flightExhaustConditions } from './profile'
@@ -94,12 +94,11 @@ function frame(now: number) {
   const aoa = Number(params.get('aoa') ?? (scenario === 'cobra' ? 90 : scenario === 'recovery' ? 60 : 0))
   state.velocity = { x: speed, y: scenario === 'recovery' ? -80 : 0, z: 0 }
   state.maneuver.alpha = aoa
-  state.maneuver.phase = scenario === 'cobra' ? 'active' : scenario === 'recovery' ? 'recovery' : 'normal'
   state.rates.pitch = pitch * flightProfile.pitchRate; state.rates.roll = roll * flightProfile.rollRate
   state.rates.yaw = scenario === 'yaw' ? flightProfile.yawRate : 0
   actuatorTime += dt
   while (actuatorTime >= FLIGHT_STEP) {
-    stepThrustVectoring(state, { pitch, roll, yaw: scenario === 'yaw' ? 1 : 0 }, FLIGHT_STEP, speed, aoa)
+    stepThrustVectoring(state, tvcTargets({ pitch, roll, yaw: scenario === 'yaw' ? 1 : 0 }, 1, getFlightProfile(state.aircraftId).thrustVectoring!), FLIGHT_STEP)
     actuatorTime -= FLIGHT_STEP
   }
   updateRig?.(state, dt); jet.updateMatrixWorld(true)

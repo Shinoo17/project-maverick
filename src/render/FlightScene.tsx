@@ -1,3 +1,6 @@
+import { observeAirflow } from '../game/flight/airflow'
+import { interpretEnvelope } from '../game/flight/envelope'
+import { getFlightProfile } from '../game/flight/profile'
 import { memo, Suspense, useEffect, useMemo, useRef, type RefObject } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Box3, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
@@ -11,18 +14,18 @@ import type { AircraftState } from '../game/state/WorldState'
 import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
 import { WORLD_STEP } from '../game/runtime/clock'
-import { screenFrame } from '../game/input/mouseStick'
+import { MOUSE_RELATIVE, MOUSE_STICK, screenFrame } from '../game/input/mouseStick'
 import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import type { HudDriver } from '../features/flight/FlightInstruments'
 
-export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null> }
+export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null> }
 interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; onReady: () => void; onTelemetry: (state: AircraftState) => void }
 function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
-  const rig = useMemo(() => new FlightCamera(), [])
+  const rig = useMemo(() => new FlightCamera(new URLSearchParams(window.location.search).has('driftCamera')), [])
   const group = useRef<Group>(null)
   const elapsed = useRef(0), reset = useRef(-1)
   const rigTick = useRef(-1)
@@ -38,6 +41,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     orientation.position.copy(bounds.getCenter(new Vector3())).negate()
     return root
   }, [asset, definition])
+  const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId] })
@@ -66,7 +70,8 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
         // Refreshed per simulation tick, not per rendered frame: the sim steps at 120 Hz
         // inside one advance() call, and a correction held across four ticks of a 2 rad/s
         // roll would make the aircraft answer differently at 30 fps than at 144.
-        session.input.psmControl = live.maneuver.phase === 'active' || live.maneuver.phase === 'recovery'
+        const profile = getFlightProfile(live.aircraftId)
+        session.input.highAoa = interpretEnvelope(live, observeAirflow(live, profile), profile).highAoa
         session.input.screen = screenFrame(live, session.cameraMode)
         return session.input.command(tick, id, session.preset)
       })
@@ -77,22 +82,30 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     const rigDt = session.running ? Math.min(dt, .1) * session.timeScale : rigTick.current >= 0 ? Math.max(0, tick - rigTick.current) * WORLD_STEP : 0
     updateRig(state, rigDt, rigReset)
     rigTick.current = tick
-    const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha) }
+    // Velocity is interpolated with the pose, so the camera's path look and the drawn FPM agree between ticks.
+    const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha),
+      velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
-    rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion)
+    rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
     // The held position is already clamped to the gate, so the marker is simply where it is.
-    const marker = indicators.stick.current
+    const marker = indicators.stick.current, input = session.input
+    const reach = (input.mouse.mode === 'relative' ? MOUSE_RELATIVE : MOUSE_STICK).reach * input.gate.radius
     if (marker) {
-      marker.style.left = `${size.width / 2 + session.input.stick.px}px`
-      marker.style.top = `${size.height / 2 + session.input.stick.py}px`
+      marker.style.left = `${size.width / 2 + input.stick.px}px`
+      marker.style.top = `${size.height / 2 + input.stick.py}px`
+      // Full deflection is marked on the stick itself, so the hand learns where the edge is.
+      marker.dataset.full = String(Math.hypot(input.stick.px, input.stick.py) >= reach * 0.999)
     }
+    // The full-deflection circle, drawn where the stick reads full.
+    const gate = indicators.gate?.current
+    if (gate) gate.style.width = gate.style.height = `${2 * reach}px`
     // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
-    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) })
+    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity })
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
   })

@@ -1,0 +1,713 @@
+{
+  "flightProfileVersion": "p8-pedal-turn-1",
+  "sampleHz": 120,
+  "phase2Playtest": {
+    "status": "pending",
+    "b9Targets": "pending owner playtest",
+    "fadeBand": "provisional 20–30 degrees"
+  },
+  "results": [
+    {
+      "aircraftId": "f22",
+      "scenarios": [
+        {
+          "scenario": "hardTurn900",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B13.hardTurn900.peakLimiter",
+              "value": 0.052833122734074076,
+              "unit": "fraction",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.peakGAllowance",
+              "value": 1.1735462314795488,
+              "unit": "multiplier",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.peakAoa",
+              "value": 3.8490346173712067,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.meanG",
+              "value": 12.43199757768953,
+              "unit": "G",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.speedLoss",
+              "value": 140.37047877781396,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "fullStick500",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.fullStick500.peakAoa",
+              "value": 7.90490706475965,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B12.fullStick500.peakIncidence",
+              "value": 7.90490706475965,
+              "unit": "deg",
+              "target": {
+                "max": 25
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B12.fullStick500.limiterOpen",
+              "value": 0.12994525224022627,
+              "unit": "fraction",
+              "target": {
+                "max": 0.35
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "cobra",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B1.cobra.peakAoa",
+              "value": 92.30136945383704,
+              "unit": "deg",
+              "target": {
+                "min": 75,
+                "max": 95
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B2.cobra.timeTo90",
+              "value": 1.3333333333333333,
+              "unit": "s",
+              "target": {
+                "min": 0.7,
+                "max": 1.2
+              },
+              "status": "⚠ out"
+            },
+            {
+              "id": "B3.cobra.speedLoss",
+              "value": 42.07310154859499,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B4.cobra.headingChange",
+              "value": 73.0318950807191,
+              "unit": "deg",
+              "target": {
+                "max": 20
+              },
+              "status": "⚠ out"
+            }
+          ]
+        },
+        {
+          "scenario": "kulbit",
+          "duration": 8,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B5.kulbit.time360",
+              "value": 3.9499999999999997,
+              "unit": "s",
+              "target": {
+                "min": 3,
+                "max": 4.5
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "reversal180",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B15.reversal.headingChange",
+              "value": 119.23617569242458,
+              "unit": "deg at 10 s / stop",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B15.reversal.altitudeLoss",
+              "value": 454.8109215626148,
+              "unit": "m",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "tailSlide",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B10.tailSlide.flipTime",
+              "value": 2.8666666666666663,
+              "unit": "s after apex",
+              "target": {
+                "max": 4
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "pedal",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.pedal.yawRate",
+              "value": 39.53609087996321,
+              "unit": "deg/s at 2 s",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "release45",
+          "duration": 2,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B8.recovery.naturalDuringDelay",
+              "value": 7.644442448683122,
+              "unit": "deg reduction / 0.2 s without assist",
+              "target": {
+                "min": 0,
+                "minExclusive": true
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B6.recovery.assistFull",
+              "value": 0.5416666666666666,
+              "unit": "s after release",
+              "target": {
+                "min": 0.5,
+                "max": 1.5
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B7.recovery.backToNormal",
+              "value": null,
+              "unit": "s after release",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B9.natural.release45.incidence0s",
+              "value": 45,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.2s",
+              "value": 37.35555755131688,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.5s",
+              "value": 31.86229299237789,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1s",
+              "value": 14.620817630043584,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1.5s",
+              "value": 8.874637991504219,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxAttitudeStep",
+              "value": 0.3466692243308813,
+              "unit": "deg/substep",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxRate",
+              "value": 41.60030691982712,
+              "unit": "deg/s",
+              "target": null,
+              "status": "pending playtest"
+            }
+          ]
+        },
+        {
+          "scenario": "sideslip60",
+          "duration": 1,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B20.sideslip60.speedLoss1s",
+              "value": 32.297319177012064,
+              "unit": "arcade km/h",
+              "target": {
+                "min": 3.111747605072548,
+                "minExclusive": true
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "psmIntent450",
+          "duration": 8,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B14.psmIntent.timeTo70",
+              "value": 1.05,
+              "unit": "s",
+              "target": {
+                "max": 1.2
+              },
+              "status": "ok"
+            },
+            {
+              "id": "psmIntent.timeToLimiter90",
+              "value": 0.21666666666666667,
+              "unit": "s",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "psmIntent.peakIncidence",
+              "value": 116.15519906110116,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "psmIntent.peakLimiter",
+              "value": 0.9999999999999996,
+              "unit": "fraction",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "aircraftId": "su57",
+      "scenarios": [
+        {
+          "scenario": "hardTurn900",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B13.hardTurn900.peakLimiter",
+              "value": 0.054509532819136966,
+              "unit": "fraction",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.peakGAllowance",
+              "value": 1.1735462314795488,
+              "unit": "multiplier",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.peakAoa",
+              "value": 3.850772997510632,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.meanG",
+              "value": 12.424297777919055,
+              "unit": "G",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.speedLoss",
+              "value": 142.17238830771626,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "fullStick500",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.fullStick500.peakAoa",
+              "value": 7.840201511940172,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B12.fullStick500.peakIncidence",
+              "value": 7.840201511940172,
+              "unit": "deg",
+              "target": {
+                "max": 25
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B12.fullStick500.limiterOpen",
+              "value": 0.12994525224022627,
+              "unit": "fraction",
+              "target": {
+                "max": 0.35
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "cobra",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B1.cobra.peakAoa",
+              "value": 92.00050439167435,
+              "unit": "deg",
+              "target": {
+                "min": 75,
+                "max": 95
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B2.cobra.timeTo90",
+              "value": 1.4166666666666667,
+              "unit": "s",
+              "target": {
+                "min": 0.7,
+                "max": 1.2
+              },
+              "status": "⚠ out"
+            },
+            {
+              "id": "B3.cobra.speedLoss",
+              "value": 51.819120530773574,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B4.cobra.headingChange",
+              "value": 81.72462503513884,
+              "unit": "deg",
+              "target": {
+                "max": 20
+              },
+              "status": "⚠ out"
+            }
+          ]
+        },
+        {
+          "scenario": "kulbit",
+          "duration": 8,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B5.kulbit.time360",
+              "value": 4.166666666666667,
+              "unit": "s",
+              "target": {
+                "min": 3,
+                "max": 4.5
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "reversal180",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B15.reversal.headingChange",
+              "value": 125.72176410057307,
+              "unit": "deg at 10 s / stop",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B15.reversal.altitudeLoss",
+              "value": 392.1804354983153,
+              "unit": "m",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "tailSlide",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B10.tailSlide.flipTime",
+              "value": 2.874999999999999,
+              "unit": "s after apex",
+              "target": {
+                "max": 4
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "pedal",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.pedal.yawRate",
+              "value": 50.41793126122118,
+              "unit": "deg/s at 2 s",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "release45",
+          "duration": 2,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B8.recovery.naturalDuringDelay",
+              "value": 7.464115139994853,
+              "unit": "deg reduction / 0.2 s without assist",
+              "target": {
+                "min": 0,
+                "minExclusive": true
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B6.recovery.assistFull",
+              "value": 0.5416666666666666,
+              "unit": "s after release",
+              "target": {
+                "min": 0.5,
+                "max": 1.5
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B7.recovery.backToNormal",
+              "value": null,
+              "unit": "s after release",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B9.natural.release45.incidence0s",
+              "value": 45,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.2s",
+              "value": 37.53588486000515,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.5s",
+              "value": 32.69006940028188,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1s",
+              "value": 15.218867732894475,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1.5s",
+              "value": 9.37486194074479,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxAttitudeStep",
+              "value": 0.35806424271940784,
+              "unit": "deg/substep",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxRate",
+              "value": 42.96770912640445,
+              "unit": "deg/s",
+              "target": null,
+              "status": "pending playtest"
+            }
+          ]
+        },
+        {
+          "scenario": "sideslip60",
+          "duration": 1,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B20.sideslip60.speedLoss1s",
+              "value": 34.71350809742753,
+              "unit": "arcade km/h",
+              "target": {
+                "min": 3.111747605072548,
+                "minExclusive": true
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "psmIntent450",
+          "duration": 8,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B14.psmIntent.timeTo70",
+              "value": 1.1166666666666667,
+              "unit": "s",
+              "target": {
+                "max": 1.2
+              },
+              "status": "ok"
+            },
+            {
+              "id": "psmIntent.timeToLimiter90",
+              "value": 0.21666666666666667,
+              "unit": "s",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "psmIntent.peakIncidence",
+              "value": 110.13916551185561,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "psmIntent.peakLimiter",
+              "value": 0.9999999999999996,
+              "unit": "fraction",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "capacity": [
+    {
+      "aircraftId": "f22",
+      "values": [
+        {
+          "thrust": 3.5,
+          "pitch": 0.39295658626359187,
+          "yaw": 0,
+          "roll": 0.130021807653114
+        },
+        {
+          "thrust": 27.5,
+          "pitch": 3.087516034928222,
+          "yaw": 0,
+          "roll": 1.0215999172744672
+        },
+        {
+          "thrust": 65,
+          "pitch": 7.297765173466706,
+          "yaw": 0,
+          "roll": 2.4146907135578313
+        }
+      ]
+    },
+    {
+      "aircraftId": "su57",
+      "values": [
+        {
+          "thrust": 3.5,
+          "pitch": 0.3429277897012797,
+          "yaw": 0.19468070645621682,
+          "roll": 0.18489681351041595
+        },
+        {
+          "thrust": 27.5,
+          "pitch": 2.6944326333671973,
+          "yaw": 1.5296341221559895,
+          "roll": 1.4527606775818396
+        },
+        {
+          "thrust": 65,
+          "pitch": 6.368658951595194,
+          "yaw": 3.6154988341868837,
+          "roll": 3.4337979651934387
+        }
+      ]
+    }
+  ]
+}

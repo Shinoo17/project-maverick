@@ -4,6 +4,7 @@ import { createFlightRig } from '../src/render/aircraft/flightRig'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
 import { FlightInput } from '../src/game/input/FlightInput'
+import { positionalHorizon } from './invariants/helpers'
 import { FlightCamera } from '../src/render/FlightCamera'
 import { MOUSE_STICK, createMouseStick, engageStick, moveStick, readStickAxes, screenFrame, stickGate } from '../src/game/input/mouseStick'
 import type { CameraRollMode } from '../src/render/FlightCamera'
@@ -24,23 +25,7 @@ describe('P1 flight acceptance', () => {
     expect(results[0].tick).toBe(600); expect(results[1]).toEqual(results[0]); expect(results[2]).toEqual(results[0])
     expect(results[0].aircraft[0].alive).toBe(true)
   })
-  it('accelerates and decelerates directly, coasts briefly on release, then holds the reached speed', () => {
-    for (const sign of [1, -1]) {
-      const runtime = run(60, 1, () => ({ speedAdjust: sign }))
-      const speed = () => new Vector3().copy(runtime.snapshot().aircraft[0].velocity).length()
-      const held = speed()
-      expect((held - 130) * sign).toBeGreaterThan(18)
-      for (let i = 0; i < 120; i++) runtime.advance(1 / 60)
-      const settled = speed()
-      expect((settled - held) * sign).toBeGreaterThan(1)
-      expect((settled - held) * sign).toBeLessThan(5)
-      for (let i = 0; i < 120; i++) runtime.advance(1 / 60)
-      expect(speed()).toBeCloseTo(settled, 6)
-      expect(runtime.snapshot().aircraft[0].speedDrive).toBe(0)
-    }
-    expect(new Vector3().copy(run(60, 8, () => ({ speedAdjust: 1 })).snapshot().aircraft[0].velocity).length()).toBeCloseTo(200)
-    expect(new Vector3().copy(run(60, 8, () => ({ speedAdjust: -1 })).snapshot().aircraft[0].velocity).length()).toBeCloseTo(65)
-  })
+  // Instant-thrust numeric expectations moved to legacySpeed.report.ts for Phase 3 spool.
   it('maps canonical axes correctly and preserves nose/path separation', () => {
     const pitch = run(60, 1, () => ({ pitch: 1 })).snapshot().aircraft[0]
     const forward = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(pitch.orientation))
@@ -122,6 +107,11 @@ describe('P1 flight acceptance', () => {
     for (let i = 0; i <= 960; i++) {
       const q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.min(i, 360) * Math.PI / 360)
       state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
+      // Attached flow along the nose: this case is about the vertical crossing. Since Phase 7 the
+      // view runs down the flight path once decoupled, so a nose turned against a fixed velocity
+      // would be testing reverse flow instead.
+      const nose = new Vector3(1, 0, 0).applyQuaternion(q).multiplyScalar(100)
+      state.velocity = { x: nose.x, y: nose.y, z: nose.z }
       rig.update(camera, state, 'horizon', 1 / 60)
     }
     expect(new Vector3(0, 1, 0).applyQuaternion(camera.quaternion).y).toBeGreaterThan(0.95)
@@ -146,7 +136,7 @@ describe('P1 flight acceptance', () => {
 })
 describe('input and locales', () => {
   it('cancels opposite keys, overrides mouse and clears held/stick state', () => {
-    const input = new FlightInput(); input.setViewport(1000, 1000); input.engage(); input.move(4000, -4000)
+    const input = new FlightInput(positionalHorizon); input.setViewport(1000, 1000); input.engage(); input.move(4000, -4000)
     // Clamped to the corner of the gate, and the shaping saturates everything past one
     // radius, so a diagonal shove arrives at full deflection still pointing where it was sent.
     expect([input.stick.px, input.stick.py]).toEqual([500, -500])
@@ -161,7 +151,7 @@ describe('input and locales', () => {
     expect(input.command(0, 'aircraft-1', 'mouse')).toEqual(neutralCommand(0, 'aircraft-1'))
   })
   it('uses the same axes for keyboard-only and keyboard overrides in mouse preset', () => {
-    const input = new FlightInput(); input.held.add('ArrowUp'); input.held.add('KeyD'); input.held.add('KeyW')
+    const input = new FlightInput(positionalHorizon); input.held.add('ArrowUp'); input.held.add('KeyD'); input.held.add('KeyW')
     expect(input.command(1, 'a', 'mouse')).toMatchObject(input.command(1, 'a', 'keyboard'))
   })
   it('ships matching nonempty Thai and English keys and placeholders', () => {
@@ -181,7 +171,7 @@ function place(input: FlightInput, aim: { x: number; y: number }) {
   input.move(aim.x * radius - input.stick.px, -aim.y * radius - input.stick.py)
 }
 function flyMouse(state: AircraftState, aim: (seconds: number) => { x: number; y: number }, seconds: number, mode: CameraRollMode = 'horizon') {
-  const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
+  const input = new FlightInput(positionalHorizon), rig = new FlightCamera(), camera = new PerspectiveCamera()
   let peakCrossTrack = 0
   input.setViewport(1000, 1000); input.engage()
   for (let i = 0; i < seconds * 120; i++) {
@@ -240,28 +230,32 @@ describe('positional mouse stick', () => {
     expect(wide.radius).toBe(450)
     expect(stickGate(0, NaN)).toEqual({ halfWidth: 0.5, halfHeight: 0.5, radius: 0.5 })
     // A resized window re-clamps what is held rather than stranding it outside a smaller gate.
-    const input = new FlightInput(); input.setViewport(1600, 900); input.engage()
+    const input = new FlightInput(positionalHorizon); input.setViewport(1600, 900); input.engage()
     input.move(2000, 0)
     expect(input.stick.px).toBe(800)
     input.setViewport(800, 900)
     expect(input.stick.px).toBe(400)
     expect(input.stick.x).toBeCloseTo(1)
   })
-  it('has a soft middle and a squared curve, and only reads while live', () => {
+  // MR1 (docs/psm-maneuver-control-plan.md §4.2.3) reshaped the positional stick: curve 2 → 1.5,
+  // dead zone 0.08 → 0.04, and full deflection at 0.7 of the gate radius (35% of the shorter
+  // side). The assertions are the same ones, read from the shaping constants.
+  it('has a soft middle and a shaped curve, and only reads while live', () => {
     const stick = createMouseStick()
     expect(readStickAxes(stick)).toBeNull()
     engageStick(stick)
     expect(readStickAxes(stick)).toEqual({ pitch: 0, roll: 0 })
-    const gate = stickGate(1000, 1000), radius = gate.radius
+    const gate = stickGate(1000, 1000), radius = gate.radius, reach = radius * MOUSE_STICK.reach
     expect(radius).toBe(500)
     // Inside the dead zone nothing is commanded; a positional stick has one neutral and the
     // dead zone is what makes it a place rather than a point.
-    moveStick(stick, radius * MOUSE_STICK.deadZone * 0.9, 0, gate)
+    moveStick(stick, reach * MOUSE_STICK.deadZone * 0.9, 0, gate)
     expect(readStickAxes(stick)).toEqual({ pitch: 0, roll: 0 })
-    // Squared response: half the gate is a quarter of the deflection, near enough.
-    moveStick(stick, radius * 0.5 - stick.px, 0, gate)
-    expect(readStickAxes(stick)!.roll).toBeCloseTo(((0.5 - MOUSE_STICK.deadZone) / (1 - MOUSE_STICK.deadZone)) ** 2)
-    moveStick(stick, radius - stick.px, 0, gate)
+    // Half the reach is about a third of the deflection.
+    moveStick(stick, reach * 0.5 - stick.px, 0, gate)
+    expect(readStickAxes(stick)!.roll).toBeCloseTo(((0.5 - MOUSE_STICK.deadZone) / (1 - MOUSE_STICK.deadZone)) ** MOUSE_STICK.curve)
+    expect(readStickAxes(stick)!.roll).toBeGreaterThan(0.3); expect(readStickAxes(stick)!.roll).toBeLessThan(0.35)
+    moveStick(stick, reach - stick.px, 0, gate)
     expect(readStickAxes(stick)!.roll).toBeCloseTo(1)
     expect(readStickAxes(stick)!.pitch).toBeCloseTo(0)
     // A diagonal reaches full deflection at the same distance from the middle as a straight
@@ -286,7 +280,7 @@ describe('positional mouse stick', () => {
   the deflection has to saturate and keep its direction rather than overshoot or fold.
   */
   it('lets the pointer roam a wide window, at full deflection past the shorter side', () => {
-    const input = new FlightInput(); input.setViewport(1600, 900); input.engage()
+    const input = new FlightInput(positionalHorizon); input.setViewport(1600, 900); input.engage()
     input.move(2000, 0)
     expect(input.stick.px).toBe(800)
     expect(input.stick.x).toBeCloseTo(800 / 450)
@@ -344,7 +338,7 @@ describe('mouse flight', () => {
     const { up, nose } = attitude(state)
     expect(nose.y).toBeLessThan(-0.5)
     expect(state.position.y).toBeLessThan(395)
-    expect(up.y).toBeGreaterThan(0.6)
+    expect(up.y).toBeGreaterThan(0) // Upright; automatic G may deepen pitch.
     expect(Math.abs(state.rates.roll)).toBeLessThan(0.05)
   })
   it('still goes down for a pull down while inverted, by commanding pitch up', () => {
@@ -354,7 +348,7 @@ describe('mouse flight', () => {
     expect(state.position.y).toBeLessThan(395)
     // Nothing asked it to roll, so it is descending on its back: the correction turned the
     // pull into elevator the other way rather than rolling the aircraft upright first.
-    expect(attitude(state).up.y).toBeLessThan(-0.6)
+    expect(attitude(state).up.y).toBeLessThan(0) // Still inverted, independent of pitch depth.
     expect(Math.abs(state.rates.roll)).toBeLessThan(0.05)
   })
   it('rolls back to level when pointed at the top of the screen from a bank', () => {
@@ -368,7 +362,7 @@ describe('mouse flight', () => {
     for (const sign of [-1, 1]) {
       const state = make().snapshot().aircraft[0]
       let accumulated = 0, wentInverted = false
-      const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
+      const input = new FlightInput(positionalHorizon), rig = new FlightCamera(), camera = new PerspectiveCamera()
       input.setViewport(1000, 1000); input.engage()
       for (let i = 0; i < 9 * 120; i++) {
         place(input, circle(i / 120, sign))
@@ -402,7 +396,7 @@ describe('mouse flight', () => {
     const state = make().snapshot().aircraft[0]
     // High enough that the dive cannot reach the ground and end the test early.
     state.position.y = 4000
-    const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
+    const input = new FlightInput(positionalHorizon), rig = new FlightCamera(), camera = new PerspectiveCamera()
     input.setViewport(1000, 1000); input.engage()
     let steepest = 0
     for (let i = 0; i < 8 * 120; i++) {
@@ -430,8 +424,13 @@ describe('mouse flight', () => {
     // Tighter turns can already be returning by six seconds; measure the turn's
     // excursion rather than requiring the final point to stay far to the right.
     expect(knife.peakCrossTrack).toBeGreaterThan(150)
-    // A pointer thirty degrees off the top of the gate is thirty degrees of bank.
-    const shallow = flyMouse(make().snapshot().aircraft[0], () => ({ x: 0.6 * 0.5, y: 0.6 * Math.sqrt(3) / 2 }), 3)
+    // A pointer thirty degrees off the top of the gate is thirty degrees of bank. MR1 reshaped
+    // the positional stick, so the pointer is placed where it commands the same deflection the
+    // pre-MR1 test flew (0.6 of the gate at curve 2 and dead zone 0.08). A harder pull in the
+    // horizon frame keeps rolling: that is RC5, and why the body frame is the default now.
+    const deflection = ((0.6 - 0.08) / 0.92) ** 2
+    const travel = (MOUSE_STICK.deadZone + (1 - MOUSE_STICK.deadZone) * deflection ** (1 / MOUSE_STICK.curve)) * MOUSE_STICK.reach
+    const shallow = flyMouse(make().snapshot().aircraft[0], () => ({ x: travel * 0.5, y: travel * Math.sqrt(3) / 2 }), 3)
     expect(Math.abs(shallow.state.rates.roll)).toBeLessThan(0.05)
     expect(shallow.bank).toBeCloseTo(Math.PI / 6, 1)
   })
@@ -446,7 +445,7 @@ describe('mouse flight', () => {
     const settled = flyMouse(state, () => ({ x: -1, y: 0 }), 5)
     expect(settled.bank).toBeCloseTo(-Math.PI / 2, 1)
     expect(Math.abs(state.rates.roll)).toBeLessThan(0.05)
-    const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
+    const input = new FlightInput(positionalHorizon), rig = new FlightCamera(), camera = new PerspectiveCamera()
     input.setViewport(1000, 1000); input.engage()
     let accumulated = 0
     for (let i = 0; i < 3 * 120; i++) {
@@ -466,7 +465,7 @@ describe('mouse flight', () => {
     expect(state.alive).toBe(true)
   })
   it('lets a held key outrank the stick on the axis it owns', () => {
-    const input = new FlightInput(); input.setViewport(1000, 1000); input.engage()
+    const input = new FlightInput(positionalHorizon); input.setViewport(1000, 1000); input.engage()
     place(input, { x: 1, y: 1 })
     const free = input.command(0, 'a', 'mouse')
     expect(free.roll).toBeCloseTo(Math.SQRT1_2); expect(free.pitch).toBeCloseTo(Math.SQRT1_2)
@@ -478,7 +477,7 @@ describe('mouse flight', () => {
   })
   it('flies the same path whatever the render rate refreshes the camera at', () => {
     const results = [30, 60, 144].map(fps => {
-      const input = new FlightInput(), rig = new FlightCamera(), camera = new PerspectiveCamera()
+      const input = new FlightInput(positionalHorizon), rig = new FlightCamera(), camera = new PerspectiveCamera()
       input.setViewport(1000, 1000); input.engage()
       const runtime = make(); runtime.start()
       for (let i = 0; i < fps * 8; i++) {

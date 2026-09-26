@@ -1,8 +1,11 @@
+import { observeAirflow } from '../../game/flight/airflow'
+import { envelopeLabel, interpretEnvelope } from '../../game/flight/envelope'
 /* THESIS: The reference implementation's fighter glass (example/F22), on the training range.
    OWN-WORLD: One phosphor green drawn onto a single canvas, with a translucent green bloom
    under every mark instead of fills or black outlines.
-   STORY: Read attitude off the world-registered ladder, energy off the outboard tapes and the
-   PSM band bracket, height and boundary off the status block beneath the sightline.
+   STORY: Read attitude off the world-registered ladder, energy off the outboard tapes, incidence
+   off the AoA bracket inboard of the speed tape, height and boundary off the status block
+   beneath the sightline. The regime (HI AOA, POST STALL…) sets the α row's brightness.
    FIRST VIEWPORT: Heading tape high; ladder and nose pipper central;
    speed/A/B left, altitude/V/S right; GND, EDGE, pitch/bank and α/G below.
    MOTION: The glass is redrawn from the render loop's interpolated pose every frame. React
@@ -13,7 +16,6 @@ import { Quaternion, Vector3, type Camera } from 'three'
 import type { AircraftState, Vec3 } from '../../game/state/WorldState'
 import { arcadeSpeed } from '../../game/flight/speed'
 import { getFlightProfile } from '../../game/flight/profile'
-import { aircraft } from '../../content/aircraft'
 import { trainingMap } from '../../content/maps'
 import { burnerStatus, flightAttitude } from './telemetry'
 import { createGlassPainter, type BurnerState, type GlassState } from './hudPainter'
@@ -30,11 +32,15 @@ const zero = { x: 0, y: 0, z: 0 }
 const standby: GlassState = {
   live: false, camera: null, position: zero, forward: { x: 1, y: 0, z: 0 }, velocity: zero, speed: 0, altitude: 0, heading: null, pitch: 0, bank: null,
   verticalSpeed: 0, aoa: 0, gLoad: 1, power: 0, groundClearance: 0, edge: 0, burnerReserve: 0, burnerSeconds: 0, burnerState: 'ready', airbrake: false, highG: false, psm: false,
+  regime: 'NORMAL', incidence: 0, alphaNormal: 20, alphaCritical: 30, alphaLimit: 20, alphaMax: 90,
 }
 
 const nose = new Vector3(), attitudeQuaternion = new Quaternion()
 export function glassState({ camera, state, position, orientation, velocity }: HudFrame): GlassState {
-  const m = state.maneuver, maneuverProfile = getFlightProfile(state.aircraftId).maneuver
+  const m = state.maneuver, profile = getFlightProfile(state.aircraftId), maneuverProfile = profile.maneuver
+  const airflow = observeAirflow({ orientation, velocity }, profile)
+  const envelope = interpretEnvelope(state, airflow, profile)
+  const label = envelopeLabel(envelope, state.intent.activity)
   const attitude = flightAttitude(orientation)
   nose.set(1, 0, 0).applyQuaternion(attitudeQuaternion.set(orientation.x, orientation.y, orientation.z, orientation.w))
   const altitude = position.y
@@ -46,17 +52,18 @@ export function glassState({ camera, state, position, orientation, velocity }: H
     groundClearance: altitude,
     edge: Math.max(0, Math.min(trainingMap.radius - Math.hypot(position.x, position.z), trainingMap.radius - altitude)),
     burnerReserve: m.burner, burnerSeconds: m.burner * maneuverProfile.burnerSeconds, burnerState: burnerStates[burnerStatus(state)] ?? 'ready',
-    airbrake: m.airbrake > 0.1, highG: m.highG > 0.1, psm: m.phase === 'active' || m.phase === 'recovery',
+    airbrake: m.airbrake > 0.1, highG: envelope.gAllowance > 1.06, psm: label === 'HIGH_AOA' || label === 'POST_STALL' || label === 'RECOVERING',
+    regime: label, incidence: airflow.incidenceDeg * airflow.confidence, alphaNormal: profile.aero.alphaNormalDeg, alphaCritical: profile.aero.alphaCriticalDeg,
+    alphaLimit: envelope.alphaLimitDeg, alphaMax: profile.aero.maxControllableAlphaDeg,
   }
 }
 
-export const FlightInstruments = memo(function FlightInstruments({ driver, aircraftId = aircraft[0].id }: { driver: RefObject<HudDriver | null>; aircraftId?: string }) {
+export const FlightInstruments = memo(function FlightInstruments({ driver }: { driver: RefObject<HudDriver | null> }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const element = canvas.current, frame = element?.parentElement
     if (!element || !frame) return
-    const maneuverProfile = getFlightProfile(aircraftId).maneuver
-    const painter = createGlassPainter(element, { speedBand: maneuverProfile.psmEnabled ? { min: arcadeSpeed(maneuverProfile.entryMin), max: arcadeSpeed(maneuverProfile.entryMax) } : null })
+    const painter = createGlassPainter(element)
     let last: GlassState = standby
     // Sized from the HUD's own box, so a point projected through the flight camera lands on
     // the same pixel as the WebGL view; the ratio is re-read on zoom or display changes.
@@ -72,7 +79,7 @@ export const FlightInstruments = memo(function FlightInstruments({ driver, aircr
     observer.observe(frame)
     driver.current = hudFrame => { last = glassState(hudFrame); painter.draw(last) }
     return () => { observer.disconnect(); driver.current = null }
-  }, [driver, aircraftId])
+  }, [driver])
   return <canvas ref={canvas} className="hud-glass" aria-hidden="true" />
 })
 

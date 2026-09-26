@@ -1,0 +1,1386 @@
+{
+  "flightProfileVersion": "p8-pedal-turn-1",
+  "phase2BaselineVersion": "p3-natural-aero-2.1",
+  "phase2SourceCommit": "face31e4d16ddadb03ff6f1724134ad451735c77",
+  "participation": 0,
+  "phase2Playtest": "still pending",
+  "results": [
+    {
+      "id": "f22",
+      "gain": 2,
+      "metrics": [
+        {
+          "id": "B1.cobra.peakAoa",
+          "value": 92.30136945383704,
+          "unit": "deg",
+          "target": {
+            "min": 75,
+            "max": 95
+          },
+          "status": "ok"
+        },
+        {
+          "id": "B2.cobra.timeTo90",
+          "value": 1.3333333333333333,
+          "unit": "s",
+          "target": {
+            "min": 0.7,
+            "max": 1.2
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "B3.cobra.speedLoss",
+          "value": 42.07310154859499,
+          "unit": "arcade km/h",
+          "target": null,
+          "status": "report"
+        },
+        {
+          "id": "B4.cobra.headingChange",
+          "value": 73.0318950807191,
+          "unit": "deg",
+          "target": {
+            "max": 20
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "B5.kulbit.time360",
+          "value": 3.9499999999999997,
+          "unit": "s",
+          "target": {
+            "min": 3,
+            "max": 4.5
+          },
+          "status": "ok"
+        },
+        {
+          "id": "baseline.pedal.yawRate",
+          "value": 39.53609087996321,
+          "unit": "deg/s at 2 s",
+          "target": null,
+          "status": "report"
+        }
+      ],
+      "capacity": [
+        {
+          "thrust": 3.5,
+          "commanded": {
+            "positive": {
+              "pitch": 0.37106169070301986,
+              "yaw": 0,
+              "roll": 0.130021807653114
+            },
+            "negative": {
+              "pitch": 0.39295658626359187,
+              "yaw": 0,
+              "roll": 0.130021807653114
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 0.37106169070301986,
+              "yaw": 0.003438952915459554,
+              "roll": 0.130021807653114
+            },
+            "negative": {
+              "pitch": 0.39295658626359187,
+              "yaw": 0.003438952915459554,
+              "roll": 0.130021807653114
+            }
+          }
+        },
+        {
+          "thrust": 27.5,
+          "commanded": {
+            "positive": {
+              "pitch": 2.9154847126665846,
+              "yaw": 0,
+              "roll": 1.0215999172744672
+            },
+            "negative": {
+              "pitch": 3.087516034928222,
+              "yaw": 0,
+              "roll": 1.0215999172744672
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 2.915484712666585,
+              "yaw": 0.02702034433575364,
+              "roll": 1.0215999172744672
+            },
+            "negative": {
+              "pitch": 3.0875160349282225,
+              "yaw": 0.02702034433575364,
+              "roll": 1.0215999172744672
+            }
+          }
+        },
+        {
+          "thrust": 50,
+          "commanded": {
+            "positive": {
+              "pitch": 5.300881295757426,
+              "yaw": 0,
+              "roll": 1.8574543950444855
+            },
+            "negative": {
+              "pitch": 5.613665518051311,
+              "yaw": 0,
+              "roll": 1.8574543950444855
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 5.300881295757427,
+              "yaw": 0.049127898792279336,
+              "roll": 1.8574543950444855
+            },
+            "negative": {
+              "pitch": 5.613665518051312,
+              "yaw": 0.049127898792279336,
+              "roll": 1.8574543950444855
+            }
+          }
+        },
+        {
+          "thrust": 65,
+          "commanded": {
+            "positive": {
+              "pitch": 6.8911456844846555,
+              "yaw": 0,
+              "roll": 2.4146907135578313
+            },
+            "negative": {
+              "pitch": 7.297765173466706,
+              "yaw": 0,
+              "roll": 2.4146907135578313
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 6.891145684484655,
+              "yaw": 0.06386626842996315,
+              "roll": 2.4146907135578313
+            },
+            "negative": {
+              "pitch": 7.297765173466707,
+              "yaw": 0.06386626842996315,
+              "roll": 2.4146907135578313
+            }
+          }
+        }
+      ],
+      "pedal": {
+        "peakYawRateDeg": 13.112954765609159,
+        "yawRotationDeg": 15.963054856906881,
+        "finalYawRateDeg": 13.112954765609159,
+        "meanAllocationRadPerSec2": {
+          "aero": 0.4834715220283086,
+          "tvc": 0,
+          "floor": 0.039795561628629225,
+          "unmet": 4.976241592397098
+        }
+      },
+      "handoff": {
+        "rateDipRadPerSec": 0,
+        "onsetSeconds": 0.008333333333333333,
+        "window": "pre-onset peak over 0.2 s minus minimum over following 0.5 s"
+      },
+      "moderateHandoff": {
+        "rateDipRadPerSec": null,
+        "onsetSeconds": null,
+        "preOnsetAero": null,
+        "preOnsetQ": null,
+        "seed": "140 m/s attached pull, Airbrake from 1 s, W+Shift held"
+      },
+      "limiterPull": {
+        "rotation3s": 268.46580634261477,
+        "rotation8s": 693.3776841746885,
+        "time180": 2.058333333333333,
+        "time360": 3.9416666666666664
+      },
+      "brakeBurner": {
+        "speedLossMps": -3.251848279817551,
+        "initialIncidence": 80,
+        "actualThrustStart": 65.49175849276992,
+        "actualThrustEnd": 77.96997075145083,
+        "pitchCapacityStart": 6.943280752411733
+      },
+      "governor": [
+        {
+          "alpha": 0,
+          "requestedPower": 0.06999999999999999,
+          "actualThrust": 5.797219060169224
+        },
+        {
+          "alpha": 80,
+          "requestedPower": 0.06999999999999999,
+          "actualThrust": 5.797219060169224
+        }
+      ],
+      "lowSpeed": {
+        "controlHeadingRate": 1.6073820953565714,
+        "cap": 1.6074782355081134,
+        "uncappedRate": 12.861738173473823,
+        "capActive": true,
+        "totalHeadingRateIncludingGravity": 0.35485692503971733,
+        "energyStart": 39252.5,
+        "energyEnd": 39247.221087539496,
+        "maxWorkResidual": -0.0033415312478020515
+      },
+      "release": {
+        "firstNormal": 4.925,
+        "seconds": 30.608333333333334,
+        "speed": 201.2134366198006,
+        "incidence": 0.00001722423530049259,
+        "rate": {
+          "pitch": -2.0411459028030869e-7,
+          "yaw": 0,
+          "roll": 0
+        },
+        "alive": false,
+        "stopReason": "terrain"
+      }
+    },
+    {
+      "id": "su57",
+      "gain": 2,
+      "metrics": [
+        {
+          "id": "B1.cobra.peakAoa",
+          "value": 92.00050439167435,
+          "unit": "deg",
+          "target": {
+            "min": 75,
+            "max": 95
+          },
+          "status": "ok"
+        },
+        {
+          "id": "B2.cobra.timeTo90",
+          "value": 1.4166666666666667,
+          "unit": "s",
+          "target": {
+            "min": 0.7,
+            "max": 1.2
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "B3.cobra.speedLoss",
+          "value": 51.819120530773574,
+          "unit": "arcade km/h",
+          "target": null,
+          "status": "report"
+        },
+        {
+          "id": "B4.cobra.headingChange",
+          "value": 81.72462503513884,
+          "unit": "deg",
+          "target": {
+            "max": 20
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "B5.kulbit.time360",
+          "value": 4.166666666666667,
+          "unit": "s",
+          "target": {
+            "min": 3,
+            "max": 4.5
+          },
+          "status": "ok"
+        },
+        {
+          "id": "baseline.pedal.yawRate",
+          "value": 50.41793126122118,
+          "unit": "deg/s at 2 s",
+          "target": null,
+          "status": "report"
+        }
+      ],
+      "capacity": [
+        {
+          "thrust": 3.5,
+          "commanded": {
+            "positive": {
+              "pitch": 0.3314659599698602,
+              "yaw": 0.19468070645621682,
+              "roll": 0.18489681351041595
+            },
+            "negative": {
+              "pitch": 0.3429277897012797,
+              "yaw": 0.19468070645621682,
+              "roll": 0.18489681351041595
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 0.3314659599698602,
+              "yaw": 0.19468070645621682,
+              "roll": 0.18489681351041595
+            },
+            "negative": {
+              "pitch": 0.34292778970127974,
+              "yaw": 0.19468070645621682,
+              "roll": 0.18489681351041595
+            }
+          }
+        },
+        {
+          "thrust": 27.5,
+          "commanded": {
+            "positive": {
+              "pitch": 2.6043753997631875,
+              "yaw": 1.5296341221559895,
+              "roll": 1.4527606775818396
+            },
+            "negative": {
+              "pitch": 2.6944326333671973,
+              "yaw": 1.5296341221559895,
+              "roll": 1.4527606775818396
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 2.6043753997631875,
+              "yaw": 1.5296341221559895,
+              "roll": 1.4527606775818394
+            },
+            "negative": {
+              "pitch": 2.6944326333671973,
+              "yaw": 1.5296341221559895,
+              "roll": 1.4527606775818394
+            }
+          }
+        },
+        {
+          "thrust": 50,
+          "commanded": {
+            "positive": {
+              "pitch": 4.735227999569432,
+              "yaw": 2.781152949374526,
+              "roll": 2.6413830501487987
+            },
+            "negative": {
+              "pitch": 4.898968424303996,
+              "yaw": 2.781152949374526,
+              "roll": 2.6413830501487987
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 4.735227999569432,
+              "yaw": 2.781152949374526,
+              "roll": 2.641383050148799
+            },
+            "negative": {
+              "pitch": 4.898968424303996,
+              "yaw": 2.781152949374526,
+              "roll": 2.641383050148799
+            }
+          }
+        },
+        {
+          "thrust": 65,
+          "commanded": {
+            "positive": {
+              "pitch": 6.155796399440261,
+              "yaw": 3.6154988341868837,
+              "roll": 3.4337979651934387
+            },
+            "negative": {
+              "pitch": 6.368658951595194,
+              "yaw": 3.6154988341868837,
+              "roll": 3.4337979651934387
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 6.155796399440261,
+              "yaw": 3.615498834186884,
+              "roll": 3.4337979651934387
+            },
+            "negative": {
+              "pitch": 6.368658951595194,
+              "yaw": 3.615498834186884,
+              "roll": 3.4337979651934387
+            }
+          }
+        }
+      ],
+      "pedal": {
+        "peakYawRateDeg": 78.65188683955581,
+        "yawRotationDeg": 87.47323623113482,
+        "finalYawRateDeg": 38.98856413663783,
+        "meanAllocationRadPerSec2": {
+          "aero": 0.4838186366729081,
+          "tvc": 1.4440656579201987,
+          "floor": 0,
+          "unmet": 2.3858207312966333
+        }
+      },
+      "handoff": {
+        "rateDipRadPerSec": 0,
+        "onsetSeconds": 0.008333333333333333,
+        "window": "pre-onset peak over 0.2 s minus minimum over following 0.5 s"
+      },
+      "moderateHandoff": {
+        "rateDipRadPerSec": null,
+        "onsetSeconds": null,
+        "preOnsetAero": null,
+        "preOnsetQ": null,
+        "seed": "140 m/s attached pull, Airbrake from 1 s, W+Shift held"
+      },
+      "limiterPull": {
+        "rotation3s": 256.86869040394754,
+        "rotation8s": 645.2283697046734,
+        "time180": 2.1166666666666667,
+        "time360": 4.158333333333333
+      },
+      "brakeBurner": {
+        "speedLossMps": -1.6646506531787395,
+        "initialIncidence": 80,
+        "actualThrustStart": 65.49175849276992,
+        "actualThrustEnd": 77.96997075145083,
+        "pitchCapacityStart": 6.2023681711200656
+      },
+      "governor": [
+        {
+          "alpha": 0,
+          "requestedPower": 0.06999999999999999,
+          "actualThrust": 5.797219060169224
+        },
+        {
+          "alpha": 80,
+          "requestedPower": 0.06999999999999999,
+          "actualThrust": 5.797219060169224
+        }
+      ],
+      "lowSpeed": {
+        "controlHeadingRate": 1.607287624769842,
+        "cap": 1.6073837479702486,
+        "uncappedRate": 12.86098216076658,
+        "capActive": true,
+        "totalHeadingRateIncludingGravity": 0.35501210144355716,
+        "energyStart": 39252.5,
+        "energyEnd": 39240.954543983076,
+        "maxWorkResidual": -0.0033415312478584994
+      },
+      "release": {
+        "firstNormal": 4.808333333333334,
+        "seconds": 27.683333333333334,
+        "speed": 201.35586992346606,
+        "incidence": 0.00003855239455844287,
+        "rate": {
+          "pitch": -4.563632649964008e-7,
+          "yaw": 0,
+          "roll": 0
+        },
+        "alive": false,
+        "stopReason": "terrain"
+      }
+    },
+    {
+      "id": "f22-notvc",
+      "gain": 0,
+      "metrics": [
+        {
+          "id": "B1.cobra.peakAoa",
+          "value": 53.93942392875261,
+          "unit": "deg",
+          "target": {
+            "min": 75,
+            "max": 95
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "B2.cobra.timeTo90",
+          "value": null,
+          "unit": "s",
+          "target": {
+            "min": 0.7,
+            "max": 1.2
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "B3.cobra.speedLoss",
+          "value": 0.9315933418406985,
+          "unit": "arcade km/h",
+          "target": null,
+          "status": "report"
+        },
+        {
+          "id": "B4.cobra.headingChange",
+          "value": 67.49559240557087,
+          "unit": "deg",
+          "target": {
+            "max": 20
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "B5.kulbit.time360",
+          "value": null,
+          "unit": "s",
+          "target": {
+            "min": 3,
+            "max": 4.5
+          },
+          "status": "⚠ out"
+        },
+        {
+          "id": "baseline.pedal.yawRate",
+          "value": 39.536090879963176,
+          "unit": "deg/s at 2 s",
+          "target": null,
+          "status": "report"
+        }
+      ],
+      "capacity": [
+        {
+          "thrust": 3.5,
+          "commanded": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          }
+        },
+        {
+          "thrust": 27.5,
+          "commanded": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          }
+        },
+        {
+          "thrust": 50,
+          "commanded": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          }
+        },
+        {
+          "thrust": 65,
+          "commanded": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          },
+          "moments": {
+            "positive": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            },
+            "negative": {
+              "pitch": 0,
+              "yaw": 0,
+              "roll": 0
+            }
+          }
+        }
+      ],
+      "pedal": {
+        "peakYawRateDeg": 13.112954765609192,
+        "yawRotationDeg": 15.963054856906881,
+        "finalYawRateDeg": 13.112954765609192,
+        "meanAllocationRadPerSec2": {
+          "aero": 0.4834715220283095,
+          "tvc": 0,
+          "floor": 0.039795561628629295,
+          "unmet": 4.976241592397098
+        }
+      },
+      "handoff": {
+        "rateDipRadPerSec": null,
+        "onsetSeconds": null,
+        "window": "pre-onset peak over 0.2 s minus minimum over following 0.5 s"
+      },
+      "moderateHandoff": {
+        "rateDipRadPerSec": null,
+        "onsetSeconds": null,
+        "preOnsetAero": null,
+        "preOnsetQ": null,
+        "seed": "140 m/s attached pull, Airbrake from 1 s, W+Shift held"
+      },
+      "limiterPull": {
+        "rotation3s": 124.37713745314848,
+        "rotation8s": 288.14058873568683,
+        "time180": 4.75,
+        "time360": null
+      },
+      "brakeBurner": {
+        "speedLossMps": -0.16683273572211021,
+        "initialIncidence": 80,
+        "actualThrustStart": 65.49175849276992,
+        "actualThrustEnd": 77.96997075145083,
+        "pitchCapacityStart": 0
+      },
+      "governor": [
+        {
+          "alpha": 0,
+          "requestedPower": 0.06999999999999999,
+          "actualThrust": 5.797219060169224
+        },
+        {
+          "alpha": 80,
+          "requestedPower": 0.06999999999999999,
+          "actualThrust": 5.797219060169224
+        }
+      ],
+      "lowSpeed": {
+        "controlHeadingRate": 1.607384821712078,
+        "cap": 1.6074809623528477,
+        "uncappedRate": 12.861759991477282,
+        "capActive": true,
+        "totalHeadingRateIncludingGravity": 0.355244574726892,
+        "energyStart": 39252.5,
+        "energyEnd": 39551.01957290503,
+        "maxWorkResidual": -0.0033415312477413917
+      },
+      "release": null
+    }
+  ],
+  "yawRatio": 0.16672142643390922,
+  "calibration": [
+    {
+      "id": "f22",
+      "gain": 1,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 87.72074595441609,
+        "timeTo90": null,
+        "headingChange": 103.90670722139161,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 7.241666666666666
+      },
+      "initialPitchRateAt02s": 0.5849024106313172
+    },
+    {
+      "id": "f22",
+      "gain": 1.5,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 90.83063016519971,
+        "timeTo90": 1.6333333333333333,
+        "headingChange": 78.98617520036467,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 5.058333333333334
+      },
+      "initialPitchRateAt02s": 0.6171986193414746
+    },
+    {
+      "id": "f22",
+      "gain": 2,
+      "selected": true,
+      "cobra": {
+        "peakAoa": 92.30136945383704,
+        "timeTo90": 1.3333333333333333,
+        "headingChange": 73.0318950807191,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 3.9499999999999997
+      },
+      "initialPitchRateAt02s": 0.6494943436838907
+    },
+    {
+      "id": "f22",
+      "gain": 2.5,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 94.31489792772877,
+        "timeTo90": 1.175,
+        "headingChange": 72.01674855861785,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 3.283333333333333
+      },
+      "initialPitchRateAt02s": 0.6817895847256891
+    },
+    {
+      "id": "f22",
+      "gain": 3,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 95.1579013237201,
+        "timeTo90": 1.1166666666666667,
+        "headingChange": 72.54261893479355,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 2.9
+      },
+      "initialPitchRateAt02s": 0.7098731841967152
+    },
+    {
+      "id": "su57",
+      "gain": 1,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 86.54731957903898,
+        "timeTo90": null,
+        "headingChange": 111.93929247369582,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 6.866666666666666
+      },
+      "initialPitchRateAt02s": 0.5710088028801487
+    },
+    {
+      "id": "su57",
+      "gain": 1.5,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 90.52603646408161,
+        "timeTo90": 1.7166666666666666,
+        "headingChange": 88.364232634535,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 5.191666666666666
+      },
+      "initialPitchRateAt02s": 0.596349588633295
+    },
+    {
+      "id": "su57",
+      "gain": 2,
+      "selected": true,
+      "cobra": {
+        "peakAoa": 92.00050439167435,
+        "timeTo90": 1.4166666666666667,
+        "headingChange": 81.72462503513884,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 4.166666666666667
+      },
+      "initialPitchRateAt02s": 0.6216900696696852
+    },
+    {
+      "id": "su57",
+      "gain": 2.5,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 93.74682560150413,
+        "timeTo90": 1.25,
+        "headingChange": 80.20364527575744,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 3.5083333333333333
+      },
+      "initialPitchRateAt02s": 0.6470302465263219
+    },
+    {
+      "id": "su57",
+      "gain": 3,
+      "selected": false,
+      "cobra": {
+        "peakAoa": 95.09705407422408,
+        "timeTo90": 1.15,
+        "headingChange": 79.67160609153257,
+        "time360": null
+      },
+      "kulbit": {
+        "peakAoa": null,
+        "timeTo90": null,
+        "headingChange": null,
+        "time360": 3.058333333333333
+      },
+      "initialPitchRateAt02s": 0.6723701197409487
+    }
+  ],
+  "golden": [
+    {
+      "id": "f22",
+      "tracks": [
+        {
+          "scenario": "cobraC",
+          "sampleIntervalSeconds": 0.25,
+          "timeTo90Sampled": 1.25,
+          "time360Sampled": null
+        },
+        {
+          "scenario": "kulbitC",
+          "sampleIntervalSeconds": 0.25,
+          "timeTo90Sampled": 1.25,
+          "time360Sampled": 3
+        }
+      ]
+    },
+    {
+      "id": "su57",
+      "tracks": [
+        {
+          "scenario": "cobraC",
+          "sampleIntervalSeconds": 0.25,
+          "timeTo90Sampled": 1.25,
+          "time360Sampled": null
+        },
+        {
+          "scenario": "kulbitC",
+          "sampleIntervalSeconds": 0.25,
+          "timeTo90Sampled": 1.25,
+          "time360Sampled": 3
+        }
+      ]
+    }
+  ],
+  "regression": [
+    {
+      "id": "f22",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.peakLimiter",
+      "phase2": null,
+      "phase3": 0.052833122734074076,
+      "delta": null
+    },
+    {
+      "id": "f22",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.peakGAllowance",
+      "phase2": null,
+      "phase3": 1.1735462314795488,
+      "delta": null
+    },
+    {
+      "id": "f22",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.peakAoa",
+      "phase2": 3.655873315691661,
+      "phase3": 3.8490346173712067,
+      "delta": 0.1931613016795457
+    },
+    {
+      "id": "f22",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.meanG",
+      "phase2": 10.643119267390501,
+      "phase3": 12.43199757768953,
+      "delta": 1.7888783102990296
+    },
+    {
+      "id": "f22",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.speedLoss",
+      "phase2": 127.67696507464072,
+      "phase3": 140.37047877781396,
+      "delta": 12.693513703173238
+    },
+    {
+      "id": "f22",
+      "scenario": "fullStick500",
+      "metric": "baseline.fullStick500.peakAoa",
+      "phase2": 4.107296621501259,
+      "phase3": 7.90490706475965,
+      "delta": 3.7976104432583906
+    },
+    {
+      "id": "f22",
+      "scenario": "fullStick500",
+      "metric": "B12.fullStick500.peakIncidence",
+      "phase2": null,
+      "phase3": 7.90490706475965,
+      "delta": null
+    },
+    {
+      "id": "f22",
+      "scenario": "fullStick500",
+      "metric": "B12.fullStick500.limiterOpen",
+      "phase2": null,
+      "phase3": 0.12994525224022627,
+      "delta": null
+    },
+    {
+      "id": "f22",
+      "scenario": "cobraC",
+      "metric": "B1.cobra.peakAoa",
+      "phase2": 95.52779402275326,
+      "phase3": 92.30136945383704,
+      "delta": -3.226424568916215
+    },
+    {
+      "id": "f22",
+      "scenario": "cobraC",
+      "metric": "B2.cobra.timeTo90",
+      "phase2": 1.1833333333333333,
+      "phase3": 1.3333333333333333,
+      "delta": 0.1499999999999999
+    },
+    {
+      "id": "f22",
+      "scenario": "cobraC",
+      "metric": "B3.cobra.speedLoss",
+      "phase2": 75.48870457574493,
+      "phase3": 42.07310154859499,
+      "delta": -33.41560302714994
+    },
+    {
+      "id": "f22",
+      "scenario": "cobraC",
+      "metric": "B4.cobra.headingChange",
+      "phase2": 30.654981559255372,
+      "phase3": 73.0318950807191,
+      "delta": 42.37691352146372
+    },
+    {
+      "id": "f22",
+      "scenario": "kulbitC",
+      "metric": "B5.kulbit.time360",
+      "phase2": 3.15,
+      "phase3": 3.9499999999999997,
+      "delta": 0.7999999999999998
+    },
+    {
+      "id": "f22",
+      "scenario": "reversal180C",
+      "metric": "B15.reversal.headingChange",
+      "phase2": 18.539454869487546,
+      "phase3": 119.23617569242458,
+      "delta": 100.69672082293704
+    },
+    {
+      "id": "f22",
+      "scenario": "reversal180C",
+      "metric": "B15.reversal.altitudeLoss",
+      "phase2": 229.01720495074323,
+      "phase3": 454.8109215626148,
+      "delta": 225.79371661187156
+    },
+    {
+      "id": "f22",
+      "scenario": "tailSlide",
+      "metric": "B10.tailSlide.flipTime",
+      "phase2": null,
+      "phase3": 2.8666666666666663,
+      "delta": null
+    },
+    {
+      "id": "f22",
+      "scenario": "pedalC",
+      "metric": "baseline.pedal.yawRate",
+      "phase2": 83.17322111263059,
+      "phase3": 39.53609087996321,
+      "delta": -43.637130232667374
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B8.recovery.naturalDuringDelay",
+      "phase2": 15.69174709496205,
+      "phase3": 7.644442448683122,
+      "delta": -8.047304646278928
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B6.recovery.assistFull",
+      "phase2": null,
+      "phase3": 0.5416666666666666,
+      "delta": null
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B7.recovery.backToNormal",
+      "phase2": null,
+      "phase3": null,
+      "delta": null
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence0s",
+      "phase2": 45,
+      "phase3": 45,
+      "delta": 0
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence0.2s",
+      "phase2": 29.30825290503795,
+      "phase3": 37.35555755131688,
+      "delta": 8.047304646278928
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence0.5s",
+      "phase2": 13.385780342491628,
+      "phase3": 31.86229299237789,
+      "delta": 18.47651264988626
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence1s",
+      "phase2": 3.26507238644991,
+      "phase3": 14.620817630043584,
+      "delta": 11.355745243593674
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence1.5s",
+      "phase2": 1.0221094152572474,
+      "phase3": 8.874637991504219,
+      "delta": 7.852528576246971
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.maxAttitudeStep",
+      "phase2": 0.04051693859589167,
+      "phase3": 0.3466692243308813,
+      "delta": 0.30615228573498965
+    },
+    {
+      "id": "f22",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.maxRate",
+      "phase2": 4.8620326338103075,
+      "phase3": 41.60030691982712,
+      "delta": 36.73827428601681
+    },
+    {
+      "id": "f22",
+      "scenario": "sideslip60",
+      "metric": "B20.sideslip60.speedLoss1s",
+      "phase2": 32.538805532338465,
+      "phase3": 32.297319177012064,
+      "delta": -0.24148635532640128
+    },
+    {
+      "id": "su57",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.peakLimiter",
+      "phase2": null,
+      "phase3": 0.054509532819136966,
+      "delta": null
+    },
+    {
+      "id": "su57",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.peakGAllowance",
+      "phase2": null,
+      "phase3": 1.1735462314795488,
+      "delta": null
+    },
+    {
+      "id": "su57",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.peakAoa",
+      "phase2": 3.648235152273647,
+      "phase3": 3.850772997510632,
+      "delta": 0.20253784523698481
+    },
+    {
+      "id": "su57",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.meanG",
+      "phase2": 10.656762940068957,
+      "phase3": 12.424297777919055,
+      "delta": 1.7675348378500981
+    },
+    {
+      "id": "su57",
+      "scenario": "hardTurn900",
+      "metric": "B13.hardTurn900.speedLoss",
+      "phase2": 129.25783065623847,
+      "phase3": 142.17238830771626,
+      "delta": 12.914557651477793
+    },
+    {
+      "id": "su57",
+      "scenario": "fullStick500",
+      "metric": "baseline.fullStick500.peakAoa",
+      "phase2": 4.0783659369065415,
+      "phase3": 7.840201511940172,
+      "delta": 3.76183557503363
+    },
+    {
+      "id": "su57",
+      "scenario": "fullStick500",
+      "metric": "B12.fullStick500.peakIncidence",
+      "phase2": null,
+      "phase3": 7.840201511940172,
+      "delta": null
+    },
+    {
+      "id": "su57",
+      "scenario": "fullStick500",
+      "metric": "B12.fullStick500.limiterOpen",
+      "phase2": null,
+      "phase3": 0.12994525224022627,
+      "delta": null
+    },
+    {
+      "id": "su57",
+      "scenario": "cobraC",
+      "metric": "B1.cobra.peakAoa",
+      "phase2": 95.8936240186458,
+      "phase3": 92.00050439167435,
+      "delta": -3.8931196269714405
+    },
+    {
+      "id": "su57",
+      "scenario": "cobraC",
+      "metric": "B2.cobra.timeTo90",
+      "phase2": 1.1666666666666667,
+      "phase3": 1.4166666666666667,
+      "delta": 0.25
+    },
+    {
+      "id": "su57",
+      "scenario": "cobraC",
+      "metric": "B3.cobra.speedLoss",
+      "phase2": 93.72950487690737,
+      "phase3": 51.819120530773574,
+      "delta": -41.910384346133796
+    },
+    {
+      "id": "su57",
+      "scenario": "cobraC",
+      "metric": "B4.cobra.headingChange",
+      "phase2": 30.10842849260845,
+      "phase3": 81.72462503513884,
+      "delta": 51.61619654253039
+    },
+    {
+      "id": "su57",
+      "scenario": "kulbitC",
+      "metric": "B5.kulbit.time360",
+      "phase2": 3.0166666666666666,
+      "phase3": 4.166666666666667,
+      "delta": 1.1500000000000004
+    },
+    {
+      "id": "su57",
+      "scenario": "reversal180C",
+      "metric": "B15.reversal.headingChange",
+      "phase2": 19.75001757264795,
+      "phase3": 125.72176410057307,
+      "delta": 105.97174652792512
+    },
+    {
+      "id": "su57",
+      "scenario": "reversal180C",
+      "metric": "B15.reversal.altitudeLoss",
+      "phase2": 247.0782649521857,
+      "phase3": 392.1804354983153,
+      "delta": 145.10217054612963
+    },
+    {
+      "id": "su57",
+      "scenario": "tailSlide",
+      "metric": "B10.tailSlide.flipTime",
+      "phase2": null,
+      "phase3": 2.874999999999999,
+      "delta": null
+    },
+    {
+      "id": "su57",
+      "scenario": "pedalC",
+      "metric": "baseline.pedal.yawRate",
+      "phase2": 100.51599418064478,
+      "phase3": 50.41793126122118,
+      "delta": -50.098062919423604
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B8.recovery.naturalDuringDelay",
+      "phase2": 15.540145779917335,
+      "phase3": 7.464115139994853,
+      "delta": -8.076030639922482
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B6.recovery.assistFull",
+      "phase2": null,
+      "phase3": 0.5416666666666666,
+      "delta": null
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B7.recovery.backToNormal",
+      "phase2": null,
+      "phase3": null,
+      "delta": null
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence0s",
+      "phase2": 45,
+      "phase3": 45,
+      "delta": 0
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence0.2s",
+      "phase2": 29.459854220082665,
+      "phase3": 37.53588486000515,
+      "delta": 8.076030639922482
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence0.5s",
+      "phase2": 13.638698186176882,
+      "phase3": 32.69006940028188,
+      "delta": 19.051371214104996
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence1s",
+      "phase2": 3.347705635904402,
+      "phase3": 15.218867732894475,
+      "delta": 11.871162096990073
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.incidence1.5s",
+      "phase2": 1.0629933285852722,
+      "phase3": 9.37486194074479,
+      "delta": 8.311868612159518
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.maxAttitudeStep",
+      "phase2": 0.03013721821517601,
+      "phase3": 0.35806424271940784,
+      "delta": 0.32792702450423183
+    },
+    {
+      "id": "su57",
+      "scenario": "release45",
+      "metric": "B9.natural.release45.maxRate",
+      "phase2": 3.616466187457351,
+      "phase3": 42.96770912640445,
+      "delta": 39.3512429389471
+    },
+    {
+      "id": "su57",
+      "scenario": "sideslip60",
+      "metric": "B20.sideslip60.speedLoss1s",
+      "phase2": 34.98546997102677,
+      "phase3": 34.71350809742753,
+      "delta": -0.2719618735992384
+    }
+  ]
+}

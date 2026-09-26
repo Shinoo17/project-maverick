@@ -1,0 +1,502 @@
+{
+  "sourceCommit": "face31e4d16ddadb03ff6f1724134ad451735c77",
+  "flightProfileVersion": "p3-natural-aero-2.1",
+  "results": [
+    {
+      "aircraftId": "f22",
+      "scenarios": [
+        {
+          "scenario": "hardTurn900",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B13.hardTurn900.peakAoa",
+              "value": 3.655873315691661,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.meanG",
+              "value": 10.643119267390501,
+              "unit": "G",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.speedLoss",
+              "value": 127.67696507464072,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "fullStick500",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.fullStick500.peakAoa",
+              "value": 4.107296621501259,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "cobraC",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B1.cobra.peakAoa",
+              "value": 95.52779402275326,
+              "unit": "deg",
+              "target": {
+                "min": 75,
+                "max": 95
+              },
+              "status": "\u26a0 out"
+            },
+            {
+              "id": "B2.cobra.timeTo90",
+              "value": 1.1833333333333333,
+              "unit": "s",
+              "target": {
+                "min": 0.7,
+                "max": 1.2
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B3.cobra.speedLoss",
+              "value": 75.48870457574493,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B4.cobra.headingChange",
+              "value": 30.654981559255372,
+              "unit": "deg",
+              "target": {
+                "max": 20
+              },
+              "status": "\u26a0 out"
+            },
+            {
+              "id": "legacy.recovery.backToNormal",
+              "value": 0.6083333333333336,
+              "unit": "s after C release",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "kulbitC",
+          "duration": 8,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B5.kulbit.time360",
+              "value": 3.15,
+              "unit": "s",
+              "target": {
+                "min": 3,
+                "max": 4.5
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "reversal180C",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B15.reversal.headingChange",
+              "value": 18.539454869487546,
+              "unit": "deg at 10 s / stop",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B15.reversal.altitudeLoss",
+              "value": 229.01720495074323,
+              "unit": "m",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "tailSlide",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B10.tailSlide.flipTime",
+              "value": null,
+              "unit": "s",
+              "target": {
+                "max": 4
+              },
+              "status": "\u26a0 out"
+            }
+          ]
+        },
+        {
+          "scenario": "pedalC",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.pedal.yawRate",
+              "value": 83.17322111263059,
+              "unit": "deg/s at 2 s",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "release45",
+          "duration": 2,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B8.recovery.naturalDuringDelay",
+              "value": 15.69174709496205,
+              "unit": "deg reduction / 0.2 s without assist",
+              "target": {
+                "min": 0,
+                "minExclusive": true
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B9.natural.release45.incidence0s",
+              "value": 45,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.2s",
+              "value": 29.30825290503795,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.5s",
+              "value": 13.385780342491628,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1s",
+              "value": 3.26507238644991,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1.5s",
+              "value": 1.0221094152572474,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxAttitudeStep",
+              "value": 0.04051693859589167,
+              "unit": "deg/substep",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxRate",
+              "value": 4.8620326338103075,
+              "unit": "deg/s",
+              "target": null,
+              "status": "pending playtest"
+            }
+          ]
+        },
+        {
+          "scenario": "sideslip60",
+          "duration": 1,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B20.sideslip60.speedLoss1s",
+              "value": 32.538805532338465,
+              "unit": "arcade km/h",
+              "target": {
+                "min": 3.111747605072548,
+                "minExclusive": true
+              },
+              "status": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "aircraftId": "su57",
+      "scenarios": [
+        {
+          "scenario": "hardTurn900",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B13.hardTurn900.peakAoa",
+              "value": 3.648235152273647,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.meanG",
+              "value": 10.656762940068957,
+              "unit": "G",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B13.hardTurn900.speedLoss",
+              "value": 129.25783065623847,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "fullStick500",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.fullStick500.peakAoa",
+              "value": 4.0783659369065415,
+              "unit": "deg",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "cobraC",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B1.cobra.peakAoa",
+              "value": 95.8936240186458,
+              "unit": "deg",
+              "target": {
+                "min": 75,
+                "max": 95
+              },
+              "status": "\u26a0 out"
+            },
+            {
+              "id": "B2.cobra.timeTo90",
+              "value": 1.1666666666666667,
+              "unit": "s",
+              "target": {
+                "min": 0.7,
+                "max": 1.2
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B3.cobra.speedLoss",
+              "value": 93.72950487690737,
+              "unit": "arcade km/h",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B4.cobra.headingChange",
+              "value": 30.10842849260845,
+              "unit": "deg",
+              "target": {
+                "max": 20
+              },
+              "status": "\u26a0 out"
+            },
+            {
+              "id": "legacy.recovery.backToNormal",
+              "value": 0.6083333333333336,
+              "unit": "s after C release",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "kulbitC",
+          "duration": 8,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B5.kulbit.time360",
+              "value": 3.0166666666666666,
+              "unit": "s",
+              "target": {
+                "min": 3,
+                "max": 4.5
+              },
+              "status": "ok"
+            }
+          ]
+        },
+        {
+          "scenario": "reversal180C",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B15.reversal.headingChange",
+              "value": 19.75001757264795,
+              "unit": "deg at 10 s / stop",
+              "target": null,
+              "status": "report"
+            },
+            {
+              "id": "B15.reversal.altitudeLoss",
+              "value": 247.0782649521857,
+              "unit": "m",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "tailSlide",
+          "duration": 10,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B10.tailSlide.flipTime",
+              "value": null,
+              "unit": "s",
+              "target": {
+                "max": 4
+              },
+              "status": "\u26a0 out"
+            }
+          ]
+        },
+        {
+          "scenario": "pedalC",
+          "duration": 3,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "baseline.pedal.yawRate",
+              "value": 100.51599418064478,
+              "unit": "deg/s at 2 s",
+              "target": null,
+              "status": "report"
+            }
+          ]
+        },
+        {
+          "scenario": "release45",
+          "duration": 2,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B8.recovery.naturalDuringDelay",
+              "value": 15.540145779917335,
+              "unit": "deg reduction / 0.2 s without assist",
+              "target": {
+                "min": 0,
+                "minExclusive": true
+              },
+              "status": "ok"
+            },
+            {
+              "id": "B9.natural.release45.incidence0s",
+              "value": 45,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.2s",
+              "value": 29.459854220082665,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence0.5s",
+              "value": 13.638698186176882,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1s",
+              "value": 3.347705635904402,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.incidence1.5s",
+              "value": 1.0629933285852722,
+              "unit": "deg",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxAttitudeStep",
+              "value": 0.03013721821517601,
+              "unit": "deg/substep",
+              "target": null,
+              "status": "pending playtest"
+            },
+            {
+              "id": "B9.natural.release45.maxRate",
+              "value": 3.616466187457351,
+              "unit": "deg/s",
+              "target": null,
+              "status": "pending playtest"
+            }
+          ]
+        },
+        {
+          "scenario": "sideslip60",
+          "duration": 1,
+          "alive": true,
+          "metrics": [
+            {
+              "id": "B20.sideslip60.speedLoss1s",
+              "value": 34.98546997102677,
+              "unit": "arcade km/h",
+              "target": {
+                "min": 3.111747605072548,
+                "minExclusive": true
+              },
+              "status": "ok"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

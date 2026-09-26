@@ -20,8 +20,14 @@ export const aircraft: readonly AircraftDefinition[] = [
   },
 ]
 
+/** Validation variant reuses the Raptor assets, and is excluded from the hangar roster. */
+export const validationAircraft: readonly AircraftDefinition[] = [{
+  ...aircraft[0], playgroundOnly: true, id: 'f22-notvc', flightProfileId: 'raptor-notvc', name: 'Raptor (no TVC)',
+}]
+export const playgroundAircraft = [...aircraft, ...validationAircraft]
+
 export function getAircraft(id: string): AircraftDefinition {
-  const entry = aircraft.find((item) => item.id === id)
+  const entry = aircraft.find((item) => item.id === id) ?? validationAircraft.find((item) => item.id === id)
   if (!entry) throw new Error(`aircraftId: unknown id "${id}"`)
   return entry
 }

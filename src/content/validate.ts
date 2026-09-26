@@ -41,6 +41,7 @@ export function validateSession(config: SessionConfig) {
   if (!config.aircraftIds.length) throw new Error('session.aircraftIds: expected at least one aircraft')
   config.aircraftIds.forEach((id, index) => {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }
+    if (getAircraft(id).playgroundOnly && config.mode !== 'playground') throw new Error(`session.aircraftIds: ${id} is a Playground validation variant`)
     validateAircraft([getAircraft(id)])
   })
   if (config.flightOverrides !== undefined) {
@@ -56,8 +57,8 @@ export function validateSession(config: SessionConfig) {
       }
       const profile = flightProfiles[getAircraft(id).flightProfileId]
       resolveSpeedLimits(profile.flight, override, path)
-      if ((override.topSpeedKph ?? profile.flight.topSpeedKph) < profile.stall.recoverySpeedKph) {
-        throw new Error(`${path}.topSpeedKph: must be at least stall.recoverySpeedKph`)
+      if ((override.topSpeedKph ?? profile.flight.topSpeedKph) < profile.stall.separationAttachedSpeedKph) {
+        throw new Error(`${path}.topSpeedKph: must be at least stall.separationAttachedSpeedKph`)
       }
     }
   }

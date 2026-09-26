@@ -1,41 +1,39 @@
-import { Quaternion, Vector3 } from 'three'
+import { MathUtils } from 'three'
+import type { AirflowState } from './airflow'
+export { angleOfAttack } from './airflow'
 import type { StallProfile } from './profileTypes'
 import type { AircraftState } from '../state/WorldState'
 import { arcadeSpeed } from './speedLimits'
 
 export type StallCause = 'none' | 'speed' | 'aoa' | 'speed+aoa'
 export interface StallState {
-  /** 0 = normal, 1 = fully stalled. Remains nonzero while recovering. */
+  /** Continuous separation memory: 0 = attached, 1 = fully separated. */
   severity: number
-  /** Unmet thresholds; none with nonzero severity means recovery is underway. */
+  /** Presentation only. Never used to select physics or smoothing rates. */
   cause: StallCause
-  /** Signed incidence sampled at the start of the flight step, in degrees. */
+  /** Signed pitch-plane alpha sampled at the START of the flight step, in degrees. */
   aoaDeg: number
 }
 export const createStallState = (): StallState => ({ severity: 0, cause: 'none', aoaDeg: 0 })
 
-/** Body +X forward, +Y up. Sideways flow is not pitch AoA; reverse flow is ±180°. */
-export function angleOfAttack(state: Pick<AircraftState, 'velocity' | 'orientation'>) {
-  const bodyVelocity = new Vector3().copy(state.velocity)
-    .applyQuaternion(new Quaternion().copy(state.orientation).invert())
-  return Math.hypot(bodyVelocity.x, bodyVelocity.y) < 0.001
-    ? 0 : Math.atan2(-bodyVelocity.y, bodyVelocity.x) * 180 / Math.PI || 0
+/** Continuous airflow/low-speed separation target, independent of labels/input.
+ * The old pitch-alpha/speed pairs describe smooth bands; memory is time smoothing.
+ * Keep pitch alpha separate from the unsigned-incidence highAoa envelope (Rev. 3 M4).
+ * Low-speed loss of lift/control is retained without inventing aerodynamic force at q=0.
+ */
+export function separationTarget(flow: AirflowState, profile: StallProfile) {
+  const lowSpeed = 1 - MathUtils.smoothstep(arcadeSpeed(flow.airspeed), profile.stallSpeedKph, profile.separationAttachedSpeedKph)
+  const alpha = MathUtils.smoothstep(Math.abs(flow.alphaDeg), profile.separationAttachedAoaDeg, profile.criticalAoaDeg) * flow.confidence
+  return { lowSpeed, alpha, target: Math.max(lowSpeed, alpha) }
 }
 
-/** Fixed-step, deterministic, no maneuver/aircraft-name special cases. */
-export function stepStall(state: AircraftState, profile: StallProfile, speed: number, dt: number) {
+export function stepStall(state: AircraftState, profile: StallProfile, flow: AirflowState, dt: number) {
   if (dt <= 0 || !state.alive) return
   const stall = state.stall
-  stall.aoaDeg = angleOfAttack(state)
-  const speedKph = arcadeSpeed(speed)
-  const recovering = stall.severity > 0
-  const lowSpeed = speedKph < (recovering ? profile.recoverySpeedKph : profile.stallSpeedKph)
-  const highAoa = Math.abs(stall.aoaDeg) > (recovering ? profile.recoveryAoaDeg : profile.criticalAoaDeg)
-  if (lowSpeed && highAoa) stall.cause = 'speed+aoa'
-  else if (lowSpeed) stall.cause = 'speed'
-  else if (highAoa) stall.cause = 'aoa'
-  else stall.cause = 'none'
-  stall.severity = stall.cause === 'none'
-    ? Math.max(0, stall.severity - dt / profile.recoverySeconds)
-    : Math.min(1, stall.severity + dt / profile.entrySeconds)
+  const { lowSpeed, alpha, target } = separationTarget(flow, profile)
+  stall.aoaDeg = flow.alphaDeg
+  const seconds = target > stall.severity ? profile.separationEntrySeconds : profile.separationRecoverySeconds
+  stall.severity += (target - stall.severity) * (1 - Math.exp(-dt / seconds))
+  // Labels observe the continuous factors, never feed the solver.
+  stall.cause = lowSpeed > 0 && alpha > 0 ? 'speed+aoa' : lowSpeed > 0 ? 'speed' : alpha > 0 ? 'aoa' : 'none'
 }

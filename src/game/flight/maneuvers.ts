@@ -1,81 +1,21 @@
-import { Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
 import type { PilotCommand } from '../runtime/commands'
-import { clamp } from './speed'
 
-import { getFlightProfile } from './profile'
 export { maneuverProfile } from './profile'
-export type PsmPhase = 'normal' | 'armed' | 'active' | 'recovery'
-export type PsmBlock = 'none' | 'altitude' | 'speed' | 'unsupported'
+/** Burner/airbrake actuation and end-of-step observations. No PSM phase, entry
+ * envelope or maneuver trigger: high-AoA flight emerges from the continuous envelope. */
 export interface ManeuverState {
-  phase: PsmPhase; timer: number; rotation: number; stable: number; blend: number; controlAuthority: number
-  blocked: PsmBlock; entrySpeed: number; exitSpeed: number
-  peakAlpha: number; completed: number; highG: number; airbrake: number
+  airbrake: number
   burner: number; burnerActive: boolean; burnerLocked: boolean; burnerRest: number
-  alpha: number; g: number; pathRate: number; drag: number
+  /** Canonical unsigned nose/path incidence at END of step, not signed pitch alpha. */
+  alpha: number
+  g: number; pathRate: number; drag: number
 }
 export function createManeuverState(): ManeuverState {
-  return { phase: 'normal', timer: 0, rotation: 0, stable: 0, blend: 0, controlAuthority: 0,
-    blocked: 'none', entrySpeed: 0, exitSpeed: 0, peakAlpha: 0, completed: 0, highG: 0,
-    airbrake: 0, burner: 1, burnerActive: false, burnerLocked: false, burnerRest: 0,
+  return { airbrake: 0, burner: 1, burnerActive: false, burnerLocked: false, burnerRest: 0,
     alpha: 0, g: 1, pathRate: 0, drag: 0 }
 }
-export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: number, speed: number) {
-  const m = state.maneuver, p = getFlightProfile(state.aircraftId).maneuver
-  const q = new Quaternion().copy(state.orientation)
-  const forward = new Vector3(1, 0, 0).applyQuaternion(q)
-  const path = speed > 0.01 ? new Vector3().copy(state.velocity).normalize() : forward.clone()
-  const alpha = forward.angleTo(path)
-  // C is an envelope modifier, never a maneuver trigger. No automatic braking,
-  // pitch-up, target pose, or nose alignment: the pilot owns all three axes.
-  const eligible = p.psmEnabled && state.position.y >= p.minAltitude && speed >= p.entryMin && speed <= p.entryMax
-  m.blocked = !p.psmEnabled ? 'unsupported' : state.position.y < p.minAltitude ? 'altitude' : speed < p.entryMin || speed > p.entryMax ? 'speed' : 'none'
-  if (m.phase === 'normal' && command.psmArm && eligible) m.phase = 'armed'
-  if (m.phase === 'armed') {
-    if (!command.psmArm || !eligible) m.phase = 'normal'
-    else if (Math.hypot(command.pitch, command.yaw, command.roll) > 0.35) {
-      m.phase = 'active'; m.timer = 0; m.rotation = 0; m.peakAlpha = 0
-      m.entrySpeed = speed; m.exitSpeed = 0; m.stable = 0
-    }
-  }
-  // Continue an unfinished maneuver without resetting its energy or blend.
-  if (m.phase === 'recovery' && command.psmArm && eligible) m.phase = 'active'
-  if (m.phase === 'active') {
-    m.timer += dt; m.peakAlpha = Math.max(m.peakAlpha, alpha * 180 / Math.PI)
-    if (!command.psmArm || !p.psmEnabled || speed > p.exitSpeed) {
-      m.phase = 'recovery'; m.timer = 0; m.stable = 0; m.exitSpeed = speed
-    }
-  }
-  const targetBlend = m.phase === 'active' ? 1 : 0
-  m.blend += clamp(targetBlend - m.blend, -dt / p.blendSeconds, dt / p.blendSeconds)
-  if (m.phase === 'recovery') {
-    m.timer += dt
-    m.stable = alpha < 0.3 && speed > 60 ? m.stable + dt : 0
-    if (m.stable >= 0.3 && m.blend === 0) {
-      if (m.peakAlpha >= 70) m.completed++
-      m.phase = 'normal'
-    }
-  }
-  const assisted = m.phase === 'active' || m.phase === 'recovery'
-  const highGTarget = !assisted && m.phase !== 'armed' && command.highG && Math.hypot(command.pitch, command.yaw) > 0.35
-    ? clamp((speed - 75) / 15, 0, 1) * clamp((190 - speed) / 15, 0, 1) : 0
-  m.highG += (highGTarget - m.highG) * (1 - Math.exp(-6 * dt))
-  const brake = command.airbrake
-  m.airbrake += (+brake - m.airbrake) * (1 - Math.exp(-12 * dt))
-  // Airbrake and PSM do not switch off the engine or afterburner.
-  m.burnerActive = command.afterburner && !m.burnerLocked && m.burner > 0
-  if (m.burnerActive) {
-    m.burner = Math.max(0, m.burner - dt / p.burnerSeconds); m.burnerRest = 0
-    if (m.burner === 0) m.burnerLocked = true
-  } else {
-    m.burnerRest += dt
-    if (m.burnerRest > 1) m.burner = Math.min(1, m.burner + dt / p.burnerRecharge)
-    if (m.burner >= 0.25) m.burnerLocked = false
-  }
-  // These are rate ceilings. stepFlight scales assistance by CURRENT thrust,
-  // after stepSpeed has resolved W/S and afterburner for this fixed step.
-  return { alpha, assisted, brake,
-    pitch: assisted ? command.pitch * p.pitchRate : null,
-    yaw: assisted ? command.yaw * p.yawRate : null,
-    roll: assisted ? command.roll * p.rollRate : null }
+export function stepManeuvers(state: AircraftState, command: PilotCommand, dt: number) {
+  const m = state.maneuver
+  m.airbrake += (+command.airbrake - m.airbrake) * (1 - Math.exp(-12 * dt))
 }

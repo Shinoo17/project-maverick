@@ -6,7 +6,7 @@ import type { AircraftDefinition } from '../content/schemas'
 import { modelUrl } from '../content/aircraft'
 import { GameRuntime } from '../game/runtime/GameRuntime'
 import { getFlightProfile } from '../game/flight/profile'
-import { stepThrustVectoring } from '../game/flight/thrustVectoring'
+import { stepThrustVectoring, tvcTargets } from '../game/flight/thrustVectoring'
 import type { HangarFlightState } from '../features/hangar/useHangarFlight'
 import { useAircraftAsset } from './aircraft/assetLoader'
 import { prepareAnimations } from './aircraft/animationStages'
@@ -57,7 +57,7 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
     state.rates.pitch = input.pitch * profile.flight.pitchRate
     state.rates.roll = input.roll * profile.flight.rollRate
     state.rates.yaw = input.yaw * profile.flight.yawRate
-    stepThrustVectoring(state, { pitch: input.pitch, roll: input.roll, yaw: input.yaw }, dt, 180, 0)
+    stepThrustVectoring(state, tvcTargets({ pitch: input.pitch, roll: input.roll, yaw: input.yaw }, 1, getFlightProfile(state.aircraftId).thrustVectoring!), dt)
     rig(state, dt)
     // Local +X is the nose: +Z pitches up, +X rolls, -Y yaws right.
     axis.set(input.roll, -input.yaw, input.pitch)

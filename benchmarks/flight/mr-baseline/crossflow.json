@@ -1,0 +1,2183 @@
+{
+  "flightProfileVersion": "p8-pedal-turn-1",
+  "speedsMps": [
+    100,
+    45
+  ],
+  "seedSeconds": 1,
+  "probeRates": {
+    "pitch": 0.4,
+    "yaw": -0.4,
+    "roll": 0.4
+  },
+  "results": [
+    {
+      "aircraftId": "f22",
+      "speedMps": 100,
+      "angles": [
+        {
+          "betaDeg": 0,
+          "incidenceDeg": 0,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "physicalAero": {
+            "pitch": 5.864197530864198,
+            "yaw": 2.592592592592593,
+            "roll": 12.962962962962965
+          },
+          "dampingCoefficient": {
+            "pitch": 0.12345679012345681,
+            "yaw": 0.14814814814814817,
+            "roll": 0.09876543209876544
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.9662076354769751,
+              "allocatedAero": 5.047774530438811,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.4263725703977251,
+              "allocatedAero": 2.231647687141369,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "roll": {
+              "achievedRate": 2.0362073752150587,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "dampingFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "rateFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          }
+        },
+        {
+          "betaDeg": 30,
+          "incidenceDeg": 30.000000000000004,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.9275,
+            "yaw": 0.9275,
+            "roll": 0.9275
+          },
+          "physicalAero": {
+            "pitch": 5.439043209876544,
+            "yaw": 2.40462962962963,
+            "roll": 12.02314814814815
+          },
+          "dampingCoefficient": {
+            "pitch": 0.17268518518518525,
+            "yaw": 0.18663580246913583,
+            "roll": 0.12293209876543211
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.9974623770001285,
+              "allocatedAero": 5.13516438312544,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.43429981357778386,
+              "allocatedAero": 2.274015937999053,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "roll": {
+              "achievedRate": 2.0355614882269024,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.9275000000000002,
+            "yaw": 0.9275,
+            "roll": 0.9275
+          },
+          "dampingFraction": {
+            "pitch": 1.3987500000000002,
+            "yaw": 1.2597916666666666,
+            "roll": 1.2446875
+          },
+          "rateFraction": {
+            "pitch": 1.0323478519270077,
+            "yaw": 1.0185922916492123,
+            "roll": 0.9996827990134904
+          }
+        },
+        {
+          "betaDeg": 60,
+          "incidenceDeg": 59.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "physicalAero": {
+            "pitch": 2.9320987654321,
+            "yaw": 1.2962962962962967,
+            "roll": 6.481481481481484
+          },
+          "dampingCoefficient": {
+            "pitch": 0.462962962962963,
+            "yaw": 0.41358024691358025,
+            "roll": 0.2654320987654321
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.6237585711693503,
+              "allocatedAero": 4.027448508236964,
+              "allocatedFloor": 0,
+              "unmet": 4.699742729312999
+            },
+            "yaw": {
+              "achievedRate": 0.3324735673427453,
+              "allocatedAero": 2.6085301537395758,
+              "allocatedFloor": 0,
+              "unmet": 3.555773686416914
+            },
+            "roll": {
+              "achievedRate": 2.039597114158929,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "dampingFraction": {
+            "pitch": 3.75,
+            "yaw": 2.7916666666666665,
+            "roll": 2.6875
+          },
+          "rateFraction": {
+            "pitch": 1.6805482709394763,
+            "yaw": 0.7797724113270472,
+            "roll": 1.0016647316894784
+          }
+        },
+        {
+          "betaDeg": 90,
+          "incidenceDeg": 89.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.15000000000000013,
+            "yaw": 0.15000000000000013,
+            "roll": 0.15000000000000013
+          },
+          "physicalAero": {
+            "pitch": 0.8796296296296305,
+            "yaw": 0.3888888888888893,
+            "roll": 1.9444444444444464
+          },
+          "dampingCoefficient": {
+            "pitch": 0.7006172839506174,
+            "yaw": 0.5993827160493828,
+            "roll": 0.38209876543209875
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.463546702980735,
+              "allocatedAero": 3.4109077140733723,
+              "allocatedFloor": 0,
+              "unmet": 5.32012755623969
+            },
+            "yaw": {
+              "achievedRate": 0.10989706076813774,
+              "allocatedAero": 1.3068189217186448,
+              "allocatedFloor": 0,
+              "unmet": 4.857484918437844
+            },
+            "roll": {
+              "achievedRate": 1.9071973332925862,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.15000000000000016,
+            "yaw": 0.15000000000000013,
+            "roll": 0.15000000000000013
+          },
+          "dampingFraction": {
+            "pitch": 5.675,
+            "yaw": 4.045833333333333,
+            "roll": 3.8687499999999995
+          },
+          "rateFraction": {
+            "pitch": 1.5147331166123987,
+            "yaw": 0.2577488994323076,
+            "roll": 0.9366419926119525
+          }
+        }
+      ]
+    },
+    {
+      "aircraftId": "f22",
+      "speedMps": 45,
+      "angles": [
+        {
+          "betaDeg": 0,
+          "incidenceDeg": 0,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "physicalAero": {
+            "pitch": 1.1875,
+            "yaw": 0.525,
+            "roll": 2.625
+          },
+          "dampingCoefficient": {
+            "pitch": 0.025,
+            "yaw": 0.03,
+            "roll": 0.02
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.355984855193996,
+              "allocatedAero": 2.218439068399052,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.17448530281110808,
+              "allocatedAero": 1.0422315352627436,
+              "allocatedFloor": 0,
+              "unmet": 0.6810265767745938
+            },
+            "roll": {
+              "achievedRate": 0.9883873736834194,
+              "allocatedAero": 4.727845844059586,
+              "allocatedFloor": 0,
+              "unmet": 1.2823745689715411
+            }
+          },
+          "authorityFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "dampingFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "rateFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          }
+        },
+        {
+          "betaDeg": 30,
+          "incidenceDeg": 29.999999999999993,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.9275000000000001,
+            "yaw": 0.9275000000000001,
+            "roll": 0.9275000000000001
+          },
+          "physicalAero": {
+            "pitch": 1.1014062500000001,
+            "yaw": 0.4869375000000001,
+            "roll": 2.4346875000000003
+          },
+          "dampingCoefficient": {
+            "pitch": 0.034968749999999986,
+            "yaw": 0.03779374999999999,
+            "roll": 0.024893749999999992
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.7737847454509963,
+              "allocatedAero": 2.5493378541929514,
+              "allocatedFloor": 0,
+              "unmet": 0.22503685969835452
+            },
+            "yaw": {
+              "achievedRate": 0.1664151704604043,
+              "allocatedAero": 1.0981697669850043,
+              "allocatedFloor": 0,
+              "unmet": 1.0318939360504555
+            },
+            "roll": {
+              "achievedRate": 1.1349465719150187,
+              "allocatedAero": 5.463163149084997,
+              "allocatedFloor": 0,
+              "unmet": 1.4270806599116477
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.9275000000000001,
+            "yaw": 0.9275000000000001,
+            "roll": 0.9275000000000001
+          },
+          "dampingFraction": {
+            "pitch": 1.3987499999999993,
+            "yaw": 1.2597916666666662,
+            "roll": 1.2446874999999995
+          },
+          "rateFraction": {
+            "pitch": 2.173645126080765,
+            "yaw": 0.9537489277280836,
+            "roll": 1.148281131602701
+          }
+        },
+        {
+          "betaDeg": 60,
+          "incidenceDeg": 59.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "physicalAero": {
+            "pitch": 0.5937500000000001,
+            "yaw": 0.26250000000000007,
+            "roll": 1.3125000000000002
+          },
+          "dampingCoefficient": {
+            "pitch": 0.09375,
+            "yaw": 0.08374999999999999,
+            "roll": 0.05374999999999999
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.2085816933699547,
+              "allocatedAero": 1.7717228823717268,
+              "allocatedFloor": 0,
+              "unmet": 6.952560552642849
+            },
+            "yaw": {
+              "achievedRate": 0.10607466864460956,
+              "allocatedAero": 0.9288894291008123,
+              "allocatedFloor": 0,
+              "unmet": 5.23486801128164
+            },
+            "roll": {
+              "achievedRate": 1.238193557518137,
+              "allocatedAero": 5.946064367125044,
+              "allocatedFloor": 0,
+              "unmet": 2.4343548608574226
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "dampingFraction": {
+            "pitch": 3.75,
+            "yaw": 2.7916666666666665,
+            "roll": 2.6874999999999996
+          },
+          "rateFraction": {
+            "pitch": 3.3950368273710163,
+            "yaw": 0.6079289598359033,
+            "roll": 1.2527411726272524
+          }
+        },
+        {
+          "betaDeg": 90,
+          "incidenceDeg": 90,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.15000000000000002,
+            "yaw": 0.15000000000000002,
+            "roll": 0.15000000000000002
+          },
+          "physicalAero": {
+            "pitch": 0.17812500000000003,
+            "yaw": 0.07875000000000001,
+            "roll": 0.39375000000000004
+          },
+          "dampingCoefficient": {
+            "pitch": 0.141875,
+            "yaw": 0.12137500000000001,
+            "roll": 0.07737499999999999
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.085769389524454,
+              "allocatedAero": 0.9779468042744377,
+              "allocatedFloor": 0,
+              "unmet": 7.7447609251685465
+            },
+            "yaw": {
+              "achievedRate": 0.04219425493295033,
+              "allocatedAero": 0.43921231964597224,
+              "allocatedFloor": 0,
+              "unmet": 5.69663085860972
+            },
+            "roll": {
+              "achievedRate": 0.7531211004978976,
+              "allocatedAero": 2.866837761238493,
+              "allocatedFloor": 0,
+              "unmet": 5.614413046017562
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.15000000000000002,
+            "yaw": 0.15000000000000002,
+            "roll": 0.15000000000000002
+          },
+          "dampingFraction": {
+            "pitch": 5.675,
+            "yaw": 4.045833333333334,
+            "roll": 3.868749999999999
+          },
+          "rateFraction": {
+            "pitch": 3.0500437692293336,
+            "yaw": 0.2418212551611204,
+            "roll": 0.761969568359867
+          }
+        }
+      ]
+    },
+    {
+      "aircraftId": "su57",
+      "speedMps": 100,
+      "angles": [
+        {
+          "betaDeg": 0,
+          "incidenceDeg": 0,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "physicalAero": {
+            "pitch": 5.864197530864198,
+            "yaw": 2.9629629629629632,
+            "roll": 12.962962962962965
+          },
+          "dampingCoefficient": {
+            "pitch": 0.12345679012345681,
+            "yaw": 0.14814814814814817,
+            "roll": 0.09876543209876544
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.9670915738508186,
+              "allocatedAero": 5.047774530438811,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.487627894235357,
+              "allocatedAero": 2.5504544995901357,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "roll": {
+              "achievedRate": 2.036698698362683,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "dampingFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "rateFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          }
+        },
+        {
+          "betaDeg": 30,
+          "incidenceDeg": 30.000000000000004,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.9275,
+            "yaw": 0.9275,
+            "roll": 0.9275
+          },
+          "physicalAero": {
+            "pitch": 5.439043209876544,
+            "yaw": 2.7481481481481485,
+            "roll": 12.02314814814815
+          },
+          "dampingCoefficient": {
+            "pitch": 0.15478395061728398,
+            "yaw": 0.1732098765432099,
+            "roll": 0.11845679012345682
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.9986430017485479,
+              "allocatedAero": 5.135495603430977,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.4982404792128607,
+              "allocatedAero": 2.5996890262075403,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "roll": {
+              "achievedRate": 2.036114186702183,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.9275000000000002,
+            "yaw": 0.9275,
+            "roll": 0.9275
+          },
+          "dampingFraction": {
+            "pitch": 1.25375,
+            "yaw": 1.1691666666666667,
+            "roll": 1.1993750000000003
+          },
+          "rateFraction": {
+            "pitch": 1.0326250675229194,
+            "yaw": 1.021763695438599,
+            "roll": 0.9997130102449764
+          }
+        },
+        {
+          "betaDeg": 60,
+          "incidenceDeg": 59.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "physicalAero": {
+            "pitch": 2.9320987654321,
+            "yaw": 1.4814814814814818,
+            "roll": 6.481481481481484
+          },
+          "dampingCoefficient": {
+            "pitch": 0.3395061728395062,
+            "yaw": 0.3209876543209877,
+            "roll": 0.23456790123456786
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.6260061309912546,
+              "allocatedAero": 4.098630473287003,
+              "allocatedFloor": 0,
+              "unmet": 5.185455352000821
+            },
+            "yaw": {
+              "achievedRate": 0.5851956763575651,
+              "allocatedAero": 2.275695672960206,
+              "allocatedFloor": 0,
+              "unmet": 3.4748924924030358
+            },
+            "roll": {
+              "achievedRate": 2.0141826118406634,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "dampingFraction": {
+            "pitch": 2.7499999999999996,
+            "yaw": 2.1666666666666665,
+            "roll": 2.3749999999999996
+          },
+          "rateFraction": {
+            "pitch": 1.6813362611740414,
+            "yaw": 1.200086548115142,
+            "roll": 0.9889448122394733
+          }
+        },
+        {
+          "betaDeg": 90,
+          "incidenceDeg": 89.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.15000000000000013,
+            "yaw": 0.15000000000000013,
+            "roll": 0.15000000000000013
+          },
+          "physicalAero": {
+            "pitch": 0.8796296296296305,
+            "yaw": 0.44444444444444486,
+            "roll": 1.9444444444444464
+          },
+          "dampingCoefficient": {
+            "pitch": 0.49074074074074076,
+            "yaw": 0.4419753086419753,
+            "roll": 0.3296296296296296
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.357870731486326,
+              "allocatedAero": 3.116569471957069,
+              "allocatedFloor": 0,
+              "unmet": 6.170893607429778
+            },
+            "yaw": {
+              "achievedRate": 0.36975063836451055,
+              "allocatedAero": 1.0834281324627106,
+              "allocatedFloor": 0,
+              "unmet": 4.692380736732711
+            },
+            "roll": {
+              "achievedRate": 1.2829736312136808,
+              "allocatedAero": 5.798479025477079,
+              "allocatedFloor": 0,
+              "unmet": 3.183650285900046
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.15000000000000016,
+            "yaw": 0.15000000000000013,
+            "roll": 0.15000000000000013
+          },
+          "dampingFraction": {
+            "pitch": 3.9749999999999996,
+            "yaw": 2.983333333333333,
+            "roll": 3.3374999999999995
+          },
+          "rateFraction": {
+            "pitch": 1.4040766853954496,
+            "yaw": 0.7582639195493763,
+            "roll": 0.6299280459328975
+          }
+        }
+      ]
+    },
+    {
+      "aircraftId": "su57",
+      "speedMps": 45,
+      "angles": [
+        {
+          "betaDeg": 0,
+          "incidenceDeg": 0,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "physicalAero": {
+            "pitch": 1.1875,
+            "yaw": 0.6,
+            "roll": 2.625
+          },
+          "dampingCoefficient": {
+            "pitch": 0.025,
+            "yaw": 0.03,
+            "roll": 0.02
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.3507111066501477,
+              "allocatedAero": 2.126565631112619,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.24220593637861773,
+              "allocatedAero": 1.1584454347428947,
+              "allocatedFloor": 0,
+              "unmet": 0.2693421022928381
+            },
+            "roll": {
+              "achievedRate": 0.9378293333872805,
+              "allocatedAero": 4.704367448301643,
+              "allocatedFloor": 0,
+              "unmet": 1.56588284350204
+            }
+          },
+          "authorityFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "dampingFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "rateFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          }
+        },
+        {
+          "betaDeg": 30,
+          "incidenceDeg": 29.999999999999993,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.9275000000000001,
+            "yaw": 0.9275000000000001,
+            "roll": 0.9275000000000001
+          },
+          "physicalAero": {
+            "pitch": 1.1014062500000001,
+            "yaw": 0.5565,
+            "roll": 2.4346875000000003
+          },
+          "dampingCoefficient": {
+            "pitch": 0.03134374999999999,
+            "yaw": 0.035074999999999995,
+            "roll": 0.023987499999999995
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.6505179426664452,
+              "allocatedAero": 2.5387806691404053,
+              "allocatedFloor": 0,
+              "unmet": 2.220446049250313e-16
+            },
+            "yaw": {
+              "achievedRate": 0.3486206759959191,
+              "allocatedAero": 1.2628279173991,
+              "allocatedFloor": 0,
+              "unmet": 0.7510033116743452
+            },
+            "roll": {
+              "achievedRate": 1.1080107852463725,
+              "allocatedAero": 5.58305122733667,
+              "allocatedFloor": 0,
+              "unmet": 1.7005356544038963
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.9275000000000001,
+            "yaw": 0.9275,
+            "roll": 0.9275000000000001
+          },
+          "dampingFraction": {
+            "pitch": 1.2537499999999995,
+            "yaw": 1.1691666666666665,
+            "roll": 1.1993749999999996
+          },
+          "rateFraction": {
+            "pitch": 1.8548541244670937,
+            "yaw": 1.4393564468665758,
+            "roll": 1.1814631359891736
+          }
+        },
+        {
+          "betaDeg": 60,
+          "incidenceDeg": 59.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "physicalAero": {
+            "pitch": 0.5937500000000001,
+            "yaw": 0.30000000000000004,
+            "roll": 1.3125000000000002
+          },
+          "dampingCoefficient": {
+            "pitch": 0.06874999999999999,
+            "yaw": 0.065,
+            "roll": 0.04749999999999999
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.1446436920144707,
+              "allocatedAero": 1.8490907348931878,
+              "allocatedFloor": 0,
+              "unmet": 7.431731879669668
+            },
+            "yaw": {
+              "achievedRate": 0.3475958670355613,
+              "allocatedAero": 0.8547471250386627,
+              "allocatedFloor": 0,
+              "unmet": 4.963823969320764
+            },
+            "roll": {
+              "achievedRate": 0.9470312729797148,
+              "allocatedAero": 4.139220094661279,
+              "allocatedFloor": 0,
+              "unmet": 4.84107449613175
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "dampingFraction": {
+            "pitch": 2.7499999999999996,
+            "yaw": 2.166666666666667,
+            "roll": 2.374999999999999
+          },
+          "rateFraction": {
+            "pitch": 3.263779419327918,
+            "yaw": 1.4351252997044524,
+            "roll": 1.0098119554004548
+          }
+        },
+        {
+          "betaDeg": 90,
+          "incidenceDeg": 90,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.15000000000000002,
+            "yaw": 0.15000000000000002,
+            "roll": 0.15000000000000002
+          },
+          "physicalAero": {
+            "pitch": 0.17812500000000003,
+            "yaw": 0.09000000000000001,
+            "roll": 0.39375000000000004
+          },
+          "dampingCoefficient": {
+            "pitch": 0.09937499999999999,
+            "yaw": 0.0895,
+            "roll": 0.06674999999999999
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.9979236845043966,
+              "allocatedAero": 0.9958388195309574,
+              "allocatedFloor": 0,
+              "unmet": 8.283170481645161
+            },
+            "yaw": {
+              "achievedRate": 0.3955399004704803,
+              "allocatedAero": 0.35834685466001664,
+              "allocatedFloor": 0,
+              "unmet": 5.04389893255153
+            },
+            "roll": {
+              "achievedRate": 0.5342844310959286,
+              "allocatedAero": 1.6975218018263394,
+              "allocatedFloor": 0,
+              "unmet": 7.281342318275846
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.15000000000000002,
+            "yaw": 0.15000000000000002,
+            "roll": 0.15000000000000002
+          },
+          "dampingFraction": {
+            "pitch": 3.9749999999999996,
+            "yaw": 2.9833333333333334,
+            "roll": 3.3374999999999995
+          },
+          "rateFraction": {
+            "pitch": 2.845429373583759,
+            "yaw": 1.633072691712106,
+            "roll": 0.5697032627100539
+          }
+        }
+      ]
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "speedMps": 100,
+      "angles": [
+        {
+          "betaDeg": 0,
+          "incidenceDeg": 0,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "physicalAero": {
+            "pitch": 5.864197530864198,
+            "yaw": 2.592592592592593,
+            "roll": 12.962962962962965
+          },
+          "dampingCoefficient": {
+            "pitch": 0.12345679012345681,
+            "yaw": 0.14814814814814817,
+            "roll": 0.09876543209876544
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.9662076354769751,
+              "allocatedAero": 5.047774530438811,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.4263725703977251,
+              "allocatedAero": 2.231647687141369,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "roll": {
+              "achievedRate": 2.0362073752150587,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "dampingFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "rateFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          }
+        },
+        {
+          "betaDeg": 30,
+          "incidenceDeg": 30.000000000000004,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.9275,
+            "yaw": 0.9275,
+            "roll": 0.9275
+          },
+          "physicalAero": {
+            "pitch": 5.439043209876544,
+            "yaw": 2.40462962962963,
+            "roll": 12.02314814814815
+          },
+          "dampingCoefficient": {
+            "pitch": 0.17268518518518525,
+            "yaw": 0.18663580246913583,
+            "roll": 0.12293209876543211
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.9974615229537724,
+              "allocatedAero": 5.135164382620086,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.4342998135777838,
+              "allocatedAero": 2.274015937999053,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "roll": {
+              "achievedRate": 2.0355614882269024,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.9275000000000002,
+            "yaw": 0.9275,
+            "roll": 0.9275
+          },
+          "dampingFraction": {
+            "pitch": 1.3987500000000002,
+            "yaw": 1.2597916666666666,
+            "roll": 1.2446875
+          },
+          "rateFraction": {
+            "pitch": 1.032346968011041,
+            "yaw": 1.018592291649212,
+            "roll": 0.9996827990134904
+          }
+        },
+        {
+          "betaDeg": 60,
+          "incidenceDeg": 59.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "physicalAero": {
+            "pitch": 2.9320987654321,
+            "yaw": 1.2962962962962967,
+            "roll": 6.481481481481484
+          },
+          "dampingCoefficient": {
+            "pitch": 0.462962962962963,
+            "yaw": 0.41358024691358025,
+            "roll": 0.2654320987654321
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 1.1333803791401802,
+              "allocatedAero": 6.805109749918601,
+              "allocatedFloor": 0,
+              "unmet": 7.08217694968964
+            },
+            "yaw": {
+              "achievedRate": 0.3324735673427453,
+              "allocatedAero": 2.6085301537395758,
+              "allocatedFloor": 0,
+              "unmet": 3.555773686416914
+            },
+            "roll": {
+              "achievedRate": 2.0263418369655173,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "dampingFraction": {
+            "pitch": 3.75,
+            "yaw": 2.7916666666666665,
+            "roll": 2.6875
+          },
+          "rateFraction": {
+            "pitch": 1.1730194810359567,
+            "yaw": 0.7797724113270472,
+            "roll": 0.9951549442509512
+          }
+        },
+        {
+          "betaDeg": 90,
+          "incidenceDeg": 89.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.15000000000000013,
+            "yaw": 0.15000000000000013,
+            "roll": 0.15000000000000013
+          },
+          "physicalAero": {
+            "pitch": 0.8796296296296305,
+            "yaw": 0.3888888888888893,
+            "roll": 1.9444444444444464
+          },
+          "dampingCoefficient": {
+            "pitch": 0.7006172839506174,
+            "yaw": 0.5993827160493828,
+            "roll": 0.38209876543209875
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.7017654389453762,
+              "allocatedAero": 4.648361559932101,
+              "allocatedFloor": 0,
+              "unmet": 9.29470664994567
+            },
+            "yaw": {
+              "achievedRate": 0.10989706076813788,
+              "allocatedAero": 1.3068189217186448,
+              "allocatedFloor": 0,
+              "unmet": 4.857484918437844
+            },
+            "roll": {
+              "achievedRate": 1.6549524579177126,
+              "allocatedAero": 10.284256808497183,
+              "allocatedFloor": 0,
+              "unmet": 0
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.15000000000000016,
+            "yaw": 0.15000000000000013,
+            "roll": 0.15000000000000013
+          },
+          "dampingFraction": {
+            "pitch": 5.675,
+            "yaw": 4.045833333333333,
+            "roll": 3.8687499999999995
+          },
+          "rateFraction": {
+            "pitch": 0.7263091422362284,
+            "yaw": 0.25774889943230794,
+            "roll": 0.812762235350867
+          }
+        }
+      ]
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "speedMps": 45,
+      "angles": [
+        {
+          "betaDeg": 0,
+          "incidenceDeg": 0,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "physicalAero": {
+            "pitch": 1.1875,
+            "yaw": 0.525,
+            "roll": 2.625
+          },
+          "dampingCoefficient": {
+            "pitch": 0.025,
+            "yaw": 0.03,
+            "roll": 0.02
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.34731892367478173,
+              "allocatedAero": 2.234194402201426,
+              "allocatedFloor": 0,
+              "unmet": 0
+            },
+            "yaw": {
+              "achievedRate": 0.17448530281110808,
+              "allocatedAero": 1.0422315352627436,
+              "allocatedFloor": 0,
+              "unmet": 0.6810265767745938
+            },
+            "roll": {
+              "achievedRate": 0.8421621501364149,
+              "allocatedAero": 4.850878672598959,
+              "allocatedFloor": 0,
+              "unmet": 2.139303104667192
+            }
+          },
+          "authorityFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "dampingFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          },
+          "rateFraction": {
+            "pitch": 1,
+            "yaw": 1,
+            "roll": 1
+          }
+        },
+        {
+          "betaDeg": 30,
+          "incidenceDeg": 29.999999999999993,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.9275000000000001,
+            "yaw": 0.9275000000000001,
+            "roll": 0.9275000000000001
+          },
+          "physicalAero": {
+            "pitch": 1.1014062500000001,
+            "yaw": 0.4869375000000001,
+            "roll": 2.4346875000000003
+          },
+          "dampingCoefficient": {
+            "pitch": 0.034968749999999986,
+            "yaw": 0.03779374999999999,
+            "roll": 0.024893749999999992
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.43184025218776545,
+              "allocatedAero": 2.672417813987492,
+              "allocatedFloor": 0,
+              "unmet": 0.6352724780470402
+            },
+            "yaw": {
+              "achievedRate": 0.1664151704604043,
+              "allocatedAero": 1.0981697669850043,
+              "allocatedFloor": 0,
+              "unmet": 1.0318939360504555
+            },
+            "roll": {
+              "achievedRate": 0.9778711682615558,
+              "allocatedAero": 5.620162726034786,
+              "allocatedFloor": 0,
+              "unmet": 2.287263425774402
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.9275000000000001,
+            "yaw": 0.9275000000000001,
+            "roll": 0.9275000000000001
+          },
+          "dampingFraction": {
+            "pitch": 1.3987499999999993,
+            "yaw": 1.2597916666666662,
+            "roll": 1.2446874999999995
+          },
+          "rateFraction": {
+            "pitch": 1.2433536520806645,
+            "yaw": 0.9537489277280836,
+            "roll": 1.1611435732455544
+          }
+        },
+        {
+          "betaDeg": 60,
+          "incidenceDeg": 59.99999999999999,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "physicalAero": {
+            "pitch": 0.5937500000000001,
+            "yaw": 0.26250000000000007,
+            "roll": 1.3125000000000002
+          },
+          "dampingCoefficient": {
+            "pitch": 0.09375,
+            "yaw": 0.08374999999999999,
+            "roll": 0.05374999999999999
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.3889972394280109,
+              "allocatedAero": 2.680960447884215,
+              "allocatedFloor": 0,
+              "unmet": 10.925320134154187
+            },
+            "yaw": {
+              "achievedRate": 0.10607466864460956,
+              "allocatedAero": 0.9288894291008123,
+              "allocatedFloor": 0,
+              "unmet": 5.23486801128164
+            },
+            "roll": {
+              "achievedRate": 0.9402906693760064,
+              "allocatedAero": 6.238457022857342,
+              "allocatedFloor": 0,
+              "unmet": 3.902259490590983
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.5000000000000001,
+            "yaw": 0.5000000000000001,
+            "roll": 0.5000000000000001
+          },
+          "dampingFraction": {
+            "pitch": 3.75,
+            "yaw": 2.7916666666666665,
+            "roll": 2.6874999999999996
+          },
+          "rateFraction": {
+            "pitch": 1.1200001293112822,
+            "yaw": 0.6079289598359033,
+            "roll": 1.1165197453052198
+          }
+        },
+        {
+          "betaDeg": 90,
+          "incidenceDeg": 90,
+          "separation": 0,
+          "effectiveness": {
+            "pitch": 0.15000000000000002,
+            "yaw": 0.15000000000000002,
+            "roll": 0.15000000000000002
+          },
+          "physicalAero": {
+            "pitch": 0.17812500000000003,
+            "yaw": 0.07875000000000001,
+            "roll": 0.39375000000000004
+          },
+          "dampingCoefficient": {
+            "pitch": 0.141875,
+            "yaw": 0.12137500000000001,
+            "roll": 0.07737499999999999
+          },
+          "rates": {
+            "pitch": {
+              "achievedRate": 0.18652948317058798,
+              "allocatedAero": 1.3543378866772844,
+              "allocatedFloor": 0,
+              "unmet": 12.578141449344477
+            },
+            "yaw": {
+              "achievedRate": 0.04219425493295033,
+              "allocatedAero": 0.43921231964597224,
+              "allocatedFloor": 0,
+              "unmet": 5.69663085860972
+            },
+            "roll": {
+              "achievedRate": 0.4377848763207311,
+              "allocatedAero": 3.047360203349057,
+              "allocatedFloor": 0,
+              "unmet": 7.233339169046206
+            }
+          },
+          "authorityFraction": {
+            "pitch": 0.15000000000000002,
+            "yaw": 0.15000000000000002,
+            "roll": 0.15000000000000002
+          },
+          "dampingFraction": {
+            "pitch": 5.675,
+            "yaw": 4.045833333333334,
+            "roll": 3.868749999999999
+          },
+          "rateFraction": {
+            "pitch": 0.5370553415201994,
+            "yaw": 0.2418212551611204,
+            "roll": 0.5198344241068278
+          }
+        }
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v100",
+      "value": 0.9275000000000002
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v100",
+      "value": 0.9275
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v100",
+      "value": 0.9275
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v100",
+      "value": 1.3987500000000002
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v100",
+      "value": 1.2597916666666666
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v100",
+      "value": 1.2446875
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v100",
+      "value": 1.0323478519270077
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v100",
+      "value": 1.0185922916492123
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v100",
+      "value": 0.9996827990134904
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v100",
+      "value": 3.75
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v100",
+      "value": 2.7916666666666665
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v100",
+      "value": 2.6875
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v100",
+      "value": 1.6805482709394763
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v100",
+      "value": 0.7797724113270472
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v100",
+      "value": 1.0016647316894784
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v100",
+      "value": 0.15000000000000016
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v100",
+      "value": 0.15000000000000013
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v100",
+      "value": 0.15000000000000013
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v100",
+      "value": 5.675
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v100",
+      "value": 4.045833333333333
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v100",
+      "value": 3.8687499999999995
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v100",
+      "value": 1.5147331166123987
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v100",
+      "value": 0.2577488994323076
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v100",
+      "value": 0.9366419926119525
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v45",
+      "value": 1.3987499999999993
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v45",
+      "value": 1.2597916666666662
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v45",
+      "value": 1.2446874999999995
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v45",
+      "value": 2.173645126080765
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v45",
+      "value": 0.9537489277280836
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v45",
+      "value": 1.148281131602701
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v45",
+      "value": 3.75
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v45",
+      "value": 2.7916666666666665
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v45",
+      "value": 2.6874999999999996
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v45",
+      "value": 3.3950368273710163
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v45",
+      "value": 0.6079289598359033
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v45",
+      "value": 1.2527411726272524
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v45",
+      "value": 5.675
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v45",
+      "value": 4.045833333333334
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v45",
+      "value": 3.868749999999999
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v45",
+      "value": 3.0500437692293336
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v45",
+      "value": 0.2418212551611204
+    },
+    {
+      "aircraftId": "f22",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v45",
+      "value": 0.761969568359867
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v100",
+      "value": 0.9275000000000002
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v100",
+      "value": 0.9275
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v100",
+      "value": 0.9275
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v100",
+      "value": 1.25375
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v100",
+      "value": 1.1691666666666667
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v100",
+      "value": 1.1993750000000003
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v100",
+      "value": 1.0326250675229194
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v100",
+      "value": 1.021763695438599
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v100",
+      "value": 0.9997130102449764
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v100",
+      "value": 2.7499999999999996
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v100",
+      "value": 2.1666666666666665
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v100",
+      "value": 2.3749999999999996
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v100",
+      "value": 1.6813362611740414
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v100",
+      "value": 1.200086548115142
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v100",
+      "value": 0.9889448122394733
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v100",
+      "value": 0.15000000000000016
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v100",
+      "value": 0.15000000000000013
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v100",
+      "value": 0.15000000000000013
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v100",
+      "value": 3.9749999999999996
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v100",
+      "value": 2.983333333333333
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v100",
+      "value": 3.3374999999999995
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v100",
+      "value": 1.4040766853954496
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v100",
+      "value": 0.7582639195493763
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v100",
+      "value": 0.6299280459328975
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v45",
+      "value": 0.9275
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v45",
+      "value": 1.2537499999999995
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v45",
+      "value": 1.1691666666666665
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v45",
+      "value": 1.1993749999999996
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v45",
+      "value": 1.8548541244670937
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v45",
+      "value": 1.4393564468665758
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v45",
+      "value": 1.1814631359891736
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v45",
+      "value": 2.7499999999999996
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v45",
+      "value": 2.166666666666667
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v45",
+      "value": 2.374999999999999
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v45",
+      "value": 3.263779419327918
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v45",
+      "value": 1.4351252997044524
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v45",
+      "value": 1.0098119554004548
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v45",
+      "value": 3.9749999999999996
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v45",
+      "value": 2.9833333333333334
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v45",
+      "value": 3.3374999999999995
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v45",
+      "value": 2.845429373583759
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v45",
+      "value": 1.633072691712106
+    },
+    {
+      "aircraftId": "su57",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v45",
+      "value": 0.5697032627100539
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v100",
+      "value": 0.9275000000000002
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v100",
+      "value": 0.9275
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v100",
+      "value": 0.9275
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v100",
+      "value": 1.3987500000000002
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v100",
+      "value": 1.2597916666666666
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v100",
+      "value": 1.2446875
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v100",
+      "value": 1.032346968011041
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v100",
+      "value": 1.018592291649212
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v100",
+      "value": 0.9996827990134904
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v100",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v100",
+      "value": 3.75
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v100",
+      "value": 2.7916666666666665
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v100",
+      "value": 2.6875
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v100",
+      "value": 1.1730194810359567
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v100",
+      "value": 0.7797724113270472
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v100",
+      "value": 0.9951549442509512
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v100",
+      "value": 0.15000000000000016
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v100",
+      "value": 0.15000000000000013
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v100",
+      "value": 0.15000000000000013
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v100",
+      "value": 5.675
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v100",
+      "value": 4.045833333333333
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v100",
+      "value": 3.8687499999999995
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v100",
+      "value": 0.7263091422362284
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v100",
+      "value": 0.25774889943230794
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v100",
+      "value": 0.812762235350867
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.pitch.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.yaw.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.roll.beta30.v45",
+      "value": 0.9275000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.pitch.beta30.v45",
+      "value": 1.3987499999999993
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.yaw.beta30.v45",
+      "value": 1.2597916666666662
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.roll.beta30.v45",
+      "value": 1.2446874999999995
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.pitch.beta30.v45",
+      "value": 1.2433536520806645
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.yaw.beta30.v45",
+      "value": 0.9537489277280836
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.roll.beta30.v45",
+      "value": 1.1611435732455544
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.pitch.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.yaw.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.roll.beta60.v45",
+      "value": 0.5000000000000001
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.pitch.beta60.v45",
+      "value": 3.75
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.yaw.beta60.v45",
+      "value": 2.7916666666666665
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.roll.beta60.v45",
+      "value": 2.6874999999999996
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.pitch.beta60.v45",
+      "value": 1.1200001293112822
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.yaw.beta60.v45",
+      "value": 0.6079289598359033
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.roll.beta60.v45",
+      "value": 1.1165197453052198
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.pitch.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.yaw.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B23.crossflow.authorityFraction.roll.beta90.v45",
+      "value": 0.15000000000000002
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.pitch.beta90.v45",
+      "value": 5.675
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.yaw.beta90.v45",
+      "value": 4.045833333333334
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B24.crossflow.dampingFraction.roll.beta90.v45",
+      "value": 3.868749999999999
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.pitch.beta90.v45",
+      "value": 0.5370553415201994
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.yaw.beta90.v45",
+      "value": 0.2418212551611204
+    },
+    {
+      "aircraftId": "f22-notvc",
+      "id": "B25.crossflow.rateFraction.roll.beta90.v45",
+      "value": 0.5198344241068278
+    }
+  ]
+}

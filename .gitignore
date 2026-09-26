@@ -8,3 +8,5 @@
 .DS_Store
 /artifacts/
 node_modules
+
+/benchmarks/flight/out/

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { getAircraft } from '../content/aircraft'
 import type { AircraftId, Locale } from '../content/schemas'
 import { loadSettings, saveSettings, type Settings } from '../platform/storage'
+import { parseMouseSettings, type MouseSettings } from '../game/input/mouseStick'
 
 import i18n from '../locales'
 
@@ -15,4 +16,5 @@ function update(patch: Partial<Settings>) {
 }
 export function selectAircraft(id: AircraftId) { getAircraft(id); update({ aircraftId: id }) }
 export function selectLocale(locale: Locale) { update({ locale }); void i18n.changeLanguage(locale) }
+export function selectControls(patch: Partial<MouseSettings>) { update({ controls: parseMouseSettings({ ...settings.controls, ...patch }) }) }
 export function useSessionSettings() { return useSyncExternalStore(subscribe, () => settings) }

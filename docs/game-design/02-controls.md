@@ -2,7 +2,26 @@
 
 [กลับ Master Plan](../../MASTER_PLAN.md) · P1 · เจ้าของปุ่มและการ resolve input เพียงไฟล์เดียว
 
-## ปุ่มที่ใช้จริงใน P2 · 7 กันยายน 2026
+## เมาส์หลัง MR1 · 26 กันยายน 2026
+
+ที่มา: [maneuver/control plan §4](../psm-maneuver-control-plan.md) และ [MR1 report](../psm-mr1-implementation.md). เป็น input เท่านั้น ไม่เปลี่ยน physics, `PilotCommand` หรือ command schema
+
+- **โหมด Relative (default, owner D5)**: เมาส์ขยับ stick เหมือนเดิม แต่ stick คืนกลางเองด้วย τ = 0.2 s ต่อ command tick (ไม่ใช่ต่อ frame) ขยับเร็ว = คำสั่งมาก หยุดขยับ = เครื่องหยุดหมุน สุดพิกัดที่ครึ่งหนึ่งของรัศมี gate
+- **โหมด Positional stick (option)**: ตำแหน่งตัวชี้คือคันบังคับ ปรับ shaping เป็น curve 1.5, dead zone 0.04 และสุดพิกัดที่ 35% ของด้านสั้นของจอ ครึ่งทางได้ราว 33%
+- **Control frame**: default คือ **ตัวเครื่อง** (เมาส์ขึ้น = เชิดหัวเสมอ ทุก bank และทุก incidence). Option "อิงเส้นขอบฟ้า" คือ polar mapping เดิมที่อ่านในกรอบของกล้อง
+- **Settings** (เก็บใน `maverick.settings` ฟิลด์ `controls`): โหมด, control frame, ความไว ×0.5–2, invert pitch, เมาส์ X = roll หรือ yaw
+- **ไม่มีคลิกขวาค้าง** (owner D6): สงวนไว้ให้ missile ท่าที่ต้องค้างการดึงใช้ ↑
+- HUD: วงประแสดงระยะสุดพิกัด ตัวชี้ stick สว่างขึ้นเมื่อถึงขอบ
+
+วิธีใช้ที่แนะนำ: เล็ง = ขยับน้อยๆ ใกล้กลาง + Q/E · เลี้ยว = เลื่อนข้างเพื่อเอียงแล้วดึงขึ้น, A/D หมุนเร็วสุด · high AoA = Space ค้างก่อนแล้วสะบัดขึ้น (หรือ ↑ ค้าง) · ออกจากท่า = ดันลงผ่านกลาง ปล่อย Space แล้ว W หรือ Shift
+
+## ปุ่มที่ใช้จริงหลัง PSM Phase 6 · 25 กันยายน 2026
+
+W/S เร่ง/ลดความเร็ว; **Space ค้าง = Airbrake** และเป็นปุ่มหลักสำหรับเข้ามุมปะทะสูง (Space + ดึง/yaw ที่ 350–700 อาร์เคด กม./ชม.); Shift ค้าง = afterburner (และเพิ่ม power intent); Q/E yaw แบบ ramp เชิงเส้น 0.2 s ต่อ command tick (ปล่อยแล้วกลับศูนย์พอดี); A/D และลูกศร pitch/roll; R reset; V camera roll mode; P/Esc พัก
+
+ไม่มี PSM mode หรือปุ่ม arm อีกแล้ว: **C และ X ไม่ได้ผูกกับการบิน**, Space ไม่ใช่ High-G อีกต่อไป การเลี้ยวแรง (hard turn) เกิดอัตโนมัติเมื่อดึงเต็มที่ความเร็วสูง `PilotCommand` ไม่มี `psmArm`/`highG`; replay schema เป็น 2 และ replay เก่าถูกปฏิเสธ รายละเอียดใน [Phase 6 report](../psm-phase6-implementation.md)
+
+## ปุ่มที่ใช้ใน P2 · 7 กันยายน 2026 (ประวัติ, แทนแล้วโดย Phase 6)
 
 W/S เร่ง/ลดความเร็วจริงตาม P1 (ไม่เก็บ target speed); X เบรก; Space ค้างร่วมกับเลี้ยวเป็น High-G; Shift ค้างเป็น afterburner; **C ค้าง + pitch/yaw เพื่อเข้า manual PSM** ในช่วง 65–115 m/s และสูง ≥150 m; ปล่อย C เพื่อออก ผู้เล่นยังคุมทุกแกนเอง; R reset ไปจุดเริ่มฝึกเดิมโดยยังบินต่อ; V สลับ camera roll mode; P/Esc พัก ไม่มี tap-to-Cobra หรือ input buffer สำหรับการแตะสั่งท่า
 
@@ -24,13 +43,13 @@ Mouse positional stick และ keyboard overrides ใช้ P1 เดิม �
 | Mouse X | Roll + yaw assist | เอียงเข้าทิศเลี้ยว; assist ไม่หันเครื่องแบนแบบรถ |
 | W / S | เพิ่ม / ลด target speed | กดค้างเพื่อปรับ ปล่อยเพื่อเก็บค่าเป้าหมาย |
 | A / D | Roll ซ้าย / ขวา | สั่งโดยตรง และ override mouse roll ขณะกด |
-| Q / E | Yaw ซ้าย / ขวา | ปรับแนวหัวละเอียด; manual yaw override yaw assist |
+| Q / E | Yaw ซ้าย / ขวา | ปรับแนวหัวละเอียด; ramp 0.2 s จนเต็ม และกลับศูนย์พอดีเมื่อปล่อย (Phase 6) |
 | Arrow Up / Down | Pitch up / down | สำรองและใช้ใน Keyboard-only |
 | Arrow Left / Right | Roll ซ้าย / ขวา | สำรองสำหรับมือขวาใน Keyboard-only |
 | Shift | Afterburner | กดค้าง เร่งชั่วคราว; ไม่แก้ target speed ที่เก็บไว้ |
-| Space | High-G | กดค้างร่วมกับคำสั่งเลี้ยว ใช้ง่ายใน dogfight |
-| X | Airbrake | กดค้าง ลดความเร็วเร็วกว่า S; แยกจาก High-G |
-| Z | PSM arm | กดค้างแล้ว pitch up เมื่อเข้าเงื่อนไข; ปล่อยเพื่อ recover |
+| Space | Airbrake | กดค้าง; Space + ดึงเข้า high AoA ในช่วงความเร็วต่ำ (Phase 6: แทน High-G เดิม) |
+| X | — | ว่างตั้งแต่ Phase 6 (เดิม Airbrake) |
+| Z | — | ข้อเสนอ PSM arm เดิมถูกยกเลิก: high AoA เป็นอัตโนมัติ ไม่มีปุ่ม arm |
 | Left mouse | ยิงปืน | กดค้าง; click ที่ใช้เข้า pointer lock ครั้งแรกไม่ยิง |
 | Right mouse | ยิง secondary missile | กดหนึ่งครั้งต่อคำขอปล่อย; ยิงได้เมื่อ lock พร้อม |
 | F | Countermeasure | กดหนึ่งครั้งปล่อย flare burst เมื่อมี inventory |
@@ -63,10 +82,10 @@ Pointer Lock ต้องเริ่มจาก engagement gesture และ�
 
 | กรณี | ผลลัพธ์ |
 |---|---|
-| W และ S พร้อมกัน | `speedAdjust = 0`; ไม่แอบเปิด High-G/PSM |
+| W และ S พร้อมกัน | `speedAdjust = 0`; ไม่แอบเปิด high AoA |
 | ปุ่มทิศตรงข้ามพร้อมกัน | แกนนั้นเป็นศูนย์; ไม่ขึ้นกับลำดับ keydown |
 | keyboard และ mouse บนแกนเดียวกัน | ถ้ามี keyboard override แกนนั้น; ปล่อยแล้วกลับ mouse ปัจจุบัน |
-| High-G และ PSM | ถ้า PSM เข้าเงื่อนไขให้ PSM มี priority; ถ้าเข้าไม่ได้อนุญาต High-G ตาม envelope |
+| Hard turn และ high AoA | envelope ต่อเนื่องเดียวกันตัดสิน: ความเร็วสูงให้ G, ความเร็วต่ำเปิด incidence limiter; ไม่มีปุ่มแยก |
 | Airbrake + Afterburner | Airbrake มี priority ปิด burner และกด auto-speed controller ชั่วคราว |
 | menu / text field focused | ไม่ส่ง flight/weapon actions; shortcut ของช่องกรอกทำงานได้ |
 | blur / hidden / pointer unlock | เคลียร์ทุก held action และ one-shot pending; ไม่ยิงต่อเอง |

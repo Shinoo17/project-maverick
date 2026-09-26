@@ -1,8 +1,12 @@
 import { Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
 import type { CameraRollMode } from '../../render/FlightCamera'
+import { WORLD_STEP } from '../runtime/clock'
 
 /*
+Two mouse sticks share this file (MR1). The relative stick, the default, is below at
+MOUSE_RELATIVE. The positional stick is the one this header describes.
+
 The mouse is a position on the glass, not an accumulation of travel.
 
 Where the pointer sits inside the gate is where the stick sits: the middle of the screen is
@@ -13,14 +17,67 @@ already knows how to do, rather than a travel to retrace by eye.
 Ported from the F-22 reference implementation in example/F22, whose numbers this keeps.
 */
 
-export const MOUSE_STICK = {
-  // A fraction of the gate radius, but sized as hand travel: the dead zone is what makes the
-  // middle a place the pointer can be put back into rather than a point to balance on, and
-  // that is a distance the hand feels, not a share of the deflection.
-  deadZone: 0.08,
-  // Fine around neutral, decisive at the edges.
-  curve: 2,
-} as const
+/** Radial shaping of a stick reading. `reach` is the fraction of the gate radius that
+ * reads as full deflection; `deadZone` and `curve` act on the travel inside it. */
+export interface StickShaping { deadZone: number; curve: number; reach: number }
+
+// Positional stick, reshaped in MR1 (docs/psm-maneuver-control-plan.md §4.2): half of the
+// reach reads about a third of the deflection instead of a fifth, and full deflection sits at
+// 35% of the shorter side of the window (0.7 of the gate radius) so a flick reaches the edge.
+export const MOUSE_STICK: StickShaping = {
+  // A fraction of the reach, but sized as hand travel: the dead zone is what makes the
+  // middle a place the pointer can be put back into rather than a point to balance on.
+  deadZone: 0.04,
+  curve: 1.5,
+  reach: 0.7,
+}
+
+/*
+Relative stick, the default since MR1 (owner decision D5, 26 Sep 2026).
+
+Mouse motion pushes the stick exactly as it pushes the positional one, but the stick springs
+back to the middle with a time constant of its own: move the mouse and the aircraft turns,
+stop and the stick is back in the middle and the aircraft stops turning. A fast sweep is a big
+deflection. The spring advances once per command tick, never per rendered frame, so a replay
+records the same stick at every frame rate — the Q/E pedal ramp's precedent.
+
+Full deflection is half the gate radius: the stick settles at mouse speed × returnSeconds, so
+a steady 1350 px/s sweep holds full stick on a 1080p window. Held maneuvers belong on the
+keyboard (↑); right mouse stays reserved for missiles (owner decision D6).
+*/
+export const MOUSE_RELATIVE: StickShaping & { returnSeconds: number } = {
+  deadZone: 0.02,
+  curve: 1.25,
+  reach: 0.5,
+  returnSeconds: 0.2,
+}
+
+export type MouseMode = 'relative' | 'stick'
+/** 'body': mouse up is always nose up. 'horizon': the pre-MR1 polar mapping, read in the
+ * frame the camera holds (it is the body frame whenever the camera rides the bank). */
+export type ControlFrame = 'body' | 'horizon'
+export interface MouseSettings {
+  mode: MouseMode
+  frame: ControlFrame
+  /** Multiplies pointer motion, 0.5..2. */
+  sensitivity: number
+  invertPitch: boolean
+  /** Which axis mouse X flies. 'yaw' is for fine aiming with A/D on roll. */
+  xAxis: 'roll' | 'yaw'
+}
+export const defaultMouseSettings: Readonly<MouseSettings> = { mode: 'relative', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll' }
+/** Anything unreadable falls back to the default, field by field. */
+export function parseMouseSettings(value: unknown): MouseSettings {
+  const data = value && typeof value === 'object' ? value as Record<string, unknown> : {}
+  const sensitivity = typeof data.sensitivity === 'number' && Number.isFinite(data.sensitivity) ? Math.min(2, Math.max(0.5, data.sensitivity)) : defaultMouseSettings.sensitivity
+  return {
+    mode: data.mode === 'stick' ? 'stick' : 'relative',
+    frame: data.frame === 'horizon' ? 'horizon' : 'body',
+    sensitivity,
+    invertPitch: data.invertPitch === true,
+    xAxis: data.xAxis === 'yaw' ? 'yaw' : 'roll',
+  }
+}
 
 export interface MouseStick { px: number; py: number; x: number; y: number; live: boolean }
 export interface StickAxes { pitch: number; roll: number }
@@ -79,6 +136,30 @@ export function moveStick(stick: MouseStick, deltaX: number, deltaY: number, gat
 
 export const refitStick = (stick: MouseStick, gate: StickGate) => moveStick(stick, 0, 0, gate)
 
+/** Relative mode: the same motion, clamped to the full-deflection circle rather than the
+ * window, so a hard sweep never winds up past full stick and a reversal answers at once.
+ * The circle carries one tick of spring as headroom, so a sweep held at full speed still
+ * reads full after the spring. */
+export function moveRelativeStick(stick: MouseStick, deltaX: number, deltaY: number, gate: StickGate, reach = MOUSE_RELATIVE.reach) {
+  if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) return stick
+  stick.px += deltaX; stick.py += deltaY
+  const limit = reach * gate.radius * Math.exp(WORLD_STEP / MOUSE_RELATIVE.returnSeconds), length = Math.hypot(stick.px, stick.py)
+  if (length > limit) { stick.px *= limit / length; stick.py *= limit / length }
+  return shape(stick, gate.radius)
+}
+
+/** Relative mode's spring toward the middle over `ticks` command ticks. Motion that arrived
+ * since the last tick (`since`, in pixels) is not sprung yet, so a sweep held at full stick
+ * reads full. Exact neutral below half a pixel, so a resting hand hands the axis back to the
+ * controller's neutral branch. */
+export function springStick(stick: MouseStick, ticks: number, gate: StickGate, since = { x: 0, y: 0 }, returnSeconds = MOUSE_RELATIVE.returnSeconds) {
+  const decay = Math.exp(-ticks * WORLD_STEP / returnSeconds)
+  stick.px = (stick.px - since.x) * decay + since.x
+  stick.py = (stick.py - since.y) * decay + since.y
+  if (Math.hypot(stick.px, stick.py) < 0.5) { stick.px = 0; stick.py = 0 }
+  return moveRelativeStick(stick, 0, 0, gate)
+}
+
 // Neutral with the stick still flying. The held position goes too, or a locked pointer
 // would resume from a deflection the hand had let go of.
 export function centreStick(stick: MouseStick) {
@@ -107,15 +188,16 @@ the aircraft rolls with it, because the command has to keep turning to stay ahea
 bank it is producing; and throw the pointer edge to edge and the aircraft rolls the half
 turn across to the mirrored bank instead of stalling.
 
-The shaping is radial: the length is clamped to the gate, the dead zone is taken off it, the
-curve is applied to what is left, and the direction is carried through untouched.
+The shaping is radial: the length is measured against the reach and clamped to it, the dead
+zone is taken off it, the curve is applied to what is left, and the direction is carried
+through untouched.
 */
-export function readStickAxes(stick: MouseStick, screen: ScreenFrame = LEVEL_FRAME): StickAxes | null {
+export function readStickAxes(stick: MouseStick, screen: ScreenFrame = LEVEL_FRAME, highAoa = 0, shaping: StickShaping = MOUSE_STICK): StickAxes | null {
   if (!stick.live) return null
   const magnitude = Math.hypot(stick.x, stick.y)
   if (magnitude < 1e-6) return { pitch: 0, roll: 0 }
-  const travel = Math.min(magnitude, 1)
-  if (travel <= MOUSE_STICK.deadZone) return { pitch: 0, roll: 0 }
+  const travel = Math.min(magnitude / shaping.reach, 1)
+  if (travel <= shaping.deadZone) return { pitch: 0, roll: 0 }
   let x = stick.x, y = stick.y
   if (screen.angle && screen.blend) {
     const cos = Math.cos(screen.angle), sin = Math.sin(screen.angle)
@@ -139,8 +221,13 @@ export function readStickAxes(stick: MouseStick, screen: ScreenFrame = LEVEL_FRA
       if (side) x += (side * reach - x) * (Math.abs(stick.x) / magnitude)
     }
   }
-  const live = (travel - MOUSE_STICK.deadZone) / (1 - MOUSE_STICK.deadZone)
-  const scale = live ** MOUSE_STICK.curve / magnitude
+  // Blend the complete screen correction (including antipodal roll handling)
+  // toward body axes. Scaling the frame angle or only its first rotation would
+  // leave a discontinuity at highAoa=1 for a pointer below the horizon.
+  x += (stick.x - x) * highAoa
+  y += (stick.y - y) * highAoa
+  const live = (travel - shaping.deadZone) / (1 - shaping.deadZone)
+  const scale = live ** shaping.curve / magnitude
   const clamp = (value: number) => Math.max(-1, Math.min(1, value))
   return { pitch: clamp(y * scale), roll: clamp(x * scale) }
 }

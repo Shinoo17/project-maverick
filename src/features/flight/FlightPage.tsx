@@ -3,8 +3,8 @@
    A focused briefing/pause dialog owns setup, launch, reset and return. */
 import { createRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSessionSettings } from '../../app/sessionStore'
-import { getAircraft, modelUrl } from '../../content/aircraft'
+import { selectControls, useSessionSettings } from '../../app/sessionStore'
+import { getAircraft, modelUrl, playgroundAircraft } from '../../content/aircraft'
 import { FlightInput } from '../../game/input/FlightInput'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import type { AircraftState } from '../../game/state/WorldState'
@@ -13,14 +13,15 @@ import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { FlightSession } from './session'
 import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
-import { flightWarning } from './telemetry'
+import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
 import { practiceSpawns, type PracticePreset } from '../../game/playground/practice'
 import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 export function FlightPage() {
   const { t } = useTranslation()
-  const { aircraftId } = useSessionSettings()
-  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(), preset: 'mouse', cameraMode: 'horizon', running: false, resetId: 0, timeScale: 1, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches }), [])
+  const { aircraftId: selectedAircraftId, controls } = useSessionSettings()
+  const [aircraftId, setAircraftId] = useState(selectedAircraftId)
+  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls), preset: 'mouse', cameraMode: 'horizon', running: false, resetId: 0, timeScale: 1, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches }), [])
   const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
   const [timeScale, setTimeScale] = useState(1), [reducedMotion, setReducedMotion] = useState(session.reducedMotion)
@@ -30,8 +31,11 @@ export function FlightPage() {
   const [preset, setPreset] = useState(session.preset), [cameraMode, setCameraMode] = useState(session.cameraMode)
   const [telemetry, setTelemetry] = useState<AircraftState | null>(null)
   const [webgl] = useState(supportsWebGL2)
-  const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), hud: createRef<HudDriver>() }), [])
+  const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), gate: createRef<HTMLDivElement>(), hud: createRef<HudDriver>() }), [])
+  // Mouse settings are input only; the next command tick reads them.
+  useEffect(() => { session.input.mouse = { ...controls } }, [session, controls])
   const surface = useRef<HTMLDivElement>(null), dialog = useRef<HTMLDialogElement>(null)
+  const heldWarning = useRef<HeldWarning>({ warning: null, until: 0 })
   const pause = useCallback(() => {
     session.running = false; session.runtime?.pause(); session.input.clear(); setRunning(false)
     if (document.pointerLockElement) document.exitPointerLock()
@@ -50,7 +54,7 @@ export function FlightPage() {
       if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); pause(); return }
       if (e.code === 'KeyR' && !e.repeat) { e.preventDefault(); session.input.clear(); if (session.preset === 'mouse') session.input.engage(); session.resetId++; session.runtime?.reset(); setCameraChanged(false); return }
       if (e.code === 'KeyV') { if (!e.repeat) { session.cameraMode = session.cameraMode === 'horizon' ? 'aircraft' : 'horizon'; setCameraMode(session.cameraMode); setCameraChanged(true) }; return }
-      if (['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'KeyX', 'KeyC', 'Space', 'ShiftLeft', 'ShiftRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); session.input.press(e.code) }
+      if (['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'Space', 'ShiftLeft', 'ShiftRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) { e.preventDefault(); session.input.press(e.code) }
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
     const move = (e: MouseEvent) => { if (session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.move(e.movementX, e.movementY) }
@@ -95,20 +99,22 @@ export function FlightPage() {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const stopped = telemetry && !telemetry.alive
-  const warning = flightWarning(telemetry)
+  heldWarning.current = holdWarning(heldWarning.current, flightWarning(telemetry), performance.now())
+  const warning = heldWarning.current.warning
   return <main className="flight-root">
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
-      {webgl && !failed && <SceneBoundary key={retry} fallback={null} onError={onError}><Suspense fallback={null}>
+      {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
         <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} onReady={onReady} onTelemetry={onTelemetry} />
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
-      <FlightInstruments aircraftId={aircraftId} driver={indicators.hud} />
+      <FlightInstruments driver={indicators.hud} />
       <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
       <div className="flight-actions"><span>{t(cameraMode === 'horizon' ? 'horizonCamera' : 'aircraftCamera')}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
-      {running && warning && <p className="flight-warning" role="status">{t(warning)}</p>}
+      {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
+      {running && preset === 'mouse' && <div ref={indicators.gate} className="flight-stick-gate" aria-hidden="true" />}
       {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true">
         <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" pathLength="96" /><path d="M50 14V8M86 50H92M50 86V92M14 50H8" /></svg>
       </div>}
@@ -125,6 +131,7 @@ export function FlightPage() {
       <label htmlFor="practice-preset">{t('practicePreset')}</label><select id="practice-preset" disabled={!ready} value={practicePreset} onChange={e => { const value = e.target.value as PracticePreset; setPracticePreset(value); resetFlight(value) }}>{(Object.keys(practiceSpawns) as PracticePreset[]).map(id => <option key={id} value={id}>{t(`spawn_${id}`)}</option>)}</select>
       <label htmlFor="practice-lesson">{t('practiceLesson')}</label><select id="practice-lesson" disabled={!ready} value={lesson} onChange={e => { const value = Number(e.target.value); setLesson(value); const spawn: PracticePreset = value === 6 ? 'cobra' : value === 5 ? 'recovery' : value === 4 ? 'highG' : 'free'; setPracticePreset(spawn); resetFlight(spawn) }}>{[0, 1, 2, 3, 4, 5, 6].map(id => <option key={id} value={id}>{t(lessonLabels[id])}</option>)}</select>
       <details className="flight-lab-settings"><summary>{t('flightLab')}</summary>
+        <label htmlFor="validation-aircraft">{t('labAircraft')}</label><select id="validation-aircraft" value={aircraftId} onChange={e => { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); setAircraftId(e.target.value) }}>{playgroundAircraft.map(entry => <option key={entry.id} value={entry.id}>{entry.designation} · {entry.name}</option>)}</select>
         <label htmlFor="practice-speed">{t('practiceSpeed')}</label><select id="practice-speed" value={timeScale} onChange={e => { session.timeScale = Number(e.target.value); setTimeScale(session.timeScale) }}>{[1, 0.5, 0.25].map(value => <option key={value} value={value}>×{value}</option>)}</select>
         <label><input type="checkbox" checked={lab} onChange={e => setLab(e.target.checked)} /> {t('showTelemetry')}</label>
         <label><input type="checkbox" checked={reducedMotion} onChange={e => { session.reducedMotion = e.target.checked; setReducedMotion(e.target.checked) }} /> {t('reducedFlightMotion')}</label>
@@ -132,7 +139,14 @@ export function FlightPage() {
         <button disabled={!ready} onClick={exportFlight}>{t('exportFlight')}</button><p>{t('exportFlightHint')}</p>
       </details>
       <p className="flight-instructions">{t('controlsHint')}</p>
-      {preset === 'mouse' && <details className="flight-mouse-help"><summary>{t('mousePreset')}</summary><p>{t('mouseHint')}</p></details>}
+      {preset === 'mouse' && <>
+        <label htmlFor="mouse-mode">{t('mouseMode')}</label><select id="mouse-mode" value={controls.mode} onChange={e => selectControls({ mode: e.target.value as typeof controls.mode })}><option value="relative">{t('mouseModeRelative')}</option><option value="stick">{t('mouseModeStick')}</option></select>
+        <label htmlFor="control-frame">{t('controlFrame')}</label><select id="control-frame" value={controls.frame} onChange={e => selectControls({ frame: e.target.value as typeof controls.frame })}><option value="body">{t('controlFrameBody')}</option><option value="horizon">{t('controlFrameHorizon')}</option></select>
+        <label htmlFor="mouse-x">{t('mouseXAxis')}</label><select id="mouse-x" value={controls.xAxis} onChange={e => selectControls({ xAxis: e.target.value as typeof controls.xAxis })}><option value="roll">{t('mouseXRoll')}</option><option value="yaw">{t('mouseXYaw')}</option></select>
+        <label htmlFor="mouse-sensitivity">{t('mouseSensitivity')} ×{controls.sensitivity.toFixed(1)}</label><input id="mouse-sensitivity" type="range" min={0.5} max={2} step={0.1} value={controls.sensitivity} onChange={e => selectControls({ sensitivity: Number(e.target.value) })} />
+        <label><input type="checkbox" checked={controls.invertPitch} onChange={e => selectControls({ invertPitch: e.target.checked })} /> {t('invertPitch')}</label>
+        <details className="flight-mouse-help"><summary>{t('mousePreset')}</summary><p>{t(controls.mode === 'relative' ? 'mouseHintRelative' : 'mouseHint')}</p><p>{t('mouseTips')}</p></details>
+      </>}
       <details className="flight-mouse-help"><summary>{t('psmControlsHelp')}</summary><p>{t('psmControlsDetail')}</p></details>
       {pointerError && <p role="alert">{t('pointerError')}</p>}
       {failed ? <button className="flight-primary" onClick={() => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) }}>{t('retry')}</button>

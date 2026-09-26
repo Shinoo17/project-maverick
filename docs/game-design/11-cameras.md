@@ -38,6 +38,8 @@ Interpolated aircraft pose + velocity
 
 Anchor ตาม aircraft position ส่วน look target ผสม nose กับ velocity เล็กน้อยเพื่อลดอาการเหวี่ยงระหว่าง drift โดยลด velocity-look weight เมื่อ speed ต่ำ/PSM active ห้ามกล้องตาม velocity เต็มจนไม่เห็นว่า Cobra หัวหันไปทางไหน
 
+> **Phase 7 (implemented, 26 ก.ย. 2026):** [FlightCamera.ts](../../src/render/FlightCamera.ts) ใช้ decouple จาก incidence 8→35° (attack เร็ว release ช้า) เมื่อ decouple เต็ม กล้องมองตาม flight path โดยหันกลับหาหัว 20% ของ incidence และส่วนนี้ค่อยหายไปจนเป็นศูนย์ที่ 180° จึงไม่พลิกตอน reverse flow ทิศมองหมุนได้ไม่เกิน 240°/s FOV กว้างขึ้น 10° ตาม decouple Horizon mode ถือ world up รอบทิศมองทุก AoA (ไม่หมุนตามลำตอน high AoA) ช่วงทิศมองใกล้แนวดิ่งจะถือ up เดิม แล้วค่อยหมุนกลับ level ไม่เกิน 180°/s Aircraft mode ตามลำ Reduced motion ปิด decouple/FOV รายละเอียดและตัวเลข: [Phase 7 report](../psm-phase7-implementation.md)
+
 ## Horizon lock ที่ไม่พลิกตอนบินตั้งฉาก
 
 ไม่เรียก `lookAt` กับ world-up ตรง ๆ ทุกกรณี เพราะเมื่อ look direction ขนาน world up จะหา right vector ไม่ได้ ให้ project world up ลง plane ตั้งฉากกับ look; หากความยาวใกล้ศูนย์ใช้ previous stable frame และ transport frame ผ่านช่วง vertical อย่างต่อเนื่อง

@@ -1,0 +1,3696 @@
+{
+  "scenario": "reversal180C",
+  "aircraftId": "f22",
+  "initialState": {
+    "id": "aircraft-1",
+    "aircraftId": "f22",
+    "speedLimits": {
+      "topSpeedMps": 200,
+      "afterburnerTopSpeedMps": 259.25925925925924
+    },
+    "stores": [
+      {
+        "stationId": "gun",
+        "weaponId": "m61a2",
+        "count": 1
+      },
+      {
+        "stationId": "side-bays",
+        "weaponId": "aim9",
+        "count": 2
+      },
+      {
+        "stationId": "main-bays",
+        "weaponId": "aim120",
+        "count": 6
+      }
+    ],
+    "position": {
+      "x": 0,
+      "y": 2000,
+      "z": 0
+    },
+    "orientation": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "velocity": {
+      "x": 83.33333333333333,
+      "y": 0,
+      "z": 0
+    },
+    "alive": true,
+    "maneuver": {
+      "phase": "normal",
+      "timer": 0,
+      "rotation": 0,
+      "stable": 0,
+      "blend": 0,
+      "controlAuthority": 0,
+      "blocked": "none",
+      "entrySpeed": 0,
+      "exitSpeed": 0,
+      "peakAlpha": 0,
+      "completed": 0,
+      "highG": 0,
+      "airbrake": 0,
+      "burner": 1,
+      "burnerActive": false,
+      "burnerLocked": false,
+      "burnerRest": 0,
+      "alpha": 0,
+      "g": 1,
+      "pathRate": 0,
+      "drag": 0
+    },
+    "stall": {
+      "severity": 0,
+      "cause": "none",
+      "aoaDeg": 0
+    },
+    "thrustVectoring": {
+      "left": 0,
+      "right": 0,
+      "authority": 0
+    },
+    "speedDrive": 0,
+    "enginePower": 0.048611111111111105,
+    "rates": {
+      "pitch": 0,
+      "yaw": 0,
+      "roll": 0
+    }
+  },
+  "commands": [
+    {
+      "startStep": 0,
+      "steps": 194,
+      "command": {
+        "tick": 0,
+        "entityId": "aircraft-1",
+        "pitch": 1,
+        "roll": 0,
+        "yaw": 0,
+        "speedAdjust": 1,
+        "airbrake": false,
+        "afterburner": false,
+        "highG": false,
+        "psmArm": true,
+        "gunHeld": false,
+        "actions": []
+      }
+    },
+    {
+      "startStep": 194,
+      "steps": 1006,
+      "command": {
+        "tick": 194,
+        "entityId": "aircraft-1",
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "speedAdjust": 1,
+        "airbrake": false,
+        "afterburner": false,
+        "highG": false,
+        "psmArm": false,
+        "gunHeld": false,
+        "actions": []
+      }
+    }
+  ],
+  "samples": [
+    {
+      "step": 0,
+      "time": 0,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 0,
+          "y": 2000,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "velocity": {
+          "x": 83.33333333333333,
+          "y": 0,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 0,
+          "rotation": 0,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 0,
+          "blocked": "none",
+          "entrySpeed": 0,
+          "exitSpeed": 0,
+          "peakAlpha": 0,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 0,
+          "alpha": 0,
+          "g": 1,
+          "pathRate": 0,
+          "drag": 0
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": 0
+        },
+        "thrustVectoring": {
+          "left": 0,
+          "right": 0,
+          "authority": 0
+        },
+        "speedDrive": 0,
+        "enginePower": 0.048611111111111105,
+        "rates": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 0
+    },
+    {
+      "step": 30,
+      "time": 0.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 21.163689052572842,
+          "y": 2000.5138629113546,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.057876669273028654,
+          "w": 0.9983237406542332
+        },
+        "velocity": {
+          "x": 86.47751204589908,
+          "y": 5.40319952889894,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.24999999999999997,
+          "rotation": 0.11581805948228006,
+          "stable": 0,
+          "blend": 0.4166666666666668,
+          "controlAuthority": 0.973754913245458,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 2.84405310884407,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 0.24999999999999997,
+          "alpha": 3.0606372647218345,
+          "g": 3.7776835671981805,
+          "pathRate": 23.67430591071811,
+          "drag": 3.903941271846508
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": 2.844053108844085
+        },
+        "thrustVectoring": {
+          "left": 8.795053548179629,
+          "right": 8.795053548179629,
+          "authority": 0.7134952031398102
+        },
+        "speedDrive": 0.8646647167633871,
+        "enginePower": 0.4674023583578199,
+        "rates": {
+          "pitch": 0.8668073815916302,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 6.635885999676832
+    },
+    {
+      "step": 60,
+      "time": 0.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 43.255292840907835,
+          "y": 2003.1738952898468,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.2180205813969486,
+          "w": 0.9759441716037536
+        },
+        "velocity": {
+          "x": 89.91615276391035,
+          "y": 15.065811955478047,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.5000000000000007,
+          "rotation": 0.4395716011363227,
+          "stable": 0,
+          "blend": 0.8333333333333323,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 14.988918273884014,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 0.5000000000000007,
+          "alpha": 15.673815516395631,
+          "g": 2.5074547853399323,
+          "pathRate": 14.196826834263252,
+          "drag": 8.955962374709296
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": 14.988918273884025
+        },
+        "thrustVectoring": {
+          "left": 15.838342729265275,
+          "right": 15.838342729265275,
+          "authority": 0.9179150013761014
+        },
+        "speedDrive": 0.9816843611112657,
+        "enginePower": 0.5292228025574786,
+        "rates": {
+          "pitch": 1.682226801958246,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 25.18559753885796
+    },
+    {
+      "step": 90,
+      "time": 0.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 66.04449891597449,
+          "y": 2007.3552107497374,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.45744257979194525,
+          "w": 0.8892391614145713
+        },
+        "velocity": {
+          "x": 91.6925213038756,
+          "y": 18.032049557067523,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.7499999999999998,
+          "rotation": 0.9502341990354263,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 42.29207179242651,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 0.7499999999999998,
+          "alpha": 43.318723243514505,
+          "g": 1.7585867646379618,
+          "pathRate": 8.701114610164327,
+          "drag": 22.34781370053598
+        },
+        "stall": {
+          "severity": 0.2708333333333333,
+          "cause": "aoa",
+          "aoaDeg": 42.29207179242652
+        },
+        "thrustVectoring": {
+          "left": 18.642339068876662,
+          "right": 18.642339068876662,
+          "authority": 0.9764822541439909
+        },
+        "speedDrive": 0.9975212478233336,
+        "enginePower": 0.5399358433510585,
+        "rates": {
+          "pitch": 2.30207686955516,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 54.444409153654966
+    },
+    {
+      "step": 120,
+      "time": 1,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 88.59351195629316,
+          "y": 2012.4140076559916,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.7024630256159551,
+          "w": 0.7117202383257611
+        },
+        "velocity": {
+          "x": 87.80606715255867,
+          "y": 22.437852389113164,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 0.9999999999999989,
+          "rotation": 1.5577045575371065,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 73.84408938098599,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 0.9999999999999989,
+          "alpha": 74.91536547223699,
+          "g": 2.661512423429421,
+          "pathRate": 15.266977277474926,
+          "drag": 34.369535922551684
+        },
+        "stall": {
+          "severity": 0.8958333333333338,
+          "cause": "aoa",
+          "aoaDeg": 73.84408938098599
+        },
+        "thrustVectoring": {
+          "left": 19.582294251915275,
+          "right": 19.582294251915275,
+          "authority": 0.9932620530009145
+        },
+        "speedDrive": 0.9996645373720976,
+        "enginePower": 0.5375607035652861,
+        "rates": {
+          "pitch": 2.510134419155063,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 89.24989687509373
+    },
+    {
+      "step": 150,
+      "time": 1.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 109.48155512544491,
+          "y": 2018.5741981942608,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.8900407816610625,
+          "w": 0.45588091315623736
+        },
+        "velocity": {
+          "x": 78.97508149729617,
+          "y": 26.528967618655024,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 1.249999999999998,
+          "rotation": 2.1948692370836147,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 106.10933566981483,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 1.249999999999998,
+          "alpha": 107.18873693842772,
+          "g": 2.8423124781268796,
+          "pathRate": 17.88670209793575,
+          "drag": 33.39537589757399
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "aoa",
+          "aoaDeg": 106.10933566981483
+        },
+        "thrustVectoring": {
+          "left": 19.875332882049268,
+          "right": 19.875332882049268,
+          "authority": 0.9980695458637723
+        },
+        "speedDrive": 0.9999546000702375,
+        "enginePower": 0.5289083805081055,
+        "rates": {
+          "pitch": 2.572874574430241,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 125.7567438679125
+    },
+    {
+      "step": 180,
+      "time": 1.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 127.80778632032516,
+          "y": 2025.513935454285,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9887265056928534,
+          "w": 0.1497327517292071
+        },
+        "velocity": {
+          "x": 67.87896666531284,
+          "y": 28.388444198806194,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "active",
+          "timer": 1.4999999999999971,
+          "rotation": 2.8409967099975137,
+          "stable": 0,
+          "blend": 1,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 0,
+          "peakAlpha": 138.96065054957938,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 1.4999999999999971,
+          "alpha": 140.0813903156943,
+          "g": 2.0966085369939784,
+          "pathRate": 14.011763670502063,
+          "drag": 24.53705473300734
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "aoa",
+          "aoaDeg": 138.96065054957936
+        },
+        "thrustVectoring": {
+          "left": 19.963414720629025,
+          "right": 19.963414720629025,
+          "authority": 0.9994469156298522
+        },
+        "speedDrive": 0.9999938557876467,
+        "enginePower": 0.518247244717819,
+        "rates": {
+          "pitch": 2.5918232872646896,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 162.77712109332836
+    },
+    {
+      "step": 210,
+      "time": 1.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 143.11790597767094,
+          "y": 2032.9996283498574,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9947941221385221,
+          "w": -0.10190512528154451
+        },
+        "velocity": {
+          "x": 53.75943787822765,
+          "y": 34.08363868953712,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 0.13333333333333333,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0.7777777777777786,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 1.7499999999999962,
+          "alpha": 159.32295805048867,
+          "g": 6.8440828918698875,
+          "pathRate": 59.511433623782615,
+          "drag": 8.921335663140422
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 159.40295785564538
+        },
+        "thrustVectoring": {
+          "left": 13.979428820654249,
+          "right": 13.979428820654249,
+          "authority": 0.9998415386748842
+        },
+        "speedDrive": 0.999999168471281,
+        "enginePower": 0.5086241751434953,
+        "rates": {
+          "pitch": 0.8711192592046034,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 191.69777329205854
+    },
+    {
+      "step": 240,
+      "time": 2,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 154.5208316948929,
+          "y": 2042.3614471019052,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9888371679980682,
+          "w": -0.14900018518632901
+        },
+        "velocity": {
+          "x": 38.31378956765185,
+          "y": 39.38263762815192,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 0.3833333333333337,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0.3611111111111128,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 1.9999999999999953,
+          "alpha": 151.3498282357849,
+          "g": 4.802141797169356,
+          "pathRate": 47.796325307574335,
+          "drag": 6.3552986499893755
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 151.6822546247363
+        },
+        "thrustVectoring": {
+          "left": 3.6157490064404376,
+          "right": 3.6157490064404376,
+          "authority": 0.9999546000702374
+        },
+        "speedDrive": 0.9999998874648253,
+        "enginePower": 0.5013554069635227,
+        "rates": {
+          "pitch": 0.13797104604381996,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 197.1379805646022
+    },
+    {
+      "step": 270,
+      "time": 2.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 162.4310396892647,
+          "y": 2052.1922186212532,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9876453375093047,
+          "w": -0.15670573472637153
+        },
+        "velocity": {
+          "x": 26.060770688992434,
+          "y": 38.50460606348135,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 0.6333333333333335,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 2.2499999999999947,
+          "alpha": 142.12248602242377,
+          "g": 3.0998179221510305,
+          "pathRate": 35.26303555920336,
+          "drag": 5.14698285867397
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 142.40528523707428
+        },
+        "thrustVectoring": {
+          "left": 0.6283229633761838,
+          "right": 0.6283229633761838,
+          "authority": 0.9999869927023459
+        },
+        "speedDrive": 0.9999999847700202,
+        "enginePower": 0.4953104490932285,
+        "rates": {
+          "pitch": 0.02316278463201807,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.03147338195794
+    },
+    {
+      "step": 300,
+      "time": 2.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 167.6180870625756,
+          "y": 2061.4207533567696,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9874385253701232,
+          "w": -0.1580036664602332
+        },
+        "velocity": {
+          "x": 15.892445827856,
+          "y": 35.2764692325279,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 0.8833333333333326,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 2.499999999999994,
+          "alpha": 132.4341813979072,
+          "g": 3.1996000706268024,
+          "pathRate": 43.87289286141698,
+          "drag": 4.026018487758372
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 132.79791412203315
+        },
+        "thrustVectoring": {
+          "left": 0.1091861591063491,
+          "right": 0.1091861591063491,
+          "authority": 0.9999962733468278
+        },
+        "speedDrive": 0.9999999979388464,
+        "enginePower": 0.49061305452104775,
+        "rates": {
+          "pitch": 0.003926396818380095,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.18208166811465
+    },
+    {
+      "step": 330,
+      "time": 2.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 170.35465241564046,
+          "y": 2069.728631733553,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9874032067926929,
+          "w": -0.15822423081028705
+        },
+        "velocity": {
+          "x": 6.434517563039414,
+          "y": 31.189961184421218,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 1.1333333333333317,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 2.749999999999993,
+          "alpha": 119.86431726475926,
+          "g": 3.419942002167716,
+          "pathRate": 57.34647354103858,
+          "drag": 3.0796867853892262
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 120.34188468976059
+        },
+        "thrustVectoring": {
+          "left": 0.01897370943811802,
+          "right": 0.01897370943811802,
+          "authority": 0.99999893229599
+        },
+        "speedDrive": 0.9999999997210532,
+        "enginePower": 0.48719265792959965,
+        "rates": {
+          "pitch": 0.0006699017128837374,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.20767846299205
+    },
+    {
+      "step": 360,
+      "time": 3,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 170.8198713301105,
+          "y": 2076.916155633438,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873971642659823,
+          "w": -0.15826193477743333
+        },
+        "velocity": {
+          "x": -2.3002272110823854,
+          "y": 26.35496361317051,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 1.3833333333333309,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 2.999999999999992,
+          "alpha": 103.22399248155904,
+          "g": 3.7247997112384894,
+          "pathRate": 75.80600213346561,
+          "drag": 2.2833497861506777
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 103.85565432638751
+        },
+        "thrustVectoring": {
+          "left": 0.003297136310944698,
+          "right": 0.003297136310944698,
+          "authority": 0.9999996940976797
+        },
+        "speedDrive": 0.9999999999622488,
+        "enginePower": 0.4849544120005027,
+        "rates": {
+          "pitch": 0.00011485582604307817,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21205411951127
+    },
+    {
+      "step": 390,
+      "time": 3.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 169.1953370188191,
+          "y": 2082.8089863708715,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873961265222782,
+          "w": -0.158268409130823
+        },
+        "velocity": {
+          "x": -10.309437583025018,
+          "y": 20.869046785365104,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 1.63333333333333,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 3.249999999999991,
+          "alpha": 81.92315008127298,
+          "g": 3.9728677060334747,
+          "pathRate": 92.60037786165411,
+          "drag": 1.6828275256663499
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 82.6948104575812
+        },
+        "thrustVectoring": {
+          "left": 0.0005729563788465135,
+          "right": 0.0005729563788465135,
+          "authority": 0.9999999123575181
+        },
+        "speedDrive": 0.999999999994891,
+        "enginePower": 0.48381274965741883,
+        "rates": {
+          "pitch": 0.000019769426738835312,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21280517490254
+    },
+    {
+      "step": 420,
+      "time": 3.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 165.66042406323274,
+          "y": 2087.2536174180636,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959476700935,
+          "w": -0.1582695249398249
+        },
+        "velocity": {
+          "x": -17.612540967273823,
+          "y": 14.798944998959774,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 1.883333333333329,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 3.4999999999999902,
+          "alpha": 58.2516056597728,
+          "g": 3.9359120612819947,
+          "pathRate": 93.17343756281578,
+          "drag": 1.301489116230956
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 59.02804934278944
+        },
+        "thrustVectoring": {
+          "left": 0.00009956488937724588,
+          "right": 0.00009956488937724588,
+          "authority": 0.9999999748900085
+        },
+        "speedDrive": 0.9999999999993086,
+        "enginePower": 0.4836915396617888,
+        "rates": {
+          "pitch": 0.0000034138787479082185,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21293235275448
+    },
+    {
+      "step": 450,
+      "time": 3.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 160.3855789675802,
+          "y": 2090.111421364015,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959167513133,
+          "w": -0.15826971783267166
+        },
+        "velocity": {
+          "x": -24.25869681032562,
+          "y": 8.19581176962224,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 2.1333333333333284,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 3.7499999999999893,
+          "alpha": 36.88052057042561,
+          "g": 3.6178519469621815,
+          "pathRate": 76.69706232863707,
+          "drag": 1.011077804599117
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 37.51966247423097
+        },
+        "thrustVectoring": {
+          "left": 0.000017301783456291364,
+          "right": 0.000017301783456291364,
+          "authority": 0.9999999928058669
+        },
+        "speedDrive": 0.9999999999999064,
+        "enginePower": 0.4845447389897096,
+        "rates": {
+          "pitch": 5.911770713760475e-7,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294286587437
+    },
+    {
+      "step": 480,
+      "time": 4,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 153.53187933232127,
+          "y": 2091.2505111153832,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959113919981,
+          "w": -0.15826975126778164
+        },
+        "velocity": {
+          "x": -30.259699368639964,
+          "y": 1.09142742808794,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 2.3833333333333275,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 3.9999999999999885,
+          "alpha": 20.278648984179707,
+          "g": 3.1337317928627684,
+          "pathRate": 55.45816870611779,
+          "drag": 0.8548588270277373
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed+aoa",
+          "aoaDeg": 20.740800341062613
+        },
+        "thrustVectoring": {
+          "left": 0.0000030065991399254234,
+          "right": 0.0000030065991399254234,
+          "authority": 0.9999999979388464
+        },
+        "speedDrive": 0.9999999999999872,
+        "enginePower": 0.4863420898986957,
+        "rates": {
+          "pitch": 1.0262821760167227e-7,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294407329265
+    },
+    {
+      "step": 510,
+      "time": 4.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 145.2559769342611,
+          "y": 2090.6674521260375,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959104608122,
+          "w": -0.15826975707716187
+        },
+        "velocity": {
+          "x": -35.71679903348638,
+          "y": -5.341432233062638,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 2.6333333333333266,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 4.250000000000001,
+          "alpha": 9.707437402398677,
+          "g": 2.2781556942204215,
+          "pathRate": 32.0402829342619,
+          "drag": 0.909065227185753
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed",
+          "aoaDeg": 9.97443975166047
+        },
+        "thrustVectoring": {
+          "left": 5.224685889195579e-7,
+          "right": 5.224685889195579e-7,
+          "authority": 0.9999999994094696
+        },
+        "speedDrive": 0.9999999999999982,
+        "enginePower": 0.48902613801916717,
+        "rates": {
+          "pitch": 1.7856461205603655e-8,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294407329265
+    },
+    {
+      "step": 540,
+      "time": 4.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 135.6351891102058,
+          "y": 2088.617581215215,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102986662,
+          "w": -0.15826975808874072
+        },
+        "velocity": {
+          "x": -41.079232587380496,
+          "y": -10.728177590556353,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 2.8833333333333258,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 4.500000000000013,
+          "alpha": 3.576606463818503,
+          "g": 1.7245009114439793,
+          "pathRate": 18.694703475460024,
+          "drag": 1.1430225728335714
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed",
+          "aoaDeg": 3.7323956579620723
+        },
+        "thrustVectoring": {
+          "left": 9.079142702554118e-8,
+          "right": 9.079142702554118e-8,
+          "authority": 0.9999999998308101
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.4924902189427314,
+        "rates": {
+          "pitch": 3.1131854863739215e-9,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294613448458
+    },
+    {
+      "step": 570,
+      "time": 4.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 124.6620956490261,
+          "y": 2085.3267879768587,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.987395910270377,
+          "w": -0.15826975826522788
+        },
+        "velocity": {
+          "x": -46.54649047481728,
+          "y": -15.332175413569553,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 3.133333333333325,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 4.750000000000026,
+          "alpha": 0.018655991920568677,
+          "g": 1.3831496344205507,
+          "pathRate": 11.00905876244649,
+          "drag": 1.4994983111601443
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed",
+          "aoaDeg": 0.07308616419676237
+        },
+        "thrustVectoring": {
+          "left": 1.5777184305721605e-8,
+          "right": 1.5777184305721605e-8,
+          "authority": 0.9999999999515264
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.49666098476785225,
+        "rates": {
+          "pitch": 5.437490063969421e-10,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294613448458
+    },
+    {
+      "step": 600,
+      "time": 5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 112.3038573173386,
+          "y": 2080.964883000118,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.987395910265433,
+          "w": -0.1582697582960724
+        },
+        "velocity": {
+          "x": -52.155272347374165,
+          "y": -19.34329867677386,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 3.383333333333324,
+          "rotation": 3.14361420624862,
+          "stable": 0,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 5.000000000000038,
+          "alpha": 2.135800751185895,
+          "g": 1.1858115946883983,
+          "pathRate": 6.465162755660983,
+          "drag": 1.9441016088408973
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed",
+          "aoaDeg": -2.0819243949343194
+        },
+        "thrustVectoring": {
+          "left": 2.7416635333497184e-9,
+          "right": 2.7416635333497184e-9,
+          "authority": 0.9999989442855985
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5014885905481932,
+        "rates": {
+          "pitch": 9.512404240450029e-11,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294734190286
+    },
+    {
+      "step": 630,
+      "time": 5.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 98.52697853679,
+          "y": 2075.661626699557,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102645676,
+          "w": -0.1582697583014713
+        },
+        "velocity": {
+          "x": -57.88632939101925,
+          "y": -22.897377228177213,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "recovery",
+          "timer": 3.633333333333323,
+          "rotation": 3.14361420624862,
+          "stable": 0.08333333333333333,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 0,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 5.250000000000051,
+          "alpha": 3.368688477715544,
+          "g": 1.0807313979187934,
+          "pathRate": 3.7138037268308732,
+          "drag": 2.4566730375719983
+        },
+        "stall": {
+          "severity": 1,
+          "cause": "speed",
+          "aoaDeg": -3.337740113328355
+        },
+        "thrustVectoring": {
+          "left": 4.764296838044617e-10,
+          "right": 4.764296838044617e-10,
+          "authority": 0.997842573699189
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5069340658447453,
+        "rates": {
+          "pitch": 1.6665079289380017e-11,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294854932114
+    },
+    {
+      "step": 660,
+      "time": 5.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 83.30015454183571,
+          "y": 2069.5285898001202,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102644159,
+          "w": -0.15826975830241757
+        },
+        "velocity": {
+          "x": -63.798259539968825,
+          "y": -25.90093216176619,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 5.500000000000063,
+          "alpha": 3.883295053050372,
+          "g": 1.0001723244635423,
+          "pathRate": 0.1520386646747667,
+          "drag": 2.8028928845735304
+        },
+        "stall": {
+          "severity": 0.8750000000000004,
+          "cause": "none",
+          "aoaDeg": -3.8845620418332576
+        },
+        "thrustVectoring": {
+          "left": 8.279106493155e-11,
+          "right": 8.279106493155e-11,
+          "authority": 0.9881399438122902
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.512975210406747,
+        "rates": {
+          "pitch": 2.923396197231848e-12,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.21294975673942
+    },
+    {
+      "step": 690,
+      "time": 5.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 66.5346567109883,
+          "y": 2062.789898976607,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643893,
+          "w": -0.1582697583025837
+        },
+        "velocity": {
+          "x": -70.18206583550229,
+          "y": -27.774993172776558,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 5.7500000000000755,
+          "alpha": 3.3785313498518925,
+          "g": 1.0959652275117888,
+          "pathRate": 3.349587873859392,
+          "drag": 3.039506805873407
+        },
+        "stall": {
+          "severity": 0.6666666666666679,
+          "cause": "none",
+          "aoaDeg": -3.4064445821135148
+        },
+        "thrustVectoring": {
+          "left": 1.4386929835617307e-11,
+          "right": 1.4386929835617307e-11,
+          "authority": 0.9693255372594238
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5196457409461744,
+        "rates": {
+          "pitch": 5.134423573540426e-13,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 720,
+      "time": 6,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 48.13024772489064,
+          "y": 2055.6916781487594,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643846,
+          "w": -0.15826975830261292
+        },
+        "velocity": {
+          "x": -76.8594806321537,
+          "y": -28.895284962726514,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 6.000000000000088,
+          "alpha": 2.3907644949643285,
+          "g": 1.1717828818379001,
+          "pathRate": 4.192353232187205,
+          "drag": 3.207705440038426
+        },
+        "stall": {
+          "severity": 0.45833333333333526,
+          "cause": "none",
+          "aoaDeg": -2.425700771900934
+        },
+        "thrustVectoring": {
+          "left": 2.500073531680085e-12,
+          "right": 2.500073531680085e-12,
+          "authority": 0.9416599264421007
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5269420308298303,
+        "rates": {
+          "pitch": 9.028017522205668e-14,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 750,
+      "time": 6.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 28.042234512141416,
+          "y": 2048.3510993525883,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643838,
+          "w": -0.15826975830261794
+        },
+        "velocity": {
+          "x": -83.6214060033391,
+          "y": -29.801610482792725,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 6.2500000000001,
+          "alpha": 1.402461664439598,
+          "g": 1.1484028281710204,
+          "pathRate": 3.5841019091260775,
+          "drag": 3.293288392453982
+        },
+        "stall": {
+          "severity": 0.25000000000000266,
+          "cause": "none",
+          "aoaDeg": -1.4323291803565648
+        },
+        "thrustVectoring": {
+          "left": 4.3444763651612993e-13,
+          "right": 4.3444763651612993e-13,
+          "authority": 0.9059043032101485
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5348881398742326,
+        "rates": {
+          "pitch": 1.5891652533480372e-14,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 780,
+      "time": 6.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": 6.264490883266596,
+          "y": 2040.7691061063522,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -90.37202656077967,
+          "y": -30.862426695588955,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 6.500000000000113,
+          "alpha": 0.6422894759545084,
+          "g": 1.0874651138048308,
+          "pathRate": 2.520913378116479,
+          "drag": 3.2826910325139966
+        },
+        "stall": {
+          "severity": 0.04166666666666924,
+          "cause": "none",
+          "aoaDeg": -0.6632970874384022
+        },
+        "thrustVectoring": {
+          "left": 7.549567902013357e-14,
+          "right": 7.549567902013357e-14,
+          "authority": 0.8628473262247691
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5435359554680124,
+        "rates": {
+          "pitch": 2.8003600759224545e-15,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 810,
+      "time": 6.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -17.192911257696544,
+          "y": 2032.8752555033748,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -97.03013580557682,
+          "y": -32.337909554727744,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 6.750000000000125,
+          "alpha": 0.21908016389791451,
+          "g": 1.015326291571184,
+          "pathRate": 0.9679767630894971,
+          "drag": 3.6450535600731753
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.22714663687789527
+        },
+        "thrustVectoring": {
+          "left": 1.3119181856797651e-14,
+          "right": 1.3119181856797651e-14,
+          "authority": 0.8132675254784456
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5529010712014631,
+        "rates": {
+          "pitch": 4.94001442465617e-16,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 840,
+      "time": 7,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -42.293282281713914,
+          "y": 2024.5529183419467,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -103.54164255780648,
+          "y": -34.21731886795124,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "none",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 7.000000000000138,
+          "alpha": 0.07416509887222829,
+          "g": 1.0019991991494275,
+          "pathRate": 0.3267603278100488,
+          "drag": 4.144886431567554
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.07688810158575383
+        },
+        "thrustVectoring": {
+          "left": 2.279771966099261e-15,
+          "right": 2.279771966099261e-15,
+          "authority": 0.7584373165503172
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5628977286313507,
+        "rates": {
+          "pitch": 8.723355094160912e-17,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 870,
+      "time": 7.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -69.01343037413056,
+          "y": 2015.7381865187824,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -109.99924491058258,
+          "y": -36.24706636078497,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 7.25000000000015,
+          "alpha": 0.025177275540508453,
+          "g": 1.0002589041730952,
+          "pathRate": 0.11065651110829879,
+          "drag": 4.67651832457736
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.026099413481936194
+        },
+        "thrustVectoring": {
+          "left": 3.961649647168433e-16,
+          "right": 3.961649647168433e-16,
+          "authority": 0.6996187521445872
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5735303664915469,
+        "rates": {
+          "pitch": 1.5418589520828646e-17,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 900,
+      "time": 7.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -97.34508492281246,
+          "y": 2006.4078584708525,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -116.43757176753674,
+          "y": -38.331214584571285,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 7.5000000000001625,
+          "alpha": 0.0085676639804956,
+          "g": 1.0000334562213709,
+          "pathRate": 0.0375761756895342,
+          "drag": 5.2401089659274565
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.008880798669307665
+        },
+        "thrustVectoring": {
+          "left": 6.884314817575238e-17,
+          "right": 6.884314817575238e-17,
+          "authority": 0.6379549503772063
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5848021793185488,
+        "rates": {
+          "pitch": 2.72761575205367e-18,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 930,
+      "time": 7.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -127.28513427817575,
+          "y": 1996.5530885905705,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -122.86728182585642,
+          "y": -40.44027888140003,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 7.750000000000175,
+          "alpha": 0.00537244480328403,
+          "g": 1.0000000432101366,
+          "pathRate": 0.0012796355308623633,
+          "drag": 5.835719199132487
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.005383138739628627
+        },
+        "thrustVectoring": {
+          "left": 1.1963145338043808e-17,
+          "right": 1.1963145338043808e-17,
+          "authority": 0.57456637967893
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.5967143839826494,
+        "rates": {
+          "pitch": 4.829187202172135e-19,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 960,
+      "time": 8,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -158.83220795747496,
+          "y": 1986.1698498211829,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -129.2950472494007,
+          "y": -42.555134054078074,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 8.000000000000187,
+          "alpha": 0.005066166419871553,
+          "g": 1.0000000404948828,
+          "pathRate": 0.0011770934872453165,
+          "drag": 6.463378085228125
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.005075943803012541
+        },
+        "thrustVectoring": {
+          "left": 2.0788829414626817e-18,
+          "right": 2.0788829414626817e-18,
+          "authority": 0.5105712380793266
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.6092675617045622,
+        "rates": {
+          "pitch": 8.556451690087042e-20,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 990,
+      "time": 8.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -191.98622185808725,
+          "y": 1975.2578988134758,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -135.72280402584946,
+          "y": -44.66997731033935,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 8.250000000000172,
+          "alpha": 0.004785442568142317,
+          "g": 1.0000000375282176,
+          "pathRate": 0.0010794076224260858,
+          "drag": 7.1230879260569155
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.0047944248010084786
+        },
+        "thrustVectoring": {
+          "left": 3.612556867098312e-19,
+          "right": 3.612556867098312e-19,
+          "authority": 0.44708958675946814
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.6224617585211379,
+        "rates": {
+          "pitch": 1.5171188868686234e-20,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 1020,
+      "time": 8.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -226.74717392232114,
+          "y": 1963.8172384522313,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -142.15055294145006,
+          "y": -46.78480937054036,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 8.500000000000158,
+          "alpha": 0.004526974690133051,
+          "g": 1.000000035608892,
+          "pathRate": 0.0010038286987928999,
+          "drag": 7.814848653624737
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.0045352618557077855
+        },
+        "thrustVectoring": {
+          "left": 6.277682527346592e-20,
+          "right": 6.277682527346592e-20,
+          "authority": 0.3852428615223677
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.6362969730724943,
+        "rates": {
+          "pitch": 2.6917200622139558e-21,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 1050,
+      "time": 8.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -263.1150622743095,
+          "y": 1951.847871449542,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -148.57829467165487,
+          "y": -48.89963089958356,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 8.750000000000144,
+          "alpha": 0.004288028225761099,
+          "g": 1.0000000324224907,
+          "pathRate": 0.0009163660369998832,
+          "drag": 8.538660204953098
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.0042957037426202245
+        },
+        "thrustVectoring": {
+          "left": 1.0908976485069745e-20,
+          "right": 1.0908976485069745e-20,
+          "authority": 0.32615289934528696
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.6507732040990617,
+        "rates": {
+          "pitch": 4.778628486284388e-22,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 1080,
+      "time": 9,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -301.089885194767,
+          "y": 1939.349800357327,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -155.00602979946936,
+          "y": -51.01444251692968,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 9.00000000000013,
+          "alpha": 0.004066317285650247,
+          "g": 1.0000000304398726,
+          "pathRate": 0.0008510371852180883,
+          "drag": 9.294522521520943
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.004073451162654758
+        },
+        "thrustVectoring": {
+          "left": 1.8956958628187463e-21,
+          "right": 1.8956958628187463e-21,
+          "authority": 0.270941646525026
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.6658904504304185,
+        "rates": {
+          "pitch": 8.488268379624572e-23,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 1110,
+      "time": 9.25,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -340.67164109984395,
+          "y": 1926.3230275776384,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -161.43375883015878,
+          "y": -53.12924480444406,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 9.250000000000115,
+          "alpha": 0.0038599162263921022,
+          "g": 1.0000000287133168,
+          "pathRate": 0.0007935962672071697,
+          "drag": 10.082435548799396
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.003866567624573911
+        },
+        "thrustVectoring": {
+          "left": 3.294225456647077e-22,
+          "right": 3.294225456647077e-22,
+          "authority": 0.2207310756886202
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.6816487109759877,
+        "rates": {
+          "pitch": 1.5085419893869698e-23,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 1140,
+      "time": 9.5,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -381.86032852328054,
+          "y": 1912.7675553712374,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -167.8614822031569,
+          "y": -55.24403831257886,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 9.500000000000101,
+          "alpha": 0.00366719147342944,
+          "g": 1.0000000269086606,
+          "pathRate": 0.0007387979182079944,
+          "drag": 10.90239923586068
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.003673410597467832
+        },
+        "thrustVectoring": {
+          "left": 5.724505482164062e-23,
+          "right": 5.724505482164062e-23,
+          "authority": 0.17664316254501877
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.6980479847172133,
+        "rates": {
+          "pitch": 2.6822475587257648e-24,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 1170,
+      "time": 9.75,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -424.6559461012468,
+          "y": 1898.6833858647858,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -174.28920030180367,
+          "y": -57.358823565264785,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 9.750000000000087,
+          "alpha": 0.0034867478099923563,
+          "g": 1.0000000256640655,
+          "pathRate": 0.0006948689519729248,
+          "drag": 11.754413535047183
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.0034925777440981197
+        },
+        "thrustVectoring": {
+          "left": 9.947698919393413e-24,
+          "right": 9.947698919393413e-24,
+          "authority": 0.13979987967357813
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.7150882707009433,
+        "rates": {
+          "pitch": 4.771169837952213e-25,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    },
+    {
+      "step": 1200,
+      "time": 10,
+      "state": {
+        "id": "aircraft-1",
+        "aircraftId": "f22",
+        "speedLimits": {
+          "topSpeedMps": 200,
+          "afterburnerTopSpeedMps": 259.25925925925924
+        },
+        "stores": [
+          {
+            "stationId": "gun",
+            "weaponId": "m61a2",
+            "count": 1
+          },
+          {
+            "stationId": "side-bays",
+            "weaponId": "aim9",
+            "count": 2
+          },
+          {
+            "stationId": "main-bays",
+            "weaponId": "aim120",
+            "count": 6
+          }
+        ],
+        "position": {
+          "x": -469.05849255938773,
+          "y": 1884.0705210569595,
+          "z": 0
+        },
+        "orientation": {
+          "x": 0,
+          "y": 0,
+          "z": 0.9873959102643836,
+          "w": -0.15826975830261883
+        },
+        "velocity": {
+          "x": -180.71691346137652,
+          "y": -59.47360106379114,
+          "z": 0
+        },
+        "alive": true,
+        "maneuver": {
+          "phase": "normal",
+          "timer": 3.849999999999989,
+          "rotation": 3.14361420624862,
+          "stable": 0.3000000000000001,
+          "blend": 0,
+          "controlAuthority": 1,
+          "blocked": "speed",
+          "entrySpeed": 83.33333333333333,
+          "exitSpeed": 68.64098459454189,
+          "peakAlpha": 156.04939487521972,
+          "completed": 1,
+          "highG": 0,
+          "airbrake": 0,
+          "burner": 1,
+          "burnerActive": false,
+          "burnerLocked": false,
+          "burnerRest": 10.000000000000073,
+          "alpha": 0.003317386365801464,
+          "g": 1.0000000251947898,
+          "pathRate": 0.000663970273978894,
+          "drag": 12.638478401689184
+        },
+        "stall": {
+          "severity": 0,
+          "cause": "none",
+          "aoaDeg": -0.003322864512186447
+        },
+        "thrustVectoring": {
+          "left": 1.728650869480726e-24,
+          "right": 1.728650869480726e-24,
+          "authority": 0.11132319513018717
+        },
+        "speedDrive": 0.9999999999999992,
+        "enginePower": 0.7327695680337833,
+        "rates": {
+          "pitch": 8.490193936159006e-26,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      "noseRotationDeg": 198.2129509641577
+    }
+  ],
+  "recordedWithProfileVersion": "p3-powered-psm-1",
+  "flightStep": 0.008333333333333333,
+  "totalSteps": 1200
+}

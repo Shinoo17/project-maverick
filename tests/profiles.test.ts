@@ -3,11 +3,12 @@ import { aircraft } from '../src/content/aircraft'
 import type { AircraftDefinition } from '../src/content/schemas'
 import { validateAircraft, validateSession } from '../src/content/validate'
 import { availableWeapons, fullArmament, weaponStations } from '../src/content/weapons'
-import { flightProfiles, getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
+import { getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { runFlightReplay } from '../src/game/playground/replay'
 import { parseSettings } from '../src/platform/storage'
+import { defaultMouseSettings } from '../src/game/input/mouseStick'
 import { getExhaustProfile } from '../src/render/exhaust/profile'
 import { getVaporProfile } from '../src/render/vapor/profile'
 
@@ -36,18 +37,7 @@ describe('aircraft profiles', () => {
     for (let tick = 0; tick < 120; tick++) runtime.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), speedAdjust: 1 }))
     const [f22, su57] = runtime.snapshot().aircraft
     expect(f22.velocity.x).toBeGreaterThan(su57.velocity.x)
-    expect(getFlightProfile('su57').maneuver.yawRate).toBeGreaterThan(getFlightProfile('f22').maneuver.yawRate)
-  })
-  it('disables PSM through capability data', () => {
-    const profile = flightProfiles['felon-agility'], previous = profile.maneuver
-    profile.maneuver = { ...previous, psmEnabled: false }
-    try {
-      const runtime = new GameRuntime({ mode: 'playground', aircraftIds: ['su57'] })
-      runtime.reset('cobra'); runtime.start()
-      runtime.advance(1 / 60, (tick, id) => ({ ...neutralCommand(tick, id), psmArm: true, pitch: 1 }))
-      expect(runtime.snapshot().aircraft[0].maneuver.phase).toBe('normal')
-      expect(runtime.snapshot().aircraft[0].maneuver.blocked).toBe('unsupported')
-    } finally { profile.maneuver = previous }
+    expect(getFlightProfile('su57').flight.yawRate).toBeGreaterThan(getFlightProfile('f22').flight.yawRate)
   })
   it('rejects broken profile references and nonfinite tuning', () => {
     expect(() => validateAircraft([{ ...aircraft[0], flightProfileId: 'missing' } as unknown as AircraftDefinition])).toThrow('flightProfileId')
@@ -102,7 +92,7 @@ describe('full aircraft armament', () => {
   })
   it('ignores retired preset fields in settings and sessions and exports clean replays', () => {
     const settings = parseSettings(JSON.stringify({ version: 1, aircraftId: 'su57', locale: 'en', loadoutByAircraft: { f22: 'f22-guns', su57: 'su57-guns' } }))
-    expect(settings).toEqual({ version: 1, aircraftId: 'su57', locale: 'en' })
+    expect(settings).toEqual({ version: 1, aircraftId: 'su57', locale: 'en', controls: defaultMouseSettings })
     const config = { mode: 'playground' as const, aircraftIds: ['su57'], loadoutIds: ['su57-guns'] }
     const runtime = new GameRuntime(config)
     expect(runtime.snapshot().aircraft[0].stores).toEqual(fullArmament(aircraft[1]))

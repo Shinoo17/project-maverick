@@ -1,0 +1,4732 @@
+{
+  "sourceCommit": "a581ee5c967c2aec7e4f8a00ed054125762f86d5",
+  "profileVersion": "p4.5b-continuation-1",
+  "stage": "phase45b",
+  "profiles": {
+    "f22": {
+      "breakout": {
+        "handoffSeconds": 0.22,
+        "qLow": 1.7887686497654491,
+        "qHigh": 3.0589002353977204,
+        "baseWeight": 0.08,
+        "brakeWeight": 0.92,
+        "decelerationWeight": 0.45,
+        "powerWeight": 0.1,
+        "comboWeight": 0.1,
+        "sustainWeight": 0.05,
+        "openRate": 5,
+        "closeRate": 2,
+        "brakeBoost": 1,
+        "powerBoost": 1,
+        "hardTurnG": 1.6
+      },
+      "arcadeControlFloor": {
+        "acceleration": {
+          "pitch": 0.25,
+          "yaw": 0.18,
+          "roll": 0.3
+        },
+        "maxRate": {
+          "pitch": 0.2,
+          "yaw": 0.15,
+          "roll": 0.3
+        }
+      },
+      "engine": {
+        "spoolUpResponse": 4,
+        "spoolDownResponse": 6
+      },
+      "aero": {
+        "referenceSpeedMps": 90,
+        "highSpeedMps": 160,
+        "controlEffectiveness": {
+          "pitch": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ],
+          "yaw": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ],
+          "roll": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ]
+        },
+        "alphaNormalDeg": 20,
+        "alphaCriticalDeg": 30,
+        "maxControllableAlphaDeg": 180,
+        "controlAcceleration": {
+          "pitch": 4.75,
+          "yaw": 2.1,
+          "roll": 10.5
+        },
+        "pathRateFloorMps": 40,
+        "restoring": {
+          "pitch": [
+            {
+              "incidenceDeg": 0,
+              "stiffness": 1.2
+            },
+            {
+              "incidenceDeg": 20,
+              "stiffness": 1.2
+            },
+            {
+              "incidenceDeg": 45,
+              "stiffness": 1
+            },
+            {
+              "incidenceDeg": 90,
+              "stiffness": 0.65
+            },
+            {
+              "incidenceDeg": 180,
+              "stiffness": 0.45
+            }
+          ],
+          "yaw": [
+            {
+              "incidenceDeg": 0,
+              "stiffness": 0.9
+            },
+            {
+              "incidenceDeg": 20,
+              "stiffness": 0.9
+            },
+            {
+              "incidenceDeg": 45,
+              "stiffness": 0.75
+            },
+            {
+              "incidenceDeg": 90,
+              "stiffness": 0.5
+            },
+            {
+              "incidenceDeg": 180,
+              "stiffness": 0.35
+            }
+          ]
+        },
+        "damping": {
+          "attached": {
+            "pitch": 0.1,
+            "yaw": 0.12,
+            "roll": 0.08
+          },
+          "separated": {
+            "pitch": 0.65,
+            "yaw": 0.55,
+            "roll": 0.35
+          }
+        },
+        "alphaDrag": 0.0025,
+        "betaDrag": 0.003,
+        "reverseDrag": 0.4
+      },
+      "flight": {
+        "afterburnerAcceleration": 38,
+        "airbrakeDeceleration": 30,
+        "driveResponse": 8,
+        "releaseResponse": 6,
+        "rateResponse": 5,
+        "rollReversalResponse": 18,
+        "counterResponse": 12,
+        "neutralResponse": 9,
+        "turnRateReserve": 0.9,
+        "pathResponse": 4,
+        "physicalPathResponse": 0.35,
+        "physicalPathAcceleration": 40,
+        "pathAssistAcceleration": 250,
+        "turnAnticipation": 0.65,
+        "gravity": 9.81,
+        "neutralRollResponse": 9.1,
+        "minRateTarget": {
+          "pitch": 0.2,
+          "yaw": 0.15,
+          "roll": 0.3
+        },
+        "minPoweredMps": 65,
+        "topSpeedKph": 1080,
+        "afterburnerTopSpeedKph": 1400,
+        "acceleration": 24,
+        "deceleration": 24,
+        "maxThrust": 50,
+        "drag": 0.00035,
+        "turnDrag": 3,
+        "pitchRate": 0.95,
+        "yawRate": 0.42,
+        "rollRate": 2.1,
+        "turnAcceleration": 145
+      },
+      "stall": {
+        "controlAuthority": 0.25,
+        "dragMultiplier": 1.8,
+        "separationEntrySeconds": 0.4,
+        "separationRecoverySeconds": 1.2,
+        "stallSpeedKph": 300,
+        "separationAttachedSpeedKph": 350,
+        "criticalAoaDeg": 30,
+        "separationAttachedAoaDeg": 20
+      },
+      "maneuver": {
+        "psmEnabled": true,
+        "entryMin": 65,
+        "entryMax": 115,
+        "minAltitude": 150,
+        "exitSpeed": 135,
+        "blendSeconds": 0.6,
+        "pathResponse": 1.5,
+        "activeGrip": 0.08,
+        "recoveryGrip": 2.5,
+        "recoveryAcceleration": 70,
+        "lateralAcceleration": 55,
+        "recoveryIncidenceRad": 0.3,
+        "recoverySpeedMps": 60,
+        "highGMinSpeedMps": 75,
+        "highGMaxSpeedMps": 190,
+        "highGSpeedFadeMps": 15,
+        "highGRate": 1.4,
+        "highGDrag": 2,
+        "burnerSeconds": 6,
+        "burnerRecharge": 12
+      },
+      "thrustVectoring": {
+        "maxAngle": 20,
+        "rollGain": 6,
+        "yawGain": 0,
+        "cantDeg": 0,
+        "actuatorRate": 45,
+        "actuatorResponse": 7,
+        "gain": 2,
+        "pivotX": -6.3824,
+        "height": -1.0373,
+        "spacing": 0.6517,
+        "lipArm": 0.983,
+        "inertia": {
+          "roll": 12,
+          "yaw": 40,
+          "pitch": 40
+        }
+      }
+    },
+    "su57": {
+      "breakout": {
+        "handoffSeconds": 0.22,
+        "qLow": 1.7887686497654491,
+        "qHigh": 3.0589002353977204,
+        "baseWeight": 0.08,
+        "brakeWeight": 0.92,
+        "decelerationWeight": 0.45,
+        "powerWeight": 0.1,
+        "comboWeight": 0.1,
+        "sustainWeight": 0.05,
+        "openRate": 5,
+        "closeRate": 2,
+        "brakeBoost": 1,
+        "powerBoost": 1,
+        "hardTurnG": 1.6
+      },
+      "arcadeControlFloor": {
+        "acceleration": {
+          "pitch": 0.25,
+          "yaw": 0.18,
+          "roll": 0.3
+        },
+        "maxRate": {
+          "pitch": 0.2,
+          "yaw": 0.15,
+          "roll": 0.3
+        }
+      },
+      "engine": {
+        "spoolUpResponse": 4,
+        "spoolDownResponse": 6
+      },
+      "aero": {
+        "referenceSpeedMps": 90,
+        "highSpeedMps": 160,
+        "controlEffectiveness": {
+          "pitch": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ],
+          "yaw": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ],
+          "roll": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ]
+        },
+        "alphaNormalDeg": 20,
+        "alphaCriticalDeg": 30,
+        "maxControllableAlphaDeg": 180,
+        "controlAcceleration": {
+          "pitch": 4.75,
+          "yaw": 2.4,
+          "roll": 10.5
+        },
+        "pathRateFloorMps": 40,
+        "restoring": {
+          "pitch": [
+            {
+              "incidenceDeg": 0,
+              "stiffness": 1.2
+            },
+            {
+              "incidenceDeg": 20,
+              "stiffness": 1.1
+            },
+            {
+              "incidenceDeg": 45,
+              "stiffness": 0.6
+            },
+            {
+              "incidenceDeg": 90,
+              "stiffness": 0.3
+            },
+            {
+              "incidenceDeg": 180,
+              "stiffness": 0.25
+            }
+          ],
+          "yaw": [
+            {
+              "incidenceDeg": 0,
+              "stiffness": 0.9
+            },
+            {
+              "incidenceDeg": 20,
+              "stiffness": 0.85
+            },
+            {
+              "incidenceDeg": 45,
+              "stiffness": 0.45
+            },
+            {
+              "incidenceDeg": 90,
+              "stiffness": 0.25
+            },
+            {
+              "incidenceDeg": 180,
+              "stiffness": 0.2
+            }
+          ]
+        },
+        "damping": {
+          "attached": {
+            "pitch": 0.1,
+            "yaw": 0.12,
+            "roll": 0.08
+          },
+          "separated": {
+            "pitch": 0.45,
+            "yaw": 0.4,
+            "roll": 0.3
+          }
+        },
+        "alphaDrag": 0.0027,
+        "betaDrag": 0.0032,
+        "reverseDrag": 0.4
+      },
+      "flight": {
+        "afterburnerAcceleration": 38,
+        "airbrakeDeceleration": 30,
+        "driveResponse": 8,
+        "releaseResponse": 6,
+        "rateResponse": 5,
+        "rollReversalResponse": 18,
+        "counterResponse": 12,
+        "neutralResponse": 9,
+        "turnRateReserve": 0.9,
+        "pathResponse": 4,
+        "physicalPathResponse": 0.35,
+        "physicalPathAcceleration": 40,
+        "pathAssistAcceleration": 250,
+        "turnAnticipation": 0.65,
+        "gravity": 9.81,
+        "neutralRollResponse": 5,
+        "minRateTarget": {
+          "pitch": 0.2,
+          "yaw": 0.15,
+          "roll": 0.3
+        },
+        "minPoweredMps": 65,
+        "topSpeedKph": 1080,
+        "afterburnerTopSpeedKph": 1400,
+        "acceleration": 22.8,
+        "deceleration": 24,
+        "maxThrust": 50,
+        "drag": 0.00035,
+        "turnDrag": 3.15,
+        "pitchRate": 0.95,
+        "yawRate": 0.48,
+        "rollRate": 2.1,
+        "turnAcceleration": 145
+      },
+      "stall": {
+        "controlAuthority": 0.25,
+        "dragMultiplier": 1.8,
+        "separationEntrySeconds": 0.4,
+        "separationRecoverySeconds": 1.2,
+        "stallSpeedKph": 300,
+        "separationAttachedSpeedKph": 350,
+        "criticalAoaDeg": 30,
+        "separationAttachedAoaDeg": 20
+      },
+      "maneuver": {
+        "psmEnabled": true,
+        "entryMin": 65,
+        "entryMax": 115,
+        "minAltitude": 150,
+        "exitSpeed": 135,
+        "blendSeconds": 0.6,
+        "pathResponse": 1.5,
+        "activeGrip": 0.08,
+        "recoveryGrip": 2.5,
+        "recoveryAcceleration": 66.5,
+        "lateralAcceleration": 55,
+        "recoveryIncidenceRad": 0.3,
+        "recoverySpeedMps": 60,
+        "highGMinSpeedMps": 75,
+        "highGMaxSpeedMps": 190,
+        "highGSpeedFadeMps": 15,
+        "highGRate": 1.4,
+        "highGDrag": 2,
+        "burnerSeconds": 6,
+        "burnerRecharge": 12
+      },
+      "thrustVectoring": {
+        "maxAngle": 18,
+        "rollGain": 6,
+        "yawGain": 14,
+        "cantDeg": 30,
+        "actuatorRate": 36,
+        "actuatorResponse": 7,
+        "gain": 2,
+        "pivotX": -7.2,
+        "height": -0.6691,
+        "spacing": 1.3903,
+        "lipArm": 1.02,
+        "inertia": {
+          "roll": 18,
+          "yaw": 40,
+          "pitch": 40
+        }
+      }
+    },
+    "f22-notvc": {
+      "breakout": {
+        "handoffSeconds": 0.22,
+        "qLow": 1.7887686497654491,
+        "qHigh": 3.0589002353977204,
+        "baseWeight": 0.08,
+        "brakeWeight": 0.92,
+        "decelerationWeight": 0.45,
+        "powerWeight": 0.1,
+        "comboWeight": 0.1,
+        "sustainWeight": 0.05,
+        "openRate": 5,
+        "closeRate": 2,
+        "brakeBoost": 1,
+        "powerBoost": 1,
+        "hardTurnG": 1.6
+      },
+      "arcadeControlFloor": {
+        "acceleration": {
+          "pitch": 0.25,
+          "yaw": 0.18,
+          "roll": 0.3
+        },
+        "maxRate": {
+          "pitch": 0.2,
+          "yaw": 0.15,
+          "roll": 0.3
+        }
+      },
+      "engine": {
+        "spoolUpResponse": 4,
+        "spoolDownResponse": 6
+      },
+      "aero": {
+        "referenceSpeedMps": 90,
+        "highSpeedMps": 160,
+        "controlEffectiveness": {
+          "pitch": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ],
+          "yaw": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ],
+          "roll": [
+            {
+              "incidenceDeg": 0,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 25,
+              "effectiveness": 1
+            },
+            {
+              "incidenceDeg": 45,
+              "effectiveness": 0.71
+            },
+            {
+              "incidenceDeg": 60,
+              "effectiveness": 0.5
+            },
+            {
+              "incidenceDeg": 90,
+              "effectiveness": 0.15
+            },
+            {
+              "incidenceDeg": 120,
+              "effectiveness": 0.09
+            },
+            {
+              "incidenceDeg": 180,
+              "effectiveness": 0.05
+            }
+          ]
+        },
+        "alphaNormalDeg": 20,
+        "alphaCriticalDeg": 30,
+        "maxControllableAlphaDeg": 180,
+        "controlAcceleration": {
+          "pitch": 4.75,
+          "yaw": 2.1,
+          "roll": 10.5
+        },
+        "pathRateFloorMps": 40,
+        "restoring": {
+          "pitch": [
+            {
+              "incidenceDeg": 0,
+              "stiffness": 1.2
+            },
+            {
+              "incidenceDeg": 20,
+              "stiffness": 1.2
+            },
+            {
+              "incidenceDeg": 45,
+              "stiffness": 1
+            },
+            {
+              "incidenceDeg": 90,
+              "stiffness": 0.65
+            },
+            {
+              "incidenceDeg": 180,
+              "stiffness": 0.45
+            }
+          ],
+          "yaw": [
+            {
+              "incidenceDeg": 0,
+              "stiffness": 0.9
+            },
+            {
+              "incidenceDeg": 20,
+              "stiffness": 0.9
+            },
+            {
+              "incidenceDeg": 45,
+              "stiffness": 0.75
+            },
+            {
+              "incidenceDeg": 90,
+              "stiffness": 0.5
+            },
+            {
+              "incidenceDeg": 180,
+              "stiffness": 0.35
+            }
+          ]
+        },
+        "damping": {
+          "attached": {
+            "pitch": 0.1,
+            "yaw": 0.12,
+            "roll": 0.08
+          },
+          "separated": {
+            "pitch": 0.65,
+            "yaw": 0.55,
+            "roll": 0.35
+          }
+        },
+        "alphaDrag": 0.0025,
+        "betaDrag": 0.003,
+        "reverseDrag": 0.4
+      },
+      "flight": {
+        "afterburnerAcceleration": 38,
+        "airbrakeDeceleration": 30,
+        "driveResponse": 8,
+        "releaseResponse": 6,
+        "rateResponse": 5,
+        "rollReversalResponse": 18,
+        "counterResponse": 12,
+        "neutralResponse": 9,
+        "turnRateReserve": 0.9,
+        "pathResponse": 4,
+        "physicalPathResponse": 0.35,
+        "physicalPathAcceleration": 40,
+        "pathAssistAcceleration": 250,
+        "turnAnticipation": 0.65,
+        "gravity": 9.81,
+        "neutralRollResponse": 9.1,
+        "minRateTarget": {
+          "pitch": 0.2,
+          "yaw": 0.15,
+          "roll": 0.3
+        },
+        "minPoweredMps": 65,
+        "topSpeedKph": 1080,
+        "afterburnerTopSpeedKph": 1400,
+        "acceleration": 24,
+        "deceleration": 24,
+        "maxThrust": 50,
+        "drag": 0.00035,
+        "turnDrag": 3,
+        "pitchRate": 0.95,
+        "yawRate": 0.42,
+        "rollRate": 2.1,
+        "turnAcceleration": 145
+      },
+      "stall": {
+        "controlAuthority": 0.25,
+        "dragMultiplier": 1.8,
+        "separationEntrySeconds": 0.4,
+        "separationRecoverySeconds": 1.2,
+        "stallSpeedKph": 300,
+        "separationAttachedSpeedKph": 350,
+        "criticalAoaDeg": 30,
+        "separationAttachedAoaDeg": 20
+      },
+      "maneuver": {
+        "psmEnabled": true,
+        "entryMin": 65,
+        "entryMax": 115,
+        "minAltitude": 150,
+        "exitSpeed": 135,
+        "blendSeconds": 0.6,
+        "pathResponse": 1.5,
+        "activeGrip": 0.08,
+        "recoveryGrip": 2.5,
+        "recoveryAcceleration": 70,
+        "lateralAcceleration": 55,
+        "recoveryIncidenceRad": 0.3,
+        "recoverySpeedMps": 60,
+        "highGMinSpeedMps": 75,
+        "highGMaxSpeedMps": 190,
+        "highGSpeedFadeMps": 15,
+        "highGRate": 1.4,
+        "highGDrag": 2,
+        "burnerSeconds": 6,
+        "burnerRecharge": 12
+      },
+      "thrustVectoring": null
+    }
+  },
+  "metrics": [
+    {
+      "scenario": "entry-pitch-350",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.9833333333333333,
+          "speedKph": 200.99755259370082
+        },
+        {
+          "degrees": 30,
+          "time": 1.3833333333333333,
+          "speedKph": 137.23321922826892
+        },
+        {
+          "degrees": 60,
+          "time": 2.1,
+          "speedKph": 33.3440961427446
+        }
+      ],
+      "peakIncidence": 115.58173120912237,
+      "secondsAbove30": 1.625,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 5.741409681992536,
+      "cumulativeNoseDegrees": 25.581731207638363,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 115.58173120912237,
+      "thrustWork": 66.71441592946216,
+      "dragWork": 2222.5097075114477,
+      "unmet": {
+        "pitch": 13.707205668665237,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-350",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.6833333333333333,
+          "speedKph": 96.3966378001812
+        },
+        {
+          "degrees": 30,
+          "time": 1.9666666666666666,
+          "speedKph": 56.28720640737153
+        },
+        {
+          "degrees": 60,
+          "time": 2.3333333333333335,
+          "speedKph": 9.49307439303253
+        }
+      ],
+      "peakIncidence": 89.80086881117228,
+      "secondsAbove30": 1.0416666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 7.384718135785988,
+      "cumulativeNoseDegrees": 12.212238248647187,
+      "netNoseHeadingDegrees": 12.207942269508878,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 89.79909824674411,
+      "thrustWork": 67.94496910759126,
+      "dragWork": 2239.834625954287,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094105,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-450",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.8,
+          "speedKph": 326.84861481120913
+        },
+        {
+          "degrees": 30,
+          "time": 1.1916666666666667,
+          "speedKph": 257.9437112072123
+        },
+        {
+          "degrees": 60,
+          "time": 2.3333333333333335,
+          "speedKph": 69.70588102387234
+        }
+      ],
+      "peakIncidence": 134.78004526340692,
+      "secondsAbove30": 1.8166666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -1.1366693117079194,
+      "cumulativeNoseDegrees": 44.78004526188097,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 134.78004526340692,
+      "thrustWork": 166.96609560250906,
+      "dragWork": 3627.291329865957,
+      "unmet": {
+        "pitch": 13.707205668665237,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-450",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 2.0666666666666664,
+          "speedKph": 129.3532083523073
+        },
+        {
+          "degrees": 30,
+          "time": 2.5,
+          "speedKph": 65.99745467439273
+        },
+        {
+          "degrees": 60,
+          "time": 2.933333333333333,
+          "speedKph": 9.852721814981946
+        }
+      ],
+      "peakIncidence": 76.5272110150804,
+      "secondsAbove30": 0.5083333333333333,
+      "finalSpeedKph": 2.2771896082001155,
+      "heightLoss": 7.187821922931107,
+      "cumulativeNoseDegrees": 20.933860906731056,
+      "netNoseHeadingDegrees": 20.926554820075722,
+      "netVelocityHeadingDegrees": 3.361701989182113,
+      "velocityDirection3d": null,
+      "finalIncidence": 76.5272110150804,
+      "thrustWork": 174.5754253153256,
+      "dragWork": 3716.439637288527,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094108,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-500",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 392.86806422671737
+        },
+        {
+          "degrees": 30,
+          "time": 1,
+          "speedKph": 336.1208447986752
+        },
+        {
+          "degrees": 60,
+          "time": 2.2666666666666666,
+          "speedKph": 111.95432722357118
+        }
+      ],
+      "peakIncidence": 112.9506881348571,
+      "secondsAbove30": 2.0083333333333333,
+      "finalSpeedKph": 7.142895573874706,
+      "heightLoss": -5.795305950909551,
+      "cumulativeNoseDegrees": 54.789098506924034,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 58.161589626671415,
+      "finalIncidence": 112.9506881348571,
+      "thrustWork": 241.17336379403963,
+      "dragWork": 4469.432998167102,
+      "unmet": {
+        "pitch": 13.707205668665257,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-500",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.9833333333333334,
+          "speedKph": 187.54096302474443
+        },
+        {
+          "degrees": 30,
+          "time": 2.7083333333333335,
+          "speedKph": 77.25986811735265
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 41.430163095243564,
+      "secondsAbove30": 0.3,
+      "finalSpeedKph": 37.29026087577048,
+      "heightLoss": 6.390964791732586,
+      "cumulativeNoseDegrees": 26.786090073998235,
+      "netNoseHeadingDegrees": 26.773700782682276,
+      "netVelocityHeadingDegrees": 5.439915250024087,
+      "velocityDirection3d": 37.01454884884362,
+      "finalIncidence": 41.430163095243564,
+      "thrustWork": 258.12788371481224,
+      "dragWork": 4583.011786793993,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094233,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-600",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5666666666666667,
+          "speedKph": 510.967346345662
+        },
+        {
+          "degrees": 30,
+          "time": 0.7583333333333333,
+          "speedKph": 471.6876387819553
+        },
+        {
+          "degrees": 60,
+          "time": 1.7833333333333332,
+          "speedKph": 257.01591334991724
+        }
+      ],
+      "peakIncidence": 93.71562118003298,
+      "secondsAbove30": 2.25,
+      "finalSpeedKph": 50.36716537677765,
+      "heightLoss": -14.47793388226637,
+      "cumulativeNoseDegrees": 71.2537509995901,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 22.461870179430075,
+      "finalIncidence": 93.71562118003298,
+      "thrustWork": 436.3301914018287,
+      "dragWork": 6422.926891759921,
+      "unmet": {
+        "pitch": 13.70720566866553,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-600",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.2,
+          "speedKph": 411.34208890124535
+        },
+        {
+          "degrees": 30,
+          "time": 2.675,
+          "speedKph": 160.96635962470702
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 32.73992280767419,
+      "secondsAbove30": 0.3333333333333333,
+      "finalSpeedKph": 110.6751378525129,
+      "heightLoss": 3.50134445739468,
+      "cumulativeNoseDegrees": 40.20177499894565,
+      "netNoseHeadingDegrees": 40.16600427602537,
+      "netVelocityHeadingDegrees": 10.611990996494999,
+      "velocityDirection3d": 18.457528524365067,
+      "finalIncidence": 32.73992280767419,
+      "thrustWork": 497.7052624224513,
+      "dragWork": 6494.420575157302,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094618,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-650",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.525,
+          "speedKph": 566.9403406519632
+        },
+        {
+          "degrees": 30,
+          "time": 0.6833333333333333,
+          "speedKph": 532.5575216613241
+        },
+        {
+          "degrees": 60,
+          "time": 1.5083333333333333,
+          "speedKph": 342.52829497759
+        }
+      ],
+      "peakIncidence": 93.9163917664676,
+      "secondsAbove30": 2.325,
+      "finalSpeedKph": 69.06636242330822,
+      "heightLoss": -18.409787947645782,
+      "cumulativeNoseDegrees": 77.76847112856966,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 16.147920636971417,
+      "finalIncidence": 93.9163917664676,
+      "thrustWork": 554.9187966466551,
+      "dragWork": 7536.32443088056,
+      "unmet": {
+        "pitch": 13.707205668665642,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-650",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.0166666666666666,
+          "speedKph": 490.2193843214487
+        },
+        {
+          "degrees": 30,
+          "time": 1.9083333333333332,
+          "speedKph": 329.3014140015326
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 34.74559336291214,
+      "secondsAbove30": 1.1,
+      "finalSpeedKph": 144.35998357195066,
+      "heightLoss": 2.295876299979682,
+      "cumulativeNoseDegrees": 46.967363722699496,
+      "netNoseHeadingDegrees": 46.95265163133792,
+      "netVelocityHeadingDegrees": 13.47281702513421,
+      "velocityDirection3d": 16.816144659856807,
+      "finalIncidence": 34.74559336291214,
+      "thrustWork": 654.4614307328876,
+      "dragWork": 7563.813517835059,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094814,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-700",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5,
+          "speedKph": 620.2883229352592
+        },
+        {
+          "degrees": 30,
+          "time": 0.6416666666666666,
+          "speedKph": 587.6738324032943
+        },
+        {
+          "degrees": 60,
+          "time": 1.3,
+          "speedKph": 421.1772146438108
+        }
+      ],
+      "peakIncidence": 94.97475906494698,
+      "secondsAbove30": 2.3666666666666667,
+      "finalSpeedKph": 86.21077942383111,
+      "heightLoss": -22.82030463063893,
+      "cumulativeNoseDegrees": 83.36750840731337,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 11.607250656644943,
+      "finalIncidence": 94.97475906494698,
+      "thrustWork": 688.6947588292796,
+      "dragWork": 8738.59778597564,
+      "unmet": {
+        "pitch": 13.70720566866383,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-700",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.9,
+          "speedKph": 558.7046632278285
+        },
+        {
+          "degrees": 30,
+          "time": 1.5,
+          "speedKph": 444.2792238847795
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 37.43712814259101,
+      "secondsAbove30": 1.5083333333333333,
+      "finalSpeedKph": 175.14731589312265,
+      "heightLoss": 1.4084106456753034,
+      "cumulativeNoseDegrees": 53.16286108302049,
+      "netNoseHeadingDegrees": 53.15867008695416,
+      "netVelocityHeadingDegrees": 16.22435501654139,
+      "velocityDirection3d": 17.536312237373135,
+      "finalIncidence": 37.43712814259101,
+      "thrustWork": 836.7166359642839,
+      "dragWork": 8726.182483071203,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.94338467930561,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-plain",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 11.9044876285026,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 315.20109756224747,
+      "heightLoss": -206.94674668377593,
+      "cumulativeNoseDegrees": 159.69923868445778,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 147.79475105619295,
+      "finalIncidence": 11.9044876285026,
+      "thrustWork": 688.7887035641787,
+      "dragWork": 1238.936952428163,
+      "unmet": {
+        "pitch": 1.2517836294348932,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-S",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 2.05,
+          "speedKph": 310.45571080541254
+        },
+        {
+          "degrees": 30,
+          "time": 2.658333333333333,
+          "speedKph": 278.1294331319571
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 52.78214822004733,
+      "secondsAbove30": 1.35,
+      "finalSpeedKph": 204.7311800682241,
+      "heightLoss": -127.27452241373385,
+      "cumulativeNoseDegrees": 96.33052217454424,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 43.548373955103074,
+      "finalIncidence": 52.78214822004733,
+      "thrustWork": 383.8594872179089,
+      "dragWork": 2702.6063764633477,
+      "unmet": {
+        "pitch": 13.380613588127256,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-brake",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 392.86806422671737
+        },
+        {
+          "degrees": 30,
+          "time": 1,
+          "speedKph": 336.1208447986752
+        },
+        {
+          "degrees": 60,
+          "time": 2.2666666666666666,
+          "speedKph": 111.95432722357118
+        }
+      ],
+      "peakIncidence": 147.70616841080223,
+      "secondsAbove30": 3.0083333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.685639298805654,
+      "cumulativeNoseDegrees": 57.70616840880569,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 147.70616841080223,
+      "thrustWork": 241.17327183138428,
+      "dragWork": 4470.979255725035,
+      "unmet": {
+        "pitch": 13.707205668674728,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-burner",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.525,
+          "speedKph": 482.6129842772626
+        },
+        {
+          "degrees": 30,
+          "time": 0.6666666666666666,
+          "speedKph": 478.18087069879806
+        },
+        {
+          "degrees": 60,
+          "time": 1.15,
+          "speedKph": 439.39956369324267
+        }
+      ],
+      "peakIncidence": 95.0748971348926,
+      "secondsAbove30": 3.2583333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -65.16794484368302,
+      "cumulativeNoseDegrees": 213.8940868579314,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 56.105913141832126,
+      "thrustWork": 4971.337979368213,
+      "dragWork": 8617.825615336045,
+      "unmet": {
+        "pitch": 9.92813723165747,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.35",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 392.86806422671737
+        },
+        {
+          "degrees": 30,
+          "time": 1,
+          "speedKph": 336.1208447986752
+        },
+        {
+          "degrees": 60,
+          "time": 2.2666666666666666,
+          "speedKph": 111.95432722357118
+        }
+      ],
+      "peakIncidence": 147.70616841081298,
+      "secondsAbove30": 3.0083333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.6856392571548895,
+      "cumulativeNoseDegrees": 57.70616840848897,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 147.70616841081298,
+      "thrustWork": 241.1732718300863,
+      "dragWork": 4470.979256132291,
+      "unmet": {
+        "pitch": 11.650038203255885,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.5",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 392.86806422671737
+        },
+        {
+          "degrees": 30,
+          "time": 1,
+          "speedKph": 336.1208447986752
+        },
+        {
+          "degrees": 60,
+          "time": 2.2666666666666666,
+          "speedKph": 111.95432722357118
+        }
+      ],
+      "peakIncidence": 147.70616841081295,
+      "secondsAbove30": 3.0083333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.68563925786566,
+      "cumulativeNoseDegrees": 57.706168408592596,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 147.70616841081295,
+      "thrustWork": 241.17327183010482,
+      "dragWork": 4470.979256125347,
+      "unmet": {
+        "pitch": 11.650038203255885,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.7",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 392.86806422671737
+        },
+        {
+          "degrees": 30,
+          "time": 1,
+          "speedKph": 336.1208447986752
+        },
+        {
+          "degrees": 60,
+          "time": 2.2666666666666666,
+          "speedKph": 111.95432722357118
+        }
+      ],
+      "peakIncidence": 147.70616841080223,
+      "secondsAbove30": 3.0083333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.685639298805654,
+      "cumulativeNoseDegrees": 57.70616840880569,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 147.70616841080223,
+      "thrustWork": 241.17327183138428,
+      "dragWork": 4470.979255725035,
+      "unmet": {
+        "pitch": 11.650038203255885,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "handoff--1",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 396.76857154844237
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 341.6804817562974
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 42.79001925712571,
+      "secondsAbove30": 2,
+      "finalSpeedKph": 117.55626814572905,
+      "heightLoss": 49.05246234084143,
+      "cumulativeNoseDegrees": 81.80221842383591,
+      "netNoseHeadingDegrees": -36.82573563824855,
+      "netVelocityHeadingDegrees": -36.81354860165412,
+      "velocityDirection3d": 89.893221109783,
+      "finalIncidence": 10.702531986622812,
+      "thrustWork": 247.05957816768426,
+      "dragWork": 4775.176079085518,
+      "unmet": {
+        "pitch": 11.537669778801611,
+        "yaw": 2.8377919922238015,
+        "roll": 6.898789928712971
+      }
+    },
+    {
+      "scenario": "handoff-1",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 392.86806422671737
+        },
+        {
+          "degrees": 30,
+          "time": 1,
+          "speedKph": 336.1208447986752
+        },
+        {
+          "degrees": 60,
+          "time": 1.95,
+          "speedKph": 161.14478135563135
+        }
+      ],
+      "peakIncidence": 167.76800565353895,
+      "secondsAbove30": 5.008333333333334,
+      "finalSpeedKph": 114.77944667079643,
+      "heightLoss": 18.257434030611876,
+      "cumulativeNoseDegrees": 79.63577231689189,
+      "netNoseHeadingDegrees": 27.791180937108923,
+      "netVelocityHeadingDegrees": 27.809489824831747,
+      "velocityDirection3d": 89.96605726788428,
+      "finalIncidence": 167.61561929853258,
+      "thrustWork": 232.09558973543025,
+      "dragWork": 4470.092587673029,
+      "unmet": {
+        "pitch": 11.650038203255885,
+        "yaw": 2.9052013180977276,
+        "roll": 6.898408246756665
+      }
+    },
+    {
+      "scenario": "exit-false-off",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 60,
+          "time": 1.1083333333333334,
+          "speedKph": 255.64990843349116
+        }
+      ],
+      "peakIncidence": 75.20742616186801,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 220.13108622149053,
+      "heightLoss": 31.735866956785685,
+      "cumulativeNoseDegrees": 41.581216235337585,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 38.82702252051413,
+      "finalIncidence": 71.30247399600908,
+      "thrustWork": 65.52387937640303,
+      "dragWork": 1076.071881607531,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-false-pulse",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 60,
+          "time": 1.025,
+          "speedKph": 316.3222703834324
+        }
+      ],
+      "peakIncidence": 98.91134868882754,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 207.94827234327147,
+      "heightLoss": -16.861736169330015,
+      "cumulativeNoseDegrees": 56.49191182920455,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 21.687916790989604,
+      "finalIncidence": 98.91134868882754,
+      "thrustWork": 897.4958868083195,
+      "dragWork": 1520.8744545749762,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-false-held",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 52.774849313289685,
+      "secondsAbove30": 2.5083333333333333,
+      "finalSpeedKph": 649.4136843880403,
+      "heightLoss": -216.76466579797398,
+      "cumulativeNoseDegrees": 52.91724772808327,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 68.48349704383944,
+      "finalIncidence": 0.3156420301235432,
+      "thrustWork": 10381.840909731509,
+      "dragWork": 2554.513339298588,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-off",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 60,
+          "time": 0.85,
+          "speedKph": 145.70240611150825
+        }
+      ],
+      "peakIncidence": 159.4002693680128,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 0.6984877380205035,
+      "cumulativeNoseDegrees": 27.771913677082743,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 159.4002693680128,
+      "thrustWork": 24.593720626258595,
+      "dragWork": 1561.5387372443242,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-pulse",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 60,
+          "time": 0.9416666666666667,
+          "speedKph": 190.51257880370775
+        }
+      ],
+      "peakIncidence": 177.93554161231623,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -9.715145936276258,
+      "cumulativeNoseDegrees": 65.25080443293852,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 163.1208415219175,
+      "thrustWork": 705.297866303149,
+      "dragWork": 2140.229984964854,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-held",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 298.87527790306945
+        },
+        {
+          "degrees": 60,
+          "time": 3.783333333333333,
+          "speedKph": 7.139487802953122
+        }
+      ],
+      "peakIncidence": 134.30020577266924,
+      "secondsAbove30": 3.7416666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -43.93101171693661,
+      "cumulativeNoseDegrees": 94.07303027927294,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 134.29862561289312,
+      "thrustWork": 2093.424228638949,
+      "dragWork": 3192.7489652930262,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "reserve-full",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.525,
+          "speedKph": 482.6129842772626
+        },
+        {
+          "degrees": 30,
+          "time": 0.6666666666666666,
+          "speedKph": 478.18087069879806
+        },
+        {
+          "degrees": 60,
+          "time": 1.15,
+          "speedKph": 439.39956369324267
+        }
+      ],
+      "peakIncidence": 95.0748971348926,
+      "secondsAbove30": 3.2583333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -65.16794484368302,
+      "cumulativeNoseDegrees": 213.8940868579314,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 56.105913141832126,
+      "thrustWork": 4971.337979368213,
+      "dragWork": 8617.825615336045,
+      "unmet": {
+        "pitch": 9.92813723165747,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "reserve-empty",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.65,
+          "speedKph": 400.61788186817034
+        },
+        {
+          "degrees": 30,
+          "time": 0.95,
+          "speedKph": 345.55593345155245
+        },
+        {
+          "degrees": 60,
+          "time": 2.216666666666667,
+          "speedKph": 121.99585745755985
+        }
+      ],
+      "peakIncidence": 147.48369427566146,
+      "secondsAbove30": 3.058333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -2.3322391109336422,
+      "cumulativeNoseDegrees": 57.48369427372619,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 147.48369427566146,
+      "thrustWork": 252.73484813125745,
+      "dragWork": 4515.426361121636,
+      "unmet": {
+        "pitch": 13.707205668674735,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "release-reapply",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6916666666666667,
+          "speedKph": 392.86806422671737
+        },
+        {
+          "degrees": 30,
+          "time": 1,
+          "speedKph": 336.1208447986752
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 35.202543192065576,
+      "secondsAbove30": 0.7666666666666667,
+      "finalSpeedKph": 269.42473689225176,
+      "heightLoss": -23.401423937659274,
+      "cumulativeNoseDegrees": 59.72942539038966,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 8.188570764703753,
+      "finalIncidence": 15.898697589323152,
+      "thrustWork": 351.2509980222957,
+      "dragWork": 3162.6514166324896,
+      "unmet": {
+        "pitch": 13.377959150085285,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "aim",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0.8651767385712266,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 449.6919018465817,
+      "heightLoss": -82.15653714433347,
+      "cumulativeNoseDegrees": 30.819884548740067,
+      "netNoseHeadingDegrees": 9.579265603972749,
+      "netVelocityHeadingDegrees": 9.258842261663435,
+      "velocityDirection3d": 29.954707063252627,
+      "finalIncidence": 0.8651767385712266,
+      "thrustWork": 1017.3129219793298,
+      "dragWork": 1030.5821453643657,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "roll",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 499.9999999999997,
+      "heightLoss": 0,
+      "cumulativeNoseDegrees": 0,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 0,
+      "finalIncidence": 0,
+      "thrustWork": 1111.3651374282338,
+      "dragWork": 1111.3651374282335,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "cruise",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 499.9999999999997,
+      "heightLoss": 0,
+      "cumulativeNoseDegrees": 0,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 0,
+      "finalIncidence": 0,
+      "thrustWork": 1111.3651374282338,
+      "dragWork": 1111.3651374282335,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hardTurn900",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 3.849034676217604,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 753.8945970626547,
+      "heightLoss": -310.0855753972219,
+      "cumulativeNoseDegrees": 138.66489704734033,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 134.87592184634872,
+      "finalIncidence": 3.788975201181511,
+      "thrustWork": 4045.325406143654,
+      "dragWork": 5143.093861776308,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "fullStick500",
+      "aircraftId": "f22",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 8.8715528025355,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 357.50245958802253,
+      "heightLoss": -164.31444461425008,
+      "cumulativeNoseDegrees": 131.47226112590448,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 122.60070832352983,
+      "finalIncidence": 8.8715528025355,
+      "thrustWork": 602.2872528832605,
+      "dragWork": 1084.3226883704933,
+      "unmet": {
+        "pitch": 1.0969103731797503,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-350",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.9833333333333333,
+          "speedKph": 200.85057678142928
+        },
+        {
+          "degrees": 30,
+          "time": 1.3833333333333333,
+          "speedKph": 136.9668268237833
+        },
+        {
+          "degrees": 60,
+          "time": 2.1,
+          "speedKph": 32.964948073091016
+        }
+      ],
+      "peakIncidence": 115.62542592392481,
+      "secondsAbove30": 1.625,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 5.66570099396904,
+      "cumulativeNoseDegrees": 25.625425922660344,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 115.62542592392481,
+      "thrustWork": 66.47737618159725,
+      "dragWork": 2221.531710516684,
+      "unmet": {
+        "pitch": 13.707205668665237,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-350",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.65,
+          "speedKph": 100.97085955734227
+        },
+        {
+          "degrees": 30,
+          "time": 1.95,
+          "speedKph": 58.26242933553302
+        },
+        {
+          "degrees": 60,
+          "time": 2.3333333333333335,
+          "speedKph": 9.220885720526825
+        }
+      ],
+      "peakIncidence": 89.79867802767686,
+      "secondsAbove30": 1.0583333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 7.373804797633056,
+      "cumulativeNoseDegrees": 13.881434007106629,
+      "netNoseHeadingDegrees": 13.877330244587423,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 89.78888617503009,
+      "thrustWork": 67.56337615294724,
+      "dragWork": 2239.3456179717555,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 6.879952004820327,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-450",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.8083333333333333,
+          "speedKph": 325.1240185750454
+        },
+        {
+          "degrees": 30,
+          "time": 1.2,
+          "speedKph": 255.90513456401064
+        },
+        {
+          "degrees": 60,
+          "time": 2.325,
+          "speedKph": 69.80096722566785
+        }
+      ],
+      "peakIncidence": 134.98987641610768,
+      "secondsAbove30": 1.8083333333333333,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -1.2653293939483774,
+      "cumulativeNoseDegrees": 44.98987641458016,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 134.98987641610768,
+      "thrustWork": 165.2666710647715,
+      "dragWork": 3624.3302473136023,
+      "unmet": {
+        "pitch": 13.707205668665237,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-450",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.8583333333333334,
+          "speedKph": 160.03130540692328
+        },
+        {
+          "degrees": 30,
+          "time": 2.4416666666666664,
+          "speedKph": 72.740354463405
+        },
+        {
+          "degrees": 60,
+          "time": 2.9166666666666665,
+          "speedKph": 10.552409589139971
+        }
+      ],
+      "peakIncidence": 82.43995385307747,
+      "secondsAbove30": 0.5666666666666667,
+      "finalSpeedKph": 1.1021843421836153,
+      "heightLoss": 7.153156140207102,
+      "cumulativeNoseDegrees": 24.38885675017497,
+      "netNoseHeadingDegrees": 24.37832638856013,
+      "netVelocityHeadingDegrees": 3.710403462710115,
+      "velocityDirection3d": null,
+      "finalIncidence": 82.43995385307747,
+      "thrustWork": 173.35712775003753,
+      "dragWork": 3714.9467763177486,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 6.879951909341574,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-500",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 391.01298901233565
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 333.8563998917263
+        },
+        {
+          "degrees": 60,
+          "time": 2.25,
+          "speedKph": 112.61344390438987
+        }
+      ],
+      "peakIncidence": 117.34793101082117,
+      "secondsAbove30": 2,
+      "finalSpeedKph": 5.404674356570061,
+      "heightLoss": -5.992241056603689,
+      "cumulativeNoseDegrees": 55.37747391298804,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 61.97045709689037,
+      "finalIncidence": 117.34793101082117,
+      "thrustWork": 237.36554500868755,
+      "dragWork": 4464.069932049371,
+      "unmet": {
+        "pitch": 13.707205668665251,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-500",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.4916666666666667,
+          "speedKph": 265.7220143589528
+        },
+        {
+          "degrees": 30,
+          "time": 2.5666666666666664,
+          "speedKph": 94.8963630750304
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 44.096994683489164,
+      "secondsAbove30": 0.44166666666666665,
+      "finalSpeedKph": 34.63830081535208,
+      "heightLoss": 6.413634614662442,
+      "cumulativeNoseDegrees": 31.335240402074653,
+      "netNoseHeadingDegrees": 31.30816216776679,
+      "netVelocityHeadingDegrees": 6.006336741819682,
+      "velocityDirection3d": 38.34593426489853,
+      "finalIncidence": 44.096994683489164,
+      "thrustWork": 255.93368652409922,
+      "dragWork": 4584.305335752839,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 6.880157706962548,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-600",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5666666666666667,
+          "speedKph": 510.49018248968997
+        },
+        {
+          "degrees": 30,
+          "time": 0.7583333333333333,
+          "speedKph": 470.7342487519363
+        },
+        {
+          "degrees": 60,
+          "time": 1.7166666666666666,
+          "speedKph": 265.81879028510696
+        }
+      ],
+      "peakIncidence": 96.93533632368427,
+      "secondsAbove30": 2.25,
+      "finalSpeedKph": 45.7327440310168,
+      "heightLoss": -14.465002519439622,
+      "cumulativeNoseDegrees": 72.98904021891583,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 23.946296103333683,
+      "finalIncidence": 96.93533632368427,
+      "thrustWork": 423.5904017597831,
+      "dragWork": 6417.950956155935,
+      "unmet": {
+        "pitch": 13.707205668665496,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-600",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.9916666666666667,
+          "speedKph": 444.83870329984745
+        },
+        {
+          "degrees": 30,
+          "time": 1.7333333333333334,
+          "speedKph": 312.2234966331657
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 37.9960859437502,
+      "secondsAbove30": 1.275,
+      "finalSpeedKph": 102.09052252766833,
+      "heightLoss": 3.7513233795807537,
+      "cumulativeNoseDegrees": 46.580798947320034,
+      "netNoseHeadingDegrees": 46.53323430752112,
+      "netVelocityHeadingDegrees": 11.417142243194803,
+      "velocityDirection3d": 19.99520062298157,
+      "finalIncidence": 37.9960859437502,
+      "thrustWork": 489.18605074168215,
+      "dragWork": 6519.652744224575,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 6.881094535585344,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-650",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.525,
+          "speedKph": 566.3981640230076
+        },
+        {
+          "degrees": 30,
+          "time": 0.6833333333333333,
+          "speedKph": 531.4920593336501
+        },
+        {
+          "degrees": 60,
+          "time": 1.45,
+          "speedKph": 350.1933784362616
+        }
+      ],
+      "peakIncidence": 97.78324300996982,
+      "secondsAbove30": 2.325,
+      "finalSpeedKph": 62.66563899711168,
+      "heightLoss": -18.192543293168455,
+      "cumulativeNoseDegrees": 80.1345049802861,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 17.648738028522892,
+      "finalIncidence": 97.78324300996982,
+      "thrustWork": 534.6068414894811,
+      "dragWork": 7532.600322879571,
+      "unmet": {
+        "pitch": 13.707205668665601,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-650",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.8583333333333333,
+          "speedKph": 515.7890754875835
+        },
+        {
+          "degrees": 30,
+          "time": 1.3666666666666667,
+          "speedKph": 419.8566559175535
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 40.866238538277074,
+      "secondsAbove30": 1.6416666666666666,
+      "finalSpeedKph": 131.25467291686542,
+      "heightLoss": 2.686589439279942,
+      "cumulativeNoseDegrees": 54.021261496681426,
+      "netNoseHeadingDegrees": 53.95748636627253,
+      "netVelocityHeadingDegrees": 14.157859418877882,
+      "velocityDirection3d": 18.27147343708424,
+      "finalIncidence": 40.866238538277074,
+      "thrustWork": 638.9567213076889,
+      "dragWork": 7614.043946228653,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 6.881725969325762,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-700",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5083333333333333,
+          "speedKph": 617.8360468622077
+        },
+        {
+          "degrees": 30,
+          "time": 0.6416666666666666,
+          "speedKph": 586.4857074086714
+        },
+        {
+          "degrees": 60,
+          "time": 1.25,
+          "speedKph": 427.7609749277716
+        }
+      ],
+      "peakIncidence": 99.48189505668981,
+      "secondsAbove30": 2.3666666666666667,
+      "finalSpeedKph": 78.07170038857156,
+      "heightLoss": -22.33442025460272,
+      "cumulativeNoseDegrees": 86.32303482521134,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 13.158860230472184,
+      "finalIncidence": 99.48189505668981,
+      "thrustWork": 658.915822136029,
+      "dragWork": 8736.509777908313,
+      "unmet": {
+        "pitch": 13.707205668663784,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-700",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7916666666666666,
+          "speedKph": 575.7717250100741
+        },
+        {
+          "degrees": 30,
+          "time": 1.1583333333333332,
+          "speedKph": 502.7809867812524
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 44.390577440569416,
+      "secondsAbove30": 1.85,
+      "finalSpeedKph": 156.87537764810048,
+      "heightLoss": 1.9134644474470406,
+      "cumulativeNoseDegrees": 60.83849321963427,
+      "netNoseHeadingDegrees": 60.7176057252707,
+      "netVelocityHeadingDegrees": 16.63068902550585,
+      "velocityDirection3d": 18.595169994832634,
+      "finalIncidence": 44.390577440569416,
+      "thrustWork": 811.2354979311755,
+      "dragWork": 8809.633209718797,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 6.857264069168543,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-plain",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 12.067493828214477,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 312.86492414810584,
+      "heightLoss": -207.25392602740658,
+      "cumulativeNoseDegrees": 158.570402765577,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 146.50290893765413,
+      "finalIncidence": 12.067493828214477,
+      "thrustWork": 685.359339306837,
+      "dragWork": 1257.7740178776592,
+      "unmet": {
+        "pitch": 1.2670720360758634,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-S",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 2.058333333333333,
+          "speedKph": 309.66487953704325
+        },
+        {
+          "degrees": 30,
+          "time": 2.658333333333333,
+          "speedKph": 277.37343958950026
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 53.55827200703637,
+      "secondsAbove30": 1.35,
+      "finalSpeedKph": 202.64641133224848,
+      "heightLoss": -126.47572564363554,
+      "cumulativeNoseDegrees": 96.75183783718688,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 43.19356583079126,
+      "finalIncidence": 53.55827200703637,
+      "thrustWork": 379.3701333047319,
+      "dragWork": 2720.5149851771075,
+      "unmet": {
+        "pitch": 13.407026940066789,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-brake",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 391.01298901233565
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 333.8563998917263
+        },
+        {
+          "degrees": 60,
+          "time": 2.25,
+          "speedKph": 112.61344390438987
+        }
+      ],
+      "peakIncidence": 148.30049875203596,
+      "secondsAbove30": 3,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.895365617962398,
+      "cumulativeNoseDegrees": 58.30049874997496,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 148.30049875203596,
+      "thrustWork": 237.3654453839367,
+      "dragWork": 4465.1167211925995,
+      "unmet": {
+        "pitch": 13.707205668674726,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-burner",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5416666666666666,
+          "speedKph": 482.1476932508965
+        },
+        {
+          "degrees": 30,
+          "time": 0.6916666666666667,
+          "speedKph": 476.9040301706488
+        },
+        {
+          "degrees": 60,
+          "time": 1.2083333333333333,
+          "speedKph": 429.23418246854936
+        }
+      ],
+      "peakIncidence": 88.75475357572708,
+      "secondsAbove30": 3.2,
+      "finalSpeedKph": 5.792717321751312,
+      "heightLoss": -65.84883474775006,
+      "cumulativeNoseDegrees": 204.00976293602682,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 109.92760673917675,
+      "finalIncidence": 46.06263032454746,
+      "thrustWork": 4845.644354505211,
+      "dragWork": 8484.887697381319,
+      "unmet": {
+        "pitch": 10.358072883015883,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.35",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 391.01298901233565
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 333.8563998734342
+        },
+        {
+          "degrees": 60,
+          "time": 2.25,
+          "speedKph": 112.61343301857882
+        }
+      ],
+      "peakIncidence": 148.30050192476614,
+      "secondsAbove30": 3,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.895384093632856,
+      "cumulativeNoseDegrees": 58.300501922875995,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 148.30050192476614,
+      "thrustWork": 237.36544984516428,
+      "dragWork": 4465.11654509358,
+      "unmet": {
+        "pitch": 11.670619741000403,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.5",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 391.01298901233565
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 333.8563998734342
+        },
+        {
+          "degrees": 60,
+          "time": 2.25,
+          "speedKph": 112.61343301857882
+        }
+      ],
+      "peakIncidence": 148.30050192476608,
+      "secondsAbove30": 3,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.895384094329074,
+      "cumulativeNoseDegrees": 58.30050192269708,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 148.30050192476608,
+      "thrustWork": 237.36544984518298,
+      "dragWork": 4465.116545086772,
+      "unmet": {
+        "pitch": 11.670619741000403,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.7",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 391.01298901233565
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 333.8563998917263
+        },
+        {
+          "degrees": 60,
+          "time": 2.25,
+          "speedKph": 112.61344390438987
+        }
+      ],
+      "peakIncidence": 148.30049875203596,
+      "secondsAbove30": 3,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -5.895365617962398,
+      "cumulativeNoseDegrees": 58.30049874997496,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 148.30049875203596,
+      "thrustWork": 237.3654453839367,
+      "dragWork": 4465.1167211925995,
+      "unmet": {
+        "pitch": 11.670619741000403,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "handoff--1",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 395.01388260516137
+        },
+        {
+          "degrees": 30,
+          "time": 1.0166666666666666,
+          "speedKph": 339.55246143663385
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 46.26407573437893,
+      "secondsAbove30": 2.0833333333333335,
+      "finalSpeedKph": 117.63273340938912,
+      "heightLoss": 48.66967150649998,
+      "cumulativeNoseDegrees": 89.03708108470921,
+      "netNoseHeadingDegrees": -78.5661237352994,
+      "netVelocityHeadingDegrees": -78.55386580212924,
+      "velocityDirection3d": 89.98149421605027,
+      "finalIncidence": 7.448659885760359,
+      "thrustWork": 244.5221341742089,
+      "dragWork": 4768.56896879774,
+      "unmet": {
+        "pitch": 11.563059173296978,
+        "yaw": 3.243363506834803,
+        "roll": 6.9023573077469695
+      }
+    },
+    {
+      "scenario": "handoff-1",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 391.01298901233565
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 333.8556758265277
+        },
+        {
+          "degrees": 60,
+          "time": 1.8916666666666666,
+          "speedKph": 168.98555547086923
+        }
+      ],
+      "peakIncidence": 172.27193427104442,
+      "secondsAbove30": 5,
+      "finalSpeedKph": 114.71882999473019,
+      "heightLoss": 18.049489127088236,
+      "cumulativeNoseDegrees": 86.2073328653075,
+      "netNoseHeadingDegrees": 57.1163497815702,
+      "netVelocityHeadingDegrees": 57.112378359458965,
+      "velocityDirection3d": 89.98306637836819,
+      "finalIncidence": 172.20718314404178,
+      "thrustWork": 229.93366717356548,
+      "dragWork": 4466.130767279292,
+      "unmet": {
+        "pitch": 11.670619741000403,
+        "yaw": 3.3597540861229924,
+        "roll": 6.900473929960359
+      }
+    },
+    {
+      "scenario": "exit-false-off",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 60,
+          "time": 0.95,
+          "speedKph": 256.7739373852468
+        }
+      ],
+      "peakIncidence": 114.45831539242768,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 209.35652323170441,
+      "heightLoss": 31.118229135663114,
+      "cumulativeNoseDegrees": 38.78624400748642,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 40.26656528469479,
+      "finalIncidence": 114.45831539242768,
+      "thrustWork": 38.20618051105316,
+      "dragWork": 1111.9694821031155,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-false-pulse",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 60,
+          "time": 0.9249999999999999,
+          "speedKph": 315.33096248662093
+        }
+      ],
+      "peakIncidence": 162.29630602170545,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 201.83808010210856,
+      "heightLoss": -15.514012747351899,
+      "cumulativeNoseDegrees": 102.65405408508266,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 24.236745838452883,
+      "finalIncidence": 162.29630602170545,
+      "thrustWork": 833.6708500426107,
+      "dragWork": 1503.1360457800033,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-false-held",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 58.97766302961019,
+      "secondsAbove30": 3.4833333333333334,
+      "finalSpeedKph": 489.7528661606392,
+      "heightLoss": -187.03417212905288,
+      "cumulativeNoseDegrees": 74.99655186514586,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 91.96570972967278,
+      "finalIncidence": 7.820165225623635,
+      "thrustWork": 7140.366075004751,
+      "dragWork": 2713.0142380145558,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-off",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 60,
+          "time": 0.8083333333333333,
+          "speedKph": 150.5680434934534
+        }
+      ],
+      "peakIncidence": 164.2869950814439,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 0.5303460946170162,
+      "cumulativeNoseDegrees": 32.70599830287492,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 164.2869950814439,
+      "thrustWork": 23.59682445669392,
+      "dragWork": 1548.8188147426633,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-pulse",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 60,
+          "time": 0.8916666666666666,
+          "speedKph": 195.140296520938
+        }
+      ],
+      "peakIncidence": 179.79675983808127,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -9.837928280667256,
+      "cumulativeNoseDegrees": 73.51895264603475,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 154.900046891909,
+      "thrustWork": 686.6858669578322,
+      "dragWork": 2110.344936412378,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-held",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 297.8907447787965
+        },
+        {
+          "degrees": 60,
+          "time": 1.8,
+          "speedKph": 119.64427447698532
+        }
+      ],
+      "peakIncidence": 130.07055285635013,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -33.315258367365004,
+      "cumulativeNoseDegrees": 98.7983055155402,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 129.6207008235552,
+      "thrustWork": 1607.6210073694338,
+      "dragWork": 2801.0179269947484,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "reserve-full",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5416666666666666,
+          "speedKph": 482.1476932508965
+        },
+        {
+          "degrees": 30,
+          "time": 0.6916666666666667,
+          "speedKph": 476.9040301706488
+        },
+        {
+          "degrees": 60,
+          "time": 1.2083333333333333,
+          "speedKph": 429.23418246854936
+        }
+      ],
+      "peakIncidence": 88.75475357572708,
+      "secondsAbove30": 3.2,
+      "finalSpeedKph": 5.792717321751312,
+      "heightLoss": -65.84883474775006,
+      "cumulativeNoseDegrees": 204.00976293602682,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 109.92760673917675,
+      "finalIncidence": 46.06263032454746,
+      "thrustWork": 4845.644354505211,
+      "dragWork": 8484.887697381319,
+      "unmet": {
+        "pitch": 10.358072883015883,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "reserve-empty",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.6583333333333333,
+          "speedKph": 398.77985687169206
+        },
+        {
+          "degrees": 30,
+          "time": 0.9583333333333334,
+          "speedKph": 343.2908103646959
+        },
+        {
+          "degrees": 60,
+          "time": 2.2,
+          "speedKph": 122.48062468386611
+        }
+      ],
+      "peakIncidence": 148.14583031591195,
+      "secondsAbove30": 3.05,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -2.590260129600665,
+      "cumulativeNoseDegrees": 58.14583031379518,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 148.14583031591195,
+      "thrustWork": 248.08269130954304,
+      "dragWork": 4508.246096226808,
+      "unmet": {
+        "pitch": 13.707205668674735,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "release-reapply",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7,
+          "speedKph": 391.01298901233565
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 333.9840981312039
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 35.10906459367647,
+      "secondsAbove30": 0.775,
+      "finalSpeedKph": 267.5521774860337,
+      "heightLoss": -22.663964940600636,
+      "cumulativeNoseDegrees": 59.4911052639856,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 7.851200920992854,
+      "finalIncidence": 16.516434031328792,
+      "thrustWork": 348.81457680793716,
+      "dragWork": 3184.6894816717736,
+      "unmet": {
+        "pitch": 13.451756460594178,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "aim",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0.8763083463858464,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 449.62375487328865,
+      "heightLoss": -82.10158379321047,
+      "cumulativeNoseDegrees": 31.194790630859316,
+      "netNoseHeadingDegrees": 10.945631471700624,
+      "netVelocityHeadingDegrees": 10.579470315860425,
+      "velocityDirection3d": 30.318481360630592,
+      "finalIncidence": 0.8763083463858464,
+      "thrustWork": 1017.0793674246079,
+      "dragWork": 1031.9385343508943,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "roll",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 499.9999999999997,
+      "heightLoss": 0,
+      "cumulativeNoseDegrees": 0,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 0,
+      "finalIncidence": 0,
+      "thrustWork": 1111.3651374282338,
+      "dragWork": 1111.3651374282335,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "cruise",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 499.9999999999997,
+      "heightLoss": 0,
+      "cumulativeNoseDegrees": 0,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 0,
+      "finalIncidence": 0,
+      "thrustWork": 1111.3651374282338,
+      "dragWork": 1111.3651374282335,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hardTurn900",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 3.850773117504792,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 751.8309719667162,
+      "heightLoss": -309.59282617421786,
+      "cumulativeNoseDegrees": 138.76474108560126,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 134.96603167224396,
+      "finalIncidence": 3.7987094135595867,
+      "thrustWork": 4032.977666949236,
+      "dragWork": 5188.854640700842,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "fullStick500",
+      "aircraftId": "su57",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 8.817629365814609,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 356.1175617698953,
+      "heightLoss": -164.09158170993123,
+      "cumulativeNoseDegrees": 130.72777844790892,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 121.91014908227662,
+      "finalIncidence": 8.817629365814609,
+      "thrustWork": 600.2817142512935,
+      "dragWork": 1101.4896131449475,
+      "unmet": {
+        "pitch": 1.1245990047866836,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-350",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.025,
+          "speedKph": 194.31746846020093
+        },
+        {
+          "degrees": 30,
+          "time": 1.4333333333333333,
+          "speedKph": 129.46868671226332
+        },
+        {
+          "degrees": 60,
+          "time": 2.1166666666666667,
+          "speedKph": 30.957585501682182
+        }
+      ],
+      "peakIncidence": 114.43851617632518,
+      "secondsAbove30": 1.575,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 5.519373354041818,
+      "cumulativeNoseDegrees": 24.43851617515495,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 114.43851617632518,
+      "thrustWork": 65.9449067514319,
+      "dragWork": 2219.568865772887,
+      "unmet": {
+        "pitch": 13.707205668665237,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-350",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.6833333333333333,
+          "speedKph": 96.3966378001812
+        },
+        {
+          "degrees": 30,
+          "time": 1.9666666666666666,
+          "speedKph": 56.28720640737153
+        },
+        {
+          "degrees": 60,
+          "time": 2.3333333333333335,
+          "speedKph": 9.49307439303253
+        }
+      ],
+      "peakIncidence": 89.80086881117228,
+      "secondsAbove30": 1.0416666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 7.384718135785988,
+      "cumulativeNoseDegrees": 12.212238248647187,
+      "netNoseHeadingDegrees": 12.207942269508878,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 89.79909824674411,
+      "thrustWork": 67.94496910759126,
+      "dragWork": 2239.834625954287,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094105,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-450",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.85,
+          "speedKph": 318.4571914431887
+        },
+        {
+          "degrees": 30,
+          "time": 1.2833333333333332,
+          "speedKph": 242.34887628641837
+        },
+        {
+          "degrees": 60,
+          "time": 2.3833333333333333,
+          "speedKph": 62.466698523205324
+        }
+      ],
+      "peakIncidence": 132.71743214799272,
+      "secondsAbove30": 1.725,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -1.6075641590296073,
+      "cumulativeNoseDegrees": 42.71743214678813,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 132.71743214799272,
+      "thrustWork": 161.7805363886893,
+      "dragWork": 3617.492389042776,
+      "unmet": {
+        "pitch": 13.707205668665237,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-450",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 2.0666666666666664,
+          "speedKph": 129.3532083523073
+        },
+        {
+          "degrees": 30,
+          "time": 2.5,
+          "speedKph": 65.99745467439273
+        },
+        {
+          "degrees": 60,
+          "time": 2.933333333333333,
+          "speedKph": 9.852721814981946
+        }
+      ],
+      "peakIncidence": 76.5272110150804,
+      "secondsAbove30": 0.5083333333333333,
+      "finalSpeedKph": 2.2771896082001155,
+      "heightLoss": 7.187821922931107,
+      "cumulativeNoseDegrees": 20.933860906731056,
+      "netNoseHeadingDegrees": 20.926554820075722,
+      "netVelocityHeadingDegrees": 3.361701989182113,
+      "velocityDirection3d": null,
+      "finalIncidence": 76.5272110150804,
+      "thrustWork": 174.5754253153256,
+      "dragWork": 3716.439637288527,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094108,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-500",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.725,
+          "speedKph": 387.11953953672105
+        },
+        {
+          "degrees": 30,
+          "time": 1.0666666666666667,
+          "speedKph": 324.351285351401
+        },
+        {
+          "degrees": 60,
+          "time": 2.375,
+          "speedKph": 94.9585912629593
+        }
+      ],
+      "peakIncidence": 110.77223681849281,
+      "secondsAbove30": 1.9416666666666667,
+      "finalSpeedKph": 6.7484720973393415,
+      "heightLoss": -6.80570343678346,
+      "cumulativeNoseDegrees": 52.56901216193963,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 58.20322465550675,
+      "finalIncidence": 110.77223681849281,
+      "thrustWork": 229.8055565074716,
+      "dragWork": 4448.2676601397325,
+      "unmet": {
+        "pitch": 13.707205668665257,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-500",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.9833333333333334,
+          "speedKph": 187.54096302474443
+        },
+        {
+          "degrees": 30,
+          "time": 2.7083333333333335,
+          "speedKph": 77.25986811735265
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 41.430163095243564,
+      "secondsAbove30": 0.3,
+      "finalSpeedKph": 37.29026087577048,
+      "heightLoss": 6.390964791732586,
+      "cumulativeNoseDegrees": 26.786090073998235,
+      "netNoseHeadingDegrees": 26.773700782682276,
+      "netVelocityHeadingDegrees": 5.439915250024087,
+      "velocityDirection3d": 37.01454884884362,
+      "finalIncidence": 41.430163095243564,
+      "thrustWork": 258.12788371481224,
+      "dragWork": 4583.011786793993,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094233,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-600",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.575,
+          "speedKph": 509.50383030693285
+        },
+        {
+          "degrees": 30,
+          "time": 0.7833333333333333,
+          "speedKph": 466.90986345827264
+        },
+        {
+          "degrees": 60,
+          "time": 1.9749999999999999,
+          "speedKph": 221.32942409739937
+        }
+      ],
+      "peakIncidence": 89.82761707204303,
+      "secondsAbove30": 2.225,
+      "finalSpeedKph": 50.0908485800711,
+      "heightLoss": -15.859164085964494,
+      "cumulativeNoseDegrees": 68.42685746878287,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 21.40075960200477,
+      "finalIncidence": 89.82761707204303,
+      "thrustWork": 401.8994446729967,
+      "dragWork": 6375.435306471677,
+      "unmet": {
+        "pitch": 13.707205668665528,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-600",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.2,
+          "speedKph": 411.34208890124535
+        },
+        {
+          "degrees": 30,
+          "time": 2.675,
+          "speedKph": 160.96635962470702
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 32.73992280767419,
+      "secondsAbove30": 0.3333333333333333,
+      "finalSpeedKph": 110.6751378525129,
+      "heightLoss": 3.50134445739468,
+      "cumulativeNoseDegrees": 40.20177499894565,
+      "netNoseHeadingDegrees": 40.16600427602537,
+      "netVelocityHeadingDegrees": 10.611990996494999,
+      "velocityDirection3d": 18.457528524365067,
+      "finalIncidence": 32.73992280767419,
+      "thrustWork": 497.7052624224513,
+      "dragWork": 6494.420575157302,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094618,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-650",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5333333333333333,
+          "speedKph": 565.3333541774307
+        },
+        {
+          "degrees": 30,
+          "time": 0.7,
+          "speedKph": 529.1774794237452
+        },
+        {
+          "degrees": 60,
+          "time": 1.6916666666666667,
+          "speedKph": 304.3208834303967
+        }
+      ],
+      "peakIncidence": 89.58717861025447,
+      "secondsAbove30": 2.308333333333333,
+      "finalSpeedKph": 68.62658959850253,
+      "heightLoss": -20.06686755188639,
+      "cumulativeNoseDegrees": 74.61171537857237,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 14.975463230374888,
+      "finalIncidence": 89.58717861025447,
+      "thrustWork": 503.3540690035837,
+      "dragWork": 7469.554029559301,
+      "unmet": {
+        "pitch": 13.707205668665637,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-650",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 1.0166666666666666,
+          "speedKph": 490.2193843214487
+        },
+        {
+          "degrees": 30,
+          "time": 1.9083333333333332,
+          "speedKph": 329.3014140015326
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 34.74559336291214,
+      "secondsAbove30": 1.1,
+      "finalSpeedKph": 144.35998357195066,
+      "heightLoss": 2.295876299979682,
+      "cumulativeNoseDegrees": 46.967363722699496,
+      "netNoseHeadingDegrees": 46.95265163133792,
+      "netVelocityHeadingDegrees": 13.47281702513421,
+      "velocityDirection3d": 16.816144659856807,
+      "finalIncidence": 34.74559336291214,
+      "thrustWork": 654.4614307328876,
+      "dragWork": 7563.813517835059,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.990554085094814,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-pitch-700",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.5083333333333333,
+          "speedKph": 618.5251091012627
+        },
+        {
+          "degrees": 30,
+          "time": 0.65,
+          "speedKph": 585.8963384915716
+        },
+        {
+          "degrees": 60,
+          "time": 1.4416666666666667,
+          "speedKph": 387.9717330673693
+        }
+      ],
+      "peakIncidence": 90.27554712886595,
+      "secondsAbove30": 2.3583333333333334,
+      "finalSpeedKph": 85.45964263991753,
+      "heightLoss": -24.695150861474758,
+      "cumulativeNoseDegrees": 79.89432842585771,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 10.38121870153281,
+      "finalIncidence": 90.27554712886595,
+      "thrustWork": 617.3390493498518,
+      "dragWork": 8651.072537069664,
+      "unmet": {
+        "pitch": 13.707205668663828,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "entry-yaw-700",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.9,
+          "speedKph": 558.7046632278285
+        },
+        {
+          "degrees": 30,
+          "time": 1.5,
+          "speedKph": 444.2792238847795
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 37.43712814259101,
+      "secondsAbove30": 1.5083333333333333,
+      "finalSpeedKph": 175.14731589312265,
+      "heightLoss": 1.4084106456753034,
+      "cumulativeNoseDegrees": 53.16286108302049,
+      "netNoseHeadingDegrees": 53.15867008695416,
+      "netVelocityHeadingDegrees": 16.22435501654139,
+      "velocityDirection3d": 17.536312237373135,
+      "finalIncidence": 37.43712814259101,
+      "thrustWork": 836.7166359642839,
+      "dragWork": 8726.182483071203,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 5.94338467930561,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-plain",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 10.773629415622793,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 315.353395967894,
+      "heightLoss": -211.41449601352952,
+      "cumulativeNoseDegrees": 153.81579510761452,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 143.04216569226074,
+      "finalIncidence": 10.773629415622793,
+      "thrustWork": 698.8084984992605,
+      "dragWork": 1203.7871549567058,
+      "unmet": {
+        "pitch": 1.400718169968492,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-S",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 2.2083333333333335,
+          "speedKph": 304.44322425968863
+        },
+        {
+          "degrees": 30,
+          "time": 2.8583333333333334,
+          "speedKph": 269.97742382209555
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 48.34125193717868,
+      "secondsAbove30": 1.15,
+      "finalSpeedKph": 208.23191952271372,
+      "heightLoss": -127.22039646819212,
+      "cumulativeNoseDegrees": 92.88768420888199,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 44.54643227232706,
+      "finalIncidence": 48.34125193717868,
+      "thrustWork": 376.2444914844771,
+      "dragWork": 2670.760172246414,
+      "unmet": {
+        "pitch": 13.353987815011832,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-brake",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.725,
+          "speedKph": 387.11953953672105
+        },
+        {
+          "degrees": 30,
+          "time": 1.0666666666666667,
+          "speedKph": 324.351285351401
+        },
+        {
+          "degrees": 60,
+          "time": 2.375,
+          "speedKph": 94.9585912629593
+        }
+      ],
+      "peakIncidence": 145.4854956199382,
+      "secondsAbove30": 2.941666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -6.699390911891442,
+      "cumulativeNoseDegrees": 55.4854956179066,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 145.4854956199382,
+      "thrustWork": 229.80531485622754,
+      "dragWork": 4449.686915435205,
+      "unmet": {
+        "pitch": 13.707205668674726,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "compare-burner",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.675,
+          "speedKph": 483.151145245224
+        },
+        {
+          "degrees": 30,
+          "time": 0.9916666666666667,
+          "speedKph": 474.9994903748367
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 43.349788212230884,
+      "secondsAbove30": 3.0166666666666666,
+      "finalSpeedKph": 255.65557705828493,
+      "heightLoss": -128.07584763198975,
+      "cumulativeNoseDegrees": 106.60211996070113,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 76.04124485157519,
+      "finalIncidence": 30.56087510963867,
+      "thrustWork": 8865.584770020778,
+      "dragWork": 10774.32287489232,
+      "unmet": {
+        "pitch": 12.74664436990302,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.35",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.725,
+          "speedKph": 387.11953953672105
+        },
+        {
+          "degrees": 30,
+          "time": 1.0666666666666667,
+          "speedKph": 324.3512463436225
+        },
+        {
+          "degrees": 60,
+          "time": 2.375,
+          "speedKph": 94.95366301423923
+        }
+      ],
+      "peakIncidence": 145.4868787175487,
+      "secondsAbove30": 2.941666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -6.70638515570954,
+      "cumulativeNoseDegrees": 55.48687871552945,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 145.4868787175487,
+      "thrustWork": 229.80801138807524,
+      "dragWork": 4449.621156891557,
+      "unmet": {
+        "pitch": 11.757324884802003,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.5",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.725,
+          "speedKph": 387.11953953672105
+        },
+        {
+          "degrees": 30,
+          "time": 1.0666666666666667,
+          "speedKph": 324.3512463436225
+        },
+        {
+          "degrees": 60,
+          "time": 2.375,
+          "speedKph": 94.95366301423923
+        }
+      ],
+      "peakIncidence": 145.48687871754862,
+      "secondsAbove30": 2.941666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -6.706385156453507,
+      "cumulativeNoseDegrees": 55.48687871543773,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 145.48687871754862,
+      "thrustWork": 229.80801138809704,
+      "dragWork": 4449.621156884263,
+      "unmet": {
+        "pitch": 11.757324884802003,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hold-0.7",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.725,
+          "speedKph": 387.11953953672105
+        },
+        {
+          "degrees": 30,
+          "time": 1.0666666666666667,
+          "speedKph": 324.351285351401
+        },
+        {
+          "degrees": 60,
+          "time": 2.375,
+          "speedKph": 94.9585912629593
+        }
+      ],
+      "peakIncidence": 145.4854956199382,
+      "secondsAbove30": 2.941666666666667,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -6.699390911891442,
+      "cumulativeNoseDegrees": 55.4854956179066,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 145.4854956199382,
+      "thrustWork": 229.80531485622754,
+      "dragWork": 4449.686915435205,
+      "unmet": {
+        "pitch": 11.757324884802003,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "handoff--1",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.7166666666666667,
+          "speedKph": 392.85040952989027
+        },
+        {
+          "degrees": 30,
+          "time": 1.0916666666666666,
+          "speedKph": 328.07296581932
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 37.53844215251931,
+      "secondsAbove30": 1.725,
+      "finalSpeedKph": 117.22592821300327,
+      "heightLoss": 49.61624825227409,
+      "cumulativeNoseDegrees": 73.43703469874224,
+      "netNoseHeadingDegrees": -22.635778861995565,
+      "netVelocityHeadingDegrees": -22.629989559102782,
+      "velocityDirection3d": 89.79177479989616,
+      "finalIncidence": 18.466325276655027,
+      "thrustWork": 242.21220525079713,
+      "dragWork": 4777.159650045935,
+      "unmet": {
+        "pitch": 11.659005527955214,
+        "yaw": 2.807532190372136,
+        "roll": 6.898726983022787
+      }
+    },
+    {
+      "scenario": "handoff-1",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.725,
+          "speedKph": 387.11953953672105
+        },
+        {
+          "degrees": 30,
+          "time": 1.0666666666666667,
+          "speedKph": 324.34644840497396
+        },
+        {
+          "degrees": 60,
+          "time": 2.1083333333333334,
+          "speedKph": 136.07973563179544
+        }
+      ],
+      "peakIncidence": 160.63763577335502,
+      "secondsAbove30": 4.941666666666666,
+      "finalSpeedKph": 114.56178260294428,
+      "heightLoss": 17.38847764459797,
+      "cumulativeNoseDegrees": 72.3724389953436,
+      "netNoseHeadingDegrees": 19.02263840946974,
+      "netVelocityHeadingDegrees": 19.04111833902612,
+      "velocityDirection3d": 89.95465236323558,
+      "finalIncidence": 160.39820682250885,
+      "thrustWork": 227.0875696034883,
+      "dragWork": 4457.433701646174,
+      "unmet": {
+        "pitch": 11.757324884802003,
+        "yaw": 2.905197739353667,
+        "roll": 6.898457037264488
+      }
+    },
+    {
+      "scenario": "exit-false-off",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 60,
+          "time": 1.5,
+          "speedKph": 248.40788466335445
+        }
+      ],
+      "peakIncidence": 66.39180213712245,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 224.91006612561543,
+      "heightLoss": 28.905481780752325,
+      "cumulativeNoseDegrees": 43.36702488971822,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 38.10464038996337,
+      "finalIncidence": 59.79342920730828,
+      "thrustWork": 77.68859021386886,
+      "dragWork": 1031.5165351465469,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-false-pulse",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 41.21633836927919,
+      "secondsAbove30": 3.191666666666667,
+      "finalSpeedKph": 270.01646959512846,
+      "heightLoss": -21.78104468714446,
+      "cumulativeNoseDegrees": 49.943050197405846,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 12.855352027895146,
+      "finalIncidence": 22.788472238729938,
+      "thrustWork": 1134.149785916361,
+      "dragWork": 1208.112426642267,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-false-held",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 36.88353092165624,
+      "secondsAbove30": 1.3083333333333333,
+      "finalSpeedKph": 823.9777503181011,
+      "heightLoss": -238.92080366599612,
+      "cumulativeNoseDegrees": 16.76230354283122,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 42.67228164064972,
+      "finalIncidence": 0.10095942929222784,
+      "thrustWork": 15132.53788168802,
+      "dragWork": 2685.636568751071,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-off",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 60,
+          "time": 0.9833333333333333,
+          "speedKph": 124.64694812795925
+        }
+      ],
+      "peakIncidence": 154.10997767429296,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": 0.03012453351084332,
+      "cumulativeNoseDegrees": 24.146719377353612,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 154.10997767429296,
+      "thrustWork": 23.703440236546985,
+      "dragWork": 1561.6013593414323,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-pulse",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 60,
+          "time": 1.6333333333333333,
+          "speedKph": 86.37117823465482
+        }
+      ],
+      "peakIncidence": 153.22244322412223,
+      "secondsAbove30": 4,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -10.461501414993563,
+      "cumulativeNoseDegrees": 23.259181628977238,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 153.22244322412223,
+      "thrustWork": 783.86966786779,
+      "dragWork": 2219.0069038304705,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "exit-true-held",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 30,
+          "time": 0,
+          "speedKph": 299.606164102623
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 37.28483500999039,
+      "secondsAbove30": 1.4666666666666666,
+      "finalSpeedKph": 208.3829147073329,
+      "heightLoss": -86.38272800216737,
+      "cumulativeNoseDegrees": 20.524410913223893,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 43.81625826774187,
+      "finalIncidence": 8.706377427387526,
+      "thrustWork": 5456.070980874155,
+      "dragWork": 5401.89833694311,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "reserve-full",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.675,
+          "speedKph": 483.151145245224
+        },
+        {
+          "degrees": 30,
+          "time": 0.9916666666666667,
+          "speedKph": 474.9994903748367
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 43.349788212230884,
+      "secondsAbove30": 3.0166666666666666,
+      "finalSpeedKph": 255.65557705828493,
+      "heightLoss": -128.07584763198975,
+      "cumulativeNoseDegrees": 106.60211996070113,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 76.04124485157519,
+      "finalIncidence": 30.56087510963867,
+      "thrustWork": 8865.584770020778,
+      "dragWork": 10774.32287489232,
+      "unmet": {
+        "pitch": 12.74664436990302,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "reserve-empty",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.675,
+          "speedKph": 396.3864656367553
+        },
+        {
+          "degrees": 30,
+          "time": 1.0083333333333333,
+          "speedKph": 335.33485801166205
+        },
+        {
+          "degrees": 60,
+          "time": 2.341666666666667,
+          "speedKph": 102.30583008706483
+        }
+      ],
+      "peakIncidence": 145.01175115968775,
+      "secondsAbove30": 3,
+      "finalSpeedKph": 0.44145000000000006,
+      "heightLoss": -3.4581066758578345,
+      "cumulativeNoseDegrees": 55.01175115755391,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": null,
+      "velocityDirection3d": null,
+      "finalIncidence": 145.01175115968775,
+      "thrustWork": 238.73904628059142,
+      "dragWork": 4490.407375607309,
+      "unmet": {
+        "pitch": 13.707205668674735,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "release-reapply",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": 0.725,
+          "speedKph": 387.11953953672105
+        },
+        {
+          "degrees": 30,
+          "time": 1.0833333333333333,
+          "speedKph": 326.614614552141
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 32.34760030806389,
+      "secondsAbove30": 0.45,
+      "finalSpeedKph": 270.65400481210884,
+      "heightLoss": -28.531792115277767,
+      "cumulativeNoseDegrees": 56.45718752178038,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 8.951899456597857,
+      "finalIncidence": 14.382937775693527,
+      "thrustWork": 356.7762444047513,
+      "dragWork": 3106.5027337289703,
+      "unmet": {
+        "pitch": 13.353439665902231,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "aim",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0.8651767385712266,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 449.6919018465817,
+      "heightLoss": -82.15653714433347,
+      "cumulativeNoseDegrees": 30.819884548740067,
+      "netNoseHeadingDegrees": 9.579265603972749,
+      "netVelocityHeadingDegrees": 9.258842261663435,
+      "velocityDirection3d": 29.954707063252627,
+      "finalIncidence": 0.8651767385712266,
+      "thrustWork": 1017.3129219793298,
+      "dragWork": 1030.5821453643657,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "roll",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 499.9999999999997,
+      "heightLoss": 0,
+      "cumulativeNoseDegrees": 0,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 0,
+      "finalIncidence": 0,
+      "thrustWork": 1111.3651374282338,
+      "dragWork": 1111.3651374282335,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "cruise",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 0,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 499.9999999999997,
+      "heightLoss": 0,
+      "cumulativeNoseDegrees": 0,
+      "netNoseHeadingDegrees": 0,
+      "netVelocityHeadingDegrees": 0,
+      "velocityDirection3d": 0,
+      "finalIncidence": 0,
+      "thrustWork": 1111.3651374282338,
+      "dragWork": 1111.3651374282335,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "hardTurn900",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 3.849034676217604,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 753.8945970626547,
+      "heightLoss": -310.0855753972219,
+      "cumulativeNoseDegrees": 138.66489704734033,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 134.87592184634872,
+      "finalIncidence": 3.788975201181511,
+      "thrustWork": 4045.325406143654,
+      "dragWork": 5143.093861776308,
+      "unmet": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      }
+    },
+    {
+      "scenario": "fullStick500",
+      "aircraftId": "f22-notvc",
+      "thresholds": [
+        {
+          "degrees": 20,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 30,
+          "time": null,
+          "speedKph": null
+        },
+        {
+          "degrees": 60,
+          "time": null,
+          "speedKph": null
+        }
+      ],
+      "peakIncidence": 8.060023293835373,
+      "secondsAbove30": 0,
+      "finalSpeedKph": 359.63511683190654,
+      "heightLoss": -165.40536022163724,
+      "cumulativeNoseDegrees": 127.04895917186104,
+      "netNoseHeadingDegrees": 180,
+      "netVelocityHeadingDegrees": 180,
+      "velocityDirection3d": 118.98893587820605,
+      "finalIncidence": 8.060023293835373,
+      "thrustWork": 610.9551281699803,
+      "dragWork": 1056.2523170214843,
+      "unmet": {
+        "pitch": 1.255060274599435,
+        "yaw": 0,
+        "roll": 0
+      }
+    }
+  ]
+}
