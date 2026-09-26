@@ -2,6 +2,8 @@
 
 > **Current (PSM Phase 6, 25 Sep 2026):** there is no PSM mode, state machine, arm key or High-G key. High AoA emerges from the continuous envelope: Space (Airbrake) + pull/yaw at 350–700 ARCADE km/h opens the incidence limiter; full stick at high speed becomes an automatic hard turn; a centred stick lets natural aero and delayed recovery assist bring the nose back. C and X are unbound. See [current flight rules](../flight-profiles.md) and the [Phase 6 report](../psm-phase6-implementation.md).
 >
+> **Pedal turn (Phase 8):** below about 200 ARCADE km/h, Space + full yaw (Q/E) keeps building yaw rate, so the nose rotates through a full body-yaw turn. The Su-57 completes 360° in about 5.6 s from level 150 km/h; the F-22, with no yaw TVC, turns about a third as far. See the [Phase 8 report](../psm-phase8-implementation.md).
+>
 > Everything below is historical milestone/design notes (P2 hold-C PSM, manual High-G). It no longer describes the game.
 
 

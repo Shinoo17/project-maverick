@@ -19,6 +19,9 @@ export interface FlightProfile {
   airbrakeCrossflow: number
   /** Explicit maneuver request, fraction of dry thrust; no drag compensation. */
   controlPower: number
+  /** 0..1 per stick axis, weighted by each axis's share of the stick input
+   * (PilotIntent.axisShare). Scales controlPower; still pilot intent only. */
+  controlPowerAxisWeight: AeroAxes
   /** Speed-squared drag coefficient; drag * speed² gives deceleration. */
   drag: number
   /** Pitch/yaw rate-squared drag coefficient. */
@@ -32,6 +35,12 @@ export interface FlightProfile {
    * and is independent of the arcade floor's acceleration and maxRate budgets. */
   minRateTarget: AeroAxes
   rateResponse: number
+  /** 0..1 per axis. How much of the rate the pilot is commanding (between zero and the
+   * target) the servo leaves undamped. 0 damps it all, so steady rate falls to
+   * authority / rateResponse when the drive is budget-limited. Grants no authority. */
+  commandedRateHold: AeroAxes
+  /** Arcade km/h band: full hold at or below `full`, none at or above `zero`. */
+  commandedRateHoldSpeedKph: { full: number; zero: number }
   /** Response when reversing an existing roll, not starting one (1/s). */
   rollReversalResponse: number
   counterResponse: number

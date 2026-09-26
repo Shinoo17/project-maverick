@@ -132,6 +132,10 @@ and **dissipation** (`-rate * exponential/dt`). Only drive is allocated; damping
 increase rate magnitude. This preserves attached-flight response when authority is
 sufficient and prevents a held stick from sustaining inherited high rates after aero
 and TVC capability disappear. Neutral damping still fades with observed high incidence.
+*Phase 8 amendment (owner-approved):* for yaw below 300 arcade km/h, the rate the pilot is
+commanding (between zero and the target) is no longer dissipated, so a held pedal can keep
+the yaw rate it has built. Pitch and roll, and yaw above the band, keep this contract; see
+[the Phase 8 report](psm-phase8-implementation.md).
 `AllocationRecord.request` is the signed **drive request**, not net angular acceleration.
 
 Three independent TVC ceilings cannot be treated as three actuators: two nozzle angles

@@ -37,6 +37,9 @@ export const f22Profile: AircraftFlightProfile = {
     ...flightDefaults,
     neutralRollResponse: 9.1,
     minRateTarget: { pitch: 0.2, yaw: 0.15, roll: 0.3 },
+    commandedRateHold: { ...flightDefaults.commandedRateHold },
+    commandedRateHoldSpeedKph: { ...flightDefaults.commandedRateHoldSpeedKph },
+    controlPowerAxisWeight: { ...flightDefaults.controlPowerAxisWeight },
 
     // Speed and energy.
     minPoweredMps: 65,

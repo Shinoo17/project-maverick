@@ -30,9 +30,18 @@ export const flightDefaults = {
   afterburnerAcceleration: 38,
   airbrakeDeceleration: 30,
   airbrakeCrossflow: 0.25, controlPower: 0.7,
+  // Phase 8 pedal turn (option B): a yaw-only input asks for 60% of the pull's
+  // control power, holding the Su-57 level pedal within ±30 km/h over 360°.
+  // Tuned per aircraft only if personalities need it.
+  controlPowerAxisWeight: { pitch: 1, yaw: 0.6, roll: 1 },
   driveResponse: 8,
   releaseResponse: 6,
   rateResponse: 5,
+  // Phase 8, owner-approved for yaw only: a held pedal keeps the yaw rate it has
+  // built at low speed. Pitch and roll keep the Phase 3 behavior. The band fades
+  // the hold out before yaw entries at 350+ km/h (owner decision, 26 Sep 2026).
+  commandedRateHold: { pitch: 0, yaw: 1, roll: 0 },
+  commandedRateHoldSpeedKph: { full: 200, zero: 300 },
   rollReversalResponse: 18,
   counterResponse: 12,
   neutralResponse: 9,

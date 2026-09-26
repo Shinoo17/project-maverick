@@ -3,6 +3,12 @@ import type { AeroAxes, AircraftFlightProfile } from './profileTypes'
 import type { AirflowState } from './airflow'
 import type { EnvelopeFactors } from './envelope'
 import { clamp } from './speed'
+import { arcadeSpeed } from './speedLimits'
+
+const smoothstep = (value: number, min: number, max: number) => {
+  const t = clamp((value - min) / (max - min), 0, 1)
+  return t * t * (3 - 2 * t)
+}
 
 function turnRatePermission(speedAuthority: number, alphaLimitDeg: number, normalAlphaDeg: number, limiterOpen: number) {
   const incidencePermission = Math.sqrt(alphaLimitDeg / Math.max(normalAlphaDeg, 1))
@@ -66,6 +72,8 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
   // holds the nose. A held key with an empty reserve gives no thrust and no exception.
   const r = profile.recovery, recovery = envelope.recoveryAssist * envelope.highAoa
   const naturalNorm = Math.hypot(assist.natural.pitch, assist.natural.yaw)
+  const band = p.commandedRateHoldSpeedKph
+  const hold = 1 - smoothstep(arcadeSpeed(flow.airspeed), band.full, band.zero)
   const noseRate = assist.burnerActive || naturalNorm === 0 ? 0 : r.noseRate / naturalNorm
   for (const axis of ['pitch', 'yaw', 'roll'] as const) {
     if (command[axis] === 0) {
@@ -84,10 +92,17 @@ export function requestControl(command: PilotCommand, rates: AeroAxes, flow: Air
       const response = target[axis] * rates[axis] < 0 ? axis === 'roll' ? p.rollReversalResponse : p.counterResponse : p.rateResponse
       const blend = 1 - Math.exp(-response * dt)
       // Separate the dissipative part of the existing first-order rate servo
-      // from its powered drive. Only target*response needs positive authority.
-      // If authority disappears, a held stick cannot sustain an inherited PSM rate.
-      servoDamping[axis] = -rates[axis] * blend / dt
-      request[axis] = target[axis] * blend / dt
+      // from its powered drive. Only the drive needs positive authority.
+      // With hold 0 a held stick cannot sustain an inherited rate once authority
+      // disappears. Hold 1 (Phase 8, owner-approved for the yaw pedal turn) leaves
+      // the rate the pilot is commanding, between zero and the target, to natural
+      // damping; excess rate and counter-steer are still damped. Where the hold-0
+      // drive is fully allocated the net response is identical for every hold. High
+      // incidence is budget-limited at any speed, so the hold fades out above the
+      // pedal speed band and yaw entries at 350+ km/h keep the Phase 3 behavior.
+      const held = hold * p.commandedRateHold[axis] * clamp(rates[axis], Math.min(0, target[axis]), Math.max(0, target[axis]))
+      servoDamping[axis] = -(rates[axis] - held) * blend / dt
+      request[axis] = (target[axis] - held) * blend / dt
     }
   }
   return { request, recoveryRequest, servoDamping, normalLimit, hardTurn }

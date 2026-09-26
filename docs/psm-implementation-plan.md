@@ -1,6 +1,6 @@
 # PSM / High-AoA / TVC — Implementation Plan (Rev. 4)
 
-> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5 recovery assist is delivered; see [Phase 5 report](psm-phase5-implementation.md). Phase 6 legacy-gate removal is delivered; see [Phase 6 report](psm-phase6-implementation.md). Phase 7 camera/HUD polish is delivered ahead of Phase 8 at the owner's request; see [Phase 7 report](psm-phase7-implementation.md). Phase 8–9 remain pending. The original planning status below is historical.
+> **Implementation update:** Preparation and Phase 4.5A/B/C code + automated validation are delivered; see [implementation report](phase45-implementation-report.md) for before/after measurements, intentional assertion migrations and remaining human playtest limits. Phase 5 recovery assist is delivered; see [Phase 5 report](psm-phase5-implementation.md). Phase 6 legacy-gate removal is delivered; see [Phase 6 report](psm-phase6-implementation.md). Phase 7 camera/HUD polish is delivered ahead of Phase 8 at the owner's request; see [Phase 7 report](psm-phase7-implementation.md). Phase 8 is partial: pedal-turn validation is delivered (`p8-pedal-turn-1`; see [Phase 8 report](psm-phase8-implementation.md)), while personality, control-effectiveness, breakout and B23 tuning remain pending. The real non-TVC airframe is blocked on a model/rig, and Phase 9 remains pending. The original planning status below is historical.
 
 > **Rev. 4 — 21 ก.ย. 2026: owner อนุมัติทิศทาง Jet Drift / Implicit PSM แล้ว**
 > เริ่มงานถัดไปจาก [Jet Drift implementation amendment](jet-drift-implementation-plan.md): baseline capture → Phase 4.5A (entry/path assist) → 4.5B (continuation/cross-axis) → 4.5C (braking/power/work) → 5 → 6 → 8 → 7 → 9.
@@ -524,6 +524,8 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 
 ### Phase 8 — Aircraft validation
 
+**Status: partial — pedal turn delivered; personality/effectiveness/breakout/B23 tuning pending** (`p8-pedal-turn-1`, [report](psm-phase8-implementation.md), B11/B22 in `benchmarks/flight/phase8.report.ts`). Owner decisions 26 ก.ย. 2026: yaw commanded-rate hold ใน speed band 200→300 km/h (amend Phase 3 servo contract สำหรับ yaw เท่านั้น), per-axis control power (yaw 0.6), B11 = body yaw travel, Su-57 360°, F-22 ≤ ~60%. Non-TVC จริง blocked (ไม่มี model/rig); recovery acceleration เลื่อนออกไป. B21 รันซ้ำแล้ว; human playtest pending.
+
 > Rev. 4: ทำก่อน final Phase 7. การ tune ให้เล่นได้ใน 4.5A/B/C ต้องทำภายในแต่ละขั้น ไม่เลื่อนทั้งหมดมาที่นี่. คง F-22 commanded yaw TVC = 0 และ coupled moment bounds ตาม Phase 3 resolution; ประเมิน aero yaw และ roll + pitch แยกจาก Su-57 multi-axis TVC.
 
 - F-22, Su-57 tuning ตาม personality; non-TVC จริง (F/A-18 หรือ F-16) ต้องมี model + rig (`presentationIds` มีแค่ `f22`/`su57` [schemas.ts:4](../src/content/schemas.ts#L4))
@@ -606,7 +608,7 @@ Kulbit 360° Time                    4.3 s     3.0–4.5 s   ok
 | B8 `recovery.naturalDuringDelay` | incidence เปลี่ยนระหว่าง delay | 2 | > 0 |
 | B9 `natural.release45` | seed 45° ปล่อย: incidence ที่ 0.2/0.5/1.5 s, max rate | 2 | ตั้งจาก **playtest Phase 2** (Phase 0 ไม่มี baseline เพราะ physics เดิมไม่มี restoring) |
 | B10 `tailSlide.flipTime` | เวลาหัวลงต่ำกว่า horizon **นับจาก apex** (แก้ไข 23 ก.ย. 2026: เดิมนับจาก t=0 ซึ่งรวมช่วงไต่ ~6 s จึงเป็นไปไม่ได้) | 2 | ≤ 4 s |
-| B11 `pedal.yawRate` | post-stall yaw rate Q/E 2 s | 3 | F-22 ≤ 50% Su-57 |
+| B11 `pedal.yawRate` | post-stall yaw rate Q/E 2 s; Phase 8: body yaw travel, Space + full yaw ที่ 150 km/h | 3 / 8 | ~~F-22 ≤ 50% Su-57~~ → Su-57 360° ≤ 8 s, F-22 ≤ 60% ของ Su-57, ±30 km/h (owner, 26 ก.ย. 2026) |
 | B12 `beginner.fullStick500.peakAoa` | ไม่มี brake/burner 3 s | 4 | ≤ 25°, limiterOpen ≤ 0.35 |
 | B13 `hardTurn900` | peak incidence, sustained G, speed loss | 0 | incidence ≤ αNormal+5°; G > golden |
 | B14 `psmIntent.timeTo70` | 450 km/h + brake + Shift + pull | 4 | ≤ 1.2 s |

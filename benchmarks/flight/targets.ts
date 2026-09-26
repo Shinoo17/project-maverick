@@ -42,3 +42,10 @@ export const jetDriftTargets = {
   entry30Seconds450to600: { min: 0.4, max: 0.8 },
   entry30Speed650to700: { min: 350 },
 } satisfies Record<string, Target>
+
+/** Phase 8 owner decisions (26 Sep 2026). Report only until the pedal-turn playtest. */
+export const phase8Targets = {
+  su57Time360: { max: 8 },
+  f22ToSu57Travel: { max: 0.6 },
+  speedBandKph: { max: 30 },
+} satisfies Record<string, Target>

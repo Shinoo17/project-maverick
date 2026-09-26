@@ -40,7 +40,12 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
     : dryThrust
   // Bounded explicit pilot maneuver request, shared by translation and TVC.
   // Neither drag coefficients beyond base trim nor a speed error enter this term.
-  const controlPower = p.controlPower * clamp(maneuverIntent, 0, 1)
+  // The axis weight reads stick shares only, so a yaw-only pedal can ask for less
+  // than a pull (Phase 8 option B). No input history yet leaves it unweighted.
+  const share = state.intent.axisShare, weights = p.controlPowerAxisWeight
+  const shareSum = share.pitch + share.yaw + share.roll
+  const axisWeight = shareSum > 0 ? (share.pitch * weights.pitch + share.yaw * weights.yaw + share.roll * weights.roll) / shareSum : 1
+  const controlPower = p.controlPower * axisWeight * clamp(maneuverIntent, 0, 1)
   const dryRequest = Math.min(dryThrust, trim + Math.max(0, drive) + controlPower * dryThrust)
   const burnerRequest = Math.max(0, acceleration - Math.max(0, drive))
   const requestedPower = clamp(dryRequest + burnerRequest, 0, maxThrust) / dryThrust

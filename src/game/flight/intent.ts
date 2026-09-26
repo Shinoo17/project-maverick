@@ -11,8 +11,12 @@ export interface PilotIntent {
   brakeIntent: number
   decelerationIntent: number
   powerIntent: number
+  /** Each stick axis's share of squared deflection (sums to 1). Holds the last
+   * non-neutral split, so releasing the stick never re-weights continuation.
+   * All zero before any input. Input only; profiles read it in speed.ts. */
+  axisShare: { pitch: number; yaw: number; roll: number }
 }
-export const createPilotIntent = (): PilotIntent => ({ activity: 0, continuation: 0, releaseSeconds: 0, demand: 0, saturation: 0, sustained: 0, brakeIntent: 0, powerIntent: 0, decelerationIntent: 0 })
+export const createPilotIntent = (): PilotIntent => ({ activity: 0, continuation: 0, releaseSeconds: 0, demand: 0, saturation: 0, sustained: 0, brakeIntent: 0, powerIntent: 0, decelerationIntent: 0, axisShare: { pitch: 0, yaw: 0, roll: 0 } })
 const smooth = (v: number, lo: number, hi: number) => {
   const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo)))
   return t * t * (3 - 2 * t)
@@ -26,6 +30,10 @@ export function readIntent(command: PilotCommand, previous: PilotIntent, dt: num
   // Immediate activation/counter-steer, bounded linear release to EXACT neutral.
   // No force/rate is held by this memory; only continuation permission uses it.
   const continuation = Math.max(activity, previous.continuation - dt / handoffSeconds)
+  const deflection = command.pitch ** 2 + command.yaw ** 2 + command.roll ** 2
+  const axisShare = deflection > 0
+    ? { pitch: command.pitch ** 2 / deflection, yaw: command.yaw ** 2 / deflection, roll: command.roll ** 2 / deflection }
+    : { ...previous.axisShare }
   return {
     demand, saturation, activity, continuation,
     releaseSeconds: activity > 0 ? 0 : previous.releaseSeconds + dt,
@@ -34,5 +42,6 @@ export function readIntent(command: PilotCommand, previous: PilotIntent, dt: num
     brakeIntent: previous.brakeIntent + (+command.airbrake - previous.brakeIntent) * (1 - Math.exp(-12 * dt)),
     decelerationIntent: previous.decelerationIntent + (Math.max(0, -command.speedAdjust) - previous.decelerationIntent) * (1 - Math.exp(-12 * dt)),
     powerIntent: Math.max(+command.afterburner, Math.max(0, command.speedAdjust) * 0.4),
+    axisShare,
   }
 }

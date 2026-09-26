@@ -40,6 +40,12 @@ fraction of the same airframe at beta 0. They exist because B20's one-second spe
 loss cannot show whether a broadside aircraft still commands attached-flow authority.
 Report only; target ranges wait for the Phase 8 playtest.
 
+`phase8.json`/`.md` report B11 (Phase 8 pedal turn: body yaw travel, time to 360° and
+speed band for Space + full yaw from level 150 km/h and from the vertical climb), B22
+personality ordering against the plan's G2 table, and a yaw control-power weight sweep.
+Report only; targets are `phase8Targets` in `targets.ts`. See
+[the Phase 8 report](../../docs/psm-phase8-implementation.md).
+
 `camera.report.ts` reports B21 (Phase 7): the public `FlightCamera` driven from live F-22/Su-57
 traces (Cobra, Kulbit, tail slide, reversal, pedal, drift entries, handoff, roll + pull) at
 30/60/144 fps, four aspect ratios and both roll modes. It measures nose pipper/FPM visibility

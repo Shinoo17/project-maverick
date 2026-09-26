@@ -53,6 +53,14 @@ export function validateFlightProfile(profile: AircraftFlightProfile, path = 'fl
     for (const [key, value] of Object.entries(values)) {
       if (!Number.isFinite(value) || value < 0) throw new Error(`${path}.${key}: expected finite nonnegative number`)
     }
+    for (const key of ['commandedRateHold', 'controlPowerAxisWeight'] as const) {
+      const value = flight[key]?.[axis]
+      if (!Number.isFinite(value) || value < 0 || value > 1) throw new Error(`${path}.flight.${key}.${axis}: expected 0..1`)
+    }
+  }
+  const holdBand = flight.commandedRateHoldSpeedKph
+  if (!Number.isFinite(holdBand?.full) || !Number.isFinite(holdBand?.zero) || holdBand.full < 0 || holdBand.zero <= holdBand.full) {
+    throw new Error(`${path}.flight.commandedRateHoldSpeedKph: expected 0 <= full < zero`)
   }
   for (const key of ['referenceSpeedMps', 'highSpeedMps', 'pathRateFloorMps'] as const) {
     if (!Number.isFinite(aero?.[key])) throw new Error(`${path}.aero.${key}: expected finite number`)

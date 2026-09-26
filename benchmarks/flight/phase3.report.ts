@@ -124,7 +124,7 @@ it('reports Phase 3 ownership, gain calibration and Phase 0–2 regression delta
   const md = [`# Phase 3 — ${flightProfileVersion}`, '', 'Tuning measurements are informational. See phase3.json for capacities, allocation shares, work/cap diagnostics and full regression deltas.', '',
     '| Aircraft | Gain | Pedal peak yaw °/s | Pull rotation at 3s / 8s | Time 180° / 360° | Handoff dip rad/s | Brake/burner speed loss m/s |', '|---|---:|---:|---:|---:|---:|---:|']
   for (const r of results) md.push(`| ${r.id} | ${r.gain} | ${r.pedal.peakYawRateDeg.toFixed(3)} | ${r.limiterPull.rotation3s.toFixed(3)} / ${r.limiterPull.rotation8s.toFixed(3)} | ${r.limiterPull.time180 ?? '—'} / ${r.limiterPull.time360 ?? '—'} | ${r.handoff.rateDipRadPerSec ?? '—'} | ${r.brakeBurner.speedLossMps.toFixed(3)} |`)
-  md.push('', `B11 peak-yaw ratio F-22/Su-57 = ${yawRatio.toFixed(4)} (target ≤0.5).`, 'B19 no-TVC rotation at 3 s target <180°; B18 is report-only.', '',
+  md.push('', `B11 peak-yaw ratio F-22/Su-57 = ${yawRatio.toFixed(4)} (Phase 8 owner target ≤0.6; B11 travel/time in phase8.md).`, 'B19 no-TVC rotation at 3 s target <180°; B18 is report-only.', '',
     '## Moderate-q handoff', '', '| Aircraft | Onset s | Pre-onset q | Pre-onset aero rad/s² | Dip rad/s |', '|---|---:|---:|---:|---:|')
   for (const r of results) md.push(`| ${r.id} | ${r.moderateHandoff.onsetSeconds ?? '—'} | ${r.moderateHandoff.preOnsetQ?.toFixed(3) ?? '—'} | ${r.moderateHandoff.preOnsetAero?.toFixed(3) ?? '—'} | ${r.moderateHandoff.rateDipRadPerSec?.toFixed(4) ?? '—'} |`)
   md.push('', '## Gain calibration', '', '| Aircraft | Gain | Cobra peak ° | Cobra time 90° | Cobra heading ° (target ≤20) | Kulbit time 360° | Pitch rate at 0.2 s |', '|---|---:|---:|---:|---:|---:|---:|')

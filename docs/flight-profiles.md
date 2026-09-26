@@ -218,6 +218,20 @@ closes continuously on every step:
 To limit an aircraft, lower its capability (`aero.controlAcceleration`, `thrustVectoring`
 gain or travel, engine thrust), not a per-aircraft entry gate.
 
+### Pedal turn (Phase 8)
+
+Space + full yaw at about 150 km/h rotates the nose in body yaw. The Su-57 completes
+360° in about 5.6 s; the F-22 turns about a third as far because it has no yaw TVC.
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `flight.commandedRateHold` | pitch 0, yaw 1, roll 0 | Share of the commanded rate (between zero and the target) the rate servo leaves undamped. 0 is the original servo: when authority runs short the rate settles at `authority / rateResponse`. It grants no authority. |
+| `flight.commandedRateHoldSpeedKph` | full 200, zero 300 | Arcade km/h band that fades the hold out, so yaw entries at 350+ km/h keep the original servo. |
+| `flight.controlPowerAxisWeight` | pitch 1, yaw 0.6, roll 1 | Scales `controlPower` by each stick axis's share of the input. A yaw-only pedal asks for less thrust than a pull, so the turn holds its speed. |
+
+Raising the yaw hold or its band makes yaw entries at speed go broadside; see
+[the Phase 8 report](psm-phase8-implementation.md) before changing them.
+
 ## Twin-engine thrust vectoring
 
 The same solver handles both profiles, summing nozzle thrust vectors and `r × F`
