@@ -20,6 +20,19 @@ export interface AircraftDefinition {
   rotation: [number, number, number]
   removeNodes: string[]
   description: LocalizedText
+  /** Copy for the Hangar screen. */
+  hangar: AircraftHangarInfo
+}
+
+export interface AircraftHangarInfo {
+  /** Game role tag, e.g. 'Air superiority'. */
+  gameRole: LocalizedText
+  /** How the aircraft wins, e.g. 'Energy fighter'. */
+  playStyle: LocalizedText
+  /** One or two sentences of advice for the player. */
+  tip: LocalizedText
+  /** Short history from checked facts. */
+  history: LocalizedText
 }
 
 export interface SessionConfig {

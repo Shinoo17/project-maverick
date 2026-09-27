@@ -1,0 +1,90 @@
+/* PVE Setup (mockup 3b). The 3D scene is hidden; the map preview is the background. */
+
+.pve-map { position: absolute; inset: 0; background-color: var(--menu-deep);
+  background-image: linear-gradient(rgba(174, 201, 211, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(174, 201, 211, 0.06) 1px, transparent 1px);
+  background-size: 64px 64px; }
+.pve-map::after { content: ''; position: absolute; inset: 0; background: radial-gradient(122% 104% at 50% 50%, transparent 38%, rgba(2, 3, 5, 0.92) 100%); }
+.pve-map svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; }
+.pve-boundary { stroke: rgba(154, 215, 232, 0.3); stroke-dasharray: 8 6; vector-effect: non-scaling-stroke; }
+.pve-inner { stroke: rgba(154, 215, 232, 0.12); vector-effect: non-scaling-stroke; }
+.pve-spawn, .pve-objective { position: absolute; transform: translate(-50%, -50%); font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track-wide); text-transform: uppercase; }
+.pve-spawn::before { content: ''; display: block; width: 10px; height: 10px; margin: 0 auto 6px; border: 1.5px solid currentColor; border-radius: 50%; }
+.pve-spawn.is-ally { color: var(--menu-accent); }
+.pve-spawn.is-enemy { color: var(--menu-hostile); }
+.pve-objective { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--menu-text-soft); border-radius: 50%; color: var(--menu-text); font-size: 14px; letter-spacing: 0; }
+.pve-map-note { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); white-space: nowrap; }
+
+.pve-summary { font-family: var(--font-display); font-size: 16px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+
+/* Two floating columns: modes and maps on the left, teams and rules on the right. */
+.pve-column { position: absolute; top: 104px; width: 350px; display: flex; flex-direction: column; gap: 8px; }
+.pve-column.is-left { left: var(--gutter); }
+.pve-column.is-right { right: var(--gutter); width: 360px; }
+.pve-column .menu-section-heading:not(:first-child) { margin-top: 14px; }
+
+.pve-list { display: flex; flex-direction: column; }
+/* A list row: selection is a cyan rule on the left plus aria-pressed. */
+.pve-row { display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 7px 0 7px 16px; border-left: 2px solid transparent; text-align: left; color: var(--menu-secondary); }
+.pve-row strong { display: flex; align-items: baseline; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: var(--track-tight); text-transform: uppercase; }
+.pve-row.is-compact { min-height: 36px; padding-block: 4px; }
+.pve-row.is-compact strong { font-size: 18px; }
+.pve-row small { font-size: 12px; line-height: 1.4; color: var(--menu-muted); }
+.pve-row:hover:not(:disabled) strong, .pve-row[aria-pressed='true'] strong { color: var(--menu-text); }
+.pve-row[aria-pressed='true'] { border-left-color: var(--menu-accent); }
+.pve-row:disabled strong { color: var(--menu-muted); }
+.pve-tag { margin-left: auto; font-size: 12px; font-weight: 500; letter-spacing: var(--track); color: var(--menu-muted); }
+.pve-tag[data-ready] { color: var(--menu-accent); }
+
+.pve-stepper { display: flex; align-items: center; gap: 14px; }
+.pve-stepper button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid rgba(184, 214, 225, 0.35); }
+.pve-stepper button:disabled { opacity: 0.35; }
+.pve-stepper output { min-width: 64px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 36px; }
+
+.pve-difficulty { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pve-difficulty button { display: flex; flex-direction: column; gap: 2px; padding: 8px 0 8px 10px; border-top: 2px solid rgba(174, 201, 211, 0.25); text-align: left; color: var(--menu-secondary); }
+.pve-difficulty button[aria-pressed='true'] { border-top-color: var(--menu-accent); color: var(--menu-text); }
+.pve-difficulty strong { font-family: var(--font-display); font-weight: 600; font-size: 19px; letter-spacing: var(--track); text-transform: uppercase; }
+.pve-difficulty small { font-family: var(--font-mono); font-size: 11px; color: var(--menu-muted); }
+.pve-note { font-size: 12px; line-height: 1.5; color: var(--menu-secondary); }
+
+.pve-roster { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.pve-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pve-teams ul { margin: 0; padding: 0; list-style: none; }
+.pve-team-title { font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track-wide); text-transform: uppercase; padding-bottom: 2px; }
+.pve-team-title.is-ally { color: var(--menu-accent); }
+.pve-team-title.is-enemy { color: var(--menu-hostile); }
+.pve-slot { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 8px; min-height: 44px; border-bottom: 1px solid var(--menu-line-soft); }
+.pve-slot strong { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track-tight); }
+.pve-slot small { grid-row: 2; font-size: 12px; color: var(--menu-muted); }
+.pve-slot > :last-child { grid-row: 1 / span 2; grid-column: 2; font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track-tight); text-transform: none; }
+
+/* Bottom: summary on the left, player + START on the right. */
+.pve-match { position: absolute; left: var(--gutter); bottom: 48px; max-width: 520px; display: flex; flex-direction: column; gap: 4px; }
+.pve-match span { font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+.pve-match strong { font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: var(--track-tight); text-transform: uppercase; }
+.pve-match small { font-size: 12px; color: var(--menu-secondary); }
+
+.pve-launch { position: absolute; right: var(--gutter); bottom: 44px; display: flex; align-items: flex-end; gap: 28px; }
+.pve-player { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.pve-player span { font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+.pve-player strong { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: var(--track-tight); }
+
+/* Short windows: pull the columns up and tighten rows so they clear the bottom line. */
+@media (max-height: 780px) and (min-width: 901px) {
+  .pve-column { top: 88px; gap: 6px; }
+  .pve-column .menu-section-heading:not(:first-child) { margin-top: 6px; }
+  .pve-row { padding-block: 4px; }
+  .pve-row.is-compact { min-height: 32px; padding-block: 2px; }
+  .pve-row.is-compact strong { font-size: 17px; }
+  .pve-difficulty button { padding-block: 5px; }
+  .pve-roster { margin-top: 6px; }
+  .pve-slot { min-height: 40px; }
+  .menu-facts div { padding-block: 4px; }
+  .pve-match, .pve-launch { bottom: 28px; }
+  .pve-launch .menu-launch { height: 60px; }
+}
+
+@media (max-width: 900px) {
+  .pve-launch { flex-direction: column; align-items: stretch; }
+  .pve-player { align-items: flex-start; }
+}

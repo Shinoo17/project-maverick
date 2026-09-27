@@ -31,6 +31,9 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
     for (const locale of ['th', 'en'] as const) {
       if (!entry.description[locale]?.trim()) throw new Error(`${path}.description.${locale}: required`)
       if (!entry.role[locale]?.trim()) throw new Error(`${path}.role.${locale}: required`)
+      for (const field of ['gameRole', 'playStyle', 'tip', 'history'] as const) {
+        if (!entry.hangar[field][locale]?.trim()) throw new Error(`${path}.hangar.${field}.${locale}: required`)
+      }
     }
   })
 }

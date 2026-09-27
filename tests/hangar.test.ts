@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getAircraft } from '../src/content/aircraft'
 import { inspectedWeapons, weaponModelUrl } from '../src/content/weapons'
-import { flightAxes } from '../src/features/hangar/useHangarFlight'
+import { flightAxes } from '../src/features/studio/useHangarFlight'
 
 describe('hangar weapon inspection', () => {
   it('All includes the gun and every compatible weapon', () => {

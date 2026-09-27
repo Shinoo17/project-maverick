@@ -1,0 +1,36 @@
+/* Home (mockup 1). Positions follow the 1440 × 810 mockup. */
+
+.home-brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: 0.18em; }
+.home-brand svg { color: var(--menu-accent); transform: rotate(-45deg); }
+
+.home-pilot { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-family: var(--font-display); }
+.home-pilot span { font-size: 12px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+.home-pilot strong { font-size: 17px; font-weight: 600; letter-spacing: var(--track-tight); }
+.home-divider { width: 1px; height: 30px; background: rgba(174, 201, 211, 0.25); }
+
+.home-locale { display: flex; gap: 2px; font-family: var(--font-display); font-size: 14px; letter-spacing: var(--track); }
+.home-locale button { min-width: 44px; min-height: 44px; color: var(--menu-muted); border-bottom: 2px solid transparent; }
+.home-locale button[aria-pressed='true'] { color: var(--menu-text); border-bottom-color: var(--menu-accent); }
+.home-settings { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--menu-text); }
+.home-settings:disabled { color: var(--menu-muted); }
+
+.home-aircraft { position: absolute; left: var(--gutter); bottom: 132px; display: flex; flex-direction: column; gap: 6px; }
+.home-designation { font-family: var(--font-display); font-weight: 600; font-size: 34px; letter-spacing: var(--track-tight); color: var(--menu-accent); line-height: 1; }
+.home-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(88px, min(12vw, 21vh), 176px); line-height: 0.82; letter-spacing: 0.01em; color: rgba(218, 226, 230, 0.94); text-transform: uppercase; }
+.home-role { margin-top: 14px; max-width: 40ch; font-family: var(--font-display); font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
+
+.home-actions { position: absolute; right: var(--gutter); bottom: 48px; display: flex; flex-direction: column; align-items: flex-end; gap: 18px; }
+.home-mode { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+.home-mode span { font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+.home-mode strong { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: var(--track); text-transform: uppercase; }
+.home-mode small { font-size: 13px; color: var(--menu-muted); }
+.home-secondary { display: flex; gap: 10px; }
+.home-play { width: 330px; height: 76px; padding: 0 28px; font-size: 34px; }
+
+.home-footer { position: absolute; left: var(--gutter); bottom: 44px; display: flex; gap: 28px; font-family: var(--font-mono); font-size: 12px; letter-spacing: var(--track-tight); color: var(--menu-muted); }
+
+/* Short windows: the footer would collide with the name block. */
+@media (max-height: 760px) {
+  .home-aircraft { bottom: 96px; }
+  .home-footer { bottom: 28px; }
+}

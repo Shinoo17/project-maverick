@@ -1,0 +1,73 @@
+/*
+Campaign Map (mockup 3a). The 3D scene is hidden here; the theatre
+placeholder is the background. Status always shows as text and outline
+style as well as colour.
+*/
+
+.campaign-theatre { position: absolute; inset: 0; background-color: var(--menu-deep);
+  background-image: linear-gradient(rgba(174, 201, 211, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(174, 201, 211, 0.07) 1px, transparent 1px);
+  background-size: 80px 80px; }
+.campaign-theatre svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; }
+.campaign-contour { stroke: rgba(174, 201, 211, 0.1); stroke-width: 1; }
+.campaign-coast { stroke: rgba(174, 201, 211, 0.28); stroke-width: 1.2; }
+.campaign-front { stroke: rgba(255, 107, 95, 0.55); stroke-width: 1.4; stroke-dasharray: 10 6; }
+.campaign-area { position: absolute; font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+.campaign-area.is-front { left: 36%; top: 12%; color: var(--menu-hostile); }
+.campaign-area.is-friendly { left: 14%; top: 34%; }
+.campaign-area.is-hostile { left: 49%; top: 14%; }
+.campaign-image-note { position: absolute; left: var(--gutter); bottom: 28px; }
+
+/* Requirement links. Coordinates are 0–100 of the map box, so strokes must not scale. */
+.campaign-links { position: absolute; inset: 0; width: 100%; height: 100%; }
+.campaign-links line { stroke: var(--menu-muted); stroke-width: 1.5; stroke-dasharray: 7 6; vector-effect: non-scaling-stroke; }
+.campaign-links line[data-status='available'] { stroke: var(--menu-accent); }
+.campaign-links line:is([data-status='locked'], [data-status='planned']) { stroke: var(--menu-locked); }
+
+/* Mission boxes are centred on their map position. */
+.campaign-missions { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+.campaign-missions li { position: absolute; transform: translate(-50%, -50%); }
+.campaign-node { width: 190px; min-height: 66px; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 12px; background: rgba(5, 7, 9, 0.78); border: 1px solid rgba(174, 201, 211, 0.35); text-align: left; }
+.campaign-node:hover { border-color: var(--menu-text); }
+.campaign-node[aria-pressed='true'] { border: 2px solid var(--menu-text); box-shadow: 0 0 0 4px rgba(218, 226, 230, 0.12); }
+.campaign-node-meta { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); }
+.campaign-node-meta span:last-child { font-family: var(--font-display); letter-spacing: var(--track); text-transform: uppercase; }
+.campaign-node strong { font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: var(--track-tight); color: var(--menu-text); text-transform: uppercase; white-space: nowrap; }
+
+.campaign-node[data-status='complete'] strong { color: var(--menu-secondary); }
+.campaign-node[data-status='available'] { border-color: var(--menu-accent); }
+.campaign-node[data-status='available'] .campaign-node-meta { color: var(--menu-accent); }
+.campaign-node:is([data-status='locked'], [data-status='planned']) { border-style: dashed; border-color: var(--menu-locked); }
+.campaign-node:is([data-status='locked'], [data-status='planned']) strong { color: var(--menu-muted); }
+
+/* Top bar extras. */
+.campaign-operation { font-family: var(--font-display); font-size: 16px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+.campaign-progress { margin-left: auto; display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-size: 13px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+.campaign-progress + .menu-hints { margin-left: 0; }
+.campaign-progress-bar { display: flex; gap: 4px; }
+.campaign-progress-bar i { width: 22px; height: 4px; background: rgba(174, 201, 211, 0.25); }
+.campaign-progress-bar i[data-done] { background: var(--menu-text); }
+.campaign-progress b { font-family: var(--font-mono); font-weight: 400; font-size: 13px; color: var(--menu-text); }
+
+.campaign-legend { position: absolute; left: var(--gutter); top: 96px; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--menu-secondary); }
+.campaign-legend li { display: flex; align-items: center; gap: 10px; }
+.campaign-legend-line { width: 28px; border-top: 1.5px dashed var(--menu-muted); }
+.campaign-legend-box { width: 12px; height: 12px; border: 1px solid var(--menu-accent); }
+.campaign-legend-box:is([data-status='locked'], [data-status='planned']) { border: 1px dashed var(--menu-locked); }
+
+/* Briefing column. */
+.campaign-briefing { position: absolute; right: var(--gutter); top: 104px; width: 360px; display: flex; flex-direction: column; gap: 12px; }
+.campaign-briefing-meta { display: flex; gap: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--menu-accent); }
+.campaign-briefing-meta span:last-child { font-family: var(--font-display); letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+.campaign-briefing-meta span[data-status='available'] { color: var(--menu-accent); }
+.campaign-briefing h1 { font-family: var(--font-display); font-weight: 700; font-size: 46px; line-height: 0.95; letter-spacing: 0.02em; text-transform: uppercase; }
+.campaign-objective { font-size: 14px; line-height: 1.55; }
+.campaign-thumb { height: 96px; background-image: repeating-linear-gradient(135deg, rgba(154, 215, 232, 0.16) 0 1px, transparent 1px 7px); }
+.campaign-briefing .menu-launch { width: 100%; height: 64px; font-size: 26px; margin-top: 6px; }
+.campaign-blocked { display: flex; align-items: center; gap: 12px; height: 64px; margin-top: 6px; padding: 0 20px; border: 1px dashed var(--menu-locked); color: var(--menu-secondary); font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: var(--track); text-transform: uppercase; }
+.campaign-reason { font-size: 12px; color: var(--menu-muted); }
+
+@media (max-width: 900px) {
+  .menu .campaign-links { display: none; }
+  .menu .campaign-missions { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .menu .campaign-missions li { position: static; transform: none; }
+}

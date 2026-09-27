@@ -7,6 +7,12 @@ export const aircraft: readonly AircraftDefinition[] = [
     role: { th: 'เครื่องบินขับไล่ครองอากาศ · ตรวจจับยาก + ซูเปอร์ครูซ', en: 'Air superiority fighter · Stealth and supercruise' },
     rotation: [0, 0, 0], removeNodes: ['MLG_Bay_Fitting_01', 'MLG_Bay_Fitting_02'],
     description: { th: 'สำรวจตัวเครื่องและกลไกที่เคลื่อนไหวได้จากโมเดลจริง', en: 'Explore the airframe and its animated mechanical systems.' },
+    hangar: {
+      gameRole: { en: 'Air superiority', th: 'ครองอากาศ' },
+      playStyle: { en: 'Energy fighter', th: 'เน้นพลังงาน' },
+      tip: { en: 'Wins with speed, altitude and the first shot. Keep energy high and avoid long turning fights.', th: 'ชนะด้วยความเร็ว ความสูง และการยิงก่อน รักษาพลังงานให้สูงและเลี่ยงการเลี้ยวไล่กันนาน ๆ' },
+      history: { en: 'Lockheed Martin F-22 Raptor. First flight 1997, USAF service from 2005. Fifth-generation fighter built around stealth, supercruise and 2D thrust vectoring.', th: 'Lockheed Martin F-22 Raptor บินครั้งแรกปี 1997 เข้าประจำการกองทัพอากาศสหรัฐฯ ปี 2005 เครื่องบินขับไล่ยุคที่ 5 ที่ออกแบบรอบความสามารถตรวจจับยาก ซูเปอร์ครูซ และเวกเตอร์แรงขับ 2 มิติ' },
+    },
   },
   {
     id: 'su57', flightProfileId: 'felon-agility', presentationId: 'su57', weaponStationProfileId: 'su57',
@@ -17,6 +23,12 @@ export const aircraft: readonly AircraftDefinition[] = [
     // source also contains both static gear/probe variants; show the stowed set.
     removeNodes: ['Nozzles_ORIG_backup', 'Gear_down', 'Probe_on', 'Prototype_su57_antenna_ng'],
     description: { th: 'สำรวจรูปทรงและรายละเอียดของเครื่องบินจากทุกมุม', en: 'Explore the aircraft’s shape and surface details from every angle.' },
+    hangar: {
+      gameRole: { en: 'Multirole', th: 'อเนกประสงค์' },
+      playStyle: { en: 'Agility fighter', th: 'เน้นความคล่องตัว' },
+      tip: { en: 'Wins close. 3D thrust vectoring and strong post-stall control let it point the nose where others cannot.', th: 'ชนะในระยะใกล้ เวกเตอร์แรงขับ 3 มิติและการควบคุมหลังสภาวะร่วงหล่นทำให้หันหัวไปในมุมที่ลำอื่นทำไม่ได้' },
+      history: { en: 'Sukhoi Su-57 (NATO: Felon). First flight 2010, Russian service from 2020. Twin-engine fifth-generation multirole fighter with canted 3D thrust vectoring.', th: 'Sukhoi Su-57 (ชื่อ NATO: Felon) บินครั้งแรกปี 2010 เข้าประจำการรัสเซียปี 2020 เครื่องบินขับไล่อเนกประสงค์ยุคที่ 5 สองเครื่องยนต์ พร้อมเวกเตอร์แรงขับ 3 มิติแบบเอียง' },
+    },
   },
 ]
 

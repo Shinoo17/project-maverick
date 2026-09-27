@@ -4,6 +4,7 @@
 import { createRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { selectControls, useSessionSettings } from '../../app/sessionStore'
+import { flightReturnRoute, routes } from '../../app/routes'
 import { getAircraft, modelUrl, playgroundAircraft } from '../../content/aircraft'
 import { FlightInput } from '../../game/input/FlightInput'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
@@ -152,7 +153,7 @@ export function FlightPage() {
       {failed ? <button className="flight-primary" onClick={() => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) }}>{t('retry')}</button>
         : <button className="flight-primary" disabled={!ready || !webgl || !!stopped} onClick={() => void begin()}>{!ready && webgl ? t('flightLoading') : hasStarted ? t('resumeFlight') : t('beginFlight')}</button>}
       {ready && <button onClick={() => resetFlight()}>{t('resetFlight')}</button>}
-      <a href="#/" onClick={pause}>{t('backHangar')}</a>
+      <a href={routes[flightReturnRoute()]} onClick={pause}>{t('leaveFlight')}</a>
     </dialog>
   </main>
 }

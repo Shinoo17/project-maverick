@@ -1,0 +1,35 @@
+/* Select Mode (mockup 1b). The scene behind is dimmed by .menu-dim. */
+
+.mode-heading { position: absolute; left: var(--gutter); top: 150px; display: flex; flex-direction: column; gap: 8px; }
+.mode-heading h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(64px, 12vh, 96px); line-height: var(--display-leading); letter-spacing: 0.02em; text-transform: uppercase; }
+
+.mode-options { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 150px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; }
+
+/* An option is floating type under one hairline; the current one has a thicker cyan line. */
+.mode-option { display: flex; flex-direction: column; gap: 14px; padding-top: 22px; border-top: 1px solid rgba(184, 214, 225, 0.35); text-align: left; color: var(--menu-text); transition: border-color 160ms ease-out; }
+.mode-option:hover, .mode-option[aria-current] { border-top: 2px solid var(--menu-accent); padding-top: 21px; }
+.mode-option:hover .mode-option-go { color: var(--menu-text); }
+
+.mode-option-title { display: flex; align-items: baseline; gap: 18px; }
+.mode-option-title strong { font-family: var(--font-display); font-weight: 700; font-size: 72px; line-height: var(--display-leading); letter-spacing: var(--track-tight); text-transform: uppercase; }
+.mode-index { font-family: var(--font-mono); font-size: 14px; color: var(--menu-accent); }
+.mode-current { font-family: var(--font-display); font-size: 14px; letter-spacing: var(--track-wide); color: var(--menu-accent); text-transform: uppercase; }
+
+.mode-option-text { max-width: 48ch; font-size: 16px; line-height: 1.55; color: var(--menu-text-soft); }
+.mode-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.mode-chips span { padding: 3px 10px; border: 1px solid var(--menu-line); font-family: var(--font-display); font-size: 13px; letter-spacing: var(--track); color: var(--menu-secondary); text-transform: uppercase; }
+
+.mode-option-facts { display: flex; align-items: center; gap: 28px; font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+.mode-option-facts b { font-weight: 500; color: var(--menu-text); }
+.mode-option-go { margin-left: auto; color: var(--menu-accent); font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track); text-transform: uppercase; }
+
+/* Training: one smaller line under the two big options. */
+.mode-training { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 56px; display: flex; align-items: baseline; gap: 18px; min-height: 48px; padding-top: 12px; border-top: 1px solid var(--menu-line-soft); color: var(--menu-secondary); text-align: left; }
+.mode-training strong { font-family: var(--font-display); font-weight: 600; font-size: 24px; letter-spacing: var(--track-tight); color: var(--menu-text); text-transform: uppercase; }
+.mode-training:hover .mode-option-go { color: var(--menu-text); }
+
+@media (max-width: 900px) {
+  .mode-options { grid-template-columns: 1fr; gap: 32px; }
+  .mode-option-title strong { font-size: 56px; }
+  .mode-option-facts, .mode-training { flex-wrap: wrap; gap: 12px 20px; }
+}

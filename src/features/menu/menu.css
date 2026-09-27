@@ -1,0 +1,122 @@
+/*
+Menu design system (DESIGN.md, mockups in example/Design.html).
+Text floats over the 3D scene: no panels, no solid plates. Readability comes
+from the vignette, the dim layer and a soft dark text shadow.
+Everything is scoped under .menu so it cannot reach the flight page or studio.
+
+Sections: tokens · frame layers · shared parts · buttons · narrow windows
+*/
+
+/* ---------- Tokens ---------- */
+.menu {
+  --menu-void: #050709;
+  --menu-deep: #0b0f12;
+  --menu-text: #dae2e6;
+  --menu-text-soft: #c3ccd0;
+  --menu-secondary: #a4b0b6;
+  --menu-muted: #87949b;
+  --menu-locked: #59656b;
+  --menu-line: rgba(174, 201, 211, 0.22);
+  --menu-line-soft: rgba(174, 201, 211, 0.12);
+  --menu-outline: rgba(184, 214, 225, 0.4);
+  --menu-accent: #9ad7e8;          /* selection, focus, links */
+  --menu-launch: #ffb74a;          /* PLAY / START / LAUNCH only */
+  --menu-launch-hover: #ffd08a;
+  --menu-hostile: #ff8a80;
+
+  --font-display: 'Barlow Condensed', 'IBM Plex Sans Thai', sans-serif;
+  --font-body: 'Barlow', 'IBM Plex Sans Thai', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'IBM Plex Sans Thai', monospace;
+  /* Latin caps are tracked wide; Thai stacks vowels and tone marks, so it gets
+     almost no tracking and taller lines (see the html[lang='th'] block). */
+  --track-wide: 0.2em;
+  --track: 0.14em;
+  --track-tight: 0.06em;
+  --display-leading: 0.9;
+  --gutter: 56px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  position: relative;
+  height: 100dvh;
+  min-height: 620px;
+  overflow: hidden;
+  background: var(--menu-void);
+  color: var(--menu-text);
+  font-family: var(--font-body);
+}
+html[lang='th'] .menu { --track-wide: 0.02em; --track: 0.02em; --track-tight: 0.01em; --display-leading: 1.25; }
+
+/* ---------- Frame layers (bottom to top) ---------- */
+.menu-stage { position: absolute; inset: 0; }
+.menu-stage canvas { touch-action: none; }
+/* visibility (not display) keeps the canvas size, so the scene is ready on return. */
+.menu-stage[data-hidden] { visibility: hidden; }
+.menu-stage-status { position: absolute; left: 50%; top: 96px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); }
+.menu-stage-status p { display: flex; align-items: center; gap: 10px; }
+
+.menu-dim { position: absolute; inset: 0; pointer-events: none; background: rgba(3, 5, 7, 0.6); opacity: 0; transition: opacity 400ms var(--ease-out); }
+.menu[data-route='mode'] .menu-dim { opacity: 1; }
+.menu-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(122% 104% at 50% 46%, transparent 44%, rgba(2, 3, 5, 0.88) 100%); }
+
+/* The overlay lets drags reach the 3D scene; only its controls take the pointer. */
+.menu-overlay { position: absolute; inset: 0; pointer-events: none; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 22px rgba(0, 0, 0, 0.7); }
+.menu-overlay :is(a, button, output, [role='meter']) { pointer-events: auto; }
+
+/* ---------- Shared parts ---------- */
+.menu-topbar { position: absolute; left: var(--gutter); right: var(--gutter); top: 28px; display: flex; align-items: center; gap: 28px; }
+.menu-topbar .menu-hints { margin-left: auto; }
+.menu-topbar-divider { width: 1px; height: 22px; background: rgba(174, 201, 211, 0.3); }
+.menu-topbar-title { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: var(--track-wide); text-transform: uppercase; }
+
+.menu-back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--menu-text); text-decoration: none; font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track); text-transform: uppercase; }
+.menu-back:hover { color: var(--menu-accent); }
+
+.menu-hints { display: flex; flex-wrap: wrap; gap: 22px; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); }
+.menu-hints kbd { margin-right: 8px; font: inherit; color: var(--menu-secondary); }
+
+.menu-eyebrow { display: flex; align-items: center; gap: 14px; font-family: var(--font-display); font-size: 14px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+.menu-eyebrow span { width: 28px; height: 1px; background: var(--menu-accent); }
+
+.menu-section-heading { display: flex; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--menu-line); }
+.menu-section-heading h2 { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: var(--track-wide); text-transform: uppercase; }
+.menu-section-heading > span { margin-left: auto; display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); }
+
+.menu-link { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: var(--menu-accent); text-decoration: none; font-family: var(--font-display); font-size: 14px; letter-spacing: var(--track); text-transform: uppercase; }
+.menu-link:hover { color: var(--menu-text); }
+
+.menu-facts { display: flex; flex-direction: column; margin: 0; }
+.menu-facts div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--menu-line-soft); }
+.menu-facts dt { font-family: var(--font-display); font-size: 13px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+.menu-facts dd { margin: 0; font-size: 14px; line-height: 1.4; }
+
+/* Dashed box that marks a missing image, as in the mockups. */
+.menu-placeholder { display: flex; align-items: center; justify-content: center; padding: 8px 14px; border: 1px dashed rgba(154, 215, 232, 0.5); background: rgba(5, 7, 9, 0.6); font-family: var(--font-mono); font-size: 12px; color: var(--menu-accent); text-shadow: none; }
+
+/* ---------- Buttons ---------- */
+.menu :is(a, button):focus-visible { outline: 2px solid var(--menu-accent); outline-offset: 3px; }
+.menu button:disabled { cursor: not-allowed; }
+
+/* Secondary: thin outline, e.g. MODE / HANGAR on Home. */
+.menu-button { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px; border: 1px solid var(--menu-outline); color: var(--menu-text); text-decoration: none; font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
+.menu-button:hover { background: rgba(154, 215, 232, 0.08); color: var(--menu-text); }
+
+/* Launch: the one amber button per screen. */
+.menu-launch { display: flex; align-items: center; justify-content: space-between; width: 300px; height: 72px; padding: 0 26px; background: var(--menu-launch); color: var(--menu-void); text-shadow: none; font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: var(--track-wide); text-transform: uppercase; }
+.menu-launch:hover:not(:disabled) { background: var(--menu-launch-hover); color: var(--menu-void); }
+.menu-launch:disabled { background: transparent; color: var(--menu-muted); border: 1px dashed var(--menu-locked); opacity: 1; }
+
+/* Confirm: cyan fill, e.g. SET ACTIVE. */
+.menu-confirm { display: inline-flex; align-items: center; gap: 12px; height: 52px; padding: 0 22px; background: var(--menu-accent); color: var(--menu-void); text-shadow: none; font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
+.menu-confirm:hover { background: var(--menu-text); color: var(--menu-void); }
+
+/* ---------- Narrow windows: overlay columns stack and scroll ---------- */
+@media (max-width: 900px) {
+  .menu { --gutter: 16px; height: auto; min-height: 100dvh; overflow: visible; }
+  .menu-stage { position: fixed; }
+  .menu .menu-overlay { position: relative; display: flex; flex-direction: column; gap: 28px; padding: 16px var(--gutter) 40px; }
+  /* Everything except the backdrop joins the column flow. */
+  .menu .menu-overlay > :not(.menu-backdrop) { position: relative; inset: auto; width: auto; max-width: none; transform: none; }
+  .menu .menu-backdrop { position: fixed; }
+  .menu-topbar { flex-wrap: wrap; gap: 16px; }
+  .menu-launch { width: 100%; }
+}
