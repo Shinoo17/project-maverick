@@ -1,8 +1,14 @@
 /*
 Camera shots for the menu scene. Each screen names a shot; the camera glides
-there (or jumps, with reduced motion). Hangar and Armament let the player orbit
-all the way around, over the top and underneath, and zoom. The aircraft sits at
-the origin and is scaled to 10 units long.
+there (or jumps, with reduced motion). The aircraft sits at the origin and is
+scaled to 10 units long.
+
+On Hangar and Armament, dragging orbits the camera around the aircraft: all
+the way round sideways, and from almost straight above to almost straight
+below. The camera never rolls, so the floor stays level. Vertical travel
+stops a little short of straight up/down, where orbiting would spin the
+view on the spot. Releasing the mouse leaves the camera where it is (no
+drift); R, or any change of shot, glides back.
 */
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -27,11 +33,11 @@ const shots: Record<MenuShot, { direction: [number, number, number]; distance: n
 const orbitShots: readonly MenuShot[] = ['hangar', 'armament']
 
 const MIN_DISTANCE = 6
-// Almost the full sphere: straight over the top to straight underneath.
-// The same limits apply to every shot, because OrbitControls clamps the camera
-// even while dragging is disabled.
-const MIN_POLAR = 0.01
-const MAX_POLAR = Math.PI - 0.01
+// Vertical limits, as angles from straight up. About 6° short of each pole.
+// They apply to every shot, because OrbitControls clamps the camera even
+// while dragging is disabled.
+const MIN_POLAR = 0.1
+const MAX_POLAR = Math.PI - 0.1
 /** Higher = faster glide between shots. */
 const GLIDE_SPEED = 4
 
@@ -86,7 +92,10 @@ export function MenuCamera({ shot, reducedMotion, resetViewId }: { shot: MenuSho
     invalidate()
   })
 
-  return <OrbitControls ref={controls} makeDefault enabled={orbitShots.includes(shot)} enablePan={false}
-    enableDamping={!reducedMotion} dampingFactor={0.075}
-    minDistance={MIN_DISTANCE} maxDistance={framing * 1.7} minPolarAngle={MIN_POLAR} maxPolarAngle={MAX_POLAR} />
+  // Grabbing the view stops any glide, so the two never fight.
+  function onStart() { goal.current = null }
+
+  return <OrbitControls ref={controls} makeDefault enabled={orbitShots.includes(shot)} enablePan={false} enableDamping={false}
+    minDistance={MIN_DISTANCE} maxDistance={framing * 1.7} minPolarAngle={MIN_POLAR} maxPolarAngle={MAX_POLAR}
+    onStart={onStart} />
 }
