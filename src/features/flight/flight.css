@@ -37,6 +37,7 @@
 .flight-identity span { color: var(--hud-green-dim); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
 .flight-actions { position: absolute; top: 14px; right: 20px; display: flex; gap: 12px; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; }
 .flight-actions > span { color: var(--hud-green-dim); text-transform: uppercase; }
+.flight-actions > .flight-fps { min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
 .flight-actions button { min-height: 40px; padding: 6px 14px; pointer-events: auto; color: var(--hud-green-dim); border: 1px solid var(--hud-green-soft); border-radius: 2px; background: var(--hud-plate); font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-shadow: none; }
 .flight-actions button:hover { color: var(--hud-ice); border-color: var(--hud-ice); }
 .flight-actions button:focus-visible { outline: 2px solid var(--hud-ice); outline-offset: 2px; }
@@ -83,7 +84,7 @@
   .maneuver-instrument[data-details="true"] p { display: none; }
 }
 @media (max-width: 1000px) {
-  .flight-identity span, .flight-actions > span { display: none; }
+  .flight-identity span, .flight-actions > span:not(.flight-fps) { display: none; }
   .flight-lesson { width: 210px; }
 }
 @media (max-width: 760px) {

@@ -44,6 +44,18 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
     if ('isSkinnedMesh' in object && object.isSkinnedMesh && 'skeleton' in object) (object.skeleton as { dispose(): void }).dispose()
   }), [data])
   useEffect(() => { invalidate() }, [input, playing, invalidate])
+  // A preview needs no more than 60 Hz. Frames are requested on vsync timestamps, so a
+  // 120 Hz display draws every other vsync with even pacing; motion is scaled by delta.
+  useEffect(() => {
+    if (!playing) return
+    let request = 0, last = -Infinity
+    const wait = (now: number) => {
+      if (now - last >= 1000 / 60 - 4) { last = now; invalidate() }
+      request = requestAnimationFrame(wait)
+    }
+    request = requestAnimationFrame(wait)
+    return () => cancelAnimationFrame(request)
+  }, [playing, invalidate])
   useFrame(({ scene, camera }, delta) => {
     if (!frame.current || !volume.current) { gl.render(scene, camera); return }
     const dt = playing ? Math.min(delta, .05) : 0
@@ -65,7 +77,6 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
     frame.current.updateWorldMatrix(true, true)
     volume.current.updateExhaust({ ...flightExhaustConditions(state), nozzles: rig.exhaust }, dt, reducedMotion)
     volume.current.render(gl, scene, camera, frame.current.matrixWorld)
-    if (playing) invalidate()
   }, 1)
   return <group ref={frame} position={[0, .35, 0]} scale={10 / 18.9}><primitive object={data.root} dispose={null} /></group>
 }

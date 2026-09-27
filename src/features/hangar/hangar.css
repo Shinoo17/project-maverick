@@ -98,7 +98,7 @@ html[lang='th'] .is-hangar .hangar-title p { font-size: 13px; letter-spacing: 0.
 .hangar-panel { position: absolute; top: 24px; right: 24px; bottom: 24px; width: 304px; min-height: 500px;
   display: flex; flex-direction: column; overflow: hidden; padding: 20px 20px 16px;
   border: 1px solid var(--hangar-line); background: var(--hangar-panel);
-  box-shadow: 16px 24px 54px rgba(0, 0, 0, 0.34); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: 16px 24px 54px rgba(0, 0, 0, 0.34);
   pointer-events: auto; }
 .hangar-panel-heading { flex: 0 0 auto; padding-bottom: 16px; border-bottom: 1px solid var(--hangar-line); }
 .hangar-panel-heading span, .hangar-label { font-family: var(--hangar-display); font-size: var(--hangar-micro); font-weight: 700;

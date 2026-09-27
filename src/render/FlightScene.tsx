@@ -2,7 +2,7 @@ import { observeAirflow } from '../game/flight/airflow'
 import { interpretEnvelope } from '../game/flight/envelope'
 import { getFlightProfile } from '../game/flight/profile'
 import { memo, Suspense, useEffect, useMemo, useRef, type RefObject } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Box3, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import { clone } from 'three/addons/utils/SkeletonUtils.js'
 import { AssetLoaderProvider, useAircraftAsset } from './aircraft/assetLoader'
@@ -20,8 +20,8 @@ import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import type { HudDriver } from '../features/flight/FlightInstruments'
 
-export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; onReady: () => void; onTelemetry: (state: AircraftState) => void }
+export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; fps?: RefObject<HTMLElement | null> }
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; onReady: () => void; onTelemetry: (state: AircraftState) => void }
 function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
@@ -30,6 +30,8 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
   const elapsed = useRef(0), reset = useRef(-1)
   const rigTick = useRef(-1)
   const previous = useRef<AircraftState | null>(null), current = useRef<AircraftState | null>(null)
+  const wasRunning = useRef(false), fps = useRef({ frames: 0, since: -1 })
+  const invalidate = useThree(state => state.invalidate)
   const model = useMemo(() => {
     const copy = clone(asset.scene)
     for (const name of definition.removeNodes) copy.getObjectByName(name)?.removeFromParent()
@@ -47,9 +49,11 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId] })
     session.runtime = runtime; runtime.start(); runtime.pause()
     previous.current = current.current = runtime.snapshot().aircraft[0]
-    rig.reset(); onReady()
-    return () => { runtime.dispose(); session.runtime = null }
-  }, [aircraftId, session, rig, onReady])
+    // Paused, the canvas draws on demand; the page asks for a frame after a paused change.
+    session.invalidate = invalidate
+    rig.reset(); onReady(); invalidate()
+    return () => { runtime.dispose(); session.runtime = null; session.invalidate = undefined }
+  }, [aircraftId, session, rig, onReady, invalidate])
   useEffect(() => () => model.traverse(object => {
     if ('isSkinnedMesh' in object && object.isSkinnedMesh && 'skeleton' in object) (object.skeleton as { dispose(): void }).dispose()
   }), [model])
@@ -62,9 +66,12 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
       previous.current = current.current = runtime.snapshot().aircraft[0]
     }
     let alpha = 1
+    // The first running frame after the menu closes carries the whole pause as its delta.
+    const resumed = session.running && !wasRunning.current
+    wasRunning.current = session.running
     if (session.running) {
       runtime.resume()
-      alpha = runtime.advance(dt * session.timeScale, (tick, id) => {
+      alpha = runtime.advance(resumed ? 0 : dt * session.timeScale, (tick, id) => {
         const live = runtime.snapshot().aircraft[0]
         previous.current = live
         // Refreshed per simulation tick, not per rendered frame: the sim steps at 120 Hz
@@ -108,12 +115,22 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity })
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
+    // Counted over wall time while flying only; the window restarts on resume.
+    const now = performance.now(), counter = fps.current
+    if (!session.running || resumed || counter.since < 0) { counter.frames = 0; counter.since = now }
+    else counter.frames++
+    if (counter.frames && now - counter.since >= 500) {
+      if (indicators.fps?.current) indicators.fps.current.textContent = `${Math.round(counter.frames * 1000 / (now - counter.since))} FPS`
+      counter.frames = 0; counter.since = now
+    }
   })
   return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} /></>
 }
 // Memoised: the page re-renders on every 10 Hz telemetry update, the scene never needs to.
+// With the menu open nothing moves, so the loop stops and frames are drawn only on demand.
+// Antialiasing comes from CondensationVolume's multisampled target, so the canvas carries none.
 export default memo(function FlightScene(props: Props) {
-  return <Canvas dpr={[1, 1.5]} camera={{ fov: 69, near: 0.5, far: 14000 }}>
+  return <Canvas frameloop={props.running ? 'always' : 'demand'} dpr={[1, 1.5]} gl={{ antialias: false }} camera={{ fov: 69, near: 0.5, far: 14000 }}>
     <TrainingRange /><AssetLoaderProvider><Suspense fallback={null}><FlightWorld {...props} /></Suspense></AssetLoaderProvider>
   </Canvas>
 })

@@ -10,4 +10,6 @@ export interface FlightSession {
   resetId: number
   timeScale: number
   reducedMotion: boolean
+  /** Requests one frame while paused; set by the mounted scene. */
+  invalidate?: () => void
 }

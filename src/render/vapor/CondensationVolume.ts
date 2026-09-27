@@ -51,7 +51,7 @@ export class CondensationVolume {
         nozzleInset: { value: 0 }, nozzleRound: { value: 0 },
         chamberRadius: { value: 0 }, burnerViolet: { value: 0 },
         exhaustLength: { value: 0 }, exhaustTurbulence: { value: 0 },
-        solidBackground: { value: false }, sceneColor: { value: this.target.texture }, sceneDepth: { value: this.target.depthTexture }, noiseTex: { value: this.noise },
+        solidBackground: { value: false }, passThrough: { value: false }, sceneColor: { value: this.target.texture }, sceneDepth: { value: this.target.depthTexture }, noiseTex: { value: this.noise },
         inverseProjection: { value: new Matrix4() }, cameraWorld: { value: new Matrix4() }, worldToAircraft: { value: new Matrix4() },
         cameraLocal: { value: new Vector3() }, airflowDirection: { value: new Vector3(-1, 0, 0) }, flowPhase: { value: 0 },
         wingtipLeft: { value: new Vector3() }, wingtipRight: { value: new Vector3() },
@@ -135,13 +135,14 @@ export class CondensationVolume {
 
   render(renderer: WebGLRenderer, scene: Scene, camera: Camera, aircraftMatrix: Matrix4) {
     const previousTarget = renderer.getRenderTarget()
-    // One shared scene pass for exhaust and condensation; skip when both are off.
-    if (this.strength * this.settings.density < .002 && this.exhaust.power < .002) { renderer.render(scene, camera); return }
+    // The scene always resolves through the multisampled target, so the canvas itself
+    // needs no antialiasing; with exhaust and condensation both off, the rays are skipped.
     renderer.getDrawingBufferSize(this.size)
     if (this.target.width !== this.size.x || this.target.height !== this.size.y) this.target.setSize(this.size.x, this.size.y)
     const u = this.material.uniforms
     u.exhaustResolution.value.copy(this.size)
     u.solidBackground.value = scene.background instanceof Color
+    u.passThrough.value = this.strength * this.settings.density < .002 && this.exhaust.power < .002
     u.worldToAircraft.value.copy(aircraftMatrix).invert()
     u.cameraWorld.value.copy(camera.matrixWorld)
     u.inverseProjection.value.copy(camera.projectionMatrixInverse)

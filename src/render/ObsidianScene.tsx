@@ -202,7 +202,7 @@ function ObsidianScene({ mode, flightInput, inspectedWeapons, weaponStatuses, on
       <planeGeometry args={[90, 90]} />
       {/* A translucent deck keeps the inspection grid while exposing airframe
           parts below it. It must not occlude the exhaust's depth-based pass. */}
-      <MeshReflectorMaterial transparent opacity={0.2} depthWrite={false} ref={deckMaterial} envMapIntensity={0} resolution={1024} blur={[80, 26]} mixBlur={0.7} mixStrength={0.75} mixContrast={1.25} depthScale={1.2} minDepthThreshold={0.4} maxDepthThreshold={1.05} mirror={0.68} color="#010206" metalness={1} roughness={0.34} />
+      <MeshReflectorMaterial transparent opacity={0.2} depthWrite={false} ref={deckMaterial} envMapIntensity={0} resolution={512} blur={[80, 26]} mixBlur={0.7} mixStrength={0.75} mixContrast={1.25} depthScale={1.2} minDepthThreshold={0.4} maxDepthThreshold={1.05} mirror={0.68} color="#010206" metalness={1} roughness={0.34} />
     </mesh>
     {grid && <Grid material-depthWrite={false} position={[0, DECK_Y + 0.012, 0]} args={[120, 120]} cellSize={1} sectionSize={5} cellColor="#1c2c36" sectionColor="#3d6274" cellThickness={0.6} sectionThickness={0.9} fadeDistance={42} fadeStrength={2.4} infiniteGrid />}
     <CameraRig request={cameraRequest} autoRotate={autoRotate} reducedMotion={reducedMotion} onReport={onCameraReport} />

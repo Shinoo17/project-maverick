@@ -14,7 +14,7 @@ uniform mat4 inverseProjection, cameraWorld, worldToAircraft;
 uniform vec3 cameraLocal, airflowDirection, wingtipLeft, wingtipRight;
 uniform float strength, densityGain, noiseGain, turbulence, flowPhase;
 uniform float trailLength, trailRadius, pixelAngle;
-uniform bool solidBackground;
+uniform bool solidBackground, passThrough;
 varying vec2 vUv;
 
 float noise3(vec3 p) { return texture(noiseTex, p / 32.0).r; }
@@ -80,25 +80,31 @@ float opticalDepth(vec3 ray, vec3 origin, float surfaceDistance, float side) {
 void main() {
   vec4 base = texture2D(sceneColor, vUv);
   float depth = texture2D(sceneDepth, vUv).r;
-  vec4 viewFar = inverseProjection * vec4(vUv * 2.0 - 1.0, 1.0, 1.0);
-  vec3 worldRay = normalize((cameraWorld * vec4(viewFar.xyz / viewFar.w, 0.0)).xyz);
-  vec3 localRay = (worldToAircraft * vec4(worldRay, 0.0)).xyz;
-  vec3 ray = normalize(localRay);
-  vec4 viewSurface = inverseProjection * vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-  // Depth and ray integration must share aircraft units (the hangar scales its preview).
-  float surfaceDistance = length(viewSurface.xyz / viewSurface.w) * length(localRay);
-  vec3 illuminatedScene = exhaustComposite(base.rgb, ray, surfaceDistance);
-  float optical = opticalDepth(ray, wingtipLeft, surfaceDistance, -1.0)
-                + opticalDepth(ray, wingtipRight, surfaceDistance, 1.0);
-  // Neutral white daylight scattering. Optical depth composes overlapping
-  // volumes without additive glow or a flat, opaque ribbon.
-  float forwardLight = pow(max(0.0, dot(worldRay, normalize(vec3(100.0, 600.0, 300.0)))), 6.0);
-  vec3 vaporLight = vec3(2.35, 2.40, 2.45) + forwardLight * .35;
-  vec4 pressure = cloudOpticalDepth(ray, surfaceDistance, forwardLight);
-  float totalOptical = optical + pressure.a;
-  float transmission = exp(-min(totalOptical, 12.0));
-  vec3 combinedLight = (vaporLight * optical + pressure.rgb) / max(.00001, totalOptical);
-  gl_FragColor = vec4(illuminatedScene * transmission + combinedLight * (1.0 - transmission), base.a);
+  // With no exhaust or vapor, the pass is only the resolve of the antialiased scene.
+  vec3 color = base.rgb;
+  float transmission = 1.0;
+  if (!passThrough) {
+    vec4 viewFar = inverseProjection * vec4(vUv * 2.0 - 1.0, 1.0, 1.0);
+    vec3 worldRay = normalize((cameraWorld * vec4(viewFar.xyz / viewFar.w, 0.0)).xyz);
+    vec3 localRay = (worldToAircraft * vec4(worldRay, 0.0)).xyz;
+    vec3 ray = normalize(localRay);
+    vec4 viewSurface = inverseProjection * vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    // Depth and ray integration must share aircraft units (the hangar scales its preview).
+    float surfaceDistance = length(viewSurface.xyz / viewSurface.w) * length(localRay);
+    vec3 illuminatedScene = exhaustComposite(base.rgb, ray, surfaceDistance);
+    float optical = opticalDepth(ray, wingtipLeft, surfaceDistance, -1.0)
+                  + opticalDepth(ray, wingtipRight, surfaceDistance, 1.0);
+    // Neutral white daylight scattering. Optical depth composes overlapping
+    // volumes without additive glow or a flat, opaque ribbon.
+    float forwardLight = pow(max(0.0, dot(worldRay, normalize(vec3(100.0, 600.0, 300.0)))), 6.0);
+    vec3 vaporLight = vec3(2.35, 2.40, 2.45) + forwardLight * .35;
+    vec4 pressure = cloudOpticalDepth(ray, surfaceDistance, forwardLight);
+    float totalOptical = optical + pressure.a;
+    transmission = exp(-min(totalOptical, 12.0));
+    vec3 combinedLight = (vaporLight * optical + pressure.rgb) / max(.00001, totalOptical);
+    color = illuminatedScene * transmission + combinedLight * (1.0 - transmission);
+  }
+  gl_FragColor = vec4(color, base.a);
   #include <tonemapping_fragment>
   #ifdef TONE_MAPPING
     if (solidBackground && depth >= .9999999) {
