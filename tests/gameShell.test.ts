@@ -5,7 +5,10 @@ import { missionStatus, nextMission } from '../src/content/campaign/missionStatu
 import type { MissionDefinition, OperationDefinition } from '../src/content/campaign/types'
 import { validateOperation } from '../src/content/campaign/validateOperation'
 import { canPlayPve, getMap, pveMaps } from '../src/content/maps'
+import { armamentRows, armamentSummary, stepSelection, validSelection } from '../src/features/hangar/armament'
 import { performanceBars, statRanges, toPercent } from '../src/features/hangar/performance'
+import { fullArmament } from '../src/content/weapons'
+import { parentRoute } from '../src/app/routes'
 import { flightProfiles } from '../src/game/flight/profile'
 import { completedMissions, parseCampaignProgress } from '../src/platform/campaignProgress'
 import { defaultPveSetup, parsePveSetup, parseSettings } from '../src/platform/storage'
@@ -107,5 +110,35 @@ describe('hangar performance bars', () => {
   it('shows the Su-57 thrust vectoring as stronger post-stall than the F-22', () => {
     const postStall = (id: string) => performanceBars(getAircraft(id)).find(bar => bar.label === 'statPostStall')!.value
     expect(postStall('su57')).toBeGreaterThan(postStall('f22'))
+  })
+})
+
+describe('hangar armament', () => {
+  it('shows the same counts the aircraft carries into a match', () => {
+    for (const id of ['f22', 'su57']) {
+      const aircraft = getAircraft(id)
+      const rows = armamentRows(aircraft)
+      const carried = fullArmament(aircraft).reduce((total, store) => total + store.count, 0)
+      const { guns, missiles } = armamentSummary(rows)
+      expect(rows.reduce((total, row) => total + row.count, 0)).toBe(carried)
+      expect(guns + missiles).toBe(carried)
+    }
+    expect(armamentSummary(armamentRows(getAircraft('f22')))).toEqual({ guns: 1, missiles: 8 })
+  })
+  it('falls back to the first weapon when the selection does not belong to the aircraft', () => {
+    const su57 = getAircraft('su57')
+    expect(validSelection(su57, 'aim120')).toBe('su57-cannon')
+    expect(validSelection(su57, null)).toBe('su57-cannon')
+    expect(validSelection(su57, 'all')).toBe('all')
+    expect(validSelection(su57, 'training-ir')).toBe('training-ir')
+  })
+  it('cycles ALL and every weapon with the arrow keys', () => {
+    const f22 = getAircraft('f22')
+    expect(stepSelection(f22, 'all', 1)).toBe('m61a2')
+    expect(stepSelection(f22, 'all', -1)).toBe('aim120')
+    expect(stepSelection(f22, 'aim120', 1)).toBe('all')
+  })
+  it('goes back from Armament to the Hangar', () => {
+    expect(parentRoute.armament).toBe('hangar')
   })
 })

@@ -8,6 +8,7 @@ export const routes = {
   home: '#/',
   mode: '#/mode',
   hangar: '#/hangar',
+  armament: '#/hangar/armament',
   campaign: '#/campaign',
   pve: '#/pve',
   flight: '#/flight',
@@ -17,7 +18,7 @@ export const routes = {
 export type RouteId = keyof typeof routes
 
 /** Screens that share the menu 3D scene. */
-export const menuRoutes = ['home', 'mode', 'hangar', 'campaign', 'pve'] as const
+export const menuRoutes = ['home', 'mode', 'hangar', 'armament', 'campaign', 'pve'] as const
 export type MenuRouteId = typeof menuRoutes[number]
 export function isMenuRoute(route: RouteId): route is MenuRouteId {
   return (menuRoutes as readonly RouteId[]).includes(route)
@@ -25,7 +26,7 @@ export function isMenuRoute(route: RouteId): route is MenuRouteId {
 
 /** Where Esc and the top-left back link go. Home has no parent. */
 export const parentRoute: Record<MenuRouteId, MenuRouteId | null> = {
-  home: null, mode: 'home', hangar: 'home', campaign: 'mode', pve: 'mode',
+  home: null, mode: 'home', hangar: 'home', armament: 'hangar', campaign: 'mode', pve: 'mode',
 }
 
 export function navigate(route: RouteId) { location.hash = routes[route] }

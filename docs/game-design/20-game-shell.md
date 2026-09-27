@@ -46,8 +46,8 @@ Home, Select Mode, Hangar และ Armament ใช้ **Canvas และ aircra
 |---|---|
 | Home | hero shot มุม 3/4 ด้านหน้า เต็มกลางจอ หมุน turntable ช้า |
 | Select Mode | กล้องถอยออก (dolly back) และหรี่ scene ลงเหลือราว 40% |
-| Hangar | orbit/zoom/reset ได้; stage animation ตามที่ GLB มี clip |
-| Armament | ghost airframe เปิด bay ของอาวุธที่เลือก และแสดงโมเดลอาวุธ |
+| Hangar | orbit 360° (รวมใต้ท้องเครื่อง)/zoom/reset ได้; stage animation ตามที่ GLB มี clip |
+| Armament | ghost airframe เปิด bay ของอาวุธที่เลือก และแสดงโมเดลอาวุธ (สถานะ 28 ก.ย. 2026: ซ่อนเครื่องและแสดงเฉพาะโมเดลอาวุธ, ยังไม่มี ghost/bay) |
 
 - การเปลี่ยน route ในเมนูต้องไม่โหลด GLB ใหม่ และไม่สร้าง WebGL context ใหม่ กล้องเปลี่ยนด้วย transition สั้น ๆ และไม่มี transition เมื่อเปิด reduced motion
 - Turntable บน Home เป็น ambient motion ที่หยุดเมื่อ reduced motion และหยุดเมื่อแท็บถูกซ่อน

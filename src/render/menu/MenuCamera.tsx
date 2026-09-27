@@ -1,15 +1,16 @@
 /*
 Camera shots for the menu scene. Each screen names a shot; the camera glides
-there (or jumps, with reduced motion). Only the Hangar lets the player orbit
-and zoom. The aircraft sits at the origin and is scaled to 10 units long.
+there (or jumps, with reduced motion). Hangar and Armament let the player orbit
+all the way around, over the top and underneath, and zoom. The aircraft sits at
+the origin and is scaled to 10 units long.
 */
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
-import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
+import { MathUtils, PerspectiveCamera, Spherical, Vector3 } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-export type MenuShot = 'home' | 'mode' | 'hangar'
+export type MenuShot = 'home' | 'mode' | 'hangar' | 'armament'
 
 /** Direction from the aircraft to the camera, and distance as a multiple of the framing distance. */
 const shots: Record<MenuShot, { direction: [number, number, number]; distance: number }> = {
@@ -18,11 +19,19 @@ const shots: Record<MenuShot, { direction: [number, number, number]; distance: n
   // Same angle, pulled back so the aircraft sits behind the mode list.
   mode: { direction: [1.05, 0.5, -1.2], distance: 1.4 },
   hangar: { direction: [1.15, 0.36, -1.05], distance: 1.05 },
+  // Side view of a weapon, far enough back to fit between the text columns.
+  armament: { direction: [0.12, 0.16, -1], distance: 1.4 },
 }
 
+/** Screens where dragging orbits the camera. */
+const orbitShots: readonly MenuShot[] = ['hangar', 'armament']
+
 const MIN_DISTANCE = 6
-const MIN_POLAR = 0.06
-const MAX_POLAR = Math.PI * 0.78
+// Almost the full sphere: straight over the top to straight underneath.
+// The same limits apply to every shot, because OrbitControls clamps the camera
+// even while dragging is disabled.
+const MIN_POLAR = 0.01
+const MAX_POLAR = Math.PI - 0.01
 /** Higher = faster glide between shots. */
 const GLIDE_SPEED = 4
 
@@ -33,37 +42,51 @@ function framingDistance(camera: PerspectiveCamera, aspect: number) {
   return 4.9 / Math.sin(limitingFov / 2)
 }
 
+/** Shortest signed angle from `from` to `to`, in -π…π. */
+function angleBetween(from: number, to: number) {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from))
+}
+
 export function MenuCamera({ shot, reducedMotion, resetViewId }: { shot: MenuShot; reducedMotion: boolean; resetViewId: number }) {
   const controls = useRef<OrbitControlsImpl>(null)
-  const goal = useRef<Vector3 | null>(null)
+  const goal = useRef<Spherical | null>(null)
   const { camera, size, invalidate } = useThree()
   const framing = framingDistance(camera as PerspectiveCamera, size.width / size.height)
 
   // A new shot (or a reset) sets a goal position; the frame loop moves toward it.
   useEffect(() => {
     const { direction, distance } = shots[shot]
-    goal.current = new Vector3(...direction).normalize().multiplyScalar(framing * distance)
+    goal.current = new Spherical().setFromVector3(new Vector3(...direction).normalize().multiplyScalar(framing * distance))
     if (reducedMotion) {
-      camera.position.copy(goal.current)
+      camera.position.setFromSpherical(goal.current)
       goal.current = null
       controls.current?.update()
     }
     invalidate()
   }, [shot, resetViewId, framing, reducedMotion, camera, invalidate])
 
+  // The glide moves around the aircraft (angle and distance), not in a straight
+  // line: from underneath, a straight line would pass through the airframe.
   useFrame((_, delta) => {
     const target = goal.current
     if (!target) return
-    camera.position.lerp(target, 1 - Math.exp(-delta * GLIDE_SPEED))
-    if (camera.position.distanceTo(target) < 0.01) {
-      camera.position.copy(target)
+    const step = 1 - Math.exp(-delta * GLIDE_SPEED)
+    const current = new Spherical().setFromVector3(camera.position)
+    const turn = angleBetween(current.theta, target.theta)
+    current.theta += turn * step
+    current.phi += (target.phi - current.phi) * step
+    current.radius += (target.radius - current.radius) * step
+    camera.position.setFromSpherical(current)
+    const arrived = Math.abs(turn) < 0.001 && Math.abs(target.phi - current.phi) < 0.001 && Math.abs(target.radius - current.radius) < 0.01
+    if (arrived) {
+      camera.position.setFromSpherical(target)
       goal.current = null
     }
     controls.current?.update()
     invalidate()
   })
 
-  return <OrbitControls ref={controls} makeDefault enabled={shot === 'hangar'} enablePan={false}
+  return <OrbitControls ref={controls} makeDefault enabled={orbitShots.includes(shot)} enablePan={false}
     enableDamping={!reducedMotion} dampingFactor={0.075}
     minDistance={MIN_DISTANCE} maxDistance={framing * 1.7} minPolarAngle={MIN_POLAR} maxPolarAngle={MAX_POLAR} />
 }

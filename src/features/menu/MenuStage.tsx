@@ -7,6 +7,7 @@ import { lazy, Suspense, useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CircleSlash, RotateCcw } from 'lucide-react'
 import type { AircraftDefinition } from '../../content/schemas'
+import type { WeaponDefinition, WeaponModelStatus } from '../../content/weapons'
 import { modelUrl } from '../../content/aircraft'
 import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
@@ -21,9 +22,14 @@ interface MenuStageProps {
   shot: MenuShot
   hidden: boolean
   resetViewId: number
+  /** Weapon models shown in place of the aircraft (Armament). null = show the aircraft. */
+  weapons: WeaponDefinition[] | null
+  weaponStatuses: Record<string, WeaponModelStatus>
+  onWeaponStatus: (id: string, status: WeaponModelStatus) => void
+  weaponRetryId: number
 }
 
-export function MenuStage({ aircraft, shot, hidden, resetViewId }: MenuStageProps) {
+export function MenuStage({ aircraft, shot, hidden, resetViewId, weapons, weaponStatuses, onWeaponStatus, weaponRetryId }: MenuStageProps) {
   const { t } = useTranslation()
   const [webgl] = useState(supportsWebGL2)
   const reducedMotion = useReducedMotion()
@@ -40,15 +46,18 @@ export function MenuStage({ aircraft, shot, hidden, resetViewId }: MenuStageProp
     setRetryId(value => value + 1)
   }
 
-  const failed = failedId === aircraft.id
-  const loading = webgl && !failed && loadedId !== aircraft.id
+  // Armament hides the aircraft and reports its weapon models itself.
+  const aircraftShown = weapons === null
+  const failed = aircraftShown && failedId === aircraft.id
+  const loading = aircraftShown && webgl && !failed && loadedId !== aircraft.id
   const turntable = shot === 'home' && !hidden && pageVisible && !reducedMotion
 
   return <div className="menu-stage" data-hidden={hidden || undefined}>
     {webgl && <SceneBoundary key={retryId} fallback={null} onError={onError}>
       <Suspense fallback={null}>
         <MenuScene aircraft={aircraft} shot={shot} paused={hidden} turntable={turntable} reducedMotion={reducedMotion}
-          resetViewId={resetViewId} retryId={retryId} onReady={onReady} onError={onError} />
+          resetViewId={resetViewId} retryId={retryId} onReady={onReady} onError={onError}
+          weapons={weapons} weaponStatuses={weaponStatuses} onWeaponStatus={onWeaponStatus} weaponRetryId={weaponRetryId} />
       </Suspense>
     </SceneBoundary>}
 

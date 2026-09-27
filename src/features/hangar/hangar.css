@@ -1,4 +1,4 @@
-/* Hangar (mockup 2). The old studio keeps its own sheet in features/studio. */
+/* Hangar (mockup 2) and Armament (mockup 2b). The old studio keeps its own sheet in features/studio. */
 
 .hangar-identity { position: absolute; left: var(--gutter); top: 104px; width: 400px; display: flex; flex-direction: column; gap: 12px; }
 .hangar-designation { font-family: var(--font-display); font-weight: 600; font-size: 24px; letter-spacing: var(--track-tight); line-height: 1; color: var(--menu-accent); }
@@ -44,15 +44,69 @@
 .hangar-orbit-hint { font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); }
 .hangar-active-state { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px; border: 1px solid var(--menu-accent); color: var(--menu-accent); font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
 
+/* Right: ARMAMENT column, shared by Hangar and Armament. */
+.armament-list { position: absolute; right: var(--gutter); top: 104px; width: 300px; display: flex; flex-direction: column; gap: 4px; }
+.armament-list ul { margin: 0; padding: 0; list-style: none; }
+.armament-row { width: 100%; display: grid; grid-template-columns: 58px 1fr auto; align-items: center; gap: 12px; min-height: 58px; padding: 0 8px 0 0; border-bottom: 1px solid var(--menu-line-soft); border-left: 2px solid transparent; color: var(--menu-text); text-align: left; }
+.armament-row:hover { background: rgba(154, 215, 232, 0.06); }
+.armament-row[aria-pressed='true'] { border-left-color: var(--menu-accent); background: rgba(154, 215, 232, 0.08); }
+.armament-row-kind { padding-left: 8px; font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track); color: var(--menu-accent); text-transform: uppercase; }
+.armament-row-name { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.armament-row-name strong { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: 0.04em; }
+.armament-row-name small { font-size: 12px; color: var(--menu-muted); }
+.armament-row-count { font-family: var(--font-mono); font-size: 16px; }
+.armament-list .hangar-note { margin-top: 8px; }
+.armament-inspect { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 16px; border: 1px solid rgba(154, 215, 232, 0.55); color: var(--menu-text); font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: var(--track); text-transform: uppercase; }
+.armament-inspect:hover { background: rgba(154, 215, 232, 0.08); }
+
+/* Armament: top bar, left weapon detail. */
+.armament-aircraft { font-family: var(--font-display); font-size: 16px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+.armament-detail { position: absolute; left: var(--gutter); top: 104px; width: 380px; display: flex; flex-direction: column; gap: 12px; }
+.armament-kind { align-self: flex-start; padding: 4px 10px; border: 1px solid var(--menu-accent); color: var(--menu-accent); font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: var(--track); text-transform: uppercase; }
+.armament-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 7.4vh, 60px); line-height: var(--display-leading); letter-spacing: 0.02em; text-transform: uppercase; }
+.armament-sub { font-family: var(--font-display); font-size: 16px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
+.armament-provisional { font-family: var(--font-mono); font-size: 12px; color: var(--menu-launch); }
+.armament-role { font-size: 14px; line-height: 1.55; }
+.armament-detail .menu-facts div { grid-template-columns: 150px 1fr; }
+.armament-detail .menu-section-heading { margin-top: 6px; }
+.armament-bars li { grid-template-columns: 118px 1fr 34px; }
+/* Hatched track: the value exists in the design but is not tuned yet. */
+.armament-bar-pending { background: repeating-linear-gradient(135deg, rgba(174, 201, 211, 0.26) 0 2px, transparent 2px 6px); }
+
+/* Armament: centre notes over the 3D stage. */
+.armament-stage-tag { position: absolute; left: 50%; top: 104px; transform: translateX(-50%); white-space: nowrap; }
+.armament-stage-status { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); white-space: nowrap; }
+.armament-no-model { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 300px; min-height: 44px; border: 1px dashed rgba(154, 215, 232, 0.4); background: rgba(5, 7, 9, 0.5); text-shadow: none; }
+.armament-no-model strong { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--menu-muted); text-transform: uppercase; }
+.armament-no-model.is-large { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); width: 400px; height: 110px; border-color: rgba(154, 215, 232, 0.45); }
+.armament-no-model.is-large strong { font-family: var(--font-display); font-size: 28px; letter-spacing: var(--track-wide); }
+.armament-no-model.is-large small { font-family: var(--font-mono); font-size: 11px; color: var(--menu-muted); }
+.armament-no-model-list { position: absolute; left: 50%; top: 66%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* Armament: bottom weapon cards reuse the aircraft card look. */
+.weapon-card-label { display: flex; align-items: baseline; gap: 8px; padding: 0 2px; }
+.weapon-card-label strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: var(--track-tight); color: var(--menu-secondary); }
+.weapon-card-label small { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); }
+.hangar-card[aria-pressed='true'] .weapon-card-label strong, .hangar-card:hover .weapon-card-label strong { color: var(--menu-text); }
+.weapon-picker .hangar-card-thumb { height: 52px; }
+.armament-orbit-hint { position: absolute; right: var(--gutter); bottom: 48px; }
+
 /* Below the mockup size (1440 × 810) the centred card row would run into the
-   text column, so the cards move to the right, above SET ACTIVE, and shrink. */
+   left text column, so it starts just right of that column and shrinks.
+   The right column holds ARMAMENT, so the cards cannot move there. */
 @media ((max-width: 1400px) or (max-height: 780px)) and (min-width: 901px) {
-  .hangar-picker { left: auto; right: var(--gutter); bottom: 120px; transform: none; align-items: flex-end; }
+  .hangar-picker { left: calc(var(--gutter) + 424px); transform: none; align-items: flex-start; }
   .hangar-cards { gap: 10px; }
   .hangar-card { width: 124px; }
-  .hangar-card-thumb { height: 44px; font-size: 10px; }
-  .hangar-card-label strong { font-size: 15px; }
+  .hangar-card-thumb, .weapon-picker .hangar-card-thumb { height: 44px; font-size: 10px; }
+  .hangar-card-label strong, .weapon-card-label strong { font-size: 15px; }
   .hangar-orbit-hint { display: none; }
+  .armament-no-model.is-large { width: 340px; }
+}
+/* Narrower still, SET ACTIVE reaches the card row: drop the locked slots
+   (the title still says how many aircraft exist). */
+@media (max-width: 1260px) and (min-width: 901px) {
+  .hangar-card:disabled { display: none; }
 }
 @media (max-height: 780px) and (min-width: 901px) {
   .hangar-identity { top: 88px; gap: 8px; }
@@ -60,9 +114,16 @@
   .hangar-performance { gap: 8px; margin-top: 4px; }
   .hangar-detail { row-gap: 2px; }
   .hangar-detail dd { font-size: 13px; }
+  .armament-detail { top: 88px; gap: 8px; }
+  .armament-list { top: 88px; }
+  .armament-row { min-height: 50px; }
 }
 @media (max-width: 900px) {
   .hangar-picker { align-items: flex-start; }
+  .armament-list, .armament-detail { width: auto; }
+  .armament-stage { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .armament-stage > *, .armament-no-model.is-large { position: static; transform: none; white-space: normal; }
+  .armament-no-model.is-large { width: 100%; }
   .hangar-cards { flex-wrap: wrap; }
   .hangar-confirm { align-items: flex-start; }
 }

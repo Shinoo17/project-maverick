@@ -3,8 +3,8 @@ Hangar (mockup 2 · Hangar). Browse aircraft over the shared 3D scene.
 The aircraft you look at (viewed) is separate from the one you fly (active):
 ← → only changes the view; SET ACTIVE makes it the active aircraft. Leaving
 without SET ACTIVE keeps the old one (MenuLayout drops the preview).
-Armament is left out for now.
-Shortcuts: ← → aircraft, D detail, R reset view, Esc back.
+The ARMAMENT column on the right opens the Armament screen.
+Shortcuts: ← → aircraft, D detail, W armament, R reset view, Esc back.
 */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +15,8 @@ import type { AircraftId } from '../../content/schemas'
 import { useMenuHotkeys } from '../menu/hooks'
 import { BackLink, HotkeyHints } from '../menu/parts'
 import { AircraftPicker } from './AircraftPicker'
+import type { WeaponSelection } from './armament'
+import { ArmamentList } from './ArmamentList'
 import { PerformancePanel } from './PerformancePanel'
 import './hangar.css'
 
@@ -22,9 +24,11 @@ interface HangarScreenProps {
   viewedId: AircraftId
   onView: (id: AircraftId) => void
   onResetView: () => void
+  /** Opens Armament showing one weapon, or 'all'. */
+  onInspect: (selection: WeaponSelection) => void
 }
 
-export function HangarScreen({ viewedId, onView, onResetView }: HangarScreenProps) {
+export function HangarScreen({ viewedId, onView, onResetView, onInspect }: HangarScreenProps) {
   const { t } = useTranslation()
   const { aircraftId: activeId, locale } = useSessionSettings()
   const [showDetail, setShowDetail] = useState(false)
@@ -42,6 +46,7 @@ export function HangarScreen({ viewedId, onView, onResetView }: HangarScreenProp
     ArrowLeft: () => step(-1),
     ArrowRight: () => step(1),
     KeyD: () => setShowDetail(value => !value),
+    KeyW: () => onInspect('all'),
     KeyR: onResetView,
   })
 
@@ -50,7 +55,7 @@ export function HangarScreen({ viewedId, onView, onResetView }: HangarScreenProp
       <BackLink to="home" label={t('navHome')} />
       <span className="menu-topbar-divider" aria-hidden="true" />
       <p className="menu-topbar-title">{t('navHangar')}</p>
-      <HotkeyHints hints={[['← →', t('hangarHintAircraft')], ['D', t('hangarShowDetail')], ['R', t('resetView')], ['ESC', t('hintBack')]]} />
+      <HotkeyHints hints={[['← →', t('hangarHintAircraft')], ['D', t('hangarShowDetail')], ['W', t('armamentTitle')], ['R', t('resetView')], ['ESC', t('hintBack')]]} />
     </header>
 
     <section className="hangar-identity" aria-live="polite">
@@ -64,6 +69,8 @@ export function HangarScreen({ viewedId, onView, onResetView }: HangarScreenProp
       <p className="hangar-history">{viewed.hangar.history[locale]}</p>
       <PerformancePanel aircraft={viewed} compared={compared} showDetail={showDetail} onToggle={() => setShowDetail(value => !value)} />
     </section>
+
+    <ArmamentList aircraft={viewed} onPick={onInspect} onInspect={() => onInspect('all')} />
 
     <AircraftPicker viewedId={viewedId} activeId={activeId} onView={onView} />
 

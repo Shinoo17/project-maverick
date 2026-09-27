@@ -106,7 +106,7 @@ flowchart TD
 
 สถานะ 27 ก.ย. 2026: ปรับ roadmap ตาม Design example โดยแทรก P3b game shell, P5b PVE objective modes และ P5c Campaign ไม่เปลี่ยนเลข phase เดิม (D14) เลข P ของ Master แยกจาก Phase ของงาน PSM ใน `docs/psm-*` งาน PSM ที่ค้าง (Phase 8 personality tuning, MR3+) พักไว้ได้โดยไม่บล็อก P3b
 
-สถานะ implementation 27 ก.ย. 2026 (P3b ส่วนแรก): Home, Select Mode, Hangar (overlay บน menu scene ร่วม), Campaign Map แบบ mock (operation แรก M01–M06, สถานะคำนวณจาก progress) และ PVE Setup (ห้าโหมด, สาม maps: Flat Training Range พร้อม/Mountains/Coastal PLANNED) อยู่ใน `src/features/{menu,home,mode,hangar,campaign,pve}` ยังไม่มี: Armament/อาวุธในหน้าเมนู, Settings screen, mission runtime; START/PLAY เปิดได้เฉพาะ free flight บน Flat Training Range โรงเก็บเดิมย้ายไป `#/studio` (ไม่มีลิงก์จากเมนู)
+สถานะ implementation 27 ก.ย. 2026 (P3b ส่วนแรก): Home, Select Mode, Hangar (overlay บน menu scene ร่วม), Campaign Map แบบ mock (operation แรก M01–M06, สถานะคำนวณจาก progress) และ PVE Setup (ห้าโหมด, สาม maps: Flat Training Range พร้อม/Mountains/Coastal PLANNED) อยู่ใน `src/features/{menu,home,mode,hangar,campaign,pve}` 28 ก.ย. เพิ่ม: คอลัมน์ ARMAMENT ใน Hangar และหน้า Armament (`#/hangar/armament`: รายละเอียดอาวุธ, โมเดล 3D หรือ `NO MODEL`, คอลัมน์ขวาใช้ ARMAMENT แทน STATIONS) และ orbit 360° ใน Hangar ยังไม่มี: ghost airframe/bay ใน Armament, Settings screen, mission runtime; START/PLAY เปิดได้เฉพาะ free flight บน Flat Training Range โรงเก็บเดิมย้ายไป `#/studio` (ไม่มีลิงก์จากเมนู)
 
 ไม่กำหนดวันที่เสร็จจากการเดา ก่อนเริ่มแต่ละ phase ให้แตกงานใน 18 และประเมินจากความเร็วทำงานจริง จบ phase เมื่อผ่าน gate ไม่ใช่เมื่อมี UI ให้เห็นเท่านั้น
 

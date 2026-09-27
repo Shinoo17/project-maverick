@@ -6,6 +6,8 @@ export interface WeaponDefinition {
   name: LocalizedText
   kind: WeaponKind
   model?: { file: string; rotation: [number, number, number]; length: number }
+  /** Guns only: bore in millimetres. */
+  calibreMm?: number
   /** Curated provenance only; no remote fetch during play. */
   source?: string
   provisional?: boolean
@@ -20,10 +22,10 @@ export interface WeaponStore { stationId: string; weaponId: string; count: numbe
 const label = (en: string, th: string): LocalizedText => ({ en, th })
 const usaf = 'https://www.af.mil/About-Us/Fact-Sheets/Display/Article/104506/f22/f-22-raptor/'
 export const weapons: readonly WeaponDefinition[] = [
-  { id: 'm61a2', name: label('M61A2 · 20 mm', 'M61A2 · 20 มม.'), kind: 'gun', source: usaf },
+  { id: 'm61a2', name: label('M61A2 · 20 mm', 'M61A2 · 20 มม.'), kind: 'gun', calibreMm: 20, source: usaf },
   { id: 'aim9', name: label('AIM-9 Sidewinder', 'AIM-9 Sidewinder'), kind: 'ir', model: { file: 'AIM9_compact.glb', rotation: [0, Math.PI / 2, 0], length: 3.02 }, source: usaf },
   { id: 'aim120', name: label('AIM-120 AMRAAM', 'AIM-120 AMRAAM'), kind: 'radar', model: { file: 'AIM120_compact.glb', rotation: [0, Math.PI / 2, 0], length: 3.66 }, source: usaf },
-  { id: 'su57-cannon', name: label('30 mm aircraft cannon', 'ปืนใหญ่อากาศ 30 มม.'), kind: 'gun', source: 'https://www.rostec.ru/media/news/istrebitel-su-57-pyatoe-pokolenie-na-vzlet/' },
+  { id: 'su57-cannon', name: label('30 mm aircraft cannon', 'ปืนใหญ่อากาศ 30 มม.'), kind: 'gun', calibreMm: 30, source: 'https://www.rostec.ru/media/news/istrebitel-su-57-pyatoe-pokolenie-na-vzlet/' },
   // Placeholder identities deliberately avoid claiming a confirmed domestic missile variant.
   { id: 'training-ir', name: label('IR training missile', 'มิสไซล์ IR สำหรับฝึก'), kind: 'ir', provisional: true },
   { id: 'training-radar', name: label('Radar training missile', 'มิสไซล์เรดาร์สำหรับฝึก'), kind: 'radar', provisional: true },
