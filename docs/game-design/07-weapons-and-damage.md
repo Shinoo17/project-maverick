@@ -75,7 +75,9 @@ Radar missile เป็น extension หลัง IR ผ่าน: ต้อง�
 - ใช้ collider aircraft เป็น capsule/box proxies ที่ author เทียบโมเดล; กระสุนตรวจ relative swept path กับ target ที่เคลื่อนที่ด้วย
 - กระสุน/มิสไซล์มี ownerId, teamId, spawnTick, id ที่ไม่ใช้ซ้ำ; own-aircraft ignore window เฉพาะช่วงออกจากปากกระบอก/rail
 - เลือก earliest impact ใน segment ไม่ให้โดนเครื่องที่อยู่หลังภูเขาก่อนภูเขา
-- friendly fire ปิด baseline ตาม mode; ไม่แก้ weapon physics ให้ bot ยิงทะลุเพื่อน
+- friendly fire ปิดในทุกโหมด PVE และ Campaign (09, 21): กระสุน/มิสไซล์ผ่านเพื่อนร่วมทีมโดยไม่ทำ damage แต่ยังชนพื้นและเป้าศัตรูตามปกติ; ไม่แก้ weapon physics ให้ bot ยิงทะลุเพื่อน และบอทยังต้องไม่ยิงเมื่อเพื่อนอยู่ในแนวยิงใกล้
+- IFF: เพื่อนร่วมทีมเลือกเป็นเป้าหรือ lock ไม่ได้ ทั้งผู้เล่นและบอท; seeker ของ missile ไม่ไล่เพื่อน
+- เป้าภาคพื้นของ Campaign (21) ใช้ collider และ damage event เดียวกับ aircraft; วิธีโจมตีภาคพื้นยังรอ D16 ใน 19
 - ตายใน tick เดียวกันให้ resolve damage batch ตามกติกาตายพร้อมได้ ไม่ขึ้นกับลำดับ render
 
 ## งานและเกณฑ์ผ่าน

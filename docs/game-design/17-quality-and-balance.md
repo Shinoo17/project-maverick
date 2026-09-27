@@ -19,6 +19,9 @@ Tests พิสูจน์กฎ/ความเสถียร แต่ไม
 | Missile | range/cone/LOS/grace, turn budget, flare, TTL/arming | lock/หลบสอดคล้องกับ cue |
 | Bot | perception occlusion, energy recovery, cooldown, terrain avoid | ไม่มี privileged physics/ข้อมูลทะลุฉาก |
 | Mode | pause/time, simultaneous deaths, score limit, spawn protection, rematch | จบรอบได้และ event ครั้งเดียว |
+| PVE objectives | Control Point: ความคืบหน้าการยึด/contested/เพดาน/protection ไม่นับ; ชิงธง: pickup/drop/return/capture ใน tick เดียวกับหมดเวลาหรือผู้ถือตาย; Priority Target: แต้มจาก tick ไม่หายเมื่อเปลี่ยนมือ, reset 30 s/20 s, เข้าและจบต่อเวลา; Flyover: ยึดพร้อมกัน, ล็อกหลังยึด, แต้มเฉพาะทีมที่ถือมากกว่า | คะแนนและธงไม่ซ้ำหรือหาย; ทั้งสองทีมใช้กติกาเดียวกัน |
+| Campaign | requires DAG, unlock, progress save/reload/migration, mission fail/retry | mission ที่ locked เริ่มไม่ได้; progress ไม่ถอยหลัง |
+| Game shell | route ไป-กลับ, shared menu scene, keyboard-only, สถานะไม่พร้อมมีเหตุผล | GLB ไม่โหลดซ้ำระหว่างหน้าเมนู; ไม่มีปุ่มที่กดแล้วไม่เกิดอะไร |
 | Content | ids, profiles, variant facts, hardpoints, asset refs | เพิ่มลำใหม่โดยไม่ branch ใน core |
 | Localization | key/placeholder parity, focus, long Thai text, save migration | เส้นทางหลักไม่มีข้อความหาย/ตัด |
 
@@ -40,6 +43,7 @@ Same-build headless replay เป้าคลาดเคลื่อนหล�
 |---|---|
 | Flat field, 1 aircraft | 60 FPS ที่ 1080p Medium; p95 frame time ≤16.7 ms |
 | Offline 4 aircraft + combat | 60 FPS เป้าหมาย; low preset 30 FPS fallback โดย simulation rate ไม่เปลี่ยน |
+| PVE 4v4 (8 aircraft) + combat | ต้องวัดก่อนเปิดขนาดทีมเกิน 2v2; ถ้าไม่ผ่านให้จำกัดขนาดทีมใน setup |
 | Simulation CPU | p95 ≤3 ms ต่อ world tick สำหรับ 4 aircraft + normal combat load |
 | Rendering | draw calls เป้ารวม ≤250 ที่ Medium; ปรับจาก hardware จริง |
 | Dynamic objects | รองรับ bullets 512, missiles 32, decoys 64 ตาม station capacity/cadence ที่ถูกกติกา |
@@ -67,10 +71,12 @@ Projectile pool เต็มห้ามลบนัดที่กำลัง�
 
 ## Offline release checklist
 
+- [ ] Home / Select Mode / Hangar / Armament / PVE Setup / Campaign Map / Settings ครบตาม 20 และ DESIGN.md
 - [ ] Hangar สามลำพร้อม facts/game distinction และโมเดล/rig ผ่าน
 - [ ] Input สอง presets, W/S target speed, Airbrake/High-G/PSM ที่รองรับ
-- [ ] Camera modes + vertical/inverted checks และ accessibility toggles
-- [ ] Playground lessons/retry และ Offline full match/rematch
+- [ ] Camera modes + vertical/inverted checks, graphics presets ที่ลดต้นทุนจริง และ accessibility toggles
+- [ ] Playground lessons/retry และ PVE ครบห้าโหมด (Team Deathmatch, Control Point, ชิงธง, Priority Target, Flyover) เล่นจบและ rematch ได้
+- [ ] Campaign operation แรกเล่นครบตาม DAG และ progress คงอยู่หลัง reload
 - [ ] Guns + IR + flare + bot counterplay; terrain occlusion ถูกต้อง
 - [ ] ไทย/อังกฤษครบ; settings reload/migration/error handling ผ่าน
 - [ ] Performance และ resource lifecycle บน reference hardware ผ่าน

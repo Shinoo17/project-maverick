@@ -1,6 +1,6 @@
 # 08 — Bot Pilot และ Difficulty
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P4–P5 · พึ่ง flight/commands, world และ weapons
+[กลับ Master Plan](../../MASTER_PLAN.md) · P4–P5c · พึ่ง flight/commands, world, weapons และ mode rules (09, 21)
 
 ## หลักการ
 
@@ -32,6 +32,27 @@ World snapshot → Perception → Tactical state → Steering + weapon intent �
 
 ความปลอดภัยมี priority สูงสุด: terrain avoidance → recovery → missile evade → tactics ใช้ forward collision probe และ projected altitude ไม่รอ AGL ต่ำค่อยดึงหัว ไม่เปิด PSM เมื่อไม่มี recovery clearance
 
+## ทีมและ objective
+
+PVE เป็นแบบสองทีม (09) บอทจึงมีทั้งฝ่ายเราและฝ่ายศัตรู ใช้ pipeline เดียวกันและ difficulty ชุดเดียวกัน บอทไม่เลือกเพื่อนเป็นเป้าหมายและไม่ยิงเมื่อเพื่อนอยู่ในแนวยิงใกล้ ๆ ตาม IFF ใน 07
+
+เหนือ tactical state มีชั้น **role** ที่ mode rules เป็นผู้กำหนดให้ ไม่ใช่บอทตัดสินเอง:
+
+| Role | ใช้ในโหมด | ผลต่อ Patrol/Intercept/Engage |
+|---|---|---|
+| Hunter | TDM ทุกตัว, ส่วนหนึ่งของโหมดอื่น | ค้นหาและปะทะศัตรูที่ใกล้/ได้เปรียบ |
+| Capture | Control Point | บินเข้าจุดที่กำหนดและวนในโซนใต้เพดาน ปะทะเมื่อศัตรูเข้าโซน |
+| Defend | Control Point, ชิงธง | ลาดตระเวนรอบจุด/ฐานของทีม ไล่ศัตรูที่เข้าใกล้ |
+| Flag runner | ชิงธง | บินเข้าเก็บธงแล้วเลือกเส้นทางกลับฐาน หลีกเลี่ยงการปะทะ |
+| Escort | ชิงธง, Priority Target, Campaign protect | ตามผู้ถือธง/มงกุฎหรือ tanker และไล่ศัตรูที่เข้าใกล้ |
+| Crown chaser | Priority Target | บินเข้าเก็บมงกุฎที่ว่างหรือตกค้าง หรือไล่ผู้ถือฝ่ายศัตรู |
+| Crown holder | Priority Target | เมื่อถือมงกุฎ หลบการปะทะ รักษาพลังงาน และบินหาเพื่อนจนหมด 30 s |
+| Point runner | Flyover | บินวนผ่านจุดที่ศัตรูถือ เลือกลำดับจุดตามระยะและภัยคุกคาม |
+
+Mode rules กระจาย role ตามสถานการณ์ เช่น ส่ง Capture ไปจุดที่เสีย หรือส่ง Escort ตามผู้ถือธงของทีม การเปลี่ยน role มีเวลาขั้นต่ำเพื่อไม่ให้สลับทุก tick ความปลอดภัย (terrain/recovery/missile evade) ยังมี priority เหนือ role เสมอ
+
+Campaign ใช้ role เดียวกันผ่าน MissionDefinition (21) Tanker ฝ่ายเราเป็น scripted waypoint pilot ที่ไม่มีอาวุธ ใช้ PilotCommand เหมือนเครื่องอื่น
+
 ## Perception และความยาก
 
 บอทเห็นเฉพาะสิ่งที่ sensor rules อนุญาต ไม่อ่าน position ศัตรูที่หลังกำแพงจาก WorldState มาเล็งตรงทันที เก็บ last seen position/velocity กับอายุความจำแล้วคาดการณ์ระยะสั้น เมื่อหมดเวลาค้นหาบริเวณเดิมแทน perfect tracking
@@ -57,7 +78,8 @@ Basic steering คำนวณ desired direction ใน body frame ใช้ ban
 1. บิน waypoint บน flat map โดยไม่ชนพื้น 5 นาที
 2. ไล่ moving target โดยยังไม่ยิง แล้วตรวจว่ารักษาระยะ/ไม่วนติดวงเดียว
 3. เพิ่ม gun bursts, extend และ recover ให้ได้ match P4
-4. เพิ่ม missiles/warnings/flare และ difficulty presets
+4. เพิ่ม missiles/warnings/flare, difficulty presets และ ally bots ใน TDM (P5)
 5. เพิ่ม PSM เฉพาะ Hard หลังผู้เล่นใช้และรับมือได้แล้ว
+6. เพิ่ม roles ของ Control Point, ชิงธง, Priority Target และ Flyover (P5b) แล้ว Escort/tanker ของ Campaign (P5c)
 
 ใช้ deterministic scenarios ตรวจว่าบอทหลบ terrain, obey weapon cooldown, ไม่เห็นทะลุภูเขา, recover low-speed และเส้นทางเปลี่ยนตาม aircraft profile บันทึก state/เหตุผลการตัดสินใจใน dev overlay ให้แก้ AI ได้โดยไม่ต้องเดา

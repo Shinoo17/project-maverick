@@ -69,17 +69,44 @@ FND-02/03 ทำก่อนนำ flight state เข้า runtime; FND-04 gat
 
 Gate: ออกจาก Hangar ด้วย aircraftId แล้ว inventory/flight profile ตรงกัน เพิ่มลำที่ใช้กลไกเดิมโดยไม่เพิ่ม branch ใน core ถ้าใช้ proxy ให้ระบุ dev-only; ไม่ถือว่าลำ production เสร็จ
 
+## P3b — Game shell และ Settings
+
+ทำตาม [20](20-game-shell.md) และภาพใน [example/Design.html](../../example/Design.html) ทำขนานกับ P4 ได้ เพราะไม่แตะ simulation
+
+| Task | ผลลัพธ์ | Acceptance |
+|---|---|---|
+| SHL-01 Routes + menu scene | Home เป็น `#/`, routes ของเมนู, Canvas/aircraft instance เดียวที่เปลี่ยน camera preset ตาม route | สลับหน้าเมนูไม่โหลด GLB ซ้ำ; กลับจาก flight ลงหน้าที่มา |
+| SHL-02 Home + Select Mode | overlay ตามภาพ 1 และ 1b; Play ไป Free Flight ได้จริง; Training เป็นรายการรอง | ใช้ได้ด้วยคีย์บอร์ดล้วน; โหมดที่ยังไม่มีเกมบอกเหตุผล |
+| SHL-03 Hangar overlay | identity, stat bars/detail จาก profile, armament summary, แถบเลือกเครื่อง, SET ACTIVE | bars เปลี่ยนตาม profile (test); ไม่มี panel/rail |
+| SHL-04 Armament | ย้าย weapons view เดิมเป็นหน้า 2b: เปิด bay, top view stations, bars ของอาวุธ | inventory ไม่เปลี่ยนจากการเลือกดู |
+| SHL-05 PVE Setup | โหมด TDM/Control Point/ชิงธง/Priority Target/Flyover, map, rules, team size, difficulty, roster | ก่อน P4 เริ่มได้เฉพาะ Free Flight และบอกเหตุผล |
+| SHL-06 Campaign shell | schema/validation, operation ตัวอย่าง, map UI, requires DAG, progress save | locked เริ่มไม่ได้; DAG วน/อ้าง id ผิดไม่ผ่าน validation |
+| SHL-07 Settings v2 | migration v1→v2, graphics presets, camera view/roll/FOV/shake, audio, callsign; หน้าจอหลังได้ mockup | ข้อมูลเก่า/เสียไม่ crash; preset ลดต้นทุน GPU ที่วัดได้ |
+| SHL-08 Design contract | DESIGN.md/PRODUCT.md ตรงกับภาพอ้างอิง | ข้อความ overlay ผ่าน contrast บนทุกลำ |
+
 ## P4 — Gun duel ก่อน Missile
 
 Swept collision/world queries → bullet sim + heat → damage/death events → target drone → basic combat bot → match timer/score/respawn → results/rematch → playtest firing windows
 
-Gate: 1v1 guns-only จบ match ได้; ไม่มี tunneling/death ซ้ำ; speed/weapon geometry ให้จังหวะเล็ง จากนั้นเท่านั้นจึงเพิ่ม missile หากติดเรื่อง flight feel ให้กลับแก้ 03 โดยบันทึกก่อน/หลัง
+Gate: Team Deathmatch 1v1 guns-only จบ match ได้; ไม่มี tunneling/death ซ้ำ; speed/weapon geometry ให้จังหวะเล็ง จากนั้นเท่านั้นจึงเพิ่ม missile หากติดเรื่อง flight feel ให้กลับแก้ 03 โดยบันทึกก่อน/หลัง
 
 ## P5 — Offline combat
 
-IR target selection/lock → missile guidance/arming/proximity → flare decoys → warning HUD/audio → bot evade/extend/recover → difficulty → bot count/FFA options → full-session checks
+IR target selection/lock → missile guidance/arming/proximity → flare decoys → warning HUD/audio → bot evade/extend/recover → difficulty → team size + ally bots + IFF ใน TDM → full-session checks
 
 Gate: guns+IR มี counterplay, pause/resume ถูกต้อง และเล่นจบเมื่อ network ถูกตัดหลัง asset โหลดครบ
+
+## P5b — PVE objective modes
+
+Map data สำหรับ team spawns/control points/flag bases/crown spawns/flyover points (14) → Flyover rules → Control Point rules → Priority Target rules → ชิงธง rules → objective HUD (12) → bot roles Capture/Defend/Flag runner/Escort/Crown chaser/Crown holder/Point runner (08) → map PVE ใหม่อย่างน้อยหนึ่งแผนที่ → benchmark 4v4
+
+Gate: ทั้งห้าโหมดเล่นจบและ rematch ได้บนอย่างน้อยหนึ่ง map; บอทฝ่ายเราช่วยทำ objective ได้จริงโดยไม่ต้องสั่ง; edge cases ใน 09 ผ่าน
+
+## P5c — Campaign
+
+Mission runtime (objectives, fail conditions, results) → mission destroy-air/survive (M01; M06 ทดสอบผ่าน dev-only unlock) → ตัดสิน D16 วิธีโจมตีภาคพื้น → เป้าภาคพื้น + protect/tanker → maps ของ operation → briefing/debrief
+
+Gate: operation แรกเล่นครบตาม DAG; progress คงอยู่หลัง reload; mission ที่ยังไม่มีระบบรองรับแสดงเป็น PLANNED ไม่ใช่ LOCKED ปลอม
 
 ## P6 — Offline release
 

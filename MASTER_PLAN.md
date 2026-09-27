@@ -2,10 +2,11 @@
 
 > ฉบับเสนอเพื่อเริ่มพัฒนา · 6 กันยายน 2026 · เอกสารภาษาไทย · เกม React + Three.js
 > ชุดนี้เป็นแผนงาน ยังไม่ได้เปลี่ยนโค้ดเกมหรือยืนยันว่าค่าทดลองผ่าน playtest แล้ว
+> ปรับ 27 กันยายน 2026: หน้าจอและโหมดตาม [example/Design.html](example/Design.html) — Home, Select Mode, Hangar/Armament แบบ overlay, Campaign และ PVE ห้าโหมด (D14–D17)
 
 ## 1. เกมที่เราจะสร้าง
 
-เกมเครื่องบินรบ **Arcade dogfight บน Desktop browser** ที่ใช้เมาส์และคีย์บอร์ด เรียนรู้การบินพื้นฐานได้เร็ว แต่มีพื้นที่ให้ฝึกการรักษาความเร็ว เลี้ยวหลอก ยิงปืน และใช้ maneuver ผู้เล่นเลือกเครื่องบินจากโรงเก็บที่ดูโมเดล `.glb` อาวุธ ความรู้จริง และสมรรถนะในเกมได้ ก่อนเข้า Playground หรือ Offline กับบอท ส่วน Multiplayer ทำหลัง Offline เล่นสนุกและระบบนิ่งแล้ว
+เกมเครื่องบินรบ **Arcade dogfight บน Desktop browser** ที่ใช้เมาส์และคีย์บอร์ด เรียนรู้การบินพื้นฐานได้เร็ว แต่มีพื้นที่ให้ฝึกการรักษาความเร็ว เลี้ยวหลอก ยิงปืน และใช้ maneuver ผู้เล่นเริ่มที่หน้า Home ซึ่งมีเครื่องบินลำที่เลือกเต็มจอ เลือกเครื่องจากโรงเก็บที่ดูโมเดล `.glb` อาวุธ ประวัติ และสมรรถนะในเกมได้ แล้วเลือกเล่น **Campaign** (ภารกิจต่อเนื่องบนแผนที่พื้นที่รบ ปลดล็อกทีละขั้น) หรือ **PVE** กับบอทเป็นทีมในห้าโหมด: Team Deathmatch, Control Point, ชิงธง, Priority Target (ชิงมงกุฎ) และ Flyover (บินผ่านยึดจุด) ส่วน Training/Playground ยังเปิดฝึกได้ตลอด Multiplayer ทำหลัง Offline เล่นสนุกและระบบนิ่งแล้ว
 
 ใช้ความคล่องตัวและความเข้าถึงง่ายของเกมแนว Battlefield เป็นแรงบันดาลใจ ไม่ถือว่าแผนนี้อธิบายกลไกภายในของ Battlefield 6 และไม่พยายามจำลองเครื่องจริงทุกระบบ
 
@@ -29,8 +30,11 @@
 | การเริ่มบิน | เกิดกลางอากาศ ไม่ต้องทำ taxi, takeoff, landing หรือ cockpit ที่กดสวิตช์ได้ใน MVP |
 | Offline | Local simulation ไม่มี backend หลังโหลด asset ที่จำเป็นแล้ว; การเปิดเว็บใหม่โดยไม่มีเน็ตต้องเพิ่ม cache/PWA ภายหลัง |
 | Multiplayer | ออกแบบขอบเขตไว้ก่อน; ทำ server/rooms/network จริงท้ายสุด เริ่มพิสูจน์ 1v1 ก่อนเพิ่มจำนวนผู้เล่น |
-| โลก | สนามฝึกเรียบหนึ่งสนามก่อน ต่อด้วยแผนที่ dogfight หนึ่งแผนที่ |
-| การปลดล็อก | เลือกทุกเครื่องที่พร้อมเล่นได้เลย ยังไม่ทำ economy, grind หรือ progression |
+| โหมด | Campaign (operation แรก 6 missions), PVE ทีม: Team Deathmatch / Control Point / ชิงธง / Priority Target / Flyover, Training; ไม่มี FFA แยก |
+| ขนาดทีม PVE | 1v1 ถึง 2v2 ก่อน (4 ลำ) เป้า 4v4 เมื่อ benchmark ผ่าน; ทีมผู้เล่นเติมด้วย ally bots |
+| โลก | สนามฝึกเรียบก่อน ต่อด้วย map PVE ที่มีฐาน/จุดยึด และ maps ของ Campaign ตามลำดับ phase |
+| การปลดล็อก | เลือกทุกเครื่องที่พร้อมเล่นได้เลย; Campaign ปลดล็อกเฉพาะ mission ตามลำดับ requires ไม่ทำ economy, grind หรือ unlock เครื่อง |
+| หน้าจอ | overlay บน 3D scene ไม่มี panel ตาม [DESIGN.md](DESIGN.md) และภาพใน [example/Design.html](example/Design.html) |
 
 นี่เป็นข้อเสนอใหม่ตามคำขอปัจจุบัน ไม่สืบทอดชื่อเกมใหม่ ที่ตั้ง repo หรือคำตอบของผู้ใช้ที่ถูกบันทึกไว้ในเอกสารเก่าโดยอัตโนมัติ ยังไม่สร้างโปรเจกต์ข้างเคียงหรือย้ายไฟล์ต้นฉบับ
 
@@ -45,10 +49,10 @@ Master นี้เป็นเจ้าของขอบเขต ลำดั
 | [03 Flight & Speed](docs/game-design/03-flight-and-speed.md) | แบบจำลองบิน, W/S, ความเร็วและหน่วย, energy |
 | [04 Maneuvers](docs/game-design/04-maneuvers.md) | High-G, Airbrake, Cobra, PSM, thrust vectoring |
 | [05 Aircraft](docs/game-design/05-aircraft.md) | ข้อมูลรายลำ, ความแตกต่าง, บาลานซ์, facts |
-| [06 Hangar](docs/game-design/06-hangar.md) | เลือกเครื่อง, ดู 3D, อาวุธ, ความรู้ |
+| [06 Hangar](docs/game-design/06-hangar.md) | เลือกเครื่อง, ดู 3D, stat bars, หน้า Armament, ความรู้ |
 | [07 Weapons & Damage](docs/game-design/07-weapons-and-damage.md) | ปืน, missile, lock, countermeasure, hit, kill |
 | [08 Bots](docs/game-design/08-bots.md) | AI pilot, perception, difficulty |
-| [09 Offline](docs/game-design/09-offline.md) | match lifecycle, scoring, spawn, pause |
+| [09 Offline](docs/game-design/09-offline.md) | โหมด PVE (TDM / Control Point / ชิงธง / Priority Target / Flyover), match lifecycle, scoring, spawn, pause |
 | [10 Playground](docs/game-design/10-playground.md) | ฝึกบิน, tutorial, flight lab, tuning workflow |
 | [11 Cameras](docs/game-design/11-cameras.md) | horizon lock, aircraft-follow, free look, transitions |
 | [12 HUD & Feedback](docs/game-design/12-hud-and-feedback.md) | HUD, menus, accessibility, เสียงและ VFX |
@@ -59,6 +63,8 @@ Master นี้เป็นเจ้าของขอบเขต ลำดั
 | [17 Quality & Balance](docs/game-design/17-quality-and-balance.md) | acceptance tests, performance, playtest |
 | [18 Migration & Backlog](docs/game-design/18-migration-and-backlog.md) | วิเคราะห์โค้ดเดิม, งานเรียงลำดับ, จุดหยุดตรวจ |
 | [19 Sources & Decisions](docs/game-design/19-sources-and-decisions.md) | แหล่งข้อมูล, ข้อเสนอที่ต่างจากเอกสารเก่า, decision log |
+| [20 Game Shell](docs/game-design/20-game-shell.md) | Home, Select Mode, PVE Setup, Settings, การนำทาง, menu scene ร่วม |
+| [21 Campaign](docs/game-design/21-campaign.md) | operation, missions, requires DAG, objectives, progress |
 
 เมื่อแก้ปุ่มให้แก้ 02; เมื่อแก้ความเร็วให้แก้ 03 และ profile ในโค้ด ไม่คัดลอกตารางซ้ำทุกโหมด ถ้าเอกสารเก่าขัดกัน ให้ใช้ชุดนี้สำหรับงานใหม่และบันทึกเหตุผลใน 19 ค่าตัวเลขทั้งหมดที่ระบุว่า “ทดลอง” เป็น gameplay tuning ไม่ใช่ข้อเท็จจริงทางการบิน
 
@@ -66,9 +72,17 @@ Master นี้เป็นเจ้าของขอบเขต ลำดั
 
 ```mermaid
 flowchart TD
-  H[Hangar: เลือก aircraft พร้อมอาวุธเต็มความจุ] --> C[Session config]
+  HOME[Home] --> H[Hangar / Armament: เลือก aircraft พร้อมอาวุธเต็มความจุ]
+  HOME --> MODE[Select Mode]
+  MODE --> CM[Campaign Map: mission ตาม requires]
+  MODE --> PV[PVE Setup: TDM / Control Point / ชิงธง / Priority Target / Flyover]
+  MODE --> TR[Training]
+  H -.->|aircraftId| C[Session config]
+  CM --> C
+  PV --> C
+  TR --> C
   C --> P[Playground]
-  C --> O[Offline]
+  C --> O[Offline: PVE / Campaign]
   C --> M[Multiplayer: ทำท้ายสุด]
   I[Keyboard / Mouse] --> CMD[PilotCommand]
   B[Bot pilot] --> CMD
@@ -90,6 +104,8 @@ flowchart TD
 
 สถานะ 14 ก.ย. 2026: เริ่ม P3 profile/armament foundation แล้ว — Flight/Weapons อ่านข้อมูลรายลำ, ติดตั้งอาวุธเต็มความจุอัตโนมัติใน session และเอา branch ตามชื่อเครื่องออกจาก core; facts/LOD/weapon geometry ยังไม่ครบ ดู [P3 implementation](docs/phase-3-aircraft-loadouts.md)
 
+สถานะ 27 ก.ย. 2026: ปรับ roadmap ตาม Design example โดยแทรก P3b game shell, P5b PVE objective modes และ P5c Campaign ไม่เปลี่ยนเลข phase เดิม (D14) เลข P ของ Master แยกจาก Phase ของงาน PSM ใน `docs/psm-*` งาน PSM ที่ค้าง (Phase 8 personality tuning, MR3+) พักไว้ได้โดยไม่บล็อก P3b
+
 ไม่กำหนดวันที่เสร็จจากการเดา ก่อนเริ่มแต่ละ phase ให้แตกงานใน 18 และประเมินจากความเร็วทำงานจริง จบ phase เมื่อผ่าน gate ไม่ใช่เมื่อมี UI ให้เห็นเท่านั้น
 
 | Phase | ผลงานที่เล่น/ตรวจได้ | Dependencies | Exit gate |
@@ -98,16 +114,22 @@ flowchart TD
 | P1 Flight slice | F-22 บินในสนามเรียบ, W/S, pitch/yaw/roll, กล้องสอง roll modes | P0 | ควบคุมได้ทั้งสอง input presets; 30/60/144 FPS ไม่เปลี่ยนผลบิน |
 | P2 Playground & maneuver | ฝึก Airbrake, High-G, Cobra, telemetry, recovery | P1 | nose/path แยกกันจริง; ใช้ท่าแล้วมี cost; มือใหม่กลับมาบินปกติได้ |
 | P3 Hangar & aircraft | โรงเก็บ, facts/game tabs, อาวุธเต็มความจุ, profile อย่างน้อยสองลำ | P1–P2 + asset pipeline | เพิ่ม profile โดยไม่เพิ่มเงื่อนไขชื่อเครื่องใน flight core |
-| P4 Gun duel | ปืน, damage, respawn, บอทไล่/หนีหนึ่งตัว | P2; ใช้ F-22 mirror ได้ | เล่น guns-only 1v1 ครบหนึ่ง match; มีเวลาเล็งและยิงได้ |
-| P5 Offline combat | missile IR, lock, flares, bot tactics, results | P4 | ยิง/หลบ/แพ้/ชนะ/เริ่มใหม่ได้ครบ; ไม่ต้องเรียก backend |
-| P6 Offline release | สามลำ, สนาม dogfight, settings สองภาษา, polish/performance | P3 + P5 | checklist ใน 17 ผ่าน; aircraft แต่ละลำมี counterplay |
+| P3b Game shell | Home, Select Mode, Hangar/Armament แบบ overlay, PVE Setup, Campaign Map (ข้อมูล+progress), Settings กราฟิก/กล้อง | P3; ทำขนานกับ P4 ได้ | เดิน Home → Mode → Setup → Flight → กลับได้ครบด้วยคีย์บอร์ด; menu scene ไม่โหลด GLB ซ้ำ; ตัวเลือกที่ยังไม่พร้อมบอกเหตุผล; settings v1→v2 migration ผ่าน |
+| P4 Gun duel | ปืน, damage, respawn, บอทไล่/หนีหนึ่งตัว เป็น Team Deathmatch 1v1 | P2; ใช้ F-22 mirror ได้ | เล่น TDM 1v1 guns-only ครบหนึ่ง match; มีเวลาเล็งและยิงได้ |
+| P5 Offline combat | missile IR, lock, flares, bot tactics, results, TDM แบบทีมพร้อม ally bots | P4 | ยิง/หลบ/แพ้/ชนะ/เริ่มใหม่ได้ครบใน TDM 2v2; ไม่ต้องเรียก backend |
+| P5b PVE objective modes | Control Point, ชิงธง, Priority Target, Flyover, objective HUD, bot roles, map PVE ที่มีฐาน/จุดยึด | P5 + P3b | ทั้งห้าโหมด PVE เล่นจบและ rematch ได้; บอทฝ่ายเราทำ objective ได้ |
+| P5c Campaign | mission runtime, objectives, เป้าภาคพื้น/tanker, maps ของ operation | P5 + P3b; destroy-ground รอ D16 | operation แรกเล่นครบตาม requires DAG; progress คงอยู่หลัง reload |
+| P6 Offline release | สามลำ, PVE ห้าโหมด, Campaign operation แรก, settings สองภาษา, polish/performance | P3b + P5b + P5c | checklist ใน 17 ผ่าน; aircraft แต่ละลำมี counterplay |
 | P7 Multiplayer | server 1v1 → rooms → 2v2 หาก benchmark ผ่าน | **P6 เท่านั้น** | server ตัดสิน hit/score, latency tests ผ่าน, version mismatch จัดการได้ |
 
 เริ่ม combat ด้วย F-22 mirror ได้หาก Su-57/F/A-18E asset ยังไม่พร้อม แต่ P6 จะไม่ถือว่าครบ roster จนมีโมเดลและ rig ผ่านการตรวจ หากต้องการเพิ่ม radar missile ให้ทำหลัง IR loop ผ่าน ภายใน P6 หรืออัปเดตหลัง Offline release โดยไม่บล็อกปืน/IR
 
 ## 6. Definition of Done ระดับเกม
 
-- เข้าโรงเก็บ เลือกหนึ่งในสามลำ เปิดข้อมูลจริงและ status ในเกม ดูอาวุธ แล้วเริ่มบินได้
+- เริ่มจาก Home เลือกโหมด เข้าโรงเก็บ เลือกหนึ่งในสามลำ อ่านประวัติ/stat bars/รายละเอียดเชิงลึก ดูอาวุธในหน้า Armament แล้วเริ่มเล่นได้
+- PVE เล่นได้ครบห้าโหมด (Team Deathmatch, Control Point, ชิงธง, Priority Target, Flyover) กับ ally/enemy bots
+- Campaign operation แรกเล่นตามลำดับ requires และบันทึก progress ได้
+- Settings ปรับกราฟิกและมุมกล้องได้ โดย preset กราฟิกลดต้นทุนจริงและกล้องไม่เปลี่ยนผลบิน
 - W/S ไม่ใช่ throttle โดยตรง; ไม่ผูกการเปลี่ยนความเร็วกับ FPS
 - มีทั้ง normal turn, Airbrake, High-G และ Cobra สำหรับลำที่รองรับ พร้อมวิธี recover
 - ยิงปืนและ missile กับบอทได้ มี damage, death, respawn, score และจบ match
@@ -125,7 +147,10 @@ flowchart TD
 | Cobra กลายเป็นปุ่มชนะฟรี | วัด nose rotation กับ path rotation และช่วงเสียเปรียบหลังท่า |
 | ไล่แก้ค่าสมจริงจน flight model โตไม่หยุด | จำกัด profile เป็นกลุ่มพารามิเตอร์ที่อธิบายได้; ปรับทีละกลุ่มจาก scenario |
 | ทุกลำต่างแค่ skin | ใช้ bot script เดียวกันวัด turn, acceleration, PSM cost และ recovery |
-| GLB หนักเมื่อมีหลายเครื่อง | ใช้ gameplay LOD ตั้งแต่ P3 และ benchmark หลาย entity ก่อนทำสนามสวย |
+| GLB หนักเมื่อมีหลายเครื่อง | ใช้ gameplay LOD ตั้งแต่ P3 และ benchmark หลาย entity ก่อนทำสนามสวย; เปิด 4v4 เฉพาะเมื่อ 8 ลำผ่าน budget |
+| Objective mode ไม่เข้ากับเครื่องบินที่หยุดนิ่งไม่ได้ | ทดสอบรัศมีจุดยึด/เพดาน/โซนธงด้วยบอทและ playtest ก่อนทำ map สวย |
+| Campaign ต้องใช้ content ใหม่จำนวนมาก | เริ่มจาก M01 ที่ใช้แค่ air combat; mission ที่ระบบยังไม่พร้อมแสดงเป็น PLANNED; ตัดสินวิธีโจมตีภาคพื้น (D16) ก่อนสร้างเป้าภาคพื้นและ maps |
+| ข้อความ overlay อ่านยากบนโมเดล | vignette/scrim แบบ gradient และตรวจ contrast บนทุกลำ ไม่ใช้ glow |
 | แยกไฟล์แต่ยังพันกัน | ตรวจ dependency และผู้เขียน state; ห้าม renderer เรียก damage/reset โดยตรง |
 
-งานเริ่มต้นที่แนะนำ: ทำ P0 และ P1 ให้ได้เครื่องบินหนึ่งลำที่บินด้วย command ใหม่ในสนามเรียบ จากนั้นตัดสิน flight feel ก่อนเพิ่ม content จำนวนมาก ดู [backlog ที่ลงมือทำต่อได้](docs/game-design/18-migration-and-backlog.md)
+งานถัดไปที่แนะนำ: P3b game shell และ P4 gun duel ทำขนานกันได้ เพราะ P3b ไม่แตะ simulation เลือกลำดับตามว่าต้องการเห็นหน้าตาเกมก่อน หรือพิสูจน์ความสนุกของการยิงก่อน ดู [backlog ที่ลงมือทำต่อได้](docs/game-design/18-migration-and-backlog.md)

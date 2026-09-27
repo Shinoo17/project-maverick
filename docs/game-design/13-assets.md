@@ -1,10 +1,25 @@
 # 13 — GLB, Rig และ Asset Pipeline
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P0/P3/P6 · เจ้าของ visual assets และ resource lifecycle
+[กลับ Master Plan](../../MASTER_PLAN.md) · P0/P3/P3b/P5b/P5c/P6 · เจ้าของ visual assets และ resource lifecycle
 
 ## สิ่งที่พบใน workspace
 
 อัปเดตหลัง implementation แรก: `model/` มี `F22_compact.glb` ประมาณ 3.9 MB (10 clips), `SU57_compact.glb` ประมาณ 1.6 MB (ไม่มี clips), terrain และ AIM-9/AIM-120 แล้ว ทั้งสองเครื่องใช้ Meshopt; F-22 ใช้ KTX2/Basis และ Su-57 ใช้ WebP ยังไม่มี F/A-18E ที่ยืนยันแล้ว ดู [ผลตรวจ asset และ baseline](../phase-0-implementation.md) สำหรับชิ้นส่วนสำรองที่ซ่อนใน viewer โดยไม่แก้ไฟล์ต้นฉบับ ขนาดไฟล์เหล่านี้ไม่บอก VRAM หรือจำนวน draw calls ต้อง benchmark ก่อนตั้ง budget จริง
+
+## Assets ที่ game shell และโหมดใหม่ต้องใช้
+
+เพิ่มตาม D14–D16 ใน 19; ทุกชิ้นต้องมี provenance และสถานะ readiness ตามหัวข้อท้ายไฟล์
+
+| Asset | ใช้ที่ | Phase |
+|---|---|---|
+| Thumbnail ด้านข้างของเครื่องบินแต่ละลำ | แถบเลือกเครื่องใน Hangar, roster ใน PVE Setup | P3b |
+| Thumbnail อาวุธ และแผนผัง stations มุมบน | หน้า Armament | P3b |
+| ภาพ preview ของแต่ละ map (aerial) | PVE Setup, รายละเอียด mission | P3b/P5b |
+| ภาพ theatre ของ operation (2D ลดสี) | Campaign Map | P3b |
+| Markers ของจุดยึด, ฐานธง, มงกุฎ และวงแหวน Flyover ในโลก 3D | Control Point, ชิงธง, Priority Target, Flyover | P5b |
+| Tanker และเป้าภาคพื้น (เรดาร์, เครื่องบินจอด, ระบบป้องกันฐาน) พร้อม collider | Campaign | P5c |
+
+ก่อนมีภาพจริงใช้ placeholder ที่ระบุชัดว่าเป็น placeholder ได้เฉพาะ dev ไม่ปล่อยกรอบ `[ IMAGE ]` จาก mockup ไปถึง release
 
 ## Pipeline
 

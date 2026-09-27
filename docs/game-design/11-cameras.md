@@ -21,6 +21,8 @@ View เลือกตำแหน่ง/ระยะกล้อง ส่ว�
 | Balanced | ตาม bank เพียงบางส่วน จำกัด roll ประมาณ ±20° แล้วค่อยคืน; default เสนอให้ทดลองเทียบ Horizon |
 | Aircraft locked | up vector ตาม aircraft up หมุน 360° ได้ ไม่มีการบังคับคืนขอบฟ้า |
 
+โค้ดปัจจุบันมีเฉพาะ roll mode `horizon | aircraft` ใน `FlightCamera.ts`; Balanced, Near chase, Nose view และค่า FOV/shake/dynamic FOV ที่ปรับได้จาก Settings (20) เป็นงาน P3b
+
 Preset เริ่มต้นสำหรับมือใหม่ใช้ Chase + Horizon locked; Balanced เป็นทางเลือกให้รู้สึกแรงเลี้ยวมากขึ้น สลับ view กับ roll mode ตามปุ่มใน 02 และตั้งแยกใน settings ได้
 
 ## Camera rig

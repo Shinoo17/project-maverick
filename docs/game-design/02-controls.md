@@ -91,6 +91,21 @@ Pointer Lock ต้องเริ่มจาก engagement gesture และ�
 | blur / hidden / pointer unlock | เคลียร์ทุก held action และ one-shot pending; ไม่ยิงต่อเอง |
 | key repeat | ใช้ได้กับ held state; ห้ามสร้าง missile/flare event ซ้ำ |
 
+## ปุ่มในเมนู
+
+หน้าจอเมนู (20) ใช้ input context แยกจาก flight ปุ่มในเมนูไม่ส่ง PilotCommand และปุ่ม flight ไม่ทำงานในเมนู
+
+| ปุ่ม | หน้าจอ | Action |
+|---|---|---|
+| Enter | Home | Play โหมดที่เลือกไว้ |
+| M / H | Home | เปิด Select Mode / Hangar |
+| ← → | Hangar, Armament | เปลี่ยนลำ / อาวุธที่ดู |
+| D / W / R | Hangar | สลับ Detail / เปิด Armament / reset view |
+| B | Armament | เปิด/ปิด bay |
+| Esc | ทุกหน้าเมนู | ย้อนกลับหนึ่งระดับ |
+
+Hotkey เป็นทางลัด ทุก action ต้องกดด้วยเมาส์หรือ Tab + Enter ได้ด้วย ไม่รับ hotkey ขณะ focus อยู่ในช่องพิมพ์ เช่น callsign ปุ่มเมนูยังไม่ให้ rebind ใน P3b
+
 ## Rebinding และ accessibility
 
 ใช้ `KeyboardEvent.code` เป็น binding เพื่อให้ตำแหน่ง W/A/S/D ไม่เปลี่ยนตอนสลับภาษาไทย แสดงชื่อปุ่มอ่านง่ายตาม layout เมื่อทำได้ รองรับ primary/secondary binding รวม mouse buttons ไม่ใช้ข้อความแปลเป็น action id

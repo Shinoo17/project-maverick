@@ -1,6 +1,6 @@
 # 12 — HUD, UI, Audio และ VFX
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · เพิ่มตาม P1–P6 · อ่าน state/events จาก simulation
+[กลับ Master Plan](../../MASTER_PLAN.md) · เพิ่มตาม P1–P6 · หน้าจอเมนูอยู่ใน [20](20-game-shell.md) · อ่าน state/events จาก simulation
 
 ## เป้าหมาย
 
@@ -16,7 +16,9 @@
 | Flight awareness | altitude/AGL warning, bank/horizon cue, low energy และ recovery prompt |
 | Combat resources | HP, gun heat, secondary type/count, flare bursts, burner reserve |
 | Threat | lock warning กับ missile inbound แยกกัน; แสดงทิศเมื่อ sensor rules ให้ข้อมูล |
-| Match | score/time แบบกะทัดรัด; death/respawn/results มีลำดับชัด |
+| Match | คะแนนทีม/time แบบกะทัดรัด; death/respawn/results มีลำดับชัด |
+| Objective | Control Point: สถานะ A/B/C (ทีมที่ถือ, ความคืบหน้าการยึด, contested) และขอบโซนเมื่ออยู่ใกล้; ชิงธง: ตำแหน่งธงทั้งสองฝ่าย, marker ผู้ถือธง, เวลาธงตกค้าง; Priority Target: ตำแหน่งมงกุฎ (ว่าง/ถืออยู่/ตกค้าง), marker ผู้ถือ, เวลาถือที่เหลือจาก 30 s, เวลาตกค้างจาก 20 s, ป้าย OVERTIME; Flyover: เจ้าของ A/B/C, วงแหวนในโลก, ทีมไหนกำลังได้แต้มและอัตรา, เวลาล็อกหลังยึด; Campaign: รายการ objective และ fail condition |
+| ทีม | marker เพื่อนกับศัตรูต่างกันด้วยรูปทรงและข้อความ ไม่ใช่สีอย่างเดียว; เพื่อนไม่แสดง lock cue |
 | Maneuver | High-G active, PSM ready/blocked reason/recovering; ไม่แสดง internal state machine ทั้งชุดให้ผู้เล่นปกติ |
 
 G indicator เป็นค่าจาก simplified sim จึงไม่ใช้ข้อความสื่อว่าเป็นผลทดสอบเครื่องจริง ไม่มี blackout เต็มจอใน MVP; ใช้ vignette เบาและปิดได้
@@ -31,7 +33,7 @@ G indicator เป็นค่าจาก simplified sim จึงไม่ใ�
 
 ## เมนูและ error flow
 
-Main → Hangar → Mode setup → Loading → Flight → Results; settings เปิดจาก main/hangar/pause ได้ ค่า flight ที่ต้อง recreate session ต้องบอกว่าใช้รอบถัดไป ค่า sensitivity/volume/locale ใช้ทันที
+Home → Select Mode → Campaign Map / PVE Setup / Training → Loading → Flight → Results; Hangar เปิดจาก Home และหน้า setup; settings เปิดจาก Home/Hangar/pause ได้ รายละเอียดหน้าจอและการนำทางอยู่ใน 20 ค่า flight ที่ต้อง recreate session ต้องบอกว่าใช้รอบถัดไป ค่า sensitivity/volume/locale ใช้ทันที
 
 มี explicit loading, model failed/retry, WebGL unavailable, pointer-lock unavailable, save failed และ unknown aircraft/map states แต่ละ state มีทางกลับหรือ retry ไม่มีหน้าจอดำและ console error อย่างเดียว
 

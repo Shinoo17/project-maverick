@@ -66,7 +66,17 @@ FlightProfile เป็น numeric data serializable ตาม 03/04 ไม่�
 
 ## Game stats ที่มีความหมาย
 
-แสดง acceleration, sustained turn, energy retention, roll response, low-speed nose authority และ recovery เป็นแถบเปรียบเทียบ 1–5 พร้อม tooltip วิธีวัด ต้อง derive จาก standardized flight scenarios หรือ curated summary ที่อ้าง benchmark revision ไม่ใช้ค่าคะแนนนั้นเป็น physics parameter ซ้ำอีกชุด
+Hangar แสดง stat bars ห้าแถบตามภาพอ้างอิง (06): **Speed, Acceleration, Agility, Post-stall, Firepower** เป็นสเกล 0–100 พร้อม tick ของลำที่เปรียบเทียบ ค่าต้อง derive จาก flight profile/standardized flight scenarios และ weapon content ผ่านตาราง normalization เดียวที่มี revision ไม่ใช้ค่าคะแนนนั้นเป็น physics parameter ซ้ำอีกชุด
+
+| Bar | มาจาก |
+|---|---|
+| Speed | top speed MIL และ A/B |
+| Acceleration | acceleration จาก benchmark เดียวกันทุกลำ |
+| Agility | pitch/roll/yaw rate และ sustained turn |
+| Post-stall | PSM band, PSM pitch/yaw rate, thrust vectoring และ recovery |
+| Firepower | จำนวนและชนิดอาวุธเต็มความจุ |
+
+ตารางเชิงลึก (DETAIL) แสดงตัวเลขพร้อมหน่วยจาก profile โดยตรง ส่วน energy retention, low-speed nose authority และ recovery ที่ไม่มีแถบของตัวเองให้สะท้อนในข้อความ “เล่นอย่างไร” และ play style ของลำ (เช่น `ENERGY FIGHTER`, `AGILITY FIGHTER`) ซึ่งเก็บใน content สองภาษา
 
 โชว์ sweet spot และตัวอย่าง “เลี้ยวดีเมื่ออยู่ในช่วงนี้” มากกว่า top speed ใหญ่ที่สุด อาวุธในหน้าจอใช้ display label เดียวกับ HUD ว่าเป็นค่าภายในเกม
 

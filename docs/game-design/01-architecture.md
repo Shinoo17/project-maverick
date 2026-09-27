@@ -13,21 +13,21 @@
 ```text
 src/
   app/                 App.tsx, routes.tsx, sessionStore.ts
-  content/             aircraft/, weapons/, maps/, schemas.ts, validate.ts
+  content/             aircraft/, weapons/, maps/, campaign/, schemas.ts, validate.ts
   game/
     runtime/           GameRuntime.ts, clock.ts, commands.ts, events.ts
     state/             WorldState.ts, AircraftState.ts, MatchState.ts
     flight/            stepFlight.ts, speed.ts, rates.ts, forces.ts, maneuvers.ts
     combat/            guns.ts, missiles.ts, targeting.ts, damage.ts
     ai/                perceive.ts, decide.ts, steer.ts
-    modes/             playground.ts, deathmatch.ts, lifecycle.ts
+    modes/             playground.ts, teamDeathmatch.ts, controlPoint.ts, captureFlag.ts, priorityTarget.ts, flyover.ts, campaign.ts, lifecycle.ts
     world/             collision.ts, bounds.ts, spawn.ts
   input/               devices.ts, bindings.ts, mouseStick.ts, toCommand.ts
   render/              GameScene.tsx, AircraftView.tsx, WorldView.tsx
     aircraft/          modelBindings.ts, animateSurfaces.ts
     cameras/           cameraRig.ts, horizonFrame.ts
     effects/           tracers.ts, exhaust.ts, explosions.ts
-  features/            hangar/, playground/, offline/, settings/, results/
+  features/            home/, mode/, hangar/, pve/, campaign/, playground/, settings/, results/
   ui/                  components/, hud/, prompts/
   audio/               AudioDirector.ts
   platform/            storage.ts, assetCache.ts, sessionHost.ts

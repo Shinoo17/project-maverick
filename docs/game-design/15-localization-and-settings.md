@@ -41,13 +41,27 @@ interface LocalPreferences {
   schemaVersion: number;
   locale: 'th' | 'en';
   controls: { presetId: string; bindingVersion: number; bindings: SavedBinding[]; sensitivity: number; invertPitch: boolean };
-  camera: { view: string; rollMode: string; fov: number; shakeScale: number; dynamicFovScale: number };
+  camera: { view: 'chase' | 'near-chase' | 'nose'; rollMode: 'horizon' | 'balanced' | 'aircraft'; fov: number; shakeScale: number; dynamicFovScale: number };
   audio: { master: number; engine: number; weapons: number; ui: number };
-  graphics: { quality: 'low' | 'medium' | 'high'; renderScale: number };
+  graphics: {
+    preset: 'low' | 'medium' | 'high' | 'custom';
+    renderScale: number;            // DPR cap
+    shadows: boolean;
+    effects: 'low' | 'medium' | 'high';   // vapor/exhaust/contrail
+    fpsLimit: number | null;
+  };
   accessibility: { uiScale: number; reducedMotion: boolean };
-  lastSelection: { aircraftId: string; mapId: string };
+  pilot: { callsign: string };
+  lastSelection: {
+    aircraftId: string;
+    mode: 'campaign' | 'pve' | 'playground';
+    pve: PveSetupPreference;        // gameMode, mapId, teamSize, difficulty, weapons, limits, roster (09)
+    campaign: { operationId: string; missionId: string | null };
+  };
 }
 ```
+
+โค้ดปัจจุบันเก็บ `Settings` version 1 (aircraftId, locale, controls) ใน `src/platform/storage.ts` การเพิ่ม shape นี้ต้องเป็น migration v1 → v2 ที่คงค่าเดิมทั้งหมด หน้าจอ Settings และผลของแต่ละค่า (ทันที/รอบถัดไป) อยู่ใน 20 Campaign progress เก็บแยก key ตาม 21 ไม่อยู่ใน preferences
 
 นี่เป็น shape ขั้นต่ำ; SavedBinding อ้าง schema ใน input layer เก็บเลข version, validate enum/range/finite numbers และ migrate ผ่าน pure functions `v1 → v2` ห้าม overwrite custom binding เงียบ ๆ ถ้า migration ทำไม่ได้ให้ backup raw value แล้วใช้ defaults พร้อม notice
 

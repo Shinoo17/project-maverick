@@ -79,3 +79,44 @@ Decision ID / วันที่ / ผู้แก้
 เลือก C hold เป็น modifier ที่ไม่ชนปุ่มระบบ; X/S ชะลอเข้าโซนและ W เร่งออกแยกกัน เพื่อไม่ต้องจำ chord Airbrake+W ที่ขัดคำสั่งกัน ไม่เพิ่ม Alt/Command shortcut หรือ rebinding ในรอบนี้
 
 ลิงก์อ้างอิงที่ผู้ใช้ให้: [คลิป 1](https://www.youtube.com/shorts/q0Tuyx5WwA8), [คลิป 2](https://www.youtube.com/shorts/Yw5KgrmmnPo), [คลิป 3](https://www.youtube.com/watch?v=T2FeMftBUYc) เครื่องมือ web fetch เปิดไม่สำเร็จ จึงใช้แนวทางเกมที่ผู้ใช้ระบุเป็น brief และไม่อ้างรายละเอียดที่มองไม่เห็นจากคลิป
+
+## D14 / 27 กันยายน 2026 / Game shell ตาม Design example
+
+ผู้ใช้ขอให้ปรับเกมให้เป็นเกมมากขึ้น และให้แผนตรงกับ [example/Design.html](../../example/Design.html) ซึ่งมี 6 หน้าจอ: Home, Select Mode, Hangar, Hangar Armament, Campaign Map และ PVE Setup
+
+- กฎเดิม: `#/` คือ Hangar ที่มี control rail 320px, แท็บ systems/flight/weapons และปุ่มเริ่มบินใน rail; สีเลือกเป็น sand; release แรกมีแค่ Dogfight vs Bots
+- กฎใหม่: Home เป็นหน้าแรก ทุกหน้าเมนูเป็น overlay บน 3D scene เดียว ไม่มี panel; เริ่มเกมจาก Home หรือหน้า setup; โหมดหลักคือ Campaign และ PVE; สไตล์ภาพตาม DESIGN.md ฉบับใหม่ (cyan selection, Barlow)
+- เพิ่ม phase P3b (game shell), P5b (PVE objective modes), P5c (Campaign) โดยไม่เปลี่ยนเลข P0–P7 เดิม เพราะเอกสาร phase, โค้ด และภาพอ้างอิง (`BUILD P3`, `VALUES PENDING P5 TUNING`) อ้างเลขเดิมอยู่ Offline release (P6) ต้องรวมงานเหล่านี้
+- เจ้าของรายละเอียด: [20](20-game-shell.md) หน้าจอและการนำทาง, [21](21-campaign.md) Campaign, [09](09-offline.md) กติกา PVE, [06](06-hangar.md) Hangar/Armament
+- เลข phase ของ Master (P0–P7, P3b, P5b, P5c) แยกจาก Phase ของงาน PSM ใน `docs/psm-*`
+
+## D15 / 27 กันยายน 2026 / PVE เป็นโหมดทีมสามแบบ
+
+ผู้ใช้กำหนดให้ PVE มี Team Deathmatch, Control Point และชิงธง แทน 1v1/FFA ในภาพ PVE Setup
+
+- TDM ขนาด 1v1 ทำหน้าที่เป็น gun duel ของ P4 จึงไม่เก็บโหมด Duel/FFA แยก; ลำดับ gun ก่อน IR (D09) ไม่เปลี่ยน
+- ขนาดทีมเริ่มที่ 2v2 (4 ลำตาม budget เดิม) เป้า 4v4 หลัง benchmark
+- Friendly fire ปิด และมี IFF ใน PVE/Campaign (07)
+- ค่าจุดยึด/ฐานธงเป็นค่าทดลอง รัศมีจุดยึดอิงรัศมีเลี้ยวที่ cruise (09)
+- ข้อเสนอที่ต่างจากภาพ: เพิ่ม Training เป็นรายการรองใน Select Mode (ภาพมีแค่ Campaign/PVE) เพราะ Definition of Done ยังต้องฝึกบินได้โดยไม่เข้า match; เพิ่มปุ่ม Settings บน Home เพราะภาพไม่มีทางเข้า Settings; ผู้ถือธงใช้ PSM ไม่ได้ **ทั้งสามข้อรอผู้ใช้ยืนยัน**
+
+## D16 / 27 กันยายน 2026 / คำถามเปิดของ Campaign
+
+- **วิธีโจมตีเป้าภาคพื้น (รอผู้ใช้ตัดสิน):** mission M02, M03, M05 ต้องทำลายเรดาร์ ฐาน หรือเครื่องที่จอดอยู่ แต่อาวุธที่มีเป็นอาวุธอากาศสู่อากาศทั้งหมด ตัวเลือก: ปืนอย่างเดียว, ให้ IR missile lock เป้าภาคพื้นบางชนิด หรือเพิ่มอาวุธโจมตีภาคพื้นเป็น content ใหม่ ก่อนตัดสิน mission เหล่านี้เป็น PLANNED
+- ผู้เล่นไม่มี respawn ใน mission ถูกยิงตกคือ failed แล้ว retry (ข้อเสนอ)
+- Campaign ไม่ปลดล็อกเครื่องบินหรือมี economy ตามขอบเขตเดิมใน Master
+- Settings ยังไม่มีภาพอ้างอิง ต้องออกแบบก่อน implement หน้าจอ
+
+## D17 / 27 กันยายน 2026 / เพิ่ม Priority Target และ Flyover
+
+ผู้ใช้เพิ่มสองโหมด PVE รวมเป็นห้าโหมด กติกาเต็มอยู่ใน [09](09-offline.md)
+
+- **Priority Target** (แนวชิงมงกุฎ) ตามที่ผู้ใช้กำหนด: ถือมงกุฎได้ 1 แต้มต่อวินาที, ถึง score limit ชนะ, หมดเวลาแต้มมากกว่าชนะ, เสมอต่อเวลา 2 นาที, ถือได้ไม่เกิน 30 s แล้ว reset, ผู้ถือตายมงกุฎตกค้าง 20 s แล้ว reset
+- **Flyover** ตามที่ผู้ใช้กำหนด: 3 จุดใน map, บินผ่านก็ยึดได้, ทีมที่ยึดได้มากกว่าได้แต้มต่อเนื่อง, ไม่ต้องเฝ้าพื้นที่ ชื่อ “Flyover” และ id `flyover` เป็นชื่อที่แผนตั้งให้ เปลี่ยนได้
+- ข้อเสนอที่แผนเติม **รอผู้ใช้ยืนยัน**:
+  - ต่อเวลาแล้วยังเสมอเป็น draw ไม่ต่อซ้ำ
+  - หลัง reset 30 s มงกุฎเกิดที่จุดอื่น และผู้ถือล่าสุดเก็บซ้ำไม่ได้ 10 s
+  - มงกุฎที่ตกต่ำกว่า 150 m เหนือพื้นถูกยกขึ้นให้เก็บได้ปลอดภัย
+  - แต้มคิดจากเวลาถือรวมของทีม เศษวินาทีไม่หาย
+  - Flyover: จุดที่เพิ่งถูกยึดล็อก 5 s, ถือครบ 3 จุดได้ 2 แต้มต่อวินาที, เข้าจุดพร้อมกันเจ้าของไม่เปลี่ยน
+  - ค่าเริ่มต้น: Priority Target 8 นาที/100 แต้ม, Flyover 10 นาที/300 แต้ม, รัศมีเก็บมงกุฎ 200 m, รัศมีจุด Flyover 300 m

@@ -1,6 +1,6 @@
 # 10 — Playground, Tutorial และ Flight Lab
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P1–P2 แล้วเพิ่มเครื่องมือ combat ใน P4–P5
+[กลับ Master Plan](../../MASTER_PLAN.md) · P1–P2 แล้วเพิ่มเครื่องมือ combat ใน P4–P5 · เข้าจากรายการ Training ใน Select Mode (20)
 
 ## สถานะ P2 · 7 กันยายน 2026
 

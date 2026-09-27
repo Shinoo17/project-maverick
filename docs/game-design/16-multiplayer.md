@@ -1,6 +1,6 @@
 # 16 — Multiplayer: ทำท้ายสุด
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P7 หลัง Offline release gate · เอกสารนี้เป็นขอบเขตเตรียมไว้ ไม่ใช่งาน backend ปัจจุบัน
+[กลับ Master Plan](../../MASTER_PLAN.md) · P7 หลัง Offline release gate (P6) · โหมดทีมและ objective จาก 09 เป็นเป้าหลัง 1v1/2v2 ผ่าน · เอกสารนี้เป็นขอบเขตเตรียมไว้ ไม่ใช่งาน backend ปัจจุบัน
 
 ## ขอบเขตแรก
 
