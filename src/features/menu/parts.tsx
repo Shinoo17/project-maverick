@@ -3,8 +3,9 @@ Small building blocks shared by the menu screens. Each one is a styled
 element with no state; the look lives in menu.css.
 */
 import type { ReactNode } from 'react'
-import { ChevronLeft, Play } from 'lucide-react'
-import { routes, type MenuRouteId } from '../../app/routes'
+import { useTranslation } from 'react-i18next'
+import { ChevronLeft, Play, Settings } from 'lucide-react'
+import { openSettings, routes, type MenuRouteId } from '../../app/routes'
 
 /** Top-left link back to the parent screen, e.g. "‹ HOME". */
 export function BackLink({ to, label }: { to: MenuRouteId; label: string }) {
@@ -40,4 +41,12 @@ export function FactRows({ rows }: { rows: [label: string, value: ReactNode][] }
   return <dl className="menu-facts">
     {rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
   </dl>
+}
+
+/** Gear button that opens Settings; Back there returns to `from`. */
+export function SettingsButton({ from }: { from: MenuRouteId }) {
+  const { t } = useTranslation()
+  return <button type="button" className="menu-icon-button" aria-label={t('homeSettings')} title={t('homeSettings')} onClick={() => openSettings(from)}>
+    <Settings size={20} strokeWidth={1.6} aria-hidden="true" />
+  </button>
 }

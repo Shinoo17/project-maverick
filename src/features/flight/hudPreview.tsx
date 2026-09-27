@@ -11,6 +11,8 @@ import type { AircraftState } from '../../game/state/WorldState'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import { PlaygroundHud } from './PlaygroundHud'
 import { flightWarning } from './telemetry'
+import { defaultBindings } from '../../game/input/keyBindings'
+import { bindingNames } from '../settings/KeyPrompt'
 import { angleOfAttack } from '../../game/flight/stall'
 import '../../ui/styles.css'
 import './flight.css'
@@ -78,7 +80,7 @@ function Preview() {
     <FlightSystemStatus state={telemetry} />
     <PlaygroundHud state={telemetry} lesson={lesson} cameraChanged={false} lab={lab} />
     <p className="flight-warning" role="status">{warning ? t(warning) : ''}</p>
-    <p className="flight-controls">{t('controlsHint')}</p>
+    <p className="flight-controls">{t('controlsHint', bindingNames(defaultBindings))}</p>
   </div></main></div>
 }
 

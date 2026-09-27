@@ -27,3 +27,7 @@ SOFTWARE.
 # Menu fonts
 
 Barlow, Barlow Condensed (Copyright 2017 The Barlow Project Authors), IBM Plex Mono and IBM Plex Sans Thai (Copyright © 2017 IBM Corp.) are bundled through the `@fontsource/*` packages. All four are licensed under the SIL Open Font License, Version 1.1 (https://openfontlicense.org). The full license text ships with each package in `node_modules/@fontsource/*/LICENSE`.
+
+# Input prompt icons
+
+Keyboard and mouse prompt icons in `public/assets/input_prompts/Keyboard_and_Mouse/` are from Kenney's Input Prompts pack (https://kenney.nl/assets/input-prompts), released under Creative Commons Zero (CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/). Attribution is not required; it is given here as thanks.

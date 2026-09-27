@@ -1,0 +1,104 @@
+/*
+Settings panel (menu #/settings and the flight pause dialog). Uses the menu tokens
+(menu.css, .menu or .settings-scope). Rows are type on hairlines over a scrim, like the
+other menu screens; the pointed-at row gets the cyan bar used for selection elsewhere.
+*/
+
+.settings-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--menu-text); font-family: var(--font-body); }
+
+.settings-header { display: flex; align-items: center; gap: 22px; }
+.settings-back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--menu-text); font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track); text-transform: uppercase; }
+.settings-back:hover { color: var(--menu-accent); }
+.settings-header-divider { width: 1px; height: 22px; background: rgba(174, 201, 211, 0.3); }
+.settings-header h1 { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1; letter-spacing: var(--track-wide); text-transform: uppercase; }
+
+/* Tabs: one line of small caps, Q and E prompts at the ends. */
+.settings-tabs { display: flex; align-items: center; gap: 4px; margin-top: 26px; border-bottom: 1px solid var(--menu-line); }
+.settings-tabs > .key-prompt { color: var(--menu-muted); }
+.settings-tabs button { position: relative; min-height: 44px; padding: 0 12px; font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; white-space: nowrap; }
+.settings-tabs button:hover { color: var(--menu-text); }
+.settings-tabs button[aria-selected='true'] { color: var(--menu-text); }
+.settings-tabs button[aria-selected='true']::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--menu-accent); }
+.settings-tabs button[data-pending] { color: var(--menu-locked); }
+.settings-tabs button[data-pending][aria-selected='true'] { color: var(--menu-secondary); }
+
+.settings-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 6px 12px 0; scrollbar-width: thin; scrollbar-color: var(--menu-line) transparent; }
+.settings-tab-pending { margin: 16px 0 0; padding: 10px 14px; border: 1px dashed var(--menu-locked); font-family: var(--font-mono); font-size: 12px; color: var(--menu-secondary); }
+
+.settings-section h2 { margin: 22px 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 48px; padding: 4px 12px 4px 14px; border-bottom: 1px solid var(--menu-line-soft); border-left: 2px solid transparent; cursor: default; outline: none; transition: background-color 140ms ease-out, border-color 140ms ease-out; }
+.settings-row:hover { background: rgba(154, 215, 232, 0.05); }
+.settings-row[data-selected] { border-left-color: var(--menu-accent); background: rgba(154, 215, 232, 0.08); }
+.settings-row:focus-visible { outline: 1px solid var(--menu-accent); outline-offset: -1px; }
+.settings-row[data-kind='page'] { cursor: pointer; }
+.settings-row[aria-disabled] .settings-row-label, .settings-row[aria-disabled] .settings-value { color: var(--menu-locked); }
+
+.settings-row-label { display: flex; align-items: center; gap: 10px; font-size: 16px; line-height: 1.3; }
+.settings-modified { width: 6px; height: 6px; background: var(--menu-accent); flex-shrink: 0; margin-left: -16px; }
+.settings-row-control { display: flex; align-items: center; justify-content: flex-end; min-width: 240px; }
+
+.settings-value { min-width: 110px; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
+.settings-value.is-pending { font-family: var(--font-mono); font-weight: 400; font-size: 12px; color: var(--menu-locked); }
+
+.settings-stepper { display: flex; align-items: center; gap: 4px; }
+.settings-stepper button { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--menu-line); color: var(--menu-text); }
+.settings-stepper button:hover:not(:disabled) { border-color: var(--menu-accent); color: var(--menu-accent); }
+.settings-stepper button:disabled { opacity: 0.3; }
+
+.settings-slider { display: flex; align-items: center; gap: 12px; }
+.settings-slider .settings-value { min-width: 64px; text-align: right; }
+.settings-slider input { width: 150px; accent-color: var(--menu-accent); }
+
+.settings-text { width: 220px; height: 36px; padding: 0 10px; border: 1px solid var(--menu-line); background: rgba(5, 7, 9, 0.6); color: var(--menu-text); font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
+.settings-text:focus { outline: none; border-color: var(--menu-accent); }
+
+.settings-page-control { display: flex; align-items: center; gap: 12px; }
+.settings-modify { height: 32px; padding: 0 14px; border: 1px solid var(--menu-outline); font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: var(--track); color: var(--menu-text); text-transform: uppercase; }
+.settings-modify:hover { border-color: var(--menu-accent); color: var(--menu-accent); background: rgba(154, 215, 232, 0.08); }
+
+/* Description bar and key hints. */
+.settings-footer { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; border-top: 1px solid var(--menu-line); }
+.settings-detail { min-height: 70px; }
+.settings-detail strong { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: var(--track); text-transform: uppercase; }
+.settings-detail p { margin-top: 4px; max-width: 70ch; max-height: 4.5em; overflow-y: auto; font-size: 14px; line-height: 1.5; color: var(--menu-text-soft); }
+.settings-detail .settings-detail-reason { color: var(--menu-launch); }
+
+/* Key prompts (Kenney icons as masks, so they take the text colour). */
+.key-prompt { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; font: inherit; color: var(--menu-secondary); }
+/* The Kenney glyph fills about 2/3 of its 64 px box, so the icon box runs a little large. */
+.key-prompt-icon { width: 30px; height: 30px; background: currentColor; mask-size: contain; mask-repeat: no-repeat; mask-position: center; -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; }
+.key-prompt.is-text { min-width: 0; height: 20px; margin: 0 4px; padding: 0 6px; border: 1.5px solid currentColor; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; line-height: 1; text-transform: uppercase; }
+.settings-binding-slot .key-prompt { transform: scale(1.15); }
+.prompt-hints { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 12px; color: var(--menu-muted); }
+.prompt-hints li { display: flex; align-items: center; gap: 2px; }
+.prompt-hints li > span { margin-left: 6px; }
+
+/* Key bindings sub-page. */
+.settings-bindings ul { margin: 0; padding: 0; list-style: none; }
+.settings-bindings-head, .settings-binding { display: grid; grid-template-columns: 1fr 150px 150px; align-items: center; gap: 12px; }
+.settings-bindings-head { margin-top: 16px; padding: 0 12px 6px 14px; font-family: var(--font-display); font-size: 13px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+.settings-binding { min-height: 48px; padding: 4px 12px 4px 14px; border-bottom: 1px solid var(--menu-line-soft); }
+.settings-binding-label { display: flex; align-items: baseline; gap: 10px; font-size: 16px; }
+.settings-binding-label small { font-family: var(--font-mono); font-size: 11px; color: var(--menu-locked); }
+.settings-binding-slot { display: flex; align-items: center; justify-content: center; gap: 4px; height: 38px; border: 1px solid var(--menu-line); color: var(--menu-text); font-family: var(--font-mono); font-size: 12px; }
+button.settings-binding-slot:hover { border-color: var(--menu-accent); }
+button.settings-binding-slot:focus-visible { outline: 2px solid var(--menu-accent); outline-offset: -1px; }
+.settings-binding-slot[data-listening] { border-color: var(--menu-launch); color: var(--menu-launch); }
+.settings-binding-slot .key-prompt { color: var(--menu-text); }
+.settings-binding-empty { color: var(--menu-locked); }
+.settings-binding[data-pending] .settings-binding-label { color: var(--menu-secondary); }
+.settings-binding.is-fixed .settings-binding-slot { border-style: dashed; }
+.settings-binding.is-fixed .key-prompt { color: var(--menu-muted); }
+.settings-bindings-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 44px; margin-top: 10px; font-size: 14px; color: var(--menu-text-soft); }
+
+/* Menu route: the panel on the left, the aircraft framed on the right. */
+.settings-screen .settings-panel { position: absolute; left: var(--gutter); top: 32px; bottom: 28px; height: auto; width: min(780px, 58vw); pointer-events: auto; text-shadow: none; }
+
+@media (max-width: 900px) {
+  .settings-screen .settings-panel { height: calc(100dvh - 32px); }
+  .settings-tabs { overflow-x: auto; }
+  .settings-row { flex-wrap: wrap; }
+  .settings-row-control { min-width: 0; margin-left: auto; }
+  .settings-bindings-head, .settings-binding { grid-template-columns: 1fr 96px 96px; }
+}

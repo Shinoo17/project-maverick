@@ -11,8 +11,6 @@
 .home-locale { display: flex; gap: 2px; font-family: var(--font-display); font-size: 14px; letter-spacing: var(--track); }
 .home-locale button { min-width: 44px; min-height: 44px; color: var(--menu-muted); border-bottom: 2px solid transparent; }
 .home-locale button[aria-pressed='true'] { color: var(--menu-text); border-bottom-color: var(--menu-accent); }
-.home-settings { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--menu-text); }
-.home-settings:disabled { color: var(--menu-muted); }
 
 .home-aircraft { position: absolute; left: var(--gutter); bottom: 132px; display: flex; flex-direction: column; gap: 6px; }
 .home-designation { font-family: var(--font-display); font-weight: 600; font-size: 34px; letter-spacing: var(--track-tight); color: var(--menu-accent); line-height: 1; }

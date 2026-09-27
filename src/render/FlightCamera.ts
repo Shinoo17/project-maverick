@@ -149,6 +149,10 @@ function turnToward(from: Vector3, to: Vector3, share: number, fallback: Vector3
 }
 export class FlightCamera {
   constructor(readonly diagnostic = false) {}
+  /** Settings › Camera › Field of view. The dynamic widening adds to it; reduced motion holds it +5°. */
+  baseFov = FOV.base
+  /** Jump straight to the target FOV (set while paused, so a Settings change shows at once). */
+  snapFov = false
   private diagnosticView(camera: PerspectiveCamera, state: AircraftState, bounds: Box3) {
     const q = new Quaternion().copy(state.orientation), center = new Vector3().copy(state.position)
     const corners: Vector3[] = []
@@ -318,8 +322,8 @@ export class FlightCamera {
       camera.quaternion.slerp(desiredQ, 1 - Math.exp(-MathUtils.lerp(cruiseTurnRate, PSM_TURN_RATE, entry) * dt))
     }
     camera.position.copy(position).add(this.offset)
-    const fov = reducedMotion ? FOV.reduced : FOV.base + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple
-    camera.fov += (fov - camera.fov) * (reducedMotion ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
+    const fov = reducedMotion ? this.baseFov + FOV.reduced - FOV.base : this.baseFov + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple
+    camera.fov += (fov - camera.fov) * (reducedMotion || this.snapFov ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
     camera.position.y = Math.max(5, camera.position.y)
   }
   /*

@@ -61,7 +61,7 @@ interface LocalPreferences {
 }
 ```
 
-โค้ดปัจจุบันเก็บ `Settings` version 1 (aircraftId, locale, controls) ใน `src/platform/storage.ts` การเพิ่ม shape นี้ต้องเป็น migration v1 → v2 ที่คงค่าเดิมทั้งหมด หน้าจอ Settings และผลของแต่ละค่า (ทันที/รอบถัดไป) อยู่ใน 20 Campaign progress เก็บแยก key ตาม 21 ไม่อยู่ใน preferences
+โค้ดปัจจุบันเก็บ `Settings` version 1 ใน `src/platform/storage.ts` การตัดสินใจ 28 ก.ย. 2026 (หน้า Settings): ยังไม่ bump เป็น v2 เพราะทุก field ใหม่ (`keyboard`, `graphics`, `display`, `cameraFov` รวมถึง `camera`, `callsign`, `pveSetup`) อ่านแบบรายช่อง ค่าที่หายหรือเสียจะกลับเป็นค่าเริ่มต้นเฉพาะช่องนั้น save เก่าจึงอ่านได้ครบโดยไม่ต้อง migrate ส่วน bindings ถ้าปุ่มเดียวถูกผูกซ้ำ ช่องหลังจะว่างแทนการขโมยปุ่ม (`parseBindings`) ถ้าวันหนึ่ง shape เปลี่ยนแบบอ่านรายช่องไม่ได้ ให้กลับไปใช้ migration v1 → v2 ตามที่เขียนไว้ต่อจากนี้ หน้าจอ Settings และผลของแต่ละค่า (ทันที/รอบถัดไป) อยู่ใน 20 Campaign progress เก็บแยก key ตาม 21 ไม่อยู่ใน preferences
 
 นี่เป็น shape ขั้นต่ำ; SavedBinding อ้าง schema ใน input layer เก็บเลข version, validate enum/range/finite numbers และ migrate ผ่าน pure functions `v1 → v2` ห้าม overwrite custom binding เงียบ ๆ ถ้า migration ทำไม่ได้ให้ backup raw value แล้วใช้ defaults พร้อม notice
 

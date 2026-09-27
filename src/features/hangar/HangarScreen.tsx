@@ -13,7 +13,7 @@ import { selectAircraft, useSessionSettings } from '../../app/sessionStore'
 import { aircraft as roster, getAircraft } from '../../content/aircraft'
 import type { AircraftId } from '../../content/schemas'
 import { useMenuHotkeys } from '../menu/hooks'
-import { BackLink, HotkeyHints } from '../menu/parts'
+import { BackLink, HotkeyHints, SettingsButton } from '../menu/parts'
 import { AircraftPicker } from './AircraftPicker'
 import type { WeaponSelection } from './armament'
 import { ArmamentList } from './ArmamentList'
@@ -56,6 +56,7 @@ export function HangarScreen({ viewedId, onView, onResetView, onInspect }: Hanga
       <span className="menu-topbar-divider" aria-hidden="true" />
       <p className="menu-topbar-title">{t('navHangar')}</p>
       <HotkeyHints hints={[['← →', t('hangarHintAircraft')], ['D', t('hangarShowDetail')], ['W', t('armamentTitle')], ['R', t('resetView')], ['ESC', t('hintBack')]]} />
+      <SettingsButton from="hangar" />
     </header>
 
     <section className="hangar-identity" aria-live="polite">

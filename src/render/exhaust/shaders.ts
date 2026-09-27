@@ -6,6 +6,8 @@ uniform vec2 nozzleRadiusLeft, nozzleRadiusRight, exhaustResolution;
 uniform vec3 nozzleAxisLeft, nozzleAxisRight, nozzleUpLeft, nozzleUpRight;
 uniform float exhaustPower, burnerStrength, exhaustTime, nozzleInset, nozzleRound;
 uniform float exhaustLength, exhaustTurbulence;
+// Graphics › Exhaust effects: 1 on High, fewer ray samples on Low.
+uniform float exhaustSampleScale;
 uniform float chamberRadius, burnerViolet;
 
 vec2 exhaustBounds(vec3 ro, vec3 rd, float lengthMax, vec2 nozzleRadius) {
@@ -30,7 +32,7 @@ vec4 exhaustRay(vec3 ray, vec3 origin, vec3 axis, vec3 up, vec2 nozzleRadius, fl
   if (end <= start) return vec4(0.0);
   // Dry exhaust is short and smooth; reserve fine integration for compression
   // cells. This keeps a close rear view inexpensive when the burner is off.
-  float sampleCount = burnerStrength > .002 ? 48.0 : 16.0;
+  float sampleCount = max(4.0, floor((burnerStrength > .002 ? 48.0 : 16.0) * exhaustSampleScale));
   float ds = (end - start) / sampleCount;
   vec3 emission = vec3(0.0);
   float chamberFlicker = 1.0 + .014 * sin(exhaustTime * 23.0 + seed)

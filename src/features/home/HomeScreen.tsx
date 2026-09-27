@@ -4,7 +4,7 @@ over it. PLAY starts the saved mode; MODE and HANGAR open those screens.
 Shortcuts: Enter = Play, M = Mode, H = Hangar.
 */
 import { useTranslation } from 'react-i18next'
-import { House, Menu, Plane, Settings as SettingsIcon } from 'lucide-react'
+import { House, Menu, Plane } from 'lucide-react'
 import { navigate, routes } from '../../app/routes'
 import { selectLocale, useSessionSettings } from '../../app/sessionStore'
 import { getAircraft } from '../../content/aircraft'
@@ -13,7 +13,7 @@ import { difficulties, getPveMode } from '../../content/pve/modes'
 import type { Locale } from '../../content/schemas'
 import { useCampaignProgress } from '../campaign/useCampaignProgress'
 import { useMenuHotkeys } from '../menu/hooks'
-import { Eyebrow, HotkeyHints, LaunchButton } from '../menu/parts'
+import { Eyebrow, HotkeyHints, LaunchButton, SettingsButton } from '../menu/parts'
 import { playSelectedMode } from '../menu/playSelectedMode'
 import './home.css'
 
@@ -39,9 +39,7 @@ export function HomeScreen() {
         {(['en', 'th'] as Locale[]).map(value => <button key={value} type="button" aria-pressed={locale === value}
           onClick={() => selectLocale(value)}>{value.toUpperCase()}</button>)}
       </div>
-      {/* Settings has no screen design yet (docs 20). The button stays visible and says why. */}
-      <button type="button" className="home-settings" disabled aria-label={`${t('homeSettings')} · ${t('homeSettingsPending')}`}
-        title={t('homeSettingsPending')}><SettingsIcon size={20} strokeWidth={1.6} aria-hidden="true" /></button>
+      <SettingsButton from="home" />
     </header>
 
     <section className="home-aircraft" aria-label={t('homeActiveAircraft')}>

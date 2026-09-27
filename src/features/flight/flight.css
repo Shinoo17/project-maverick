@@ -3,7 +3,7 @@
 .flight-scene { position: absolute; inset: 0; outline: none; }
 /* Clipped: the gate is the window, so the stick marker sits on the edge at full deflection. */
 .flight-hud { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: #fff; padding: 24px; }
-.flight-menu { width: min(500px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 28px; border: 1px solid #596970; background: #19232b; color: #edf0ed; }
+.flight-menu { width: min(500px, calc((100vw - 32px) / var(--ui-scale, 1))); max-height: calc((100dvh - 40px) / var(--ui-scale, 1)); overflow: auto; padding: 28px; border: 1px solid #596970; background: #19232b; color: #edf0ed; }
 .flight-menu::backdrop { background: #10182085; }
 .flight-menu-kicker { font-size: 13px; color: #cbb88f; margin-bottom: 12px; }
 .flight-menu h1 { font-size: 26px; margin-bottom: 12px; }
@@ -108,3 +108,20 @@
 @media (prefers-reduced-motion: reduce) {
   .flight-warning { animation: none; }
 }
+
+/* Settings inside the pause dialog: the panel on the left, the paused flight visible on the right,
+   the HUD hidden so its green does not fight the text. Tokens come from .settings-scope (menu.css). */
+.flight-menu { zoom: var(--ui-scale, 1); }
+.flight-root[data-settings] .flight-hud { visibility: hidden; }
+.flight-settings { position: fixed; inset: 0 auto 0 0; width: calc(100vw / var(--ui-scale, 1)); height: calc(100dvh / var(--ui-scale, 1)); max-width: none; max-height: none; margin: 0; padding: 28px 48px 24px 56px; border: 0; zoom: var(--ui-scale, 1); color: #dae2e6;
+  /* The scrim stays solid under the whole panel, then fades out over the next ~30% of the window. */
+  /* Stops in % of the dialog, which spans the window (viewport units misbehave under zoom). */
+  --panel-end: calc(56px + min(780px, 100% - 104px) + 24px);
+  /* Eased stops: a straight ramp leaves a visible kink where it starts. */
+  background: linear-gradient(90deg, rgba(3, 5, 7, 0.9) 0, rgba(3, 5, 7, 0.9) calc(var(--panel-end) - 60px), rgba(3, 5, 7, 0.82) var(--panel-end),
+    rgba(3, 5, 7, 0.64) calc(var(--panel-end) + 8%), rgba(3, 5, 7, 0.4) calc(var(--panel-end) + 16%), rgba(3, 5, 7, 0.18) calc(var(--panel-end) + 24%),
+    rgba(3, 5, 7, 0.05) calc(var(--panel-end) + 31%), rgba(3, 5, 7, 0) calc(var(--panel-end) + 36%)); }
+.flight-settings .settings-scope { width: min(780px, 100%); }
+.flight-settings::backdrop { background: transparent; }
+.flight-settings .settings-scope { height: 100%; }
+@media (max-width: 900px) { .flight-settings { padding: 16px; background: rgba(3, 5, 7, 0.94); } }

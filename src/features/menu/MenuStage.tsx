@@ -9,6 +9,8 @@ import { CircleSlash, RotateCcw } from 'lucide-react'
 import type { AircraftDefinition } from '../../content/schemas'
 import type { WeaponDefinition, WeaponModelStatus } from '../../content/weapons'
 import { modelUrl } from '../../content/aircraft'
+import { useSessionSettings } from '../../app/sessionStore'
+import { canvasDpr } from '../../render/graphicsSettings'
 import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { MenuShot } from '../../render/menu/MenuScene'
@@ -33,6 +35,7 @@ export function MenuStage({ aircraft, shot, hidden, resetViewId, weapons, weapon
   const { t } = useTranslation()
   const [webgl] = useState(supportsWebGL2)
   const reducedMotion = useReducedMotion()
+  const { graphics } = useSessionSettings()
   const pageVisible = usePageVisible()
   const [loadedId, setLoadedId] = useState<string | null>(null)
   const [failedId, setFailedId] = useState<string | null>(null)
@@ -55,7 +58,7 @@ export function MenuStage({ aircraft, shot, hidden, resetViewId, weapons, weapon
   return <div className="menu-stage" data-hidden={hidden || undefined}>
     {webgl && <SceneBoundary key={retryId} fallback={null} onError={onError}>
       <Suspense fallback={null}>
-        <MenuScene aircraft={aircraft} shot={shot} paused={hidden} turntable={turntable} reducedMotion={reducedMotion}
+        <MenuScene aircraft={aircraft} shot={shot} dpr={canvasDpr(graphics.renderScale)} paused={hidden} turntable={turntable} reducedMotion={reducedMotion}
           resetViewId={resetViewId} retryId={retryId} onReady={onReady} onError={onError}
           weapons={weapons} weaponStatuses={weaponStatuses} onWeaponStatus={onWeaponStatus} weaponRetryId={weaponRetryId} />
       </Suspense>

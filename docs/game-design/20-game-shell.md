@@ -110,19 +110,50 @@ TDM ที่ขนาด 1v1 คือ duel ของ P4 จึงไม่ต�
 
 ## Settings
 
-ยังไม่มี mockup ต้องออกแบบภาพก่อน implement หน้าจอ ส่วนนี้กำหนดเฉพาะเนื้อหาและพฤติกรรม schema อยู่ใน 15 พฤติกรรมกล้องอยู่ใน 11
+สเปกนี้สรุปกับเจ้าของงานเมื่อ 28 ก.ย. 2026 เจ้าของงานให้ implement โดยไม่ต้องมี mockup ก่อน (ข้ามเงื่อนไขเดิมของหัวข้อนี้) โค้ดอยู่ใน `src/features/settings/` ค่าที่บันทึกอยู่ใน 15 พฤติกรรมกล้องอยู่ใน 11
 
-| กลุ่ม | ค่า | ผลเมื่อเปลี่ยน |
-|---|---|---|
-| Graphics | preset Low / Medium / High / Custom; render scale (DPR cap); shadows; คุณภาพ vapor/exhaust/contrail; จำกัด FPS | ใช้ทันทีถ้าไม่ต้องสร้าง renderer ใหม่ มิฉะนั้นบอกว่าใช้รอบถัดไป |
-| Camera | view เริ่มต้น (Chase / Near chase / Nose), roll mode (Horizon / Balanced / Aircraft), FOV, shake scale, dynamic FOV scale | ใช้ทันที ไม่เปลี่ยน flight outcome |
-| Controls | mouse sensitivity/invert, preset, rebinding | ตาม 02 |
-| Audio | master / engine / weapons / UI | ใช้ทันที |
-| Interface | ภาษา, UI scale, reduced motion, callsign | ใช้ทันที |
+**โครงหน้าจอ.** Panel อยู่ซ้าย มี tab ด้านบน ใต้รายการมีแถบคำอธิบายของแถวที่เลือกหรือชี้อยู่ และแถบปุ่มลัดใช้ไอคอน Kenney Input Prompts (CC0)
+- ในเมนู (`#/settings`, เปิดจากปุ่มเฟืองใน Home และ Hangar): กล้องเลื่อนไปมุม `settings` ให้เห็นเครื่องบินด้านข้าง หัวหันเข้าหา panel อยู่ครึ่งขวาของจอ turntable หยุด ใช้ view offset ของกล้อง ไม่ขยับตัวเครื่องบิน จอแคบกว่า 900px ให้ panel เต็มจอ
+- ในเกม: ปุ่ม SETTINGS ในหน้าพักสลับเนื้อหา dialog เป็น panel เดียวกัน ไม่เปลี่ยน hash เพราะเปลี่ยน route แล้ว flight จะ unmount dialog เป็น modal จึงต้องแสดงอยู่ข้างในนั้น HUD ถูกซ่อน ภาพบินที่หยุดค้างอยู่ทางขวาใช้ดูผลของค่าได้ทันที
+- Esc ย้อนกลับทีละขั้น: หน้าตั้งปุ่ม → รายการ → หน้าที่เปิดมา (Home, Hangar หรือหน้าพัก)
 
-Route `#/settings` ใช้จากเมนู ส่วนใน flight Settings เปิดเป็น overlay ด้วย component เดียวกันจาก pause menu ไม่เปลี่ยน hash เพราะการเปลี่ยน route จะ unmount flight
+**ปุ่มลัด.** Q/E เปลี่ยน tab · ↑↓ เลือกแถว · ←→ เปลี่ยนค่า · F คืนค่าแถว · C คืนค่าทั้ง tab · Esc ย้อนกลับ ค่าใช้ทันทีและบันทึกทันที ไม่มีปุ่ม Apply จุด ▪ หน้าแถวแปลว่าค่านั้นต่างจากค่าเริ่มต้น
 
-Graphics preset ต้องลดต้นทุน GPU จริง ไม่ใช่แค่เปลี่ยนชื่อ และห้ามซ่อนสิ่งที่มีผลต่อ gameplay (12) Settings เปิดได้จาก Home, Hangar และ pause menu ระหว่างบิน ปุ่ม reset แยก scope ตามกลุ่ม
+| Tab | แถว (ค่าเริ่มต้นเป็นตัวหนา) |
+|---|---|
+| Keyboard & Mouse | Controls **Mouse + Keyboard** / Keyboard only · Mouse mode **Relative** / Stick · Stick frame **Body** / Horizon · Mouse left/right **Roll** / Yaw · Sensitivity 0.5–2.0 (**1.0**) · Invert pitch **Off** · Key bindings (หน้าย่อย) · Afterburner / Airbrake **Hold** / Toggle แถวเมาส์ปิดพร้อมเหตุผลเมื่อเลือก Keyboard only |
+| Controller | ยังไม่รองรับ tab เลือกได้แต่แถวทั้งหมดเป็น pending: deadzone, response curve, pitch/roll sensitivity, invert, vibration, button layout, button prompts |
+| Camera | Camera roll **Horizon locked** / Aircraft locked · Roll style **Balanced** / Dynamic (แสดง Default และปิดไว้เมื่อ Aircraft locked) · Field of view แนวตั้ง 50–70° (**56**) ค่า dynamic FOV บวกเพิ่มจากฐานนี้ |
+| Graphics | Quality preset Low / Medium / **High** / Custom · Render scale **Auto** / 0.6 / 0.8 / 1.0 / 1.2 / 1.5 / 2.0 · Anti-aliasing **On** · Exhaust / Vapor Off / Low / **High** · Frame rate limit 30 / 60 / 120 / **Unlimited** · Show FPS **Off** |
+| Audio | ยังไม่มีระบบเสียง แถว pending: master, engine, menu volume |
+| Interface | Language · Callsign (≤ 16 ตัว, บันทึกเมื่อกด Enter หรือออกจากช่อง) · UI scale 80–120% (**100**) · Reduced motion **Auto (ตามระบบ)** / On / Off |
+
+**Graphics preset** ไม่ได้เก็บเป็นค่าแยก คำนวณจากค่าย่อย: ตรง Low/Medium/High ก็แสดงชื่อนั้น ไม่ตรงแสดง Custom Show FPS ไม่นับรวม
+
+| | Low | Medium | High |
+|---|---|---|---|
+| Render scale | 0.8 | 1.0 | Auto |
+| Anti-aliasing | Off | On | On |
+| Exhaust | Low | High | High |
+| Vapor | Off | Low | High |
+| Frame rate | 60 | 60 | Unlimited |
+
+- ทุก preset ลดงาน GPU ได้จริง:
+  - Low ลดจำนวน ray sample ของ vortex (24 → 12) และ exhaust (ครึ่งหนึ่ง)
+  - Off ข้าม effect นั้น ถ้าปิดทั้งสองอย่าง pass จะเหลือแค่ resolve ภาพ
+  - Anti-aliasing คือ MSAA 4× ของ render target ใน volume pass เปลี่ยนได้ทันที
+- ขอบเขตของแต่ละค่า:
+  - Auto คงพฤติกรรมเดิม (`dpr` [1, 1.5]) และใช้ทั้งเมนูกับเกม
+  - Anti-aliasing, effects, frame rate และ Show FPS มีผลเฉพาะในเกม ฉากเมนูเปิด AA ไว้เสมอ เพราะค่า AA ของ WebGL context เปลี่ยนภายหลังไม่ได้
+- UI scale ใช้ CSS `zoom` กับ overlay ของเมนูและ dialog ในเกม HUD glass คงขนาดเดิม การขยายเกิน 100% ทำได้เท่าที่หน้าต่างมีที่ว่างเหนือขนาดออกแบบ 1280 × 720 (`effectiveUiScale`) เพราะ Hangar และ PVE ที่ 120% บนจอ 1280 × 720 จะซ้อนกัน
+
+**Key bindings.** แต่ละคำสั่งมีปุ่มหลักกับปุ่มสำรอง เก็บเป็น `KeyboardEvent.code`
+- ปุ่มเริ่มต้นตาม 02 เปลี่ยนสองจุด:
+  - R = Look back (pending: ยังไม่มีระบบกล้องมองหลัง) และไม่มีปุ่มลัด reset flight อีกต่อไป reset อยู่ในหน้าพัก
+  - V = Cycle camera mode วน Balanced → Dynamic → Aircraft locked
+- Esc และ P ใช้พักเกมเสมอ ผูกกับคำสั่งอื่นไม่ได้ ปุ่ม F1–F12 และปุ่มระบบก็ผูกไม่ได้
+- ปุ่มที่ใช้อยู่แล้วจะไม่ถูกเขียนทับเงียบๆ หน้าจอถามว่าจะสลับกันไหม
+- Toggle ของ afterburner/airbrake ถูกล้างเมื่อพักเกม เหมือนปุ่มที่กดค้าง
 
 ## ข้อความ overlay และ input
 
@@ -138,6 +169,6 @@ Graphics preset ต้องลดต้นทุน GPU จริง ไม่�
 3. ย้าย Hangar เป็น overlay และเพิ่ม Armament ตาม 06
 4. PVE Setup ที่แสดงโหมด/map/ตัวเลือกตามสถานะจริงของระบบ
 5. Campaign Map shell ตาม 21 (ข้อมูลและ progress ทำงานแม้ยังเล่นภารกิจไม่ได้)
-6. Settings v2 ตาม 15 และหน้าจอหลังได้ mockup
+6. Settings ตาม 15 และหัวข้อ Settings ด้านบน (ทำแล้ว 28 ก.ย. 2026)
 
 ผ่านเมื่อเดินทาง Home → Mode → Setup → Flight → กลับหน้าเดิม 20 รอบโดย GLB ไม่ถูกโหลดซ้ำระหว่างหน้าเมนู และ resource count ไม่โต ทุกหน้าใช้ได้ด้วยคีย์บอร์ดล้วน ทุกตัวเลือกที่ยังไม่พร้อมบอกเหตุผลแทนการซ่อนหรือกดแล้วไม่เกิดอะไร

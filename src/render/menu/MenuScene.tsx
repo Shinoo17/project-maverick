@@ -26,6 +26,8 @@ export type { MenuShot }
 export interface MenuSceneProps {
   aircraft: AircraftDefinition
   shot: MenuShot
+  /** Pixel ratio (Graphics › Render scale). */
+  dpr: number | [number, number]
   /** True while a menu screen covers the scene (Campaign, PVE): draw nothing. */
   paused: boolean
   /** Slow spin on Home. */
@@ -48,9 +50,9 @@ export interface MenuSceneProps {
 // Menu screens never play animation stages, so the target list stays empty.
 const noStages: Record<string, boolean> = {}
 
-function MenuScene({ aircraft, shot, paused, turntable, reducedMotion, resetViewId, retryId, onReady, onError, weapons, weaponStatuses, onWeaponStatus, weaponRetryId }: MenuSceneProps) {
+function MenuScene({ aircraft, shot, dpr, paused, turntable, reducedMotion, resetViewId, retryId, onReady, onError, weapons, weaponStatuses, onWeaponStatus, weaponRetryId }: MenuSceneProps) {
   const deckMaterial = useRef<ReflectorMaterialImpl>(null)
-  return <Canvas shadows frameloop={paused ? 'never' : 'demand'} dpr={[1, 1.5]}
+  return <Canvas shadows frameloop={paused ? 'never' : 'demand'} dpr={dpr}
     camera={{ position: [12, 5, -14], fov: 36, near: 0.1, far: 200 }}
     gl={{ antialias: true, toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.98 }}>
     <color attach="background" args={['#050507']} />

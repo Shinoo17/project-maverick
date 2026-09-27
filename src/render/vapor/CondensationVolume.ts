@@ -9,10 +9,18 @@ import { vaporFragment, vaporVertex } from './shaders'
 import { vortexAirflow, vortexProfile, getVaporProfile } from './profile'
 import { CloudSideTransition } from './CloudSideTransition'
 import { ExhaustResponse, getExhaustProfile, type ExhaustConditions } from '../exhaust/profile'
+import type { EffectQuality } from '../graphicsSettings'
+
+/** Ray samples per quality step. Off skips the effect (and its rays, when both are off). */
+const VAPOR_SAMPLES: Record<EffectQuality, number> = { off: 0, low: 12, high: 24 }
+const EXHAUST_SAMPLE_SCALE: Record<EffectQuality, number> = { off: 0, low: 0.5, high: 1 }
+const MSAA_SAMPLES = 4
 
 /** One opaque scene pass + bounded ray integration. Owns all of its GPU resources. */
 export class CondensationVolume {
   readonly settings: VaporSettings = { ...defaultVaporSettings }
+  /** Graphics settings. The studio keeps the defaults (High, antialiased). */
+  quality: { vapor: EffectQuality; exhaust: EffectQuality } = { vapor: 'high', exhaust: 'high' }
   private readonly target: WebGLRenderTarget
   private readonly noise: Data3DTexture
   private readonly material: ShaderMaterial
@@ -36,7 +44,7 @@ export class CondensationVolume {
     this.target = new WebGLRenderTarget(1, 1, {
       type: renderer.extensions.has('EXT_color_buffer_float') ? HalfFloatType : UnsignedByteType,
       // Resolve depth as well as color so thin fins cleanly occlude the volume.
-      samples: Math.min(4, renderer.capabilities.maxSamples), depthBuffer: true,
+      samples: Math.min(MSAA_SAMPLES, renderer.capabilities.maxSamples), depthBuffer: true,
     })
     this.target.depthTexture = new DepthTexture(1, 1, UnsignedIntType)
     this.material = new ShaderMaterial({
@@ -50,7 +58,7 @@ export class CondensationVolume {
         exhaustPower: { value: 0 }, burnerStrength: { value: 0 }, exhaustTime: { value: 0 },
         nozzleInset: { value: 0 }, nozzleRound: { value: 0 },
         chamberRadius: { value: 0 }, burnerViolet: { value: 0 },
-        exhaustLength: { value: 0 }, exhaustTurbulence: { value: 0 },
+        exhaustLength: { value: 0 }, exhaustTurbulence: { value: 0 }, exhaustSampleScale: { value: 1 }, vaporSamples: { value: VAPOR_SAMPLES.high },
         solidBackground: { value: false }, passThrough: { value: false }, sceneColor: { value: this.target.texture }, sceneDepth: { value: this.target.depthTexture }, noiseTex: { value: this.noise },
         inverseProjection: { value: new Matrix4() }, cameraWorld: { value: new Matrix4() }, worldToAircraft: { value: new Matrix4() },
         cameraLocal: { value: new Vector3() }, airflowDirection: { value: new Vector3(-1, 0, 0) }, flowPhase: { value: 0 },
@@ -66,6 +74,14 @@ export class CondensationVolume {
     this.quad = new Mesh(new PlaneGeometry(2, 2), this.material)
     this.quad.frustumCulled = false
     this.scene.add(this.quad)
+  }
+
+  /** Graphics › Anti-aliasing. The multisampled target is rebuilt on its next use. */
+  setAntialias(renderer: WebGLRenderer, on: boolean) {
+    const samples = on ? Math.min(MSAA_SAMPLES, renderer.capabilities.maxSamples) : 0
+    if (this.target.samples === samples) return
+    this.target.samples = samples
+    this.target.dispose()
   }
 
   reset() {
@@ -142,7 +158,13 @@ export class CondensationVolume {
     const u = this.material.uniforms
     u.exhaustResolution.value.copy(this.size)
     u.solidBackground.value = scene.background instanceof Color
-    u.passThrough.value = this.strength * this.settings.density < .002 && this.exhaust.power < .002
+    // Off zeroes an effect for this frame only; its state keeps running, so switching back is seamless.
+    const vapor = this.quality.vapor !== 'off' ? this.strength : 0, exhaust = this.quality.exhaust !== 'off' ? this.exhaust.power : 0
+    u.strength.value = vapor
+    u.exhaustPower.value = exhaust
+    u.vaporSamples.value = VAPOR_SAMPLES[this.quality.vapor]
+    u.exhaustSampleScale.value = EXHAUST_SAMPLE_SCALE[this.quality.exhaust]
+    u.passThrough.value = vapor * this.settings.density < .002 && exhaust < .002
     u.worldToAircraft.value.copy(aircraftMatrix).invert()
     u.cameraWorld.value.copy(camera.matrixWorld)
     u.inverseProjection.value.copy(camera.projectionMatrixInverse)

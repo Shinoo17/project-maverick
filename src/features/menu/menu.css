@@ -7,8 +7,10 @@ Everything is scoped under .menu so it cannot reach the flight page or studio.
 Sections: tokens · frame layers · shared parts · buttons · narrow windows
 */
 
-/* ---------- Tokens ---------- */
-.menu {
+/* ---------- Tokens ----------
+   Also defined on .settings-scope, so the Settings panel keeps this look inside
+   the flight pause dialog, which is not under .menu. */
+.menu, .settings-scope {
   --menu-void: #050709;
   --menu-deep: #0b0f12;
   --menu-text: #dae2e6;
@@ -35,7 +37,10 @@ Sections: tokens · frame layers · shared parts · buttons · narrow windows
   --display-leading: 0.9;
   --gutter: 56px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
+  /* Interface › UI scale, set from the saved settings. */
+  --ui-scale: 1;
+}
+.menu {
   position: relative;
   height: 100dvh;
   min-height: 620px;
@@ -44,7 +49,7 @@ Sections: tokens · frame layers · shared parts · buttons · narrow windows
   color: var(--menu-text);
   font-family: var(--font-body);
 }
-html[lang='th'] .menu { --track-wide: 0.02em; --track: 0.02em; --track-tight: 0.01em; --display-leading: 1.25; }
+html[lang='th'] :is(.menu, .settings-scope) { --track-wide: 0.02em; --track: 0.02em; --track-tight: 0.01em; --display-leading: 1.25; }
 
 /* ---------- Frame layers (bottom to top) ---------- */
 .menu-stage { position: absolute; inset: 0; }
@@ -56,10 +61,12 @@ html[lang='th'] .menu { --track-wide: 0.02em; --track: 0.02em; --track-tight: 0.
 
 .menu-dim { position: absolute; inset: 0; pointer-events: none; background: rgba(3, 5, 7, 0.6); opacity: 0; transition: opacity 400ms var(--ease-out); }
 .menu[data-route='mode'] .menu-dim { opacity: 1; }
+/* Settings: a scrim from the left keeps the panel readable; the aircraft on the right stays clear. */
+.menu[data-route='settings'] .menu-dim { opacity: 1; background: linear-gradient(90deg, rgba(3, 5, 7, 0.9) 0%, rgba(3, 5, 7, 0.78) 44%, rgba(3, 5, 7, 0.1) 72%, transparent 100%); }
 .menu-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(122% 104% at 50% 46%, transparent 44%, rgba(2, 3, 5, 0.88) 100%); }
 
 /* The overlay lets drags reach the 3D scene; only its controls take the pointer. */
-.menu-overlay { position: absolute; inset: 0; pointer-events: none; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 22px rgba(0, 0, 0, 0.7); }
+.menu-overlay { position: absolute; inset: 0; zoom: var(--ui-scale); pointer-events: none; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 22px rgba(0, 0, 0, 0.7); }
 .menu-overlay :is(a, button, output, [role='meter']) { pointer-events: auto; }
 
 /* ---------- Shared parts ---------- */
@@ -99,6 +106,10 @@ html[lang='th'] .menu { --track-wide: 0.02em; --track: 0.02em; --track-tight: 0.
 /* Secondary: thin outline, e.g. MODE / HANGAR on Home. */
 .menu-button { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px; border: 1px solid var(--menu-outline); color: var(--menu-text); text-decoration: none; font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
 .menu-button:hover { background: rgba(154, 215, 232, 0.08); color: var(--menu-text); }
+
+/* Icon only, e.g. the Settings gear in the top bar. */
+.menu-icon-button { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--menu-text); }
+.menu-icon-button:hover { color: var(--menu-accent); }
 
 /* Launch: the one amber button per screen. */
 .menu-launch { display: flex; align-items: center; justify-content: space-between; width: 300px; height: 72px; padding: 0 26px; background: var(--menu-launch); color: var(--menu-void); text-shadow: none; font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: var(--track-wide); text-transform: uppercase; }

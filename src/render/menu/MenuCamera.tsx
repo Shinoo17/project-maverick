@@ -16,7 +16,7 @@ import { OrbitControls } from '@react-three/drei'
 import { MathUtils, PerspectiveCamera, Spherical, Vector3 } from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-export type MenuShot = 'home' | 'mode' | 'hangar' | 'armament'
+export type MenuShot = 'home' | 'mode' | 'hangar' | 'armament' | 'settings'
 
 /** Direction from the aircraft to the camera, and distance as a multiple of the framing distance. */
 const shots: Record<MenuShot, { direction: [number, number, number]; distance: number }> = {
@@ -27,7 +27,14 @@ const shots: Record<MenuShot, { direction: [number, number, number]; distance: n
   hangar: { direction: [1.15, 0.36, -1.05], distance: 1.05 },
   // Side view of a weapon, far enough back to fit between the text columns.
   armament: { direction: [0.12, 0.16, -1], distance: 1.4 },
+  // Side-on, nose to screen-left (towards the panel), pulled back to fit the right side.
+  settings: { direction: [0.2, 0.2, -1], distance: 1.5 },
 }
+
+/** How far the aircraft sits right of centre, as a share of the window width. */
+const viewShift: Record<MenuShot, number> = { home: 0, mode: 0, hangar: 0, armament: 0, settings: 0.26 }
+/** Below this width the Settings panel covers the window, so the lens stays centred. */
+const NARROW_WIDTH = 900
 
 /** Screens where dragging orbits the camera. */
 const orbitShots: readonly MenuShot[] = ['hangar', 'armament']
@@ -58,6 +65,15 @@ export function MenuCamera({ shot, reducedMotion, resetViewId }: { shot: MenuSho
   const goal = useRef<Spherical | null>(null)
   const { camera, size, invalidate } = useThree()
   const framing = framingDistance(camera as PerspectiveCamera, size.width / size.height)
+  const shift = useRef(0)
+  const shiftGoal = size.width < NARROW_WIDTH ? 0 : viewShift[shot]
+
+  // The view offset is stored in window pixels, so it is written again after a resize.
+  useEffect(() => {
+    if (reducedMotion) shift.current = shiftGoal
+    applyShift(camera as PerspectiveCamera, shift.current, size.width, size.height)
+    invalidate()
+  }, [shiftGoal, reducedMotion, size.width, size.height, camera, invalidate])
 
   // A new shot (or a reset) sets a goal position; the frame loop moves toward it.
   useEffect(() => {
@@ -74,9 +90,14 @@ export function MenuCamera({ shot, reducedMotion, resetViewId }: { shot: MenuSho
   // The glide moves around the aircraft (angle and distance), not in a straight
   // line: from underneath, a straight line would pass through the airframe.
   useFrame((_, delta) => {
+    const step = 1 - Math.exp(-delta * GLIDE_SPEED)
+    if (shift.current !== shiftGoal) {
+      shift.current = Math.abs(shiftGoal - shift.current) < 0.0005 ? shiftGoal : shift.current + (shiftGoal - shift.current) * step
+      applyShift(camera as PerspectiveCamera, shift.current, size.width, size.height)
+      invalidate()
+    }
     const target = goal.current
     if (!target) return
-    const step = 1 - Math.exp(-delta * GLIDE_SPEED)
     const current = new Spherical().setFromVector3(camera.position)
     const turn = angleBetween(current.theta, target.theta)
     current.theta += turn * step
@@ -98,4 +119,9 @@ export function MenuCamera({ shot, reducedMotion, resetViewId }: { shot: MenuSho
   return <OrbitControls ref={controls} makeDefault enabled={orbitShots.includes(shot)} enablePan={false} enableDamping={false}
     minDistance={MIN_DISTANCE} maxDistance={framing * 1.7} minPolarAngle={MIN_POLAR} maxPolarAngle={MAX_POLAR}
     onStart={onStart} />
+}
+
+function applyShift(camera: PerspectiveCamera, shift: number, width: number, height: number) {
+  if (shift === 0) camera.clearViewOffset()
+  else camera.setViewOffset(width, height, -shift * width, 0, width, height)
 }

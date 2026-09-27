@@ -15,6 +15,8 @@ uniform vec3 cameraLocal, airflowDirection, wingtipLeft, wingtipRight;
 uniform float strength, densityGain, noiseGain, turbulence, flowPhase;
 uniform float trailLength, trailRadius, pixelAngle;
 uniform bool solidBackground, passThrough;
+// Graphics › Vapor effects: 24 samples on High, fewer on Low.
+uniform float vaporSamples;
 varying vec2 vUv;
 
 float noise3(vec3 p) { return texture(noiseTex, p / 32.0).r; }
@@ -48,9 +50,10 @@ float opticalDepth(vec3 ray, vec3 origin, float surfaceDistance, float side) {
   vec2 hit = intersectTrail(ro, rd, extent);
   float start = max(0.0, hit.x), end = min(surfaceDistance, hit.y);
   if (end <= start) return 0.0;
-  float ds = (end - start) / 24.0;
+  float ds = (end - start) / max(1.0, vaporSamples);
   float optical = 0.0;
   for (int i = 0; i < 24; i++) {
+    if (float(i) >= vaporSamples) break;
     float t = start + (float(i) + .5) * ds;
     vec3 p = ro + rd * t;
     float age = clamp(p.z / trailLength, 0.0, 1.0);

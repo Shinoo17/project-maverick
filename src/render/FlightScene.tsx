@@ -19,9 +19,10 @@ import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import type { HudDriver } from '../features/flight/FlightInstruments'
+import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; fps?: RefObject<HTMLElement | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; onReady: () => void; onTelemetry: (state: AircraftState) => void }
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
 function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
@@ -93,6 +94,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha),
       velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
+    rig.baseFov = session.cameraFov; rig.snapFov = !session.running
     rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
     // The gate is the window, so it follows a resized one.
@@ -129,8 +131,31 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
 // Memoised: the page re-renders on every 10 Hz telemetry update, the scene never needs to.
 // With the menu open nothing moves, so the loop stops and frames are drawn only on demand.
 // Antialiasing comes from CondensationVolume's multisampled target, so the canvas carries none.
+// A frame-rate limit (Graphics settings) switches the running loop to on-demand frames paced by FrameLimiter.
 export default memo(function FlightScene(props: Props) {
-  return <Canvas frameloop={props.running ? 'always' : 'demand'} dpr={[1, 1.5]} gl={{ antialias: false }} camera={{ fov: 69, near: 0.5, far: 14000 }}>
+  const limit = props.graphics.frameRate === 'unlimited' ? null : props.graphics.frameRate
+  return <Canvas frameloop={props.running && limit === null ? 'always' : 'demand'} dpr={canvasDpr(props.graphics.renderScale)} gl={{ antialias: false }} camera={{ fov: 69, near: 0.5, far: 14000 }}>
     <TrainingRange /><AssetLoaderProvider><Suspense fallback={null}><FlightWorld {...props} /></Suspense></AssetLoaderProvider>
+    {props.running && limit !== null && <FrameLimiter fps={limit} />}
   </Canvas>
 })
+
+/** Asks for frames at most `fps` times a second. The browser still caps it at the display's refresh rate. */
+function FrameLimiter({ fps }: { fps: number }) {
+  const invalidate = useThree(state => state.invalidate)
+  useEffect(() => {
+    const interval = 1000 / fps
+    let last = performance.now(), id = requestAnimationFrame(loop)
+    function loop(now: number) {
+      id = requestAnimationFrame(loop)
+      // 1 ms of slack: a 60 Hz display ticks at 16.6–16.8 ms, so a strict 60 FPS cap would drop frames.
+      // Advancing by whole intervals keeps the average rate right on displays that are not a multiple.
+      if (now - last < interval - 1) return
+      last = Math.max(last + interval, now - interval)
+      invalidate()
+    }
+    invalidate()
+    return () => cancelAnimationFrame(id)
+  }, [fps, invalidate])
+  return null
+}

@@ -81,3 +81,14 @@ export function cameraRollOption(mode: CameraRollMode) {
 export function horizonStyleOption(style: HorizonStyle) {
   return horizonStyleOptions.find(option => option.id === style) ?? horizonStyleOptions[0]
 }
+
+/**
+ * Base vertical field of view in degrees, saved apart from the roll choices. The chase camera
+ * adds its dynamic widening (speed, burner, post-stall) on top of this.
+ */
+export const cameraFovRange = { min: 50, max: 70, step: 1, default: 56 } as const
+
+export function parseCameraFov(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return cameraFovRange.default
+  return Math.min(cameraFovRange.max, Math.max(cameraFovRange.min, Math.round(value)))
+}

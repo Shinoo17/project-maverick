@@ -7,15 +7,15 @@ reloads the aircraft. The current screen is drawn as an overlay on top.
   ├─ MenuStage       shared 3D aircraft (hidden on Campaign and PVE),
   │                  or weapon models on Armament
   ├─ dim + vignette  keep floating text readable
-  └─ <Screen>        HomeScreen, ModeSelectScreen, HangarScreen, …
+  └─ <Screen>        HomeScreen, ModeSelectScreen, HangarScreen, SettingsScreen, …
 
 Hangar and Armament share two pieces of state kept here: the aircraft being
 browsed (before SET ACTIVE) and the weapon picked for inspection.
 */
 // Shared menu styles load first so each screen's own sheet can refine them.
 import './menu.css'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { navigate, parentRoute, type MenuRouteId } from '../../app/routes'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { backRoute, navigate, type MenuRouteId } from '../../app/routes'
 import { useSessionSettings } from '../../app/sessionStore'
 import { getAircraft } from '../../content/aircraft'
 import type { AircraftId } from '../../content/schemas'
@@ -29,14 +29,16 @@ import { HangarScreen } from '../hangar/HangarScreen'
 import { HomeScreen } from '../home/HomeScreen'
 import { ModeSelectScreen } from '../mode/ModeSelectScreen'
 import { PveSetupScreen } from '../pve/PveSetupScreen'
-import { useMenuHotkeys } from './hooks'
+import { SettingsScreen } from '../settings/SettingsScreen'
+import { useMenuHotkeys, useUiScale } from './hooks'
 import { MenuStage } from './MenuStage'
 
 /** Camera shot per screen. Campaign and PVE hide the scene, so they keep the Mode shot. */
-const shotFor: Record<MenuRouteId, MenuShot> = { home: 'home', mode: 'mode', hangar: 'hangar', armament: 'armament', campaign: 'mode', pve: 'mode' }
+const shotFor: Record<MenuRouteId, MenuShot> = { home: 'home', mode: 'mode', hangar: 'hangar', armament: 'armament', campaign: 'mode', pve: 'mode', settings: 'settings' }
 
 export function MenuLayout({ route }: { route: MenuRouteId }) {
   const { aircraftId } = useSessionSettings()
+  const uiScale = useUiScale()
   // The aircraft being browsed in the Hangar before SET ACTIVE. null = show the active one.
   const [previewId, setPreviewId] = useState<AircraftId | null>(null)
   const [resetViewId, setResetViewId] = useState(0)
@@ -47,7 +49,8 @@ export function MenuLayout({ route }: { route: MenuRouteId }) {
 
   const inHangar = route === 'hangar' || route === 'armament'
   useEffect(() => { if (!inHangar) setPreviewId(null) }, [inHangar])
-  useMenuHotkeys({ Escape: () => { const parent = parentRoute[route]; if (parent) navigate(parent) } })
+  // Settings reads Esc itself (it has sub-pages), so the generic back skips it.
+  useMenuHotkeys({ Escape: () => { const parent = backRoute(route); if (parent && route !== 'settings') navigate(parent) } })
 
   const shown = getAircraft(inHangar && previewId ? previewId : aircraftId)
   const sceneHidden = route === 'campaign' || route === 'pve'
@@ -67,7 +70,7 @@ export function MenuLayout({ route }: { route: MenuRouteId }) {
     navigate('armament')
   }
 
-  return <main className="menu" data-route={route}>
+  return <main className="menu" data-route={route} style={{ '--ui-scale': uiScale } as CSSProperties}>
     <MenuStage aircraft={shown} shot={shotFor[route]} hidden={sceneHidden} resetViewId={resetViewId}
       weapons={sceneWeapons} weaponStatuses={weaponStatuses} onWeaponStatus={onWeaponStatus} weaponRetryId={weaponRetryId} />
     <div className="menu-dim" aria-hidden="true" />
@@ -81,5 +84,6 @@ export function MenuLayout({ route }: { route: MenuRouteId }) {
       statuses={weaponStatuses} onRetry={retryWeapons} onResetView={() => setResetViewId(value => value + 1)} />}
     {route === 'campaign' && <CampaignScreen />}
     {route === 'pve' && <PveSetupScreen />}
+    {route === 'settings' && <SettingsScreen />}
   </main>
 }
