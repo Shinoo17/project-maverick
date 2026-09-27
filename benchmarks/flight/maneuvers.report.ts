@@ -6,6 +6,7 @@ import { bell, bellProbe, cobraEntry, cobraExit, herbst, immelmann, kulbit, loop
 import { maneuverTargets, targetStatus, type Target } from './targets'
 import { flightProfileVersion } from '../../src/game/flight/profile'
 import { createMouseStick, defaultMouseSettings, readStickAxes, screenFrame } from '../../src/game/input/mouseStick'
+import type { CameraSettings } from '../../src/game/camera/cameraSettings'
 import { FlightInput } from '../../src/game/input/FlightInput'
 
 /** MR0 maneuver instrumentation (docs/psm-maneuver-control-plan.md §3, §5 MR0). Report only.
@@ -16,6 +17,11 @@ type Row = Record<string, unknown>
 /** RC5: pointer held at the top-right corner (45°, full deflection) while the bank sweeps.
  * `horizon`/`aircraft` read the stick in the camera's frame (pre-MR1); `body` is the MR1
  * default control frame, fed the horizon camera's frame to show it is ignored. */
+// The pre-style camera modes: a level lens is Horizon locked Dynamic, riding the airframe is Aircraft locked.
+const views: Record<'horizon' | 'aircraft', CameraSettings> = {
+  horizon: { roll: 'horizon', horizonStyle: 'dynamic' },
+  aircraft: { roll: 'aircraft', horizonStyle: 'balanced' },
+}
 function mouseProbe() {
   const stick = createMouseStick()
   stick.live = true; stick.x = Math.SQRT1_2; stick.y = Math.SQRT1_2
@@ -25,9 +31,9 @@ function mouseProbe() {
     let axes: { pitch: number; roll: number }
     if (mode === 'body') {
       const input = new FlightInput({ ...defaultMouseSettings, mode: 'stick' }); input.setViewport(1000, 1000); input.engage()
-      input.move(Math.SQRT1_2 * input.gate.radius, -Math.SQRT1_2 * input.gate.radius); input.screen = screenFrame(state, 'horizon')
+      input.move(Math.SQRT1_2 * input.gate.radius, -Math.SQRT1_2 * input.gate.radius); input.screen = screenFrame(state, views.horizon)
       axes = input.command(0, 'a', 'mouse')
-    } else axes = readStickAxes(stick, screenFrame(state, mode), 0)!
+    } else axes = readStickAxes(stick, screenFrame(state, views[mode]), 0)!
     return { bankDeg, mode, pitch: Math.round(axes.pitch * 100) / 100, roll: Math.round(axes.roll * 100) / 100 }
   }))
 }

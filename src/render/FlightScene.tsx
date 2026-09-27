@@ -79,7 +79,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
         // roll would make the aircraft answer differently at 30 fps than at 144.
         const profile = getFlightProfile(live.aircraftId)
         session.input.highAoa = interpretEnvelope(live, observeAirflow(live, profile), profile).highAoa
-        session.input.screen = screenFrame(live, session.cameraMode)
+        session.input.screen = screenFrame(live, session.camera)
         return session.input.command(tick, id, session.preset)
       })
       current.current = runtime.snapshot().aircraft[0]
@@ -93,7 +93,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha),
       velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
-    rig.update(camera as PerspectiveCamera, pose, session.cameraMode, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
+    rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)

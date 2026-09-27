@@ -7,11 +7,15 @@ import { FlightInput } from '../src/game/input/FlightInput'
 import { positionalHorizon } from './invariants/helpers'
 import { FlightCamera } from '../src/render/FlightCamera'
 import { MOUSE_STICK, createMouseStick, engageStick, moveStick, readStickAxes, screenFrame, stickGate } from '../src/game/input/mouseStick'
-import type { CameraRollMode } from '../src/render/FlightCamera'
+import type { CameraSettings } from '../src/game/camera/cameraSettings'
 import type { AircraftState } from '../src/game/state/WorldState'
 import { stepFlight } from '../src/game/flight/stepFlight'
 import { en } from '../src/locales/en'
 import { th } from '../src/locales/th'
+
+// The two pre-style modes: a level lens is Horizon locked Dynamic, riding the airframe is Aircraft locked.
+const HORIZON: CameraSettings = { roll: 'horizon', horizonStyle: 'dynamic' }
+const AIRCRAFT: CameraSettings = { roll: 'aircraft', horizonStyle: 'balanced' }
 const make = () => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'] })
 function run(fps: number, seconds: number, track: (tick: number) => Partial<PilotCommand> = () => ({})) {
   const runtime = make(); runtime.start()
@@ -79,7 +83,7 @@ describe('P1 flight acceptance', () => {
     const corners: Vector3[] = []
     for (const x of [-9.45, 9.45]) for (const y of [-3, 3]) for (const z of [-7.5, 7.5]) corners.push(new Vector3(x, y, z))
     const distances: number[] = []
-    for (const speed of [0, 65, 200, 380]) {
+    for (const view of [HORIZON, AIRCRAFT, { roll: 'horizon', horizonStyle: 'balanced' }] satisfies CameraSettings[]) for (const speed of [0, 65, 200, 380]) {
       for (const aspect of [16 / 9, 4 / 3]) {
         const state = make().snapshot().aircraft[0], camera = new PerspectiveCamera(69, aspect, 0.5, 14000), rig = new FlightCamera()
         const q = new Quaternion().copy(state.orientation), forward = new Vector3(1, 0, 0).applyQuaternion(q)
@@ -87,7 +91,7 @@ describe('P1 flight acceptance', () => {
         state.velocity = { x: forward.x * speed, y: forward.y * speed, z: forward.z * speed }
         for (let i = 0; i < 600; i++) {
           state.position = { x: state.position.x + state.velocity.x / 60, y: state.position.y + state.velocity.y / 60, z: state.position.z + state.velocity.z / 60 }
-          rig.update(camera, state, 'horizon', 1 / 60)
+          rig.update(camera, state, view, 1 / 60)
         }
         camera.updateMatrixWorld()
         const origin = new Vector3().copy(state.position)
@@ -96,7 +100,7 @@ describe('P1 flight acceptance', () => {
           expect(Math.max(Math.abs(ndc.x), Math.abs(ndc.y))).toBeLessThan(0.95)
           expect(ndc.z).toBeLessThan(1)
         }
-        if (aspect === 16 / 9) distances.push(camera.position.distanceTo(origin))
+        if (aspect === 16 / 9 && view === HORIZON) distances.push(camera.position.distanceTo(origin))
       }
     }
     expect(distances[0]).toBeGreaterThan(22)
@@ -112,13 +116,13 @@ describe('P1 flight acceptance', () => {
       // would be testing reverse flow instead.
       const nose = new Vector3(1, 0, 0).applyQuaternion(q).multiplyScalar(100)
       state.velocity = { x: nose.x, y: nose.y, z: nose.z }
-      rig.update(camera, state, 'horizon', 1 / 60)
+      rig.update(camera, state, HORIZON, 1 / 60)
     }
     expect(new Vector3(0, 1, 0).applyQuaternion(camera.quaternion).y).toBeGreaterThan(0.95)
   })
   it('camera modes never mutate the aircraft and remain finite through vertical flight', () => {
     const state = make().snapshot().aircraft[0], camera = new PerspectiveCamera()
-    for (const mode of ['horizon', 'aircraft'] as const) {
+    for (const mode of [HORIZON, AIRCRAFT, { roll: 'horizon', horizonStyle: 'balanced' }] satisfies CameraSettings[]) {
       const rig = new FlightCamera()
       let last: Quaternion | null = null
       for (let i = 0; i <= 720; i++) {
@@ -170,7 +174,7 @@ function place(input: FlightInput, aim: { x: number; y: number }) {
   const radius = input.gate.radius
   input.move(aim.x * radius - input.stick.px, -aim.y * radius - input.stick.py)
 }
-function flyMouse(state: AircraftState, aim: (seconds: number) => { x: number; y: number }, seconds: number, mode: CameraRollMode = 'horizon') {
+function flyMouse(state: AircraftState, aim: (seconds: number) => { x: number; y: number }, seconds: number, mode: CameraSettings = HORIZON) {
   const input = new FlightInput(positionalHorizon), rig = new FlightCamera(), camera = new PerspectiveCamera()
   let peakCrossTrack = 0
   input.setViewport(1000, 1000); input.engage()
@@ -313,21 +317,21 @@ describe('positional mouse stick', () => {
     for (const bank of [0, 0.6, -0.6, Math.PI]) {
       const q = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), bank)
       state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
-      const level = screenFrame(state, 'horizon')
+      const level = screenFrame(state, HORIZON)
       expect(Math.abs(level.angle)).toBeCloseTo(Math.abs(bank))
       expect(level.blend).toBe(1)
       // Riding the whole bank leaves nothing rotated on screen: the raw body stick.
-      expect(screenFrame(state, 'aircraft')).toEqual({ angle: 0, blend: 1 })
+      expect(screenFrame(state, AIRCRAFT)).toEqual({ angle: 0, blend: 1 })
     }
     // Straight down there is no level frame at all, so the frame is the identity and the
     // stick is simply the body stick.
     const vertical = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -Math.PI / 2)
     state.orientation = { x: vertical.x, y: vertical.y, z: vertical.z, w: vertical.w }
-    expect(screenFrame(state, 'horizon').angle).toBe(0)
+    expect(screenFrame(state, HORIZON).angle).toBe(0)
     // Just outside the cone the correction is partial rather than absent.
     const steep = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -1.4)
     state.orientation = { x: steep.x, y: steep.y, z: steep.z, w: steep.w }
-    const partial = screenFrame(state, 'horizon')
+    const partial = screenFrame(state, HORIZON)
     expect(partial.blend).toBeGreaterThan(0); expect(partial.blend).toBeLessThan(1)
   })
 })
@@ -366,8 +370,8 @@ describe('mouse flight', () => {
       input.setViewport(1000, 1000); input.engage()
       for (let i = 0; i < 9 * 120; i++) {
         place(input, circle(i / 120, sign))
-        rig.update(camera, state, 'horizon', 1 / 120)
-        input.screen = screenFrame(state, 'horizon')
+        rig.update(camera, state, HORIZON, 1 / 120)
+        input.screen = screenFrame(state, HORIZON)
         const before = new Quaternion().copy(state.orientation)
         stepFlight(state, input.command(i, state.id, 'mouse'), 1 / 120)
         const after = new Quaternion().copy(state.orientation)
@@ -401,8 +405,8 @@ describe('mouse flight', () => {
     let steepest = 0
     for (let i = 0; i < 8 * 120; i++) {
       place(input, { x: 0, y: -1 })
-      rig.update(camera, state, 'horizon', 1 / 120)
-      input.screen = screenFrame(state, 'horizon')
+      rig.update(camera, state, HORIZON, 1 / 120)
+      input.screen = screenFrame(state, HORIZON)
       const before = new Quaternion().copy(state.orientation)
       stepFlight(state, input.command(i, state.id, 'mouse'), 1 / 120)
       const after = new Quaternion().copy(state.orientation)
@@ -450,8 +454,8 @@ describe('mouse flight', () => {
     let accumulated = 0
     for (let i = 0; i < 3 * 120; i++) {
       place(input, { x: 1, y: 0 })
-      rig.update(camera, state, 'horizon', 1 / 120)
-      input.screen = screenFrame(state, 'horizon')
+      rig.update(camera, state, HORIZON, 1 / 120)
+      input.screen = screenFrame(state, HORIZON)
       const before = new Quaternion().copy(state.orientation)
       stepFlight(state, input.command(i, state.id, 'mouse'), 1 / 120)
       const after = new Quaternion().copy(state.orientation)
@@ -461,7 +465,7 @@ describe('mouse flight', () => {
       if (i > 12 && i < 120) expect(state.rates.roll).toBeGreaterThan(0.3)
     }
     expect(accumulated).toBeGreaterThan(2.5)
-    expect(screenFrame(state, 'horizon').angle).toBeCloseTo(Math.PI / 2, 1)
+    expect(screenFrame(state, HORIZON).angle).toBeCloseTo(Math.PI / 2, 1)
     expect(state.alive).toBe(true)
   })
   it('lets a held key outrank the stick on the axis it owns', () => {
@@ -484,10 +488,10 @@ describe('mouse flight', () => {
         place(input, circle(i / fps, 1))
         runtime.advance(1 / fps, (tick, id) => {
           const live = runtime.snapshot().aircraft[0]
-          input.screen = screenFrame(live, 'horizon')
+          input.screen = screenFrame(live, HORIZON)
           return input.command(tick, id, 'mouse')
         })
-        rig.update(camera, runtime.snapshot().aircraft[0], 'horizon', 1 / fps)
+        rig.update(camera, runtime.snapshot().aircraft[0], HORIZON, 1 / fps)
       }
       return runtime.snapshot().aircraft[0]
     })

@@ -1,6 +1,7 @@
 import { Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
-import type { CameraRollMode } from '../../render/FlightCamera'
+import type { CameraSettings } from '../camera/cameraSettings'
+import { balancedTilt, driftShareOf, psmShareOf } from '../camera/cameraRoll'
 import { WORLD_STEP } from '../runtime/clock'
 
 /*
@@ -239,10 +240,15 @@ screen: its bank about the flight axis, measured against the horizon the camera 
 Read off the attitude rather than off the camera's own up on purpose. The camera's up is
 smoothed, and a control that reads a smoothed vector which is itself chasing the aircraft
 closes a loop: in a steep dive the correction turns elevator into aileron, the roll moves the
-horizon reference, and the aircraft settles into a barrel roll nobody asked for. The two
-camera modes are the two ends of the same quantity — 'aircraft' rides the whole bank and
-leaves nothing on screen, 'horizon' holds level and leaves all of it — so neither needs the
-rig to say so, and the answer is identical at every render rate.
+horizon reference, and the aircraft settles into a barrel roll nobody asked for. Each camera
+style is a known share of the same bank — Aircraft locked rides all of it and leaves nothing
+on screen, Horizon locked Dynamic holds level and leaves all of it (its boom swings, its lens
+does not roll), Balanced leaves the bank minus its sine tilt — so none needs the rig to say
+so, and the answer is identical at every render rate.
+
+At high incidence every style hands over to the level PSM shot (Aircraft locked keeps its
+roll through a jet drift, `driftShareOf`). Both are read from the same state, unsmoothed, and
+the level correction is blended in through `blend`.
 */
 export interface ScreenFrame { angle: number; blend: number }
 export const LEVEL_FRAME: ScreenFrame = { angle: 0, blend: 1 }
@@ -267,13 +273,22 @@ screen: its bank about the flight axis, measured against the horizon the camera 
 Read off the attitude rather than off the camera's own up on purpose. The camera's up is
 smoothed, and a control that reads a smoothed vector which is itself chasing the aircraft
 closes a loop: in a steep dive the correction turns elevator into aileron, the roll moves the
-horizon reference, and the aircraft settles into a barrel roll nobody asked for. The two
-camera modes are the two ends of the same quantity — 'aircraft' rides the whole bank and
-leaves nothing on screen, 'horizon' holds level and leaves all of it — so neither needs the
-rig to say so, and the answer is identical at every render rate.
+horizon reference, and the aircraft settles into a barrel roll nobody asked for. Each camera
+style is a known share of the same bank — Aircraft locked rides all of it and leaves nothing
+on screen, Horizon locked Dynamic holds level and leaves all of it (its boom swings, its lens
+does not roll), Balanced leaves the bank minus its sine tilt — so none needs the rig to say
+so, and the answer is identical at every render rate.
+
+At high incidence every style hands over to the level PSM shot (Aircraft locked keeps its
+roll through a jet drift, `driftShareOf`). Both are read from the same state, unsmoothed, and
+the level correction is blended in through `blend`.
 */
-export function screenFrame(state: AircraftState, mode: CameraRollMode): ScreenFrame {
-  if (mode === 'aircraft') return LEVEL_FRAME
+export function screenFrame(state: AircraftState, camera: CameraSettings): ScreenFrame {
+  const balanced = camera.roll === 'horizon' && camera.horizonStyle === 'balanced'
+  const level = camera.roll === 'horizon' && !balanced
+  // Aircraft locked keeps riding the airframe through a jet drift, so only the rest hands over.
+  const psm = level ? 1 : camera.roll === 'aircraft' ? psmShareOf(state) * (1 - driftShareOf(state)) : psmShareOf(state)
+  if (!balanced && psm === 0) return LEVEL_FRAME
   ORIENTATION.copy(state.orientation as Quaternion)
   FORWARD.set(1, 0, 0).applyQuaternion(ORIENTATION)
   BODY_UP.set(0, 1, 0).applyQuaternion(ORIENTATION)
@@ -282,5 +297,10 @@ export function screenFrame(state: AircraftState, mode: CameraRollMode): ScreenF
   if (t === 0) return LEVEL_FRAME
   LEVEL_UP.set(0, 1, 0).addScaledVector(FORWARD, -FORWARD.y).normalize()
   LEVEL_RIGHT.crossVectors(FORWARD, LEVEL_UP)
-  return { angle: Math.atan2(BODY_UP.dot(LEVEL_RIGHT), BODY_UP.dot(LEVEL_UP)), blend: t * t * (3 - 2 * t) }
+  const bank = Math.atan2(BODY_UP.dot(LEVEL_RIGHT), BODY_UP.dot(LEVEL_UP)), cone = t * t * (3 - 2 * t)
+  if (level) return { angle: bank, blend: cone }
+  // Balanced leaves the bank minus its tilt; the tilt fades out as the PSM shot takes over.
+  if (balanced) return { angle: bank - (1 - psm) * balancedTilt(bank), blend: cone }
+  // Aircraft locked leaves nothing, so only the PSM share of the level correction applies.
+  return { angle: bank, blend: psm * cone }
 }

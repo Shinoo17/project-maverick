@@ -18,7 +18,7 @@ it('the flow-blended positional mouse produces identical commands and flight at 
       const state = runtime.snapshot().aircraft[0], profile = getFlightProfile(state.aircraftId)
       input.highAoa = interpretEnvelope(state, observeAirflow(state, profile), profile).highAoa
       peakBlend = Math.max(peakBlend, input.highAoa)
-      input.screen = screenFrame(state, 'horizon')
+      input.screen = screenFrame(state, { roll: 'horizon', horizonStyle: 'dynamic' })
       return input.command(tick, id, 'mouse')
     })
     const result = { snapshot: runtime.snapshot(), replay: runtime.exportReplay(), peakBlend }

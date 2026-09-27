@@ -74,7 +74,7 @@ function Preview() {
   return <div className="app-shell is-flight"><main className="flight-root hud-preview-sky" style={frame}><div className="flight-hud">
     <FlightInstruments driver={driver} />
     <div className="flight-identity"><strong>F-22</strong><span>{t('training')} / {t('flatRange')}</span></div>
-    <div className="flight-actions"><span>{t('horizonCamera')}</span><button>{t('pauseFlight')} · Esc</button></div>
+    <div className="flight-actions"><span>{t('cameraRollHorizon')}</span><button>{t('pauseFlight')} · Esc</button></div>
     <FlightSystemStatus state={telemetry} />
     <PlaygroundHud state={telemetry} lesson={lesson} cameraChanged={false} lab={lab} />
     <p className="flight-warning" role="status">{warning ? t(warning) : ''}</p>

@@ -7,7 +7,7 @@ import { flightProfileVersion, getFlightProfile } from '../../src/game/flight/pr
 import { observeAirflow } from '../../src/game/flight/airflow'
 import { interpretEnvelope } from '../../src/game/flight/envelope'
 import { FLIGHT_STEP } from '../../src/game/runtime/clock'
-import { FlightCamera, type CameraRollMode } from '../../src/render/FlightCamera'
+import { FlightCamera, type CameraSettings } from '../../src/render/FlightCamera'
 import { projectVelocityMarker } from '../../src/features/flight/hudPainter'
 import { screenFrame } from '../../src/game/input/mouseStick'
 import type { AircraftState } from '../../src/game/state/WorldState'
@@ -26,7 +26,14 @@ Presentation only; nothing here feeds flight. Report only, no targets yet.
 const aircraftIds = ['f22', 'su57'] as const
 const aspects = [['9:16', 9 / 16], ['4:3', 4 / 3], ['16:9', 16 / 9], ['21:9', 21 / 9]] as const
 const fpsList = [30, 60, 144] as const
-const modes: CameraRollMode[] = ['horizon', 'aircraft']
+// 'horizon' keeps the pre-style label: a level lens (Horizon locked Dynamic). 'aircraft' is
+// Aircraft locked, as before; 'balanced' is the default Horizon locked camera.
+const views: Record<string, CameraSettings> = {
+  horizon: { roll: 'horizon', horizonStyle: 'dynamic' },
+  balanced: { roll: 'horizon', horizonStyle: 'balanced' },
+  aircraft: { roll: 'aircraft', horizonStyle: 'balanced' },
+}
+const modes = Object.keys(views)
 const HEIGHT = 900, INSET = 24
 const bands = [[0, 20], [20, 40], [40, 70], [70, 110], [110, 181]] as const
 const bandName = ([lo, hi]: readonly [number, number]) => `${lo}-${Math.min(hi, 180)}`
@@ -66,15 +73,15 @@ function pose(trace: Trace, time: number): AircraftState {
 
 /** The screen-up the mouse mapping assumes, about the nose (readStickAxes + screenFrame):
  * the stick is turned by angle · blend toward the held horizon, then eased back to body axes by highAoa. */
-function impliedUp(state: AircraftState, mode: CameraRollMode, nose: Vector3) {
+function impliedUp(state: AircraftState, mode: string, nose: Vector3) {
   const bodyUp = new Vector3(0, 1, 0).applyQuaternion(new Quaternion().copy(state.orientation))
   const profile = getFlightProfile(state.aircraftId)
   const highAoa = interpretEnvelope(state, observeAirflow(state, profile), profile).highAoa
-  const frame = screenFrame(state, mode)
+  const frame = screenFrame(state, views[mode])
   return bodyUp.applyAxisAngle(nose, -frame.angle * frame.blend * (1 - highAoa))
 }
 
-function measure(trace: Trace, mode: CameraRollMode, aspect: number, fps: number) {
+function measure(trace: Trace, mode: string, aspect: number, fps: number) {
   const width = HEIGHT * aspect, dt = 1 / fps
   const camera = new PerspectiveCamera(69, aspect, 0.5, 14000), rig = new FlightCamera()
   const duration = (trace.samples.length - 1) * FLIGHT_STEP
@@ -84,7 +91,7 @@ function measure(trace: Trace, mode: CameraRollMode, aspect: number, fps: number
   let lastUp: Vector3 | null = null, lastQ: Quaternion | null = null
   for (let time = 0; time <= duration + 1e-9; time += dt) {
     const state = pose(trace, time)
-    rig.update(camera, state, mode, dt, false)
+    rig.update(camera, state, views[mode], dt, false)
     camera.updateMatrixWorld()
     frames++
     minFov = Math.min(minFov, camera.fov); maxFov = Math.max(maxFov, camera.fov)

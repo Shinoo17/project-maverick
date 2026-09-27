@@ -1,7 +1,11 @@
 import { expect, it } from 'vitest'
 import { PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import { createAircraft, runScenario } from '../benchmarks/flight/harness'
-import { FlightCamera, type CameraRollMode } from '../src/render/FlightCamera'
+import { FlightCamera, type CameraSettings } from '../src/render/FlightCamera'
+
+// The two pre-style modes: a level lens is Horizon locked Dynamic, riding the airframe is Aircraft locked.
+const HORIZON: CameraSettings = { roll: 'horizon', horizonStyle: 'dynamic' }
+const AIRCRAFT: CameraSettings = { roll: 'aircraft', horizonStyle: 'balanced' }
 import { FLIGHT_STEP } from '../src/game/runtime/clock'
 import { projectVelocityMarker } from '../src/features/flight/hudPainter'
 import type { AircraftState } from '../src/game/state/WorldState'
@@ -12,7 +16,7 @@ it('shows actual decoupling from airflow alone and respects reduced motion', () 
   state.velocity = { x: 0, y: 0, z: 100 }
   const render = (reduced = false) => {
     const before = structuredClone(state), camera = new PerspectiveCamera(), rig = new FlightCamera()
-    for (let frame = 0; frame < 180; frame++) rig.update(camera, state, 'horizon', 1 / 60, reduced)
+    for (let frame = 0; frame < 180; frame++) rig.update(camera, state, HORIZON, 1 / 60, reduced)
     expect(state).toEqual(before)
     expect([...camera.position.toArray(), ...camera.quaternion.toArray()].every(Number.isFinite)).toBe(true)
     return camera
@@ -35,7 +39,7 @@ it('diagnostic framing checks projected subject corners at high incidence/aspect
   const { Box3, Quaternion, Vector3 } = await import('three')
   const { projectedAircraftBounds } = await import('../src/render/FlightCamera')
   const bounds = new Box3(new Vector3(-9.45, -2.5, -7), new Vector3(9.45, 2.5, 7))
-  for (const aspect of [9 / 16, 4 / 3, 16 / 9, 21 / 9]) for (const degrees of [30, 60, 90, 120, 180]) for (const reduced of [false, true]) for (const mode of ['horizon', 'aircraft'] as const) {
+  for (const aspect of [9 / 16, 4 / 3, 16 / 9, 21 / 9]) for (const degrees of [30, 60, 90, 120, 180]) for (const reduced of [false, true]) for (const mode of [HORIZON, AIRCRAFT]) {
     const state = createAircraft('f22'), q = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), degrees * Math.PI / 180)
     state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
     const before = structuredClone(state), camera = new PerspectiveCamera(61, aspect, 0.5, 14000), rig = new FlightCamera(true)
@@ -58,7 +62,7 @@ function seeded(incidenceDeg: number, bankDeg = 0, speed = 100) {
   state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
   return state
 }
-const settle = (state: AircraftState, mode: CameraRollMode = 'horizon', aspect = 16 / 9, frames = 240) => {
+const settle = (state: AircraftState, mode: CameraSettings = HORIZON, aspect = 16 / 9, frames = 240) => {
   const camera = new PerspectiveCamera(69, aspect, 0.5, 14000), rig = new FlightCamera()
   for (let frame = 0; frame < frames; frame++) rig.update(camera, state, mode, 1 / 60)
   camera.updateMatrixWorld()
@@ -77,7 +81,7 @@ it('frames the airframe at 30/60/90/120/180 incidence and keeps the FPM in view 
   const corners: Vector3[] = []
   for (const x of [-9.45, 9.45]) for (const y of [-3, 3]) for (const z of [-7.5, 7.5]) corners.push(new Vector3(x, y, z))
   for (const aspect of [4 / 3, 16 / 9]) for (const incidence of [30, 60, 90, 120, 180]) {
-    const state = seeded(incidence), before = structuredClone(state), camera = settle(state, 'horizon', aspect)
+    const state = seeded(incidence), before = structuredClone(state), camera = settle(state, HORIZON, aspect)
     const q = new Quaternion().copy(state.orientation), origin = new Vector3().copy(state.position)
     for (const corner of corners) {
       const ndc = corner.clone().applyQuaternion(q).add(origin).project(camera)
@@ -100,7 +104,7 @@ it('never flips the view through reverse flow (the 0.88 share crossed zero at 18
     const camera = new PerspectiveCamera(69, 16 / 9, 0.5, 14000), rig = new FlightCamera()
     let last: Quaternion | null = null
     for (let i = 0; i < trace.samples.length; i += 2) {
-      rig.update(camera, trace.samples[i].state, 'horizon', 2 * FLIGHT_STEP)
+      rig.update(camera, trace.samples[i].state, HORIZON, 2 * FLIGHT_STEP)
       expect(camera.quaternion.toArray().every(Number.isFinite)).toBe(true)
       // 0.1 rad per 1/60 s is ~340°/s; the flip moved ~0.25 rad in one frame.
       if (last) expect(last.angleTo(camera.quaternion)).toBeLessThan(0.1)
@@ -112,7 +116,7 @@ it('never flips the view through reverse flow (the 0.88 share crossed zero at 18
   const camera = new PerspectiveCamera(69, 16 / 9, 0.5, 14000), rig = new FlightCamera()
   for (let step = 0; step <= 240; step++) {
     const state = seeded(160 + step / 6)
-    rig.update(camera, state, 'horizon', 1 / 60)
+    rig.update(camera, state, HORIZON, 1 / 60)
     // The look turns at most 4π/3 rad/s (0.07 rad per frame, plus slerp catch-up); a flip would be ~π.
     if (last) expect(last.angleTo(camera.quaternion)).toBeLessThan(0.1)
     last = camera.quaternion.clone()
@@ -124,19 +128,22 @@ const viewUp = (camera: PerspectiveCamera) => {
   return { view, up: new Vector3(0, 1, 0).applyQuaternion(camera.quaternion), level: new Vector3(0, 1, 0).addScaledVector(view, -view.y).normalize() }
 }
 
-it('horizon mode holds the horizon at every AoA; aircraft mode rides the airframe', () => {
+// Camera styles: Full Roll (the old aircraft mode) rides the airframe only in cruise. From
+// full decouple every style hands over to the level PSM shot, so at 60°+ it holds level too.
+it('horizon mode holds the horizon at every AoA; aircraft mode rides the airframe in cruise', () => {
   for (const [incidence, bank] of [[0, 60], [60, 90], [60, 180], [120, 45]]) {
     const state = seeded(incidence, bank), before = structuredClone(state)
     const { up, level } = viewUp(settle(state))
     expect(up.angleTo(level)).toBeLessThan(0.02)
-    const aircraft = viewUp(settle(state, 'aircraft')), body = bodyUp(state).addScaledVector(aircraft.view, -bodyUp(state).dot(aircraft.view))
+    const aircraft = viewUp(settle(state, AIRCRAFT)), body = bodyUp(state).addScaledVector(aircraft.view, -bodyUp(state).dot(aircraft.view))
     // The aim point sits a little above the look line, so allow a few degrees.
-    if (body.lengthSq() > 0.05) expect(aircraft.up.angleTo(body.normalize())).toBeLessThan(0.15)
+    if (incidence === 0) expect(aircraft.up.angleTo(body.normalize())).toBeLessThan(0.15)
+    else expect(aircraft.up.angleTo(aircraft.level)).toBeLessThan(0.02)
     expect(state).toEqual(before)
   }
   // Reduced motion holds it as well, on the nose.
   const drift = seeded(60, 90), camera = new PerspectiveCamera(69, 16 / 9, 0.5, 14000), rig = new FlightCamera()
-  rig.update(camera, drift, 'horizon', 1 / 60, true)
+  rig.update(camera, drift, HORIZON, 1 / 60, true)
   expect(cameraUp(drift, camera).angleTo(levelUp(drift))).toBeLessThan(0.02)
 })
 
@@ -149,7 +156,7 @@ it('carries its up through a vertical path and rolls back to level no faster tha
     state.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
     const n = new Vector3(1, 0, 0).applyQuaternion(q).multiplyScalar(100)
     state.velocity = { x: n.x, y: n.y, z: n.z }
-    rig.update(camera, state, 'horizon', 1 / 60)
+    rig.update(camera, state, HORIZON, 1 / 60)
     const { view, up } = viewUp(camera)
     expect(camera.quaternion.toArray().every(Number.isFinite)).toBe(true)
     if (last) expect(last.clone().addScaledVector(view, -last.dot(view)).normalize().angleTo(up)).toBeLessThanOrEqual(Math.PI / 60 + 1e-3)

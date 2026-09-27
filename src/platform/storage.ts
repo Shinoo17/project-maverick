@@ -3,6 +3,7 @@ import { aircraft, getAircraft } from '../content/aircraft'
 import { findMap } from '../content/maps'
 import { isDifficulty, isPveModeId, teamSizeRange, type Difficulty, type PveModeId } from '../content/pve/modes'
 import { defaultMouseSettings, parseMouseSettings, type MouseSettings } from '../game/input/mouseStick'
+import { defaultCameraSettings, parseCameraSettings, type CameraSettings } from '../game/camera/cameraSettings'
 
 export type SelectedMode = 'campaign' | 'pve' | 'training'
 
@@ -18,13 +19,15 @@ export interface PveSetup {
 
 /**
  * Fields added after v1 (`controls` in MR1; `callsign`, `selectedMode` and
- * `pveSetup` in P3b) read as their defaults from an older blob, so no bump.
+ * `pveSetup` in P3b; `camera` with the camera styles) read as their defaults
+ * from an older blob, so no bump.
  */
 export interface Settings {
   version: 1
   aircraftId: AircraftId
   locale: Locale
   controls: MouseSettings
+  camera: CameraSettings
   callsign: string
   selectedMode: SelectedMode
   pveSetup: PveSetup
@@ -35,7 +38,7 @@ export const defaultPveSetup: PveSetup = {
   allyAircraft: ['su57'], enemyAircraft: ['su57', 'f22'],
 }
 export const defaultSettings: Settings = {
-  version: 1, aircraftId: 'f22', locale: 'th', controls: { ...defaultMouseSettings },
+  version: 1, aircraftId: 'f22', locale: 'th', controls: { ...defaultMouseSettings }, camera: { ...defaultCameraSettings },
   callsign: 'VIPER 1-1', selectedMode: 'pve', pveSetup: defaultPveSetup,
 }
 const STORAGE_KEY = 'maverick.settings'
@@ -81,7 +84,7 @@ export function parseSettings(raw: string | null): Settings {
     const aircraftId = typeof value.aircraftId === 'string' ? getAircraft(value.aircraftId).id : 'f22'
     const selectedMode: SelectedMode = value.selectedMode === 'campaign' || value.selectedMode === 'training' ? value.selectedMode : 'pve'
     return {
-      version: 1, aircraftId, locale: value.locale === 'en' ? 'en' : 'th', controls: parseMouseSettings(value.controls),
+      version: 1, aircraftId, locale: value.locale === 'en' ? 'en' : 'th', controls: parseMouseSettings(value.controls), camera: parseCameraSettings(value.camera),
       callsign: parseCallsign(value.callsign), selectedMode, pveSetup: parsePveSetup(value.pveSetup),
     }
   } catch { return defaultSettings }
