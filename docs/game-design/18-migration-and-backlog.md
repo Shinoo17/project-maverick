@@ -88,6 +88,8 @@ Gate: ออกจาก Hangar ด้วย aircraftId แล้ว inventory/f
 
 Swept collision/world queries → bullet sim + heat → damage/death events → target drone → basic combat bot → match timer/score/respawn → results/rematch → playtest firing windows
 
+สถานะ 28 ก.ย. 2026: เสร็จ swept collision (`src/game/combat/collision.ts`: segment กับ capsule/box ใน body frame ของเป้า, ทดสอบ path สัมพัทธ์กับเป้าที่เคลื่อนที่, เลือกจุดชนแรกสุดระหว่างพื้นกับเครื่อง, ข้ามผู้ยิง), hitbox รายลำ (`src/content/hitboxes.ts` ผ่าน `hitboxProfileId`, test เทียบกับโมเดล GLB) และ target drone นิ่งใน Playground (Su-57 สีส้ม, entity ธรรมดาที่มี `control: 'hold'`, เปิดจาก briefing, ดู hitbox ด้วย `?hitboxes`) ยังยิงไม่ได้: collision ยังไม่มีผู้เรียกใน runtime จนกว่าจะทำ bullet sim + heat ซึ่งเป็นงานถัดไป
+
 Gate: Team Deathmatch 1v1 guns-only จบ match ได้; ไม่มี tunneling/death ซ้ำ; speed/weapon geometry ให้จังหวะเล็ง จากนั้นเท่านั้นจึงเพิ่ม missile หากติดเรื่อง flight feel ให้กลับแก้ 03 โดยบันทึกก่อน/หลัง
 
 ## P5 — Offline combat

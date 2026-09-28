@@ -22,7 +22,7 @@ import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { FlightSession } from './session'
 import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
 import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
-import { practiceSpawns, type PracticePreset } from '../../game/playground/practice'
+import { practiceSpawns, targetDrone as droneSpawn, type PracticePreset } from '../../game/playground/practice'
 import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 export function FlightPage() {
@@ -30,10 +30,10 @@ export function FlightPage() {
   const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics } = useSessionSettings()
   const reducedMotion = useReducedMotion(), uiScale = useUiScale()
   const [aircraftId, setAircraftId] = useState(selectedAircraftId)
-  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, resetId: 0, timeScale: 1, reducedMotion }), [])
+  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: false, resetId: 0, timeScale: 1, reducedMotion }), [])
   const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
-  const [timeScale, setTimeScale] = useState(1)
+  const [timeScale, setTimeScale] = useState(1), [targetDrone, setTargetDrone] = useState(false)
   const [view, setView] = useState<'pause' | 'settings'>('pause')
   const [hasStarted, setHasStarted] = useState(false)
   const [ready, setReady] = useState(false), [running, setRunning] = useState(false), [failed, setFailed] = useState(false)
@@ -114,6 +114,10 @@ export function FlightPage() {
   function resetFlight(nextPreset: PracticePreset = practicePreset) {
     pause(); setHasStarted(false); session.resetId++; session.runtime?.reset(nextPreset); setCameraChanged(false); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null); session.invalidate?.()
   }
+  function toggleTargetDrone(on: boolean) {
+    session.targetDrone = on; setTargetDrone(on)
+    session.runtime?.setTargetDrone(on); resetFlight()
+  }
   function exportFlight() {
     const replay = session.runtime?.exportReplay()
     if (!replay) return
@@ -130,7 +134,7 @@ export function FlightPage() {
   return <main className="flight-root" data-settings={inSettings || undefined} style={{ '--ui-scale': uiScale } as CSSProperties}>
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
       {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
-        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} graphics={graphics} onReady={onReady} onTelemetry={onTelemetry} />
+        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone} graphics={graphics} onReady={onReady} onTelemetry={onTelemetry} />
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
@@ -144,7 +148,8 @@ export function FlightPage() {
       {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true">
         <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" pathLength="96" /><path d="M50 14V8M86 50H92M50 86V92M14 50H8" /></svg>
       </div>}
-      {timeScale !== 1 && <p className="flight-timescale">{t('practiceSpeed')} ×{timeScale}</p>}
+      {/* Active practice modifiers stay on screen while flying (docs/game-design/10-playground.md). */}
+      {(timeScale !== 1 || targetDrone) && <p className="flight-timescale">{[timeScale !== 1 && `${t('practiceSpeed')} ×${timeScale}`, targetDrone && t('targetDrone')].filter(Boolean).join(' · ')}</p>}
       <p className="flight-controls">{controlsHint}</p>
     </div>
     <dialog ref={dialog} className={inSettings ? 'flight-settings' : 'flight-menu'} aria-labelledby={inSettings ? 'settings-title' : 'flight-menu-title'} onCancel={e => e.preventDefault()}
@@ -158,6 +163,8 @@ export function FlightPage() {
       <button className="flight-settings-open" onClick={() => setView('settings')}>{t('homeSettings')}</button>
       <label htmlFor="practice-preset">{t('practicePreset')}</label><select id="practice-preset" disabled={!ready} value={practicePreset} onChange={e => { const value = e.target.value as PracticePreset; setPracticePreset(value); resetFlight(value) }}>{(Object.keys(practiceSpawns) as PracticePreset[]).map(id => <option key={id} value={id}>{t(`spawn_${id}`)}</option>)}</select>
       <label htmlFor="practice-lesson">{t('practiceLesson')}</label><select id="practice-lesson" disabled={!ready} value={lesson} onChange={e => { const value = Number(e.target.value); setLesson(value); const spawn: PracticePreset = value === 6 ? 'cobra' : value === 5 ? 'recovery' : value === 4 ? 'highG' : 'free'; setPracticePreset(spawn); resetFlight(spawn) }}>{[0, 1, 2, 3, 4, 5, 6].map(id => <option key={id} value={id}>{t(lessonLabels[id])}</option>)}</select>
+      <label className="flight-modifier"><input type="checkbox" disabled={!ready} checked={targetDrone} onChange={e => toggleTargetDrone(e.target.checked)} /> {t('targetDroneToggle')}</label>
+      <p className="flight-modifier-hint">{t('targetDroneHint')}</p>
       <details className="flight-lab-settings"><summary>{t('flightLab')}</summary>
         <label htmlFor="validation-aircraft">{t('labAircraft')}</label><select id="validation-aircraft" value={aircraftId} onChange={e => { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); setAircraftId(e.target.value) }}>{playgroundAircraft.map(entry => <option key={entry.id} value={entry.id}>{entry.designation} · {entry.name}</option>)}</select>
         <label htmlFor="practice-speed">{t('practiceSpeed')}</label><select id="practice-speed" value={timeScale} onChange={e => { session.timeScale = Number(e.target.value); setTimeScale(session.timeScale) }}>{[1, 0.5, 0.25].map(value => <option key={value} value={value}>×{value}</option>)}</select>
@@ -169,7 +176,7 @@ export function FlightPage() {
       {preset === 'mouse' && <details className="flight-mouse-help"><summary>{t('mousePreset')}</summary><p>{t(controls.mode === 'relative' ? 'mouseHintRelative' : 'mouseHint')}</p><p>{t('mouseTips')}</p></details>}
       <details className="flight-mouse-help"><summary>{t('psmControlsHelp')}</summary><p>{t('psmControlsDetail')}</p></details>
       {pointerError && <p role="alert">{t('pointerError')}</p>}
-      {failed ? <button className="flight-primary" onClick={() => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) }}>{t('retry')}</button>
+      {failed ? <button className="flight-primary" onClick={() => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); if (targetDrone) retryAircraftAsset(modelUrl(getAircraft(droneSpawn.aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) }}>{t('retry')}</button>
         : <button className="flight-primary" disabled={!ready || !webgl || !!stopped} onClick={() => void begin()}>{!ready && webgl ? t('flightLoading') : hasStarted ? t('resumeFlight') : t('beginFlight')}</button>}
       {ready && <button onClick={() => resetFlight()}>{t('resetFlight')}</button>}
       <a href={routes[flightReturnRoute()]} onClick={pause}>{t('leaveFlight')}</a>

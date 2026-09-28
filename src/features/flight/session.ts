@@ -13,6 +13,8 @@ export interface FlightSession {
   /** Mirrors the saved graphics settings; effects read it every frame. */
   graphics: GraphicsSettings
   running: boolean
+  /** Playground modifier; read when the scene creates its runtime. */
+  targetDrone: boolean
   resetId: number
   timeScale: number
   reducedMotion: boolean

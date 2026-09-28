@@ -14,6 +14,8 @@ export type Quat = Vec3 & { w: number }
 export interface AircraftState {
   id: string
   aircraftId: AircraftId
+  /** Who flies it. 'hold' (the target drone) keeps its pose and never reads a command. */
+  control: 'pilot' | 'hold'
   /** Resolved session limits, in simulation m/s. */
   speedLimits: SpeedLimits
   /** Per-entity inventory for future combat; P3 never consumes it. */

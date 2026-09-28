@@ -2,6 +2,7 @@ import { flightProfiles } from './flight-profiles'
 import { validateFlightProfile } from '../game/flight/validateProfile'
 import { resolveSpeedLimits } from '../game/flight/speedLimits'
 import { getWeapon, weaponStations } from './weapons'
+import { hitboxes, validateHitboxes } from './hitboxes'
 import { getAircraft } from './aircraft'
 import { presentationIds, type AircraftDefinition, type SessionConfig } from './schemas'
 
@@ -15,6 +16,8 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
     validateFlightProfile(flightProfiles[entry.flightProfileId], `${path}.flightProfile(${entry.flightProfileId})`)
     if (!presentationIds.includes(entry.presentationId)) throw new Error(`${path}.presentationId: unknown profile`)
     if (!Object.hasOwn(weaponStations, entry.weaponStationProfileId)) throw new Error(`${path}.weaponStationProfileId: unknown profile`)
+    if (!Object.hasOwn(hitboxes, entry.hitboxProfileId)) throw new Error(`${path}.hitboxProfileId: unknown profile`)
+    validateHitboxes(hitboxes[entry.hitboxProfileId], `${path}.hitboxes`)
     const stations = weaponStations[entry.weaponStationProfileId]
     const stationIds = new Set<string>()
     for (const station of stations) {
@@ -42,6 +45,8 @@ export function validateSession(config: SessionConfig) {
   if (!['playground', 'offline'].includes(config.mode)) throw new Error('session.mode: unsupported mode')
   if (config.mapId !== undefined && config.mapId !== 'flat-range') throw new Error('session.mapId: unsupported map')
   if (!config.aircraftIds.length) throw new Error('session.aircraftIds: expected at least one aircraft')
+  if (config.targetDrone !== undefined && typeof config.targetDrone !== 'boolean') throw new Error('session.targetDrone: expected true or false')
+  if (config.targetDrone && config.mode !== 'playground') throw new Error('session.targetDrone: Playground only')
   config.aircraftIds.forEach((id, index) => {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }
     if (getAircraft(id).playgroundOnly && config.mode !== 'playground') throw new Error(`session.aircraftIds: ${id} is a Playground validation variant`)

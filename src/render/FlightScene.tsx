@@ -4,13 +4,14 @@ import { getFlightProfile } from '../game/flight/profile'
 import { memo, Suspense, useEffect, useMemo, useRef, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Box3, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
-import { clone } from 'three/addons/utils/SkeletonUtils.js'
 import { AssetLoaderProvider, useAircraftAsset } from './aircraft/assetLoader'
-import { prepareAnimations } from './aircraft/animationStages'
+import { buildFlightModel } from './aircraft/flightModel'
+import { TargetDrone } from './TargetDrone'
+import { HitboxWireframe } from './HitboxWireframe'
 import { getAircraft, modelUrl } from '../content/aircraft'
 import type { AircraftId } from '../content/schemas'
 import { GameRuntime } from '../game/runtime/GameRuntime'
-import type { AircraftState } from '../game/state/WorldState'
+import type { AircraftState, WorldState } from '../game/state/WorldState'
 import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
 import { WORLD_STEP } from '../game/runtime/clock'
@@ -22,34 +23,28 @@ import type { HudDriver } from '../features/flight/FlightInstruments'
 import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; fps?: RefObject<HTMLElement | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
-function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: Props) {
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
+function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
   const rig = useMemo(() => new FlightCamera(new URLSearchParams(window.location.search).has('driftCamera')), [])
+  const showHitboxes = useMemo(() => new URLSearchParams(window.location.search).has('hitboxes'), [])
+  // The latest whole-world snapshot, for views of other entities (the target drone).
+  const world = useRef<WorldState | null>(null)
+  const takeSnapshot = (runtime: GameRuntime) => { world.current = runtime.snapshot(); return world.current.aircraft[0] }
   const group = useRef<Group>(null)
   const elapsed = useRef(0), reset = useRef(-1)
   const rigTick = useRef(-1)
   const previous = useRef<AircraftState | null>(null), current = useRef<AircraftState | null>(null)
   const wasRunning = useRef(false), fps = useRef({ frames: 0, since: -1 })
   const invalidate = useThree(state => state.invalidate)
-  const model = useMemo(() => {
-    const copy = clone(asset.scene)
-    for (const name of definition.removeNodes) copy.getObjectByName(name)?.removeFromParent()
-    prepareAnimations(copy, asset.animations)
-    const orientation = new Group(); orientation.rotation.set(...definition.rotation); orientation.add(copy)
-    const bounds = new Box3().setFromObject(orientation), size = bounds.getSize(new Vector3())
-    const scale = 18.9 / Math.max(size.x, size.y, size.z)
-    const root = new Group(); root.add(orientation); root.scale.setScalar(scale)
-    orientation.position.copy(bounds.getCenter(new Vector3())).negate()
-    return root
-  }, [asset, definition])
+  const model = useMemo(() => buildFlightModel(asset, definition), [asset, definition])
   const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
   useEffect(() => {
-    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId] })
+    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], targetDrone: session.targetDrone })
     session.runtime = runtime; runtime.start(); runtime.pause()
-    previous.current = current.current = runtime.snapshot().aircraft[0]
+    previous.current = current.current = takeSnapshot(runtime)
     // Paused, the canvas draws on demand; the page asks for a frame after a paused change.
     session.invalidate = invalidate
     rig.reset(); onReady(); invalidate()
@@ -64,7 +59,7 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
       reset.current = session.resetId; rig.reset()
-      previous.current = current.current = runtime.snapshot().aircraft[0]
+      previous.current = current.current = takeSnapshot(runtime)
     }
     let alpha = 1
     // The first running frame after the menu closes carries the whole pause as its delta.
@@ -83,8 +78,8 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
         session.input.screen = screenFrame(live, session.camera)
         return session.input.command(tick, id, session.preset)
       })
-      current.current = runtime.snapshot().aircraft[0]
-    } else { runtime.pause(); previous.current = current.current = runtime.snapshot().aircraft[0] }
+      current.current = takeSnapshot(runtime)
+    } else { runtime.pause(); previous.current = current.current = takeSnapshot(runtime) }
     const state = current.current!
     const tick = runtime.snapshot().tick
     const rigDt = session.running ? Math.min(dt, .1) * session.timeScale : rigTick.current >= 0 ? Math.max(0, tick - rigTick.current) * WORLD_STEP : 0
@@ -126,7 +121,9 @@ function FlightWorld({ aircraftId, session, onReady, onTelemetry, indicators }: 
       counter.frames = 0; counter.since = now
     }
   })
-  return <><group ref={group}><primitive object={model} dispose={null} /></group><FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} /></>
+  return <><group ref={group}><primitive object={model} dispose={null} />{showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}</group>
+    <FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} />
+    {targetDrone && <Suspense fallback={null}><TargetDrone world={world} showHitboxes={showHitboxes} /></Suspense>}</>
 }
 // Memoised: the page re-renders on every 10 Hz telemetry update, the scene never needs to.
 // With the menu open nothing moves, so the loop stops and frames are drawn only on demand.

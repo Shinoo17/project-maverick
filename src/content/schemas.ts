@@ -12,6 +12,8 @@ export interface AircraftDefinition {
   flightProfileId: FlightProfileId
   presentationId: typeof presentationIds[number]
   weaponStationProfileId: string
+  /** Key into `hitboxes` (src/content/hitboxes.ts). */
+  hitboxProfileId: string
   designation: string
   name: string
   /* Role / signature trait shown under the airframe name on the stage. */
@@ -39,6 +41,8 @@ export interface SessionConfig {
   mode: 'playground' | 'offline'
   mapId?: 'flat-range'
   aircraftIds: AircraftId[]
+  /** Playground only: adds a target drone that holds still ahead of the spawn. Absent = no drone. */
+  targetDrone?: boolean
   /** Per aircraft type, in the same ARCADE km/h units as its profile. */
   flightOverrides?: Record<AircraftId, FlightSpeedOverride>
 }

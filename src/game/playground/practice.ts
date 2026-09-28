@@ -8,6 +8,8 @@ export const practiceSpawns = {
 } as const
 export type PracticePreset = keyof typeof practiceSpawns
 export const trainingRings = [800, 1800, 2800]
+/** Target drone (Playground modifier): a Su-57 that holds still ahead of the spawn, above the ring line. */
+export const targetDrone = { aircraftId: 'su57', ahead: 1300, above: 25 } as const
 export function createPracticeState() { return { rings: 0, pitch: 0, roll: 0, yaw: 0, brakeSeconds: 0, highGDegrees: 0, recovered: false, wasLow: false, highAoaPeak: 0, highAoaRecoveries: 0 } }
 export type PracticeState = ReturnType<typeof createPracticeState>
 export function stepPractice(p: PracticeState, s: AircraftState, c: PilotCommand, previousX: number, dt: number) {

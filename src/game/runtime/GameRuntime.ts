@@ -4,7 +4,7 @@ import type { WorldState } from '../state/WorldState'
 import { FixedClock, FLIGHT_STEP } from './clock'
 import { commandSchemaVersion, neutralCommand, type PilotCommand } from './commands'
 import { stepFlight } from '../flight/stepFlight'
-import { createPracticeState, practiceSpawns, stepPractice, type PracticePreset } from '../playground/practice'
+import { createPracticeState, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
 import { createThrustVectoringState } from '../flight/thrustVectoring'
 import { createPilotIntent } from '../flight/intent'
 import { createManeuverState } from '../flight/maneuvers'
@@ -14,6 +14,7 @@ import { getAircraft } from '../../content/aircraft'
 import { getFlightProfile, flightProfileVersion } from '../flight/profile'
 import { resolveSpeedLimits } from '../flight/speedLimits'
 import { dryThrustLimit } from '../flight/speed'
+import type { AircraftState } from '../state/WorldState'
 
 // No RAF, timers, DOM or renderer: the future scene/session host owns the sole driver.
 // Flight is integrated twice per world tick; presentation never drives an entity separately.
@@ -23,36 +24,44 @@ export class GameRuntime {
   private preset: PracticePreset = 'free'
   private track: PilotCommand[] = []
   private world: WorldState
-  private readonly config: SessionConfig
+  private config: SessionConfig
 
   constructor(config: SessionConfig) {
     validateSession(config)
     // Keep only supported session fields, including when reading older replays.
     this.config = { mode: config.mode, aircraftIds: [...config.aircraftIds],
       ...(config.mapId === undefined ? {} : { mapId: config.mapId }),
+      ...(config.targetDrone ? { targetDrone: true } : {}),
       ...(config.flightOverrides === undefined ? {} : { flightOverrides: structuredClone(config.flightOverrides) }) }
     this.world = this.createWorld()
   }
 
   private createWorld(): WorldState {
+    const spawn = practiceSpawns[this.preset]
+    const aircraft = this.config.aircraftIds.map((aircraftId, index) => this.createAircraft(`aircraft-${index + 1}`, aircraftId, { x: index * 40, y: spawn.altitude, z: 0 }))
+    // The drone is not in aircraftIds: those are the flown aircraft, and ids aircraft-1..n stay theirs.
+    if (this.config.targetDrone) {
+      const drone = this.createAircraft('drone-1', targetDrone.aircraftId, { x: targetDrone.ahead, y: spawn.altitude + targetDrone.above, z: 0 })
+      drone.control = 'hold'; drone.velocity = { x: 0, y: 0, z: 0 }
+      aircraft.push(drone)
+    }
+    return { tick: 0, practice: createPracticeState(), aircraft }
+  }
+
+  private createAircraft(id: string, aircraftId: string, position: AircraftState['position']): AircraftState {
+    const flight = getFlightProfile(aircraftId).flight
+    const speedLimits = resolveSpeedLimits(flight, this.config.flightOverrides?.[aircraftId])
     return {
-      tick: 0, practice: createPracticeState(),
-      aircraft: this.config.aircraftIds.map((aircraftId, index) => {
-        const flight = getFlightProfile(aircraftId).flight
-        const speedLimits = resolveSpeedLimits(flight, this.config.flightOverrides?.[aircraftId])
-        return {
-          id: `aircraft-${index + 1}`, aircraftId, speedLimits,
-          stores: fullArmament(getAircraft(aircraftId)),
-          position: { x: index * 40, y: practiceSpawns[this.preset].altitude, z: 0 },
-          orientation: { x: 0, y: 0, z: 0, w: 1 },
-          velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, alive: true,
-          maneuver: createManeuverState(), stall: createStallState(), thrustVectoring: createThrustVectoringState(),
-          speedDrive: 0, intent: createPilotIntent(), limiterOpen: 0, pathAssistWeight: 1,
-          engine: { requestedPower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * practiceSpawns[this.preset].speed ** 2 },
-          enginePower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits),
-          rates: { pitch: 0, yaw: 0, roll: 0 },
-        }
-      }),
+      id, aircraftId, control: 'pilot', speedLimits,
+      stores: fullArmament(getAircraft(aircraftId)),
+      position,
+      orientation: { x: 0, y: 0, z: 0, w: 1 },
+      velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, alive: true,
+      maneuver: createManeuverState(), stall: createStallState(), thrustVectoring: createThrustVectoringState(),
+      speedDrive: 0, intent: createPilotIntent(), limiterOpen: 0, pathAssistWeight: 1,
+      engine: { requestedPower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * practiceSpawns[this.preset].speed ** 2 },
+      enginePower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits),
+      rates: { pitch: 0, yaw: 0, roll: 0 },
     }
   }
 
@@ -63,6 +72,8 @@ export class GameRuntime {
     if (this.status !== 'running') return 0
     return this.clock.advance(delta, () => {
       for (const entity of this.world.aircraft) {
+        // A held entity has no pilot: it is never asked for a command, so player input is read once per tick.
+        if (entity.control === 'hold') continue
         const command = commandAtTick?.(this.world.tick, entity.id) ?? neutralCommand(this.world.tick, entity.id)
         const safe = { ...command }
         for (const key of ['pitch', 'roll', 'yaw', 'speedAdjust'] as const) safe[key] = Number.isFinite(command[key]) ? Math.max(-1, Math.min(1, command[key])) : 0
@@ -85,6 +96,15 @@ export class GameRuntime {
   }
   exportReplay() {
     return { schemaVersion: commandSchemaVersion, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track) }
+  }
+  /** Playground modifier: adds or removes the target drone, then restarts the flight like reset(). */
+  setTargetDrone(on: boolean) {
+    if (this.status === 'disposed') return
+    const { targetDrone: _, ...rest } = this.config
+    const next = on ? { ...rest, targetDrone: true } : rest
+    validateSession(next)
+    this.config = next
+    this.reset()
   }
   reset(preset: PracticePreset = this.preset) {
     if (this.status === 'disposed') return

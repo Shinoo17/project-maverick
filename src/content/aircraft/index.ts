@@ -1,8 +1,11 @@
 import type { AircraftDefinition } from '../schemas'
 
+/** In flight every model is scaled so its longest side is this many metres. Hitboxes are fitted at this scale. */
+export const flightModelLength = 18.9
+
 export const aircraft: readonly AircraftDefinition[] = [
   {
-    id: 'f22', flightProfileId: 'raptor-energy', presentationId: 'f22', weaponStationProfileId: 'f22',
+    id: 'f22', flightProfileId: 'raptor-energy', presentationId: 'f22', weaponStationProfileId: 'f22', hitboxProfileId: 'f22',
     designation: 'F-22', name: 'Raptor', modelFile: 'F22_compact.glb',
     role: { th: 'เครื่องบินขับไล่ครองอากาศ · ตรวจจับยาก + ซูเปอร์ครูซ', en: 'Air superiority fighter · Stealth and supercruise' },
     rotation: [0, 0, 0], removeNodes: ['MLG_Bay_Fitting_01', 'MLG_Bay_Fitting_02'],
@@ -15,7 +18,7 @@ export const aircraft: readonly AircraftDefinition[] = [
     },
   },
   {
-    id: 'su57', flightProfileId: 'felon-agility', presentationId: 'su57', weaponStationProfileId: 'su57',
+    id: 'su57', flightProfileId: 'felon-agility', presentationId: 'su57', weaponStationProfileId: 'su57', hitboxProfileId: 'su57',
     designation: 'Su-57', name: 'Felon', modelFile: 'SU57_compact.glb',
     role: { th: 'เครื่องบินขับไล่อเนกประสงค์ · คล่องตัวสูง + เวกเตอร์แรงขับ', en: 'Multirole fighter · High agility and thrust vectoring' },
     rotation: [0, Math.PI / 2, 0],
