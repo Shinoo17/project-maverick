@@ -19,6 +19,8 @@ export class FlightInput {
   private since = { x: 0, y: 0 }
   /** Key bindings and hold/toggle choices. Input only, like `mouse`. */
   keyboard: KeyboardSettings
+  /** Left mouse held while the pointer is locked to the flight surface. */
+  mouseGun = false
   // Afterburner/airbrake switched on by a toggle-mode key press.
   private readonly latched = new Set<FlightAction>()
   constructor(mouse: MouseSettings = defaultMouseSettings, keyboard: KeyboardSettings = defaultKeyboardSettings) { this.mouse = { ...mouse }; this.keyboard = keyboard }
@@ -46,7 +48,7 @@ export class FlightInput {
   gate: StickGate = stickGate(640, 480)
   // How far the airframe appears rotated inside the frame, and how much of that applies.
   screen: ScreenFrame = LEVEL_FRAME
-  clear() { this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); this.screen = LEVEL_FRAME }
+  clear() { this.mouseGun = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); this.screen = LEVEL_FRAME }
   // The surface has taken the pointer: neutral and live from the first frame.
   engage() { engageStick(this.stick); this.since = { x: 0, y: 0 } }
   setViewport(width: number, height: number) {
@@ -89,6 +91,7 @@ export class FlightInput {
     c.speedAdjust = +has('speedUp') - +has('speedDown')
     c.airbrake = this.keyboard.airbrake === 'toggle' ? this.latched.has('airbrake') : has('airbrake')
     c.afterburner = this.keyboard.afterburner === 'toggle' ? this.latched.has('afterburner') : has('afterburner')
+    c.gunHeld = has('fireGun') || (preset === 'mouse' && this.mouseGun)
     return c
   }
   // Like the pedal: once per command tick, however many frames or reads fall inside it.

@@ -26,6 +26,9 @@ export interface CollisionTarget {
   from: Pose
   /** Pose at the end of the step; the same as `from` for a target that holds still. */
   to: Pose
+  /** Optional bounding radius around the body origin (see `boundingRadius`); a path that stays
+   * outside it is rejected before the shapes are tested. */
+  radius?: number
 }
 export type SegmentHit =
   | { kind: 'aircraft'; entityId: string; t: number; point: Vec3 }
@@ -108,9 +111,29 @@ function toBody(point: Vec3, pose: Pose) {
   return new Vector3(point.x - pose.position.x, point.y - pose.position.y, point.z - pose.position.z).applyQuaternion(inverse)
 }
 
+/** Radius of a sphere at the body origin that holds every shape. */
+export function boundingRadius(shapes: readonly HitShape[]) {
+  let radius = 0
+  for (const shape of shapes) {
+    if (shape.kind === 'capsule') radius = Math.max(radius, Math.hypot(...shape.from) + shape.radius, Math.hypot(...shape.to) + shape.radius)
+    else radius = Math.max(radius, Math.hypot(Math.abs(shape.center[0]) + shape.half[0], Math.abs(shape.center[1]) + shape.half[1], Math.abs(shape.center[2]) + shape.half[2]))
+  }
+  return radius
+}
+
+/** Closest distance from the origin to the segment a→b. */
+function originDistance(a: Vector3, b: Vector3) {
+  const delta = b.clone().sub(a)
+  const lengthSq = delta.lengthSq()
+  const t = lengthSq < EPSILON ? 0 : Math.min(1, Math.max(0, -a.dot(delta) / lengthSq))
+  return a.clone().addScaledVector(delta, t).length()
+}
+
 /** Where the segment start→end first enters a target, as a fraction of the segment, or null. */
 export function targetEntry(start: Vec3, end: Vec3, target: CollisionTarget) {
-  return shapesEntry(toBody(start, target.from), toBody(end, target.to), target.shapes)
+  const from = toBody(start, target.from), to = toBody(end, target.to)
+  if (target.radius !== undefined && originDistance(from, to) > target.radius) return null
+  return shapesEntry(from, to, target.shapes)
 }
 
 /**

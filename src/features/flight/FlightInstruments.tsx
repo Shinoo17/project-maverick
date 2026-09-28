@@ -31,7 +31,7 @@ const burnerStates: Record<string, BurnerState> = {
 const zero = { x: 0, y: 0, z: 0 }
 const standby: GlassState = {
   live: false, camera: null, position: zero, forward: { x: 1, y: 0, z: 0 }, velocity: zero, speed: 0, altitude: 0, heading: null, pitch: 0, bank: null,
-  verticalSpeed: 0, aoa: 0, gLoad: 1, power: 0, groundClearance: 0, edge: 0, burnerReserve: 0, burnerSeconds: 0, burnerState: 'ready', airbrake: false, highG: false, psm: false,
+  verticalSpeed: 0, aoa: 0, gLoad: 1, power: 0, groundClearance: 0, edge: 0, burnerReserve: 0, burnerSeconds: 0, burnerState: 'ready', gunHeat: 0, gunOverheated: false, airbrake: false, highG: false, psm: false,
   regime: 'NORMAL', incidence: 0, alphaNormal: 20, alphaCritical: 30, alphaLimit: 20, alphaMax: 90,
 }
 
@@ -52,6 +52,7 @@ export function glassState({ camera, state, position, orientation, velocity }: H
     groundClearance: altitude,
     edge: Math.max(0, Math.min(trainingMap.radius - Math.hypot(position.x, position.z), trainingMap.radius - altitude)),
     burnerReserve: m.burner, burnerSeconds: m.burner * maneuverProfile.burnerSeconds, burnerState: burnerStates[burnerStatus(state)] ?? 'ready',
+    gunHeat: state.gun.heat, gunOverheated: state.gun.overheated,
     airbrake: m.airbrake > 0.1, highG: envelope.gAllowance > 1.06, psm: label === 'HIGH_AOA' || label === 'POST_STALL' || label === 'RECOVERING',
     regime: label, incidence: airflow.incidenceDeg * airflow.confidence, alphaNormal: profile.aero.alphaNormalDeg, alphaCritical: profile.aero.alphaCriticalDeg,
     alphaLimit: envelope.alphaLimitDeg, alphaMax: profile.aero.maxControllableAlphaDeg,
@@ -95,6 +96,7 @@ export function FlightSystemStatus({ state }: { state: AircraftState | null }) {
     <div><dt>{t('heading')}</dt><dd>{heading === null ? empty : `${Math.round(heading) % 360}°`}</dd></div>
     <div><dt>{t('burner')}</dt><dd>{t(burnerStatus(state))}</dd></div>
     <div><dt>{t('engineOutput')}</dt><dd>{state ? `${Math.round(state.enginePower * 100)}%` : empty}</dd></div>
+    {state && <div><dt>{t('hudGunHeat')}</dt><dd>{state.gun.overheated ? t('hudGunOverheated') : `${Math.round(state.gun.heat * 100)}%`}</dd></div>}
     {(m?.airbrake ?? 0) > 0.1 && <div><dt>{t('airbrake')}</dt><dd>{t('hudOn')}</dd></div>}
   </dl>
 }

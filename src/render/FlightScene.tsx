@@ -8,6 +8,7 @@ import { AssetLoaderProvider, useAircraftAsset } from './aircraft/assetLoader'
 import { buildFlightModel } from './aircraft/flightModel'
 import { TargetDrone } from './TargetDrone'
 import { HitboxWireframe } from './HitboxWireframe'
+import { createTracers } from './tracers'
 import { getAircraft, modelUrl } from '../content/aircraft'
 import type { AircraftId } from '../content/schemas'
 import { GameRuntime } from '../game/runtime/GameRuntime'
@@ -41,6 +42,8 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const model = useMemo(() => buildFlightModel(asset, definition), [asset, definition])
   const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
+  const tracers = useMemo(createTracers, [])
+  useEffect(() => () => tracers.dispose(), [tracers])
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], targetDrone: session.targetDrone })
     session.runtime = runtime; runtime.start(); runtime.pause()
@@ -53,7 +56,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   useEffect(() => () => model.traverse(object => {
     if ('isSkinnedMesh' in object && object.isSkinnedMesh && 'skeleton' in object) (object.skeleton as { dispose(): void }).dispose()
   }), [model])
-  useFrame(({ camera, size }, dt) => {
+  useFrame(({ camera, size, viewport }, dt) => {
     const runtime = session.runtime
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
@@ -92,6 +95,9 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     rig.baseFov = session.cameraFov; rig.snapFov = !session.running
     rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
+    tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr)
+    // Nothing reads gun hits yet (damage comes next); drop them so the list stays empty.
+    runtime.drainHits()
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
     // The held position is already clamped to the gate, so the marker is simply where it is.
@@ -122,6 +128,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     }
   })
   return <><group ref={group}><primitive object={model} dispose={null} />{showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}</group>
+    <primitive object={tracers.mesh} />
     <FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} />
     {targetDrone && <Suspense fallback={null}><TargetDrone world={world} showHitboxes={showHitboxes} /></Suspense>}</>
 }

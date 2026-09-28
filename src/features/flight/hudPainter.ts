@@ -42,6 +42,8 @@ const VERTICAL_SPEED_FULL_SCALE = 60
 const CLEARANCE_FULL_SCALE = 600
 const EDGE_CAUTION = 620
 const RESERVE_CAUTION = 0.25
+// Gun heat past this reads as caution: most of the burst is spent.
+const GUN_HEAT_CAUTION = 0.7
 // The heading readout sits above its own tape; this keeps it under the identity and pause plates.
 const TOP_CLEARANCE = 100
 // The ladder is clipped to ±this share of the half-frame.
@@ -75,6 +77,9 @@ export interface GlassState {
   burnerReserve: number
   burnerSeconds: number
   burnerState: BurnerState
+  /** Gun heat, 0–1; an overheated gun cannot fire until it cools below its resume mark. */
+  gunHeat: number
+  gunOverheated: boolean
   airbrake: boolean
   highG: boolean
   /** Any high-AoA regime (HIGH_AOA, POST_STALL or RECOVERING). */
@@ -538,10 +543,15 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     const burnerLabel = AFTERBURNER_LABELS[state.burnerState]
     const burnerClock = live ? `${state.burnerSeconds.toFixed(1)}s` : '––.–s'
 
+    // Gun heat as a number: the burst budget, and OVHT while the gun is locked out.
+    const gunLabel = !live ? 'GUN –––' : state.gunOverheated ? 'GUN OVHT' : `GUN ${Math.round(state.gunHeat * 100)}%`
+    const gunColor = !live ? HUD_GREEN_DIM : state.gunOverheated ? HUD_GREEN_ALERT : state.gunHeat > GUN_HEAT_CAUTION ? HUD_GREEN_CAUTION : HUD_GREEN_DIM
+
     // Narrow frames have no room outboard of the tapes; both gauges become digits.
     if (layout.compact) {
       text(`V/S ${verticalSpeed}`, right, second + 40, display(12), HUD_GREEN_DIM, 'right')
       text(`${burnerLabel} ${burnerClock}`, right, second + 60, display(12), burnerColor, 'right')
+      text(gunLabel, right, second + 100, display(12), gunColor, 'right')
       return
     }
 
@@ -566,6 +576,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     line(reheatX + 4, gaugeBottom, reheatX + 4, gaugeBottom - reserve * gaugeSpan, 3, burnerColor)
     text(burnerLabel, reheatX, gaugeTop - 12, display(10), HUD_GREEN_DIM, 'center')
     text(burnerClock, reheatX, gaugeBottom + 14, display(12, 700), burnerColor, 'center')
+    text(gunLabel, reheatX, gaugeBottom + 34, display(12, 700), gunColor, 'center')
   }
 
   function draw(state: GlassState | null) {

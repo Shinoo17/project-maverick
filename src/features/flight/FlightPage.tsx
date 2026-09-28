@@ -81,12 +81,17 @@ export function FlightPage() {
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
     const move = (e: MouseEvent) => { if (session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.move(e.movementX, e.movementY) }
+    // Only a press made while already locked fires: the click that takes the lock never does (doc 02).
+    const mousedown = (e: MouseEvent) => { if (e.button === 0 && session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.mouseGun = true }
+    const mouseup = (e: MouseEvent) => { if (e.button === 0) session.input.mouseGun = false }
     const lock = () => { session.input.clear(); if (!document.pointerLockElement && session.preset === 'mouse' && session.running) pause() }
     const hidden = () => { if (document.hidden) pause() }
     addEventListener('keydown', keydown); addEventListener('keyup', keyup); addEventListener('mousemove', move); addEventListener('blur', pause)
+    addEventListener('mousedown', mousedown); addEventListener('mouseup', mouseup)
     document.addEventListener('pointerlockchange', lock); document.addEventListener('visibilitychange', hidden)
     return () => {
       removeEventListener('keydown', keydown); removeEventListener('keyup', keyup); removeEventListener('mousemove', move); removeEventListener('blur', pause)
+      removeEventListener('mousedown', mousedown); removeEventListener('mouseup', mouseup)
       document.removeEventListener('pointerlockchange', lock); document.removeEventListener('visibilitychange', hidden)
       session.running = false; session.input.clear(); if (document.pointerLockElement === surface.current) document.exitPointerLock()
     }

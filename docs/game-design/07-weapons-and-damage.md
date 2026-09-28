@@ -15,11 +15,11 @@
 | Rate | 80 นัด/s; สะสม shot budget ตาม dt |
 | Muzzle speed | 900 m/s สัมพัทธ์เครื่องยิง |
 | Damage | 2 HP ต่อ hit; aircraft baseline 100 HP |
-| Spread | cone 0.3° seeded; เพิ่มเล็กน้อยเมื่อร้อน |
+| Spread | cone 0.3° (มุมยอดเต็ม คือข้างละ 0.15°) seeded ต่อนัดจาก ownerId + ลำดับนัด; ร้อนเต็มกว้างขึ้น 50% |
 | ระยะที่อยากให้ใช้ | 200–700 m |
 | Lifetime / path distance cap | 1.2 s หรือเดินทางรวม 1,000 m อย่างใดถึงก่อน |
 | Ammo model MVP | ไม่จำกัดนัด แต่ heat จำกัด burst; ไม่ใช่จำนวนกระสุนจริงของเครื่อง |
-| Heat | ยิงต่อเนื่องราว 2 s จึง overheat; cool จนต่ำกว่า 35% จึงยิงใหม่ |
+| Heat | ยิงต่อเนื่อง 2 s จึง overheat; cool จนต่ำกว่า 35% จึงยิงใหม่; เย็นลง 0.5/s ขณะไม่ยิงหรือ overheat (provisional รอ playtest) |
 
 velocity เริ่มต้น = shooter velocity + muzzle direction × muzzle speed; gun direction อิง hardpoint simulation transform ใน aircraft profile ไม่ raycast จาก camera และไม่ยิงไปหา selected target อัตโนมัติ
 

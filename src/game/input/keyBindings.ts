@@ -11,6 +11,8 @@ Ids are stable save-file values. Labels come from the locale files (`bindAction_
 export const flightActions = [
   'pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight',
   'speedUp', 'speedDown', 'afterburner', 'airbrake', 'cameraCycle', 'lookBack',
+  // Newer actions go last: a saved key wins over a new action's default (parseBindings claims in this order).
+  'fireGun',
 ] as const
 export type FlightAction = typeof flightActions[number]
 
@@ -32,6 +34,8 @@ export const defaultBindings: Readonly<KeyBindings> = {
   yawLeft: ['KeyQ', null], yawRight: ['KeyE', null],
   speedUp: ['KeyW', null], speedDown: ['KeyS', null],
   afterburner: ['ShiftLeft', 'ShiftRight'], airbrake: ['Space', null],
+  // Left mouse also fires in the mouse preset (FlightInput.mouseGun); J is the keyboard gun key (doc 02).
+  fireGun: ['KeyJ', null],
   cameraCycle: ['KeyV', null], lookBack: ['KeyR', null],
 }
 

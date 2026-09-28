@@ -192,6 +192,7 @@ export const th: Translation = {
   envelope_DEPARTED: "หลุดการควบคุม",
   hudRangeRemaining: "ระยะถึงขอบเขตสนามฝึก",
   hudFlightData: "เครื่องวัดการบิน",
+  hudGunHeat: "ความร้อนปืน", hudGunOverheated: "ร้อนเกิน",
   hudSpeed: "ความเร็ว",
   hudGForce: "แรง G",
   hudVerticalSpeed: "ไต่ / ลดระดับ",
@@ -416,5 +417,5 @@ export const th: Translation = {
   bindAction_pitchUp: "เชิดหัวขึ้น", bindAction_pitchDown: "กดหัวลง", bindAction_rollLeft: "เอียงซ้าย", bindAction_rollRight: "เอียงขวา",
   bindAction_yawLeft: "หันหัวซ้าย", bindAction_yawRight: "หันหัวขวา", bindAction_speedUp: "เพิ่มความเร็ว", bindAction_speedDown: "ลดความเร็ว",
   bindAction_afterburner: "สันดาปท้าย", bindAction_airbrake: "เบรกอากาศ", bindAction_cameraCycle: "สลับโหมดกล้อง",
-  bindAction_lookBack: "มองหลัง", bindAction_pause: "พักเกม",
+  bindAction_fireGun: "ยิงปืน", bindAction_lookBack: "มองหลัง", bindAction_pause: "พักเกม",
 }

@@ -191,6 +191,7 @@ export const en = {
   envelope_DEPARTED: "DEPARTED",
   hudRangeRemaining: "Distance to training boundary",
   hudFlightData: "Flight instruments",
+  hudGunHeat: "Gun heat", hudGunOverheated: "Overheated",
   hudSpeed: "Speed",
   hudGForce: "G-force",
   hudVerticalSpeed: "Climb / descent",
@@ -415,6 +416,6 @@ export const en = {
   bindAction_pitchUp: "Pitch up", bindAction_pitchDown: "Pitch down", bindAction_rollLeft: "Roll left", bindAction_rollRight: "Roll right",
   bindAction_yawLeft: "Yaw left", bindAction_yawRight: "Yaw right", bindAction_speedUp: "Increase speed", bindAction_speedDown: "Decrease speed",
   bindAction_afterburner: "Afterburner", bindAction_airbrake: "Airbrake", bindAction_cameraCycle: "Cycle camera mode",
-  bindAction_lookBack: "Look back", bindAction_pause: "Pause",
+  bindAction_fireGun: "Fire gun", bindAction_lookBack: "Look back", bindAction_pause: "Pause",
 } as const
 export type Translation = { [Key in keyof typeof en]: string }

@@ -1,7 +1,7 @@
 import { flightProfiles } from './flight-profiles'
 import { validateFlightProfile } from '../game/flight/validateProfile'
 import { resolveSpeedLimits } from '../game/flight/speedLimits'
-import { getWeapon, weaponStations } from './weapons'
+import { getWeapon, weaponStations, type GunProfile } from './weapons'
 import { hitboxes, validateHitboxes } from './hitboxes'
 import { getAircraft } from './aircraft'
 import { presentationIds, type AircraftDefinition, type SessionConfig } from './schemas'
@@ -24,9 +24,15 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
       if (!station.id || stationIds.has(station.id)) throw new Error(`${path}.stations.id: missing or duplicate`)
       stationIds.add(station.id)
       if (!Number.isInteger(station.capacity) || station.capacity < 1) throw new Error(`${path}.stations.capacity: expected positive integer`)
-      getWeapon(station.weaponId)
+      const weapon = getWeapon(station.weaponId)
+      if (weapon.kind === 'gun') {
+        const muzzle = station.muzzle
+        if (!muzzle || muzzle.length !== 3 || !muzzle.every(Number.isFinite)) throw new Error(`${path}.stations.muzzle: gun station needs three finite numbers`)
+        validateGunProfile(weapon.gun, `${path}.stations.weapon(${weapon.id}).gun`)
+      }
       for (const locale of ['th', 'en'] as const) if (!station.name[locale]?.trim()) throw new Error(`${path}.stations.name.${locale}: required`)
     }
+    if (stations.filter(station => getWeapon(station.weaponId).kind === 'gun').length !== 1) throw new Error(`${path}.stations: expected exactly one gun station`)
     if (!/^[\w-]+\.glb$/.test(entry.modelFile)) throw new Error(`${path}.modelFile: expected local GLB filename`)
     if (entry.rotation.length !== 3 || entry.rotation.some((value) => !Number.isFinite(value))) {
       throw new Error(`${path}.rotation: expected three finite numbers`)
@@ -39,6 +45,15 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
       }
     }
   })
+}
+
+function validateGunProfile(gun: GunProfile | undefined, path: string) {
+  if (!gun) throw new Error(`${path}: required for a gun`)
+  for (const key of ['rate', 'muzzleSpeed', 'damage', 'lifetime', 'maxDistance', 'heatSeconds', 'coolRate'] as const) {
+    if (!(Number.isFinite(gun[key]) && gun[key] > 0)) throw new Error(`${path}.${key}: expected a positive number`)
+  }
+  for (const key of ['spreadDeg', 'hotSpread'] as const) if (!(Number.isFinite(gun[key]) && gun[key] >= 0)) throw new Error(`${path}.${key}: expected zero or more`)
+  if (!(gun.resumeHeat > 0 && gun.resumeHeat < 1)) throw new Error(`${path}.resumeHeat: expected between 0 and 1`)
 }
 
 export function validateSession(config: SessionConfig) {

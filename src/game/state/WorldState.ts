@@ -8,6 +8,8 @@ import type { StallState } from '../flight/stall'
 import type { PilotIntent } from '../flight/intent'
 import type { EngineState } from '../flight/engine'
 import type { FlightForces } from '../flight/flightForces'
+import type { GunState } from '../combat/gun'
+import type { Projectile } from '../combat/projectiles'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -18,8 +20,9 @@ export interface AircraftState {
   control: 'pilot' | 'hold'
   /** Resolved session limits, in simulation m/s. */
   speedLimits: SpeedLimits
-  /** Per-entity inventory for future combat; P3 never consumes it. */
+  /** Per-entity inventory for future combat. The gun never consumes it: gun ammo is unlimited and heat limits bursts. */
   stores: WeaponStore[]
+  gun: GunState
   position: Vec3
   orientation: Quat
   velocity: Vec3
@@ -45,4 +48,8 @@ export interface WorldState {
   tick: number
   practice: PracticeState
   aircraft: AircraftState[]
+  /** Gun rounds in flight. */
+  projectiles: Projectile[]
+  /** The next projectile id; only goes up, so ids are never reused. */
+  nextProjectileId: number
 }
