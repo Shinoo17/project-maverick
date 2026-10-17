@@ -45,6 +45,12 @@ export interface WeaponStation {
    * The gun line is body +X. Refit with the hitboxes when `flightModelLength` changes.
    * Provisional: placed by eye near each real gun port, not fitted to the GLB. */
   muzzle?: Tuple3
+  /** Gun stations only: the gun line tilted nose-up from body +X, in degrees. Real fighters
+   * harmonise the gun a little above the fuselage line so rounds fired in a turn (positive AoA)
+   * and dropping under gravity still pass near where the nose points. This flight model holds AoA
+   * to 1–4° in a gun turn, so the tilt is smaller than a real fighter's: at 0.5° rounds pass about
+   * 1.3 m above the nose line at 500 m in level flight and about 3 m below it in a full pull. */
+  elevationDeg?: number
 }
 export interface WeaponStore { stationId: string; weaponId: string; count: number }
 const label = (en: string, th: string): LocalizedText => ({ en, th })
@@ -54,8 +60,10 @@ const baselineGun: GunProfile = {
   rate: 80, muzzleSpeed: 900, damage: 2, spreadDeg: 0.3, hotSpread: 0.5,
   lifetime: 1.2, maxDistance: 1000, heatSeconds: 2, coolRate: 0.5, resumeHeat: 0.35,
 }
+// Muzzle speed of the real M61A2 with PGU-28 rounds (about 1,030 m/s); less drop and less lead than the baseline.
+const m61Gun: GunProfile = { ...baselineGun, muzzleSpeed: 1030 }
 export const weapons: readonly WeaponDefinition[] = [
-  { id: 'm61a2', name: label('M61A2 · 20 mm', 'M61A2 · 20 มม.'), kind: 'gun', calibreMm: 20, gun: baselineGun, source: usaf },
+  { id: 'm61a2', name: label('M61A2 · 20 mm', 'M61A2 · 20 มม.'), kind: 'gun', calibreMm: 20, gun: m61Gun, source: usaf },
   { id: 'aim9', name: label('AIM-9 Sidewinder', 'AIM-9 Sidewinder'), kind: 'ir', model: { file: 'AIM9_compact.glb', rotation: [0, Math.PI / 2, 0], length: 3.02 }, source: usaf },
   { id: 'aim120', name: label('AIM-120 AMRAAM', 'AIM-120 AMRAAM'), kind: 'radar', model: { file: 'AIM120_compact.glb', rotation: [0, Math.PI / 2, 0], length: 3.66 }, source: usaf },
   { id: 'su57-cannon', name: label('30 mm aircraft cannon', 'ปืนใหญ่อากาศ 30 มม.'), kind: 'gun', calibreMm: 30, gun: baselineGun, source: 'https://www.rostec.ru/media/news/istrebitel-su-57-pyatoe-pokolenie-na-vzlet/' },
@@ -71,12 +79,12 @@ export function getWeapon(id: string): WeaponDefinition {
 // Stations and quantities are game capacities, not certified real-world carriage limits.
 export const weaponStations: Record<string, WeaponStation[]> = {
   f22: [
-    { id: 'gun', name: label('Internal gun', 'ปืนประจำเครื่อง'), weaponId: 'm61a2', capacity: 1, muzzle: [1, -0.6, 1.3] },
+    { id: 'gun', name: label('Internal gun', 'ปืนประจำเครื่อง'), weaponId: 'm61a2', capacity: 1, muzzle: [1, -0.6, 1.3], elevationDeg: 0.5 },
     { id: 'side-bays', name: label('Side bays', 'ช่องอาวุธด้านข้าง'), weaponId: 'aim9', capacity: 2 },
     { id: 'main-bays', name: label('Main bays', 'ช่องอาวุธหลัก'), weaponId: 'aim120', capacity: 6 },
   ],
   su57: [
-    { id: 'gun', name: label('Internal gun', 'ปืนประจำเครื่อง'), weaponId: 'su57-cannon', capacity: 1, muzzle: [3.5, -0.4, 1] },
+    { id: 'gun', name: label('Internal gun', 'ปืนประจำเครื่อง'), weaponId: 'su57-cannon', capacity: 1, muzzle: [3.5, -0.4, 1], elevationDeg: 0.5 },
     { id: 'short-range', name: label('Short-range stations', 'จุดติดตั้งอาวุธระยะใกล้'), weaponId: 'training-ir', capacity: 2 },
     { id: 'medium-range', name: label('Medium-range stations', 'จุดติดตั้งอาวุธระยะกลาง'), weaponId: 'training-radar', capacity: 4 },
   ],
@@ -92,7 +100,7 @@ export function gunStation(definition: AircraftDefinition) {
   const station = weaponStations[definition.weaponStationProfileId].find(entry => getWeapon(entry.weaponId).kind === 'gun')
   if (!station) throw new Error(`${definition.id}: no gun station`)
   const weapon = getWeapon(station.weaponId)
-  return { station, weapon, muzzle: station.muzzle!, profile: weapon.gun! }
+  return { station, weapon, muzzle: station.muzzle!, elevationDeg: station.elevationDeg ?? 0, profile: weapon.gun! }
 }
 export function availableWeapons(definition: AircraftDefinition) {
   return [...new Set(weaponStations[definition.weaponStationProfileId].map(station => station.weaponId))].map(getWeapon)

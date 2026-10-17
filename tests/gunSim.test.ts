@@ -13,7 +13,8 @@ import type { Vec3 } from '../src/game/state/WorldState'
 import { FlightInput } from '../src/game/input/FlightInput'
 import { parseBindings } from '../src/game/input/keyBindings'
 
-const profile = getWeapon('m61a2').gun!
+// The 900 m/s baseline; the module tests below are written around it.
+const profile = getWeapon('su57-cannon').gun!
 const level = { x: 0, y: 0, z: 0, w: 1 }
 const body = (id: string, from: Vec3, to: Vec3 = from, velocity: Vec3 = { x: 0, y: 0, z: 0 }): CombatBody => {
   const shapes = hitboxes[getAircraft('su57').hitboxProfileId]
@@ -61,6 +62,14 @@ describe('gun rounds', () => {
     expect(round.velocity.x).toBeCloseTo(1100)
     stepRound(round, profile, 0, WORLD_STEP, [])
     expect(round.velocity.y).toBeCloseTo(-GRAVITY * WORLD_STEP)
+  })
+  it('leave on the gun line, tilted nose-up by the station elevation; the M61 is faster', () => {
+    const gun = gunStation(getAircraft('f22'))
+    expect(gun.elevationDeg).toBeGreaterThan(0)
+    expect(gun.profile.muzzleSpeed).toBe(1030)
+    expect(gunStation(getAircraft('su57')).profile.muzzleSpeed).toBe(900)
+    const round = spawnRound(1, 0, shooterAt(500), 0, [0, 0, 0], 'm61a2', { ...profile, spreadDeg: 0 }, 0, 0, gun.elevationDeg)
+    expect(Math.atan2(round.velocity.y, round.velocity.x) * 180 / Math.PI).toBeCloseTo(gun.elevationDeg, 9)
   })
   it('stop at the 1,000 m cap, never beyond, and at the 1.2 s lifetime when slower', () => {
     const fast = flyRound(spawnRound(1, 0, shooterAt(2000, 250), 0, [0, 0, 0], 'm61a2', profile, 0, 0), () => [])

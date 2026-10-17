@@ -131,7 +131,7 @@ export class GameRuntime {
       // Spread follows the heat the gun had when the tick began.
       const heat = entity.gun.heat
       stepGun(entity.gun, gun.profile, triggers.get(entity.id) ?? false, WORLD_STEP).forEach((birth, index) => {
-        const round = spawnRound(world.nextProjectileId++, world.tick, shooter, birth / WORLD_STEP, gun.muzzle, gun.weapon.id, gun.profile, heat, firstShot + index)
+        const round = spawnRound(world.nextProjectileId++, world.tick, shooter, birth / WORLD_STEP, gun.muzzle, gun.weapon.id, gun.profile, heat, firstShot + index, gun.elevationDeg)
         if (fly(round, birth)) world.projectiles.push(round)
       })
     }

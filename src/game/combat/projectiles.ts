@@ -62,13 +62,15 @@ export function poseAt(body: CombatBody, f: number): Pose & { velocity: Vec3 } {
 
 /** A new round, fired from the shooter's pose `f` of the way through the tick. */
 export function spawnRound(id: number, tick: number, shooter: CombatBody, f: number, muzzle: readonly [number, number, number],
-  weaponId: string, profile: GunProfile, heat: number, shot: number): Projectile {
+  weaponId: string, profile: GunProfile, heat: number, shot: number, elevationDeg = 0): Projectile {
   const pose = poseAt(shooter, f)
   const orientation = quat(pose.orientation)
   const [u, v] = spreadSample(shooter.id, shot)
   // Uniform over the cone's disc: sqrt keeps the centre from bunching.
   const off = spreadHalfAngle(profile, heat) * Math.sqrt(u), around = 2 * Math.PI * v
-  const direction = new Vector3(Math.cos(off), Math.sin(off) * Math.cos(around), Math.sin(off) * Math.sin(around)).applyQuaternion(orientation)
+  // Spread around +X, then the gun line's nose-up tilt (about body +Z), then into the world.
+  const direction = new Vector3(Math.cos(off), Math.sin(off) * Math.cos(around), Math.sin(off) * Math.sin(around))
+    .applyAxisAngle(new Vector3(0, 0, 1), elevationDeg * Math.PI / 180).applyQuaternion(orientation)
   const start = new Vector3(...muzzle).applyQuaternion(orientation)
   return {
     id, ownerId: shooter.id, weaponId, spawnTick: tick, age: 0, travelled: 0,

@@ -28,6 +28,8 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
       if (weapon.kind === 'gun') {
         const muzzle = station.muzzle
         if (!muzzle || muzzle.length !== 3 || !muzzle.every(Number.isFinite)) throw new Error(`${path}.stations.muzzle: gun station needs three finite numbers`)
+        const elevation = station.elevationDeg ?? 0
+        if (!(Number.isFinite(elevation) && Math.abs(elevation) <= 5)) throw new Error(`${path}.stations.elevationDeg: expected -5 to 5 degrees`)
         validateGunProfile(weapon.gun, `${path}.stations.weapon(${weapon.id}).gun`)
       }
       for (const locale of ['th', 'en'] as const) if (!station.name[locale]?.trim()) throw new Error(`${path}.stations.name.${locale}: required`)
