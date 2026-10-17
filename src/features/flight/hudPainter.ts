@@ -12,7 +12,7 @@ One phosphor-green family. Brightness, opacity and shape carry hierarchy; a wide
 green pass under every mark keeps it legible over sky and ground without a CSS filter, so
 nothing is recomposited when the frame changes.
 */
-import { MathUtils, Vector3, type Camera } from 'three'
+import { MathUtils, Quaternion, Vector3, type Camera } from 'three'
 import type { EnvelopeLabel } from '../../game/flight/envelope'
 
 const HUD_GREEN = 'rgba(98, 255, 132, 0.98)'
@@ -59,6 +59,8 @@ export interface GlassState {
   camera: Camera | null
   position: Vec3Like
   forward: Vec3Like
+  /** Aircraft wing axis (body +Z) in world space; tilts the -W- so its wings follow the aircraft's. */
+  right: Vec3Like
   velocity: Vec3Like
   /** ARCADE km/h */
   speed: number
@@ -174,6 +176,17 @@ export function projectPoint(camera: Camera, point: Vec3Like, width: number, hei
  * Angle is returned in both cases; the painter only uses it for an edge chevron.
  * A directly aft vector has no unique edge direction, so it uses the bottom edge.
  */
+const wingInView = new Vector3(), viewRotation = new Quaternion()
+/**
+ * How far the aircraft's wings lean on screen, in radians for ctx.rotate (clockwise positive).
+ * Zero when the camera banks with the aircraft; follows the bank when the camera holds the horizon.
+ * Looking along the wing (the axis nearly end-on) gives no reliable lean, so it reads level.
+ */
+export function wingTilt(camera: Camera, right: Vec3Like) {
+  wingInView.set(right.x, right.y, right.z).applyQuaternion(camera.getWorldQuaternion(viewRotation).invert())
+  return Math.hypot(wingInView.x, wingInView.y) < 0.2 ? 0 : Math.atan2(-wingInView.y, wingInView.x)
+}
+
 export function projectVelocityMarker(camera: Camera, position: Vec3Like, velocity: Vec3Like, width: number, height: number, inset: number) {
   const path = new Vector3().copy(velocity)
   if (path.length() < 1) return null
@@ -348,11 +361,16 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.restore()
       return
     }
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.moveTo(cx - r, cy); ctx.lineTo(cx - r * 2.6, cy)
-    ctx.moveTo(cx + r, cy); ctx.lineTo(cx + r * 2.6, cy)
-    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy - r * 2.2)
+    // Tilted with the wings like the -W-, so the top tick points to the canopy: where a pull takes the nose.
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.rotate(wingTilt(camera, state.right))
+    ctx.arc(0, 0, r, 0, Math.PI * 2)
+    ctx.moveTo(-r, 0); ctx.lineTo(-r * 2.6, 0)
+    ctx.moveTo(r, 0); ctx.lineTo(r * 2.6, 0)
+    ctx.moveTo(0, -r); ctx.lineTo(0, -r * 2.2)
     ctx.stroke()
+    ctx.restore()
   }
 
   function drawVelocityMarker(state: GlassState, camera: Camera) {
@@ -367,10 +385,13 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     ctx.strokeStyle = separated ? HUD_GREEN_ALERT : HUD_GREEN
     ctx.beginPath()
     if (onScreen) {
-      ctx.moveTo(0, -r); ctx.lineTo(r, 0)
-      ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.closePath()
-      ctx.moveTo(-r, 0); ctx.lineTo(-r * 1.8, 0)
-      ctx.moveTo(r, 0); ctx.lineTo(r * 1.8, 0)
+      // -W-: wings, then a W whose middle peak is the path point (the Ace Combat look).
+      // Like HUD symbology on the real glass, its wings stay parallel to the aircraft's.
+      ctx.rotate(wingTilt(camera, state.right))
+      ctx.moveTo(-r * 2.6, 0); ctx.lineTo(-r * 1.2, 0)
+      ctx.lineTo(-r * 0.6, r * 0.8); ctx.lineTo(0, 0)
+      ctx.lineTo(r * 0.6, r * 0.8); ctx.lineTo(r * 1.2, 0)
+      ctx.lineTo(r * 2.6, 0)
     } else {
       ctx.rotate(angle)
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)

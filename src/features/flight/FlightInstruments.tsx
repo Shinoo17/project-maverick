@@ -30,12 +30,12 @@ const burnerStates: Record<string, BurnerState> = {
 }
 const zero = { x: 0, y: 0, z: 0 }
 const standby: GlassState = {
-  live: false, camera: null, position: zero, forward: { x: 1, y: 0, z: 0 }, velocity: zero, speed: 0, altitude: 0, heading: null, pitch: 0, bank: null,
+  live: false, camera: null, position: zero, forward: { x: 1, y: 0, z: 0 }, right: { x: 0, y: 0, z: 1 }, velocity: zero, speed: 0, altitude: 0, heading: null, pitch: 0, bank: null,
   verticalSpeed: 0, aoa: 0, gLoad: 1, power: 0, groundClearance: 0, edge: 0, burnerReserve: 0, burnerSeconds: 0, burnerState: 'ready', gunHeat: 0, gunOverheated: false, airbrake: false, highG: false, psm: false,
   regime: 'NORMAL', incidence: 0, alphaNormal: 20, alphaCritical: 30, alphaLimit: 20, alphaMax: 90,
 }
 
-const nose = new Vector3(), attitudeQuaternion = new Quaternion()
+const nose = new Vector3(), wing = new Vector3(), attitudeQuaternion = new Quaternion()
 export function glassState({ camera, state, position, orientation, velocity }: HudFrame): GlassState {
   const m = state.maneuver, profile = getFlightProfile(state.aircraftId), maneuverProfile = profile.maneuver
   const airflow = observeAirflow({ orientation, velocity }, profile)
@@ -43,9 +43,10 @@ export function glassState({ camera, state, position, orientation, velocity }: H
   const label = envelopeLabel(envelope, state.intent.activity)
   const attitude = flightAttitude(orientation)
   nose.set(1, 0, 0).applyQuaternion(attitudeQuaternion.set(orientation.x, orientation.y, orientation.z, orientation.w))
+  wing.set(0, 0, 1).applyQuaternion(attitudeQuaternion)
   const altitude = position.y
   return {
-    live: true, camera, position, velocity, forward: nose,
+    live: true, camera, position, velocity, forward: nose, right: wing,
     speed: arcadeSpeed(Math.hypot(velocity.x, velocity.y, velocity.z)),
     altitude, heading: attitude.heading, pitch: attitude.pitch, bank: attitude.bank,
     verticalSpeed: velocity.y, aoa: m.alpha, gLoad: m.g, power: state.enginePower,

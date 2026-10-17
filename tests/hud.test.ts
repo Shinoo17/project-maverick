@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import { flightAttitude, burnerStatus, flightWarning, holdWarning, warningSeverity, ADVISORY_HOLD_MS } from '../src/features/flight/telemetry'
-import { aoaBracket, createGlassPainter, glassLayout, projectRung, projectVelocityMarker, regimeFlag, regimeTone } from '../src/features/flight/hudPainter'
+import { aoaBracket, createGlassPainter, glassLayout, projectRung, projectVelocityMarker, regimeFlag, regimeTone, wingTilt } from '../src/features/flight/hudPainter'
 import { glassState } from '../src/features/flight/FlightInstruments'
 import { arcadeSpeed } from '../src/game/flight/speed'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
@@ -251,6 +251,25 @@ describe('nose pipper painting', () => {
     draw(new Vector3(1, 0, 0), new Vector3(-100, 0, 0))
     expect(ctx.moveTo).toHaveBeenCalledWith(-10, -6)
     expect(ctx.moveTo).not.toHaveBeenCalledWith(-17, -6)
+  })
+})
+
+describe('flight-path marker tilt', () => {
+  const bank = (degrees: number) => new Vector3(0, 0, 1).applyQuaternion(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), degrees * Math.PI / 180))
+  it('leans with the aircraft under a horizon-held camera and stays level when the camera banks too', () => {
+    const camera = new PerspectiveCamera(60, 16 / 9, 0.5, 14000)
+    camera.lookAt(1, 0, 0); camera.updateMatrixWorld()
+    expect(wingTilt(camera, bank(0))).toBeCloseTo(0, 9)
+    // Right wing down: clockwise on screen.
+    expect(wingTilt(camera, bank(30))).toBeCloseTo(30 * Math.PI / 180, 9)
+    expect(wingTilt(camera, bank(-45))).toBeCloseTo(-45 * Math.PI / 180, 9)
+    camera.rotateZ(-30 * Math.PI / 180); camera.updateMatrixWorld()
+    expect(wingTilt(camera, bank(30))).toBeCloseTo(0, 9)
+  })
+  it('reads level when the wing points along the view', () => {
+    const camera = new PerspectiveCamera(60, 16 / 9, 0.5, 14000)
+    camera.lookAt(0, 0, 1); camera.updateMatrixWorld()
+    expect(wingTilt(camera, { x: 0, y: 0, z: 1 })).toBe(0)
   })
 })
 
