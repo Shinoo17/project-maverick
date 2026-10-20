@@ -4,6 +4,7 @@ import { observeAirflow } from '../game/flight/airflow'
 import { getFlightProfile } from '../game/flight/profile'
 import { balancedTilt, bankAbout, driftShare, psmShare } from '../game/camera/cameraRoll'
 import type { CameraSettings } from '../game/camera/cameraSettings'
+import { visibility } from './targetVisibility'
 /*
 The chase camera. Two shots, blended by incidence:
 
@@ -153,6 +154,8 @@ export class FlightCamera {
   baseFov = FOV.base
   /** Jump straight to the target FOV (set while paused, so a Settings change shows at once). */
   snapFov = false
+  /** 0–1: how much of the gun zoom applies this frame (targetVisibility.ts). It eases in and out with the FOV. */
+  gunZoom = 0
   private diagnosticView(camera: PerspectiveCamera, state: AircraftState, bounds: Box3) {
     const q = new Quaternion().copy(state.orientation), center = new Vector3().copy(state.position)
     const corners: Vector3[] = []
@@ -322,7 +325,9 @@ export class FlightCamera {
       camera.quaternion.slerp(desiredQ, 1 - Math.exp(-MathUtils.lerp(cruiseTurnRate, PSM_TURN_RATE, entry) * dt))
     }
     camera.position.copy(position).add(this.offset)
-    const fov = reducedMotion ? this.baseFov + FOV.reduced - FOV.base : this.baseFov + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple
+    // Reduced motion holds the FOV still, so it has no gun zoom either.
+    const fov = reducedMotion ? this.baseFov + FOV.reduced - FOV.base
+      : (this.baseFov + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple) * (1 - visibility.zoom * this.gunZoom)
     camera.fov += (fov - camera.fov) * (reducedMotion || this.snapFov ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
     camera.position.y = Math.max(5, camera.position.y)
   }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { between, createGunnery } from '../src/render/gunneryFrame'
 import type { GameEvent } from '../src/game/runtime/events'
+import { distanceScale } from '../src/render/targetVisibility'
 
 const world = () => new GameRuntime({ mode: 'playground', aircraftIds: ['f22'], targetDrone: 'still' }).snapshot()
 const shooterOf = (snapshot: ReturnType<typeof world>, targetId: string | null = 'drone-1') => {
@@ -20,7 +21,7 @@ describe('HUD gun marks', () => {
     const snapshot = world()
     snapshot.aircraft[1].hp = 40
     const far = createGunnery('f22').update(snapshot, snapshot, 1, shooterOf(snapshot), [])
-    expect(far.target).toMatchObject({ hp: 0.4 })
+    expect(far.target).toMatchObject({ hp: 0.4, label: 'DRONE · SU-57' })
     expect(far.target!.range).toBeCloseTo(Math.hypot(1300, 25), 0)
     expect(far.lead).toBeNull()
     expect(far.inRange).toBe(false)
@@ -28,6 +29,9 @@ describe('HUD gun marks', () => {
     const near = createGunnery('f22').update(snapshot, snapshot, 1, shooterOf(snapshot), [])
     expect(near.lead).not.toBeNull()
     expect(near.inRange).toBe(true)
+    // The box frames the model as drawn: larger with distance.
+    expect(far.target!.radius / near.target!.radius).toBeCloseTo(distanceScale(far.target!.range) / distanceScale(near.target!.range), 6)
+    expect(far.target!.radius).toBeGreaterThan(near.target!.radius)
   })
   it('flashes and calls SPLASH only for the player’s own rounds', () => {
     const snapshot = world(), marks = createGunnery('f22')

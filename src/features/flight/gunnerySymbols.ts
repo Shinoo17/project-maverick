@@ -6,8 +6,8 @@ why), so the reticle sitting on the lead marker on screen means a hit.
 - Gun reticle: a broken ring with a centre dot where rounds fired now will be. At the
   target's range when there is one, otherwise at 500 m. It swings away from the nose in a
   pull, because the rounds keep the aircraft's own velocity.
-- Target box: corner brackets sized to the target, its range and closure, an HP bar under it,
-  and IN RNG / OUT RNG. Off screen, an arrow at the frame edge points to it.
+- Target box: corner brackets sized to the drawn target, its designation above, its range and
+  closure, an HP bar under it, and IN RNG / OUT RNG. Off screen, an arrow at the frame edge points to it.
 - Lead marker: a diamond where the target will be when the rounds arrive, tied to the box by a
   dashed line, with an arc that empties as the range closes. Doubled when the reticle is on it.
 - ASSIST under the reticle while aim assist is moving the stick.
@@ -25,13 +25,15 @@ export interface GunneryMarks {
   reticle: Vec3Like | null
   target: {
     position: Vec3Like
-    /** Hitbox bounding radius, metres. */
+    /** Metres: the hitbox bounding radius times the distance scale the model is drawn at. */
     radius: number
     range: number
     /** m/s, positive while the range shrinks. */
     closure: number
     /** 0–1 */
     hp: number
+    /** Designation, e.g. "DRONE · SU-57". */
+    label: string
   } | null
   /** Where the target will be when the rounds arrive (world); null without a reachable solution. */
   lead: Vec3Like | null
@@ -118,7 +120,8 @@ function drawTarget(pen: Pen, marks: GunneryMarks, target: NonNullable<GunneryMa
     // Confirmed hit: a tick flares outward from each corner.
     if (flash) pen.line(x + sx * 4, y + sy * 4, x + sx * 12, y + sy * 12, 2, pen.bright)
   }
-  // Range and closure to the right, the gun's verdict under them.
+  // Who it is above the box; range and closure to the right, the gun's verdict under them.
+  pen.text(target.label, at.x, at.y - half - 7, pen.font(12, 700), color, 'center', 'bottom')
   const labelX = at.x + half + 8
   pen.text(range, labelX, at.y - half + 6, pen.font(13, 700), pen.green)
   pen.text(`${target.closure >= 0 ? '+' : '−'}${Math.abs(Math.round(target.closure))} M/S`, labelX, at.y - half + 22, pen.font(11), pen.dim)

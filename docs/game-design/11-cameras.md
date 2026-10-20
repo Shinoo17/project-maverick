@@ -54,6 +54,8 @@ Mouse flight input ยังเป็น body-axis virtual stick ตาม 02 �
 
 ใช้ time-based damping `1-exp(-k*dt)` แยก position/look/roll ไม่ lerp ด้วยค่าคงที่ต่อ frame ค่าเริ่มต้น vertical FOV ทดลอง 69°, ปรับ 55–85°; burner เพิ่ม FOV ไม่เกิน 4° เมื่อเปิด dynamic FOV เท่านั้น
 
+Gun zoom (ผู้ใช้ขอ 21 ต.ค. 2026, `src/render/targetVisibility.ts`): ขณะกดยิงค้างและมีเป้าที่ยังมีชีวิต FOV แคบลง 15% ของตัวเอง เต็มที่เมื่อเป้าห่างแกนกล้อง ≤ 8° และหายไปที่ 20° (แคบ FOV ซูมเข้ากลางจอ เป้าที่อยู่ขอบจะถูกดันออกนอกจอ) ใช้ easing เดียวกับ FOV เดิม Reduced motion ไม่ zoom ค่า provisional
+
 อย่าเพิ่ม shake/FOV จนเครื่องเป้าหมายหดมองไม่เห็น ให้ปรับ shake/dynamic FOV เป็นศูนย์ได้ UI และ lead indicator project ด้วย final camera pose เดียวกับที่ render ไม่ใช้ simulation pose ที่ยังไม่ interpolate
 
 Camera terrain collision ใช้ segment จาก anchor ไปตำแหน่งกล้องหลัง damping/transition และดันเข้าเมื่อถูกบัง เพื่อไม่ให้ smoothing พากล้องกลับเข้า terrain ค่อยคืนระยะเมื่อพ้น ไม่ทำ simulation aircraft ชนตามกล้อง ถ้าต้องเข้าใกล้ลำจนทะลุ mesh ให้ fade own-aircraft/เปลี่ยน near clipping อย่างควบคุมได้

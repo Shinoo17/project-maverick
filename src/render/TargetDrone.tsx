@@ -2,8 +2,9 @@
 The target drone (Playground practice modifier). It is an ordinary aircraft
 entity that the runtime holds still or moves along a path. This view only
 builds the model: FlightWorld places `group` each frame, interpolated between
-ticks like the player's aircraft (a useFrame here would run a frame late), and
-hides it while it is shot down. Painted high-visibility orange,
+ticks like the player's aircraft (a useFrame here would run a frame late), scales
+`model` up with distance (targetVisibility.ts), and hides it while it is shot down.
+The hitbox wireframe sits outside the scaled group, so `?hitboxes` shows the true hitbox. Painted high-visibility orange,
 like real aerial targets, on its own copies of the materials: the GLB cache
 shares materials with the player's aircraft and the menu scene, which must
 keep their colours.
@@ -19,7 +20,7 @@ import { HitboxWireframe } from './HitboxWireframe'
 
 const highVisibility = new Color('#ff7a2e')
 
-export function TargetDrone({ group, showHitboxes }: { group: RefObject<Group | null>; showHitboxes: boolean }) {
+export function TargetDrone({ group, scaled, showHitboxes }: { group: RefObject<Group | null>; scaled: RefObject<Group | null>; showHitboxes: boolean }) {
   const definition = getAircraft(targetDrone.aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
   const invalidate = useThree(state => state.invalidate)
@@ -47,7 +48,7 @@ export function TargetDrone({ group, showHitboxes }: { group: RefObject<Group | 
   // Paused, the canvas draws on demand: draw once the model has loaded.
   useEffect(() => { invalidate() }, [model, invalidate])
   return <group ref={group} visible={false}>
-    <primitive object={model} dispose={null} />
+    <group ref={scaled}><primitive object={model} dispose={null} /></group>
     {showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}
   </group>
 }

@@ -10,6 +10,7 @@ import { TargetDrone } from './TargetDrone'
 import { HitboxWireframe } from './HitboxWireframe'
 import { createTracers } from './tracers'
 import { between, createGunnery } from './gunneryFrame'
+import { distanceScale, zoomShare } from './targetVisibility'
 import { aimAssist, withAimAssist } from '../game/combat/aimAssist'
 import { gunMountOf } from '../game/combat/gunSolution'
 import { getAircraft, modelUrl } from '../content/aircraft'
@@ -37,7 +38,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const world = useRef<WorldState | null>(null)
   // The snapshot before the last tick, for drawing the drone between ticks like the player.
   const previousWorld = useRef<WorldState | null>(null)
-  const drone = useRef<Group>(null)
+  const drone = useRef<Group>(null), droneModel = useRef<Group>(null)
   const takeSnapshot = (runtime: GameRuntime) => { world.current = runtime.snapshot(); return world.current.aircraft[0] }
   const group = useRef<Group>(null)
   const elapsed = useRef(0), reset = useRef(-1)
@@ -53,6 +54,8 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const mount = useMemo(() => gunMountOf(aircraftId), [aircraftId])
   // Whether aim assist moved the stick on the last command; the HUD names it.
   const assisting = useRef(false)
+  // Whether the pilot held the gun trigger on the last command; the camera zooms on the target while it is.
+  const firing = useRef(false)
   useEffect(() => () => tracers.dispose(), [tracers])
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
@@ -71,7 +74,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
-      reset.current = session.resetId; rig.reset(); gunnery.reset(); assisting.current = false
+      reset.current = session.resetId; rig.reset(); gunnery.reset(); assisting.current = false; firing.current = false
       previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
@@ -95,6 +98,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
         const target = previousWorld.current.aircraft.find(entity => entity.id === live.targeting.targetId)
         const assist = aimAssist(session.input.mouse.aimAssist, live, target, mount, command)
         assisting.current = assist.active
+        firing.current = command.gunHeld
         return withAimAssist(command, assist)
       })
       current.current = takeSnapshot(runtime)
@@ -109,10 +113,11 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
       velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
     rig.baseFov = session.cameraFov; rig.snapFov = !session.running
+    rig.gunZoom = session.running && firing.current && state.alive ? zoomOn(camera, world.current, state.targeting.targetId) : 0
     rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
     tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr)
-    placeDrone(drone.current, previousWorld.current, world.current, alpha)
+    placeDrone(drone.current, droneModel.current, previousWorld.current, world.current, alpha, camera.position)
     // Damage is applied inside the simulation; the HUD only shows the player's confirmed hits.
     // Nothing reads the raw hits yet (impact effects), so they are dropped.
     runtime.drainHits()
@@ -150,15 +155,24 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   return <><group ref={group}><primitive object={model} dispose={null} />{showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}</group>
     <primitive object={tracers.mesh} />
     <FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} />
-    {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} showHitboxes={showHitboxes} /></Suspense>}</>
+    {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} scaled={droneModel} showHitboxes={showHitboxes} /></Suspense>}</>
 }
-/** Draws the drone between ticks. Shot down it is hidden; just respawned it is drawn where it is, not swept from the wreck. */
-function placeDrone(group: Group | null, before: WorldState | null, now: WorldState | null, alpha: number) {
+const view = new Vector3(), toTarget = new Vector3()
+/** The gun zoom's share: none without a live target, fading as the target sits off the view axis (last frame's view). */
+function zoomOn(camera: { position: Vector3; getWorldDirection(target: Vector3): Vector3 }, now: WorldState | null, targetId: string | null) {
+  const target = now?.aircraft.find(entity => entity.id === targetId && entity.alive)
+  if (!target) return 0
+  toTarget.set(target.position.x, target.position.y, target.position.z).sub(camera.position)
+  return zoomShare(camera.getWorldDirection(view).angleTo(toTarget) * 180 / Math.PI)
+}
+/** Draws the drone between ticks, larger with distance from the camera. Shot down it is hidden; just respawned it is drawn where it is, not swept from the wreck. */
+function placeDrone(group: Group | null, model: Group | null, before: WorldState | null, now: WorldState | null, alpha: number, eye: Vector3) {
   if (!group) return
   const drone = between(before, now, entity => entity.control !== 'pilot', alpha)
   group.visible = !!drone
   if (!drone) return
   group.position.copy(drone.position); group.quaternion.copy(drone.orientation)
+  model?.scale.setScalar(distanceScale(eye.distanceTo(drone.position)))
 }
 // Memoised: the page re-renders on every 10 Hz telemetry update, the scene never needs to.
 // With the menu open nothing moves, so the loop stops and frames are drawn only on demand.

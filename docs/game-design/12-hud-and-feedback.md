@@ -11,7 +11,7 @@
 | ส่วน | ข้อมูล |
 |---|---|
 | กลางจอ | nose pipper, flight-path marker (-W-), computed gun reticle (วงแตกสี่ส่วนมีจุดกลาง ใหญ่กว่า pipper), lead marker (ข้าวหลามตัด + ส่วนโค้งระยะ, เส้นประโยงไปกรอบเป้า, สองชั้นเมื่อ reticle ทับ) เฉพาะเป้าที่มี solution, ASSIST ใต้ reticle ขณะ aim assist ทำงาน |
-| รอบเป้า | กรอบมุมสี่มุมขนาดตามเป้า, ระยะ (KM), closure (M/S), IN RNG/OUT RNG, แถบ HP ใต้กรอบ, ลูกศรที่ขอบจอเมื่อเป้าอยู่นอกจอ; ภายหลัง team shape, acquiring/locked; เป้าหลังสิ่งกีดขวางไม่แสดงข้อมูลเกิน sensor rules |
+| รอบเป้า | กรอบมุมสี่มุมขนาดตามโมเดลที่วาด (รวม distance scale), รุ่นเครื่องเหนือกรอบ (`DRONE · SU-57`; ยังไม่มีชื่อผู้เล่น), ระยะ (KM), closure (M/S), IN RNG/OUT RNG, แถบ HP ใต้กรอบ, ลูกศรที่ขอบจอเมื่อเป้าอยู่นอกจอ; ภายหลัง team shape, acquiring/locked; เป้าหลังสิ่งกีดขวางไม่แสดงข้อมูลเกิน sensor rules |
 | ความเร็ว | actual + target tick, turn-band hint, label หน่วย Arcade/World ตาม 03 |
 | Flight awareness | altitude/AGL warning, bank/horizon cue, low energy และ recovery prompt |
 | Combat resources | HP, gun heat, secondary type/count, flare bursts, burner reserve |

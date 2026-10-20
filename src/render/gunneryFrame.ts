@@ -8,6 +8,10 @@ frame. The gun solution is solved from the same interpolated poses the camera se
 
 Hit flashes and SPLASH come from the simulation's events, only for rounds the player fired,
 and are timed in ticks so pause freezes them.
+
+The box is sized to the drawn model, which grows with distance (targetVisibility.ts), and is
+labelled with the aircraft's designation. Whether the reticle is on the solution still uses
+the true hitbox.
 */
 import { Quaternion, Vector3 } from 'three'
 import { getAircraft } from '../content/aircraft'
@@ -18,6 +22,7 @@ import { defaultReticle, EFFECTIVE_RANGE, gunMountOf, solveGun, type ShooterPose
 import type { GameEvent } from '../game/runtime/events'
 import type { AircraftState, WorldState } from '../game/state/WorldState'
 import type { GunneryMarks } from '../features/flight/gunnerySymbols'
+import { distanceScale } from './targetVisibility'
 
 /** An aircraft between the last two ticks; null when it is not alive now. */
 export function between(before: WorldState | null, now: WorldState | null, pick: (entity: AircraftState) => boolean, alpha: number) {
@@ -36,6 +41,11 @@ export function between(before: WorldState | null, now: WorldState | null, pick:
 }
 
 const radii = new Map<string, number>()
+/** No pilot names yet: the designation, marked DRONE for an entity with no pilot. */
+export function targetLabel(entity: AircraftState) {
+  const designation = getAircraft(entity.aircraftId).designation.toUpperCase()
+  return entity.control === 'pilot' ? designation : `DRONE · ${designation}`
+}
 function radiusOf(entity: AircraftState) {
   const id = getAircraft(entity.aircraftId).hitboxProfileId
   if (!radii.has(id)) radii.set(id, boundingRadius(hitboxes[id]))
@@ -74,7 +84,7 @@ export function createGunnery(aircraftId: string) {
       ...base,
       // Out of reach, the reticle at the target's range would mark a point no round arrives at.
       reticle: reachable ? solution!.reticle : defaultReticle(shooter, mount),
-      target: { position: target.position, radius, range, closure, hp: target.entity.hp / AIRCRAFT_HP },
+      target: { position: target.position, radius: radius * distanceScale(range), range, closure, hp: target.entity.hp / AIRCRAFT_HP, label: targetLabel(target.entity) },
       lead: reachable ? solution!.lead : null,
       inRange: reachable && range <= EFFECTIVE_RANGE,
       // Within most of the target's size: rounds through that point hit the airframe.
