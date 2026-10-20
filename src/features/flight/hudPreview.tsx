@@ -1,6 +1,8 @@
 // Developer visual fixture: the real flight instruments over a synthetic flight,
 // without WebGL, pointer lock or the pause dialog. Query: ?t=12 freezes the clock,
-// ?lang=en, ?lesson=2, ?lab, ?warning, ?stall, ?recovering, ?psm, ?size=1280x672.
+// ?lang=en, ?lesson=2, ?lab, ?warning, ?stall, ?recovering, ?psm, ?size=1280x672,
+// ?gun (a target crossing 550 m ahead: box, HP, lead, reticle; ?gun=hit adds a hit each second,
+// ?gun=assist shows the ASSIST label).
 import { createRef, StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +16,8 @@ import { flightWarning } from './telemetry'
 import { defaultBindings } from '../../game/input/keyBindings'
 import { bindingNames } from '../settings/KeyPrompt'
 import { angleOfAttack } from '../../game/flight/stall'
+import { createGunnery } from '../../render/gunneryFrame'
+import type { GameEvent } from '../../game/runtime/events'
 import '../../ui/styles.css'
 import './flight.css'
 
@@ -52,11 +56,26 @@ function fly(state: AircraftState, t: number) {
 function Preview() {
   const { t } = useTranslation()
   const [driver] = useState(() => createRef<HudDriver>())
-  const [state] = useState(() => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'] }).snapshot().aircraft[0])
+  const [world] = useState(() => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'], targetDrone: 'still' }).snapshot())
+  const state = world.aircraft[0], target = world.aircraft[1]
   const [telemetry, setTelemetry] = useState<AircraftState>(() => structuredClone(state))
   useEffect(() => {
     const camera = new PerspectiveCamera(69, 1, 0.5, 14000), start = performance.now()
     let request = 0, published = 0
+    // The target crosses 550 m out, a little right of the nose, turning at about 3 g, at 70% HP.
+    const marks = createGunnery('f22')
+    const previewGunnery = (seconds: number) => {
+      const nose = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(state.orientation))
+      const right = new Vector3(0, 0, 1).applyQuaternion(new Quaternion().copy(state.orientation))
+      const at = new Vector3().copy(state.position).addScaledVector(nose, 550).addScaledVector(right, 40)
+      target.position = { x: at.x, y: at.y, z: at.z }
+      target.velocity = { x: -right.x * 150, y: -right.y * 150, z: -right.z * 150 }
+      target.acceleration = { x: nose.x * 30, y: nose.y * 30, z: nose.z * 30 }
+      target.hp = 70
+      world.tick = Math.round(seconds * 60)
+      const events: GameEvent[] = params.get('gun') === 'hit' && world.tick % 60 === 0 ? [{ id: 'preview', tick: world.tick, type: 'damage-applied', targetId: 'drone-1', sourceId: state.id, amount: 2 }] : []
+      return marks.update(world, world, 1, { id: state.id, targetId: 'drone-1', position: state.position, orientation: state.orientation, velocity: state.velocity }, events, params.get('gun') === 'assist')
+    }
     const tick = (now: number) => {
       fly(state, frozen ?? (now - start) / 1000)
       // Horizon-locked chase camera behind the nose's ground track.
@@ -65,7 +84,9 @@ function Preview() {
       camera.aspect = (frameWidth || innerWidth) / (frameHeight || innerHeight); camera.updateProjectionMatrix()
       camera.position.copy(position).addScaledVector(track, -70).addScaledVector(up, 14)
       camera.lookAt(new Vector3().copy(position).addScaledVector(track, 400)); camera.updateMatrixWorld()
-      driver.current?.({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity })
+      const seconds = frozen ?? (now - start) / 1000
+      const gunnery = params.has('gun') ? previewGunnery(seconds) : null
+      driver.current?.({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity, gunnery })
       if (now - published > 100) { published = now; setTelemetry(structuredClone(state)) }
       request = requestAnimationFrame(tick)
     }

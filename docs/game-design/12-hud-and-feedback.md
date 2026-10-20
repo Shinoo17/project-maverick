@@ -10,8 +10,8 @@
 
 | ส่วน | ข้อมูล |
 |---|---|
-| กลางจอ | gun boresight, flight-path marker, lead cue เฉพาะเป้าที่มี solution |
-| รอบเป้า | selected target, ระยะ, team shape, acquiring/locked; เป้าหลังสิ่งกีดขวางไม่แสดงข้อมูลเกิน sensor rules |
+| กลางจอ | nose pipper, flight-path marker (-W-), computed gun reticle (วงแตกสี่ส่วนมีจุดกลาง ใหญ่กว่า pipper), lead marker (ข้าวหลามตัด + ส่วนโค้งระยะ, เส้นประโยงไปกรอบเป้า, สองชั้นเมื่อ reticle ทับ) เฉพาะเป้าที่มี solution, ASSIST ใต้ reticle ขณะ aim assist ทำงาน |
+| รอบเป้า | กรอบมุมสี่มุมขนาดตามเป้า, ระยะ (KM), closure (M/S), IN RNG/OUT RNG, แถบ HP ใต้กรอบ, ลูกศรที่ขอบจอเมื่อเป้าอยู่นอกจอ; ภายหลัง team shape, acquiring/locked; เป้าหลังสิ่งกีดขวางไม่แสดงข้อมูลเกิน sensor rules |
 | ความเร็ว | actual + target tick, turn-band hint, label หน่วย Arcade/World ตาม 03 |
 | Flight awareness | altitude/AGL warning, bank/horizon cue, low energy และ recovery prompt |
 | Combat resources | HP, gun heat, secondary type/count, flare bursts, burner reserve |
@@ -29,7 +29,7 @@ G indicator เป็นค่าจาก simplified sim จึงไม่ใ�
 
 `UiNotice` เก็บ localization key + params เช่น `{ key: 'flight.psm.speedTooHigh', params: { max: formattedSpeed } }` ไม่ฝังภาษาไทย/อังกฤษใน physics และไม่เอา event ยิงทุกนัดไปสร้าง toast ทุกครั้ง
 
-เฉพาะ confirmed damage event เท่านั้นทำ hit marker; การยิง animation/เสียงออกไม่ได้แปลว่าโดน เป้าถูกทำลายหรือหลุด sensor ต้องล้าง lead/lock cues ใน tick ที่ข้อมูลเปลี่ยน
+เฉพาะ confirmed damage event เท่านั้นทำ hit marker (ขีดสว่างออกจากมุมกรอบ 0.25 s, SPLASH 1.6 s ตรงจุดที่เป้าตก, เฉพาะกระสุนของผู้เล่น นับเวลาเป็น tick จึงหยุดตอน pause); การยิง animation/เสียงออกไม่ได้แปลว่าโดน เป้าถูกทำลายหรือหลุด sensor ต้องล้าง lead/lock cues ใน tick ที่ข้อมูลเปลี่ยน
 
 ## เมนูและ error flow
 

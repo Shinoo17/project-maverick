@@ -17,7 +17,7 @@ const full = 1000 / 2 * MOUSE_RELATIVE.reach
 
 describe('MR1 mouse modes', () => {
   it('defaults to the relative stick in the body frame (owner decision D5)', () => {
-    expect(defaultMouseSettings).toEqual({ mode: 'relative', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll' })
+    expect(defaultMouseSettings).toEqual({ mode: 'relative', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll', aimAssist: 'standard' })
     expect(new FlightInput().mouse).toEqual(defaultMouseSettings)
   })
 
@@ -137,7 +137,7 @@ describe('MR1 mouse modes', () => {
   it('persists settings field by field and falls back on anything unreadable', () => {
     expect(parseMouseSettings(undefined)).toEqual(defaultMouseSettings)
     expect(parseMouseSettings({ mode: 'stick', frame: 'horizon', sensitivity: 9, invertPitch: true, xAxis: 'yaw' }))
-      .toEqual({ mode: 'stick', frame: 'horizon', sensitivity: 2, invertPitch: true, xAxis: 'yaw' })
+      .toEqual({ mode: 'stick', frame: 'horizon', sensitivity: 2, invertPitch: true, xAxis: 'yaw', aimAssist: 'standard' })
     expect(parseMouseSettings({ mode: 'spin', frame: 3, sensitivity: NaN, invertPitch: 'yes', xAxis: null })).toEqual(defaultMouseSettings)
     const stored = parseSettings(JSON.stringify({ version: 1, aircraftId: 'su57', locale: 'en', controls: { mode: 'stick', sensitivity: 0.1 } }))
     expect(stored.controls).toEqual({ ...defaultMouseSettings, mode: 'stick', sensitivity: 0.5 })

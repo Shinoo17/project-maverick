@@ -4,6 +4,7 @@ import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
 import { runFlightReplay } from '../src/game/playground/replay'
 import { validateSession } from '../src/content/validate'
 import { targetDrone } from '../src/game/playground/practice'
+import type { AircraftState } from '../src/game/state/WorldState'
 
 // A short scripted input: climb, roll and accelerate, so the player's path is not trivial.
 const script = (tick: number, entityId: string): PilotCommand => ({ ...neutralCommand(tick, entityId), pitch: tick < 90 ? 0.6 : -0.2, roll: tick % 120 < 40 ? 0.8 : 0, speedAdjust: 1 })
@@ -26,8 +27,10 @@ describe('target drone', () => {
     expect(asked.every(id => id === 'aircraft-1')).toBe(true)
   })
   it('does not change the player flight, at any frame rate', () => {
-    const without = fly(false, 60).world.aircraft[0]
-    for (const fps of [30, 60, 144]) expect(fly(true, fps).world.aircraft[0]).toEqual(without)
+    // Only the gun's target selection may differ: with a drone there is something to select.
+    const flight = (entity: AircraftState) => { const { targeting: _, ...rest } = entity; return rest }
+    const without = flight(fly(false, 60).world.aircraft[0])
+    for (const fps of [30, 60, 144]) expect(flight(fly(true, fps).world.aircraft[0])).toEqual(without)
   })
   it('keeps the flown aircraft ids and adds the drone only when asked', () => {
     expect(fly(false, 60, 0).world.aircraft.map(entity => entity.id)).toEqual(['aircraft-1'])

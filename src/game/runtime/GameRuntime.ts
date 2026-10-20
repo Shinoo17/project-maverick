@@ -16,6 +16,7 @@ import { createGunState, stepGun } from '../combat/gun'
 import { spawnRound, stepRound, type CombatBody, type Projectile, type ProjectileHit } from '../combat/projectiles'
 import { boundingRadius } from '../combat/collision'
 import { AIRCRAFT_HP, applyHits } from '../combat/damage'
+import { createTargetingState, stepTargeting } from '../combat/targeting'
 import type { GameEvent } from './events'
 import { getAircraft } from '../../content/aircraft'
 import { getFlightProfile, flightProfileVersion } from '../flight/profile'
@@ -99,7 +100,7 @@ export class GameRuntime {
       stores: fullArmament(getAircraft(aircraftId)), gun: createGunState(gunOf(aircraftId).weapon.id),
       position,
       orientation: { x: 0, y: 0, z: 0, w: 1 },
-      velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, hp: AIRCRAFT_HP, alive: true,
+      velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, acceleration: { x: 0, y: 0, z: 0 }, targeting: createTargetingState(), hp: AIRCRAFT_HP, alive: true,
       maneuver: createManeuverState(), stall: createStallState(), thrustVectoring: createThrustVectoringState(),
       speedDrive: 0, intent: createPilotIntent(), limiterOpen: 0, pathAssistWeight: 1,
       engine: { requestedPower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * practiceSpawns[this.preset].speed ** 2 },
@@ -119,6 +120,7 @@ export class GameRuntime {
       const before = this.world.aircraft.map(poseOf)
       const wasAlive = this.world.aircraft.map(entity => entity.alive)
       const triggers = new Map<string, boolean>()
+      const nextTarget = new Set<string>()
       for (const entity of this.world.aircraft) {
         // The drone has no pilot: it is never asked for a command, so player input is read once per tick.
         // A moving one is put where its path is at the end of this tick.
@@ -131,6 +133,8 @@ export class GameRuntime {
         for (const key of ['pitch', 'roll', 'yaw', 'speedAdjust'] as const) safe[key] = Number.isFinite(command[key]) ? Math.max(-1, Math.min(1, command[key])) : 0
         safe.gunHeld = command.gunHeld === true
         triggers.set(entity.id, safe.gunHeld)
+        safe.actions = Array.isArray(command.actions) ? command.actions.filter(action => action?.type === 'next-target') : []
+        if (safe.actions.length > 0) nextTarget.add(entity.id)
         if (entity.id === 'aircraft-1' && this.track.length < 3600) this.track.push(structuredClone(safe))
         for (let substep = 0; substep < 2; substep++) {
           const previousX = entity.position.x
@@ -142,6 +146,14 @@ export class GameRuntime {
       // After every aircraft has moved, so rounds see each one at the start and end of the same tick.
       const killers = this.stepGuns(before, triggers)
       this.reportDeaths(wasAlive, killers)
+      // After deaths, so a target shot down this tick is never still selected.
+      this.world.aircraft.forEach((entity, index) => {
+        const v = entity.velocity, w = before[index].velocity
+        entity.acceleration = { x: (v.x - w.x) / WORLD_STEP, y: (v.y - w.y) / WORLD_STEP, z: (v.z - w.z) / WORLD_STEP }
+        if (entity.control !== 'pilot') return
+        if (entity.alive) stepTargeting(entity, this.world.aircraft, nextTarget.has(entity.id), WORLD_STEP)
+        else entity.targeting = { targetId: null, outside: 0 }
+      })
       this.world.tick++
     })
   }

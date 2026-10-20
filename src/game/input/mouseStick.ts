@@ -57,6 +57,7 @@ export type MouseMode = 'relative' | 'stick'
 /** 'body': mouse up is always nose up. 'horizon': the pre-MR1 polar mapping, read in the
  * frame the camera holds (it is the body frame whenever the camera rides the bank). */
 export type ControlFrame = 'body' | 'horizon'
+import { aimAssistLevels, type AimAssistLevel } from '../combat/aimAssist'
 export interface MouseSettings {
   mode: MouseMode
   frame: ControlFrame
@@ -65,8 +66,10 @@ export interface MouseSettings {
   invertPitch: boolean
   /** Which axis mouse X flies. 'yaw' is for fine aiming with A/D on roll. */
   xAxis: 'roll' | 'yaw'
+  /** Gun aim assist (src/game/combat/aimAssist.ts). Saved with the controls; applies to both presets. */
+  aimAssist: AimAssistLevel
 }
-export const defaultMouseSettings: Readonly<MouseSettings> = { mode: 'relative', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll' }
+export const defaultMouseSettings: Readonly<MouseSettings> = { mode: 'relative', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll', aimAssist: 'standard' }
 /** Anything unreadable falls back to the default, field by field. */
 export function parseMouseSettings(value: unknown): MouseSettings {
   const data = value && typeof value === 'object' ? value as Record<string, unknown> : {}
@@ -77,6 +80,7 @@ export function parseMouseSettings(value: unknown): MouseSettings {
     sensitivity,
     invertPitch: data.invertPitch === true,
     xAxis: data.xAxis === 'yaw' ? 'yaw' : 'roll',
+    aimAssist: aimAssistLevels.includes(data.aimAssist as AimAssistLevel) ? data.aimAssist as AimAssistLevel : defaultMouseSettings.aimAssist,
   }
 }
 

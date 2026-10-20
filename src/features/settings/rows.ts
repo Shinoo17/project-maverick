@@ -14,6 +14,7 @@ import {
 import { cameraFovRange, cameraRollOptions, defaultCameraSettings, horizonStyleDisabled, horizonStyleOptions } from '../../game/camera/cameraSettings'
 import { defaultKeyboardSettings, sameBindings, type KeyboardSettings } from '../../game/input/keyBindings'
 import { defaultMouseSettings } from '../../game/input/mouseStick'
+import { aimAssistLevels, type AimAssistLevel } from '../../game/combat/aimAssist'
 import type { Translation } from '../../locales/en'
 import { defaultDisplaySettings, uiScaleRange, type Settings } from '../../platform/storage'
 import {
@@ -85,6 +86,11 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
             options: [{ value: 'mouse', label: t('mousePreset') }, { value: 'keyboard', label: t('keyboardPreset') }],
             value: s.keyboard.preset, modified: s.keyboard.preset !== defaultKeyboardSettings.preset,
             set: preset => selectKeyboard({ preset: preset as 'mouse' | 'keyboard' }), reset: () => selectKeyboard({ preset: defaultKeyboardSettings.preset }) }),
+        ] },
+        { title: t('settingsSectionAim'), rows: [
+          choice({ id: 'aimAssist', label: t('aimAssist'), detail: t('settingsAimAssistDetail'), disabled: noReason,
+            options: aimAssistLevels.map(level => ({ value: level, label: t(`aimAssist_${level}` as const) })),
+            value: m.aimAssist, modified: m.aimAssist !== dm.aimAssist, set: level => selectControls({ aimAssist: level as AimAssistLevel }), reset: () => selectControls({ aimAssist: dm.aimAssist }) }),
         ] },
         { title: t('settingsSectionMouse'), rows: [
           choice({ id: 'mouseMode', label: t('mouseMode'), detail: t(m.mode === 'relative' ? 'mouseHintRelative' : 'mouseHint'), disabled: mouseOff,

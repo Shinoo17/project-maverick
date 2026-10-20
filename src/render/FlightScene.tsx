@@ -9,6 +9,9 @@ import { buildFlightModel } from './aircraft/flightModel'
 import { TargetDrone } from './TargetDrone'
 import { HitboxWireframe } from './HitboxWireframe'
 import { createTracers } from './tracers'
+import { between, createGunnery } from './gunneryFrame'
+import { aimAssist, withAimAssist } from '../game/combat/aimAssist'
+import { gunMountOf } from '../game/combat/gunSolution'
 import { getAircraft, modelUrl } from '../content/aircraft'
 import type { AircraftId } from '../content/schemas'
 import { GameRuntime } from '../game/runtime/GameRuntime'
@@ -46,6 +49,10 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
   const tracers = useMemo(createTracers, [])
+  const gunnery = useMemo(() => createGunnery(aircraftId), [aircraftId])
+  const mount = useMemo(() => gunMountOf(aircraftId), [aircraftId])
+  // Whether aim assist moved the stick on the last command; the HUD names it.
+  const assisting = useRef(false)
   useEffect(() => () => tracers.dispose(), [tracers])
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
@@ -64,7 +71,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
-      reset.current = session.resetId; rig.reset()
+      reset.current = session.resetId; rig.reset(); gunnery.reset(); assisting.current = false
       previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
@@ -83,7 +90,12 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
         const profile = getFlightProfile(live.aircraftId)
         session.input.highAoa = interpretEnvelope(live, observeAirflow(live, profile), profile).highAoa
         session.input.screen = screenFrame(live, session.camera)
-        return session.input.command(tick, id, session.preset)
+        // Aim assist joins the command here, so the simulation and a replay see the assisted stick.
+        const command = session.input.command(tick, id, session.preset)
+        const target = previousWorld.current.aircraft.find(entity => entity.id === live.targeting.targetId)
+        const assist = aimAssist(session.input.mouse.aimAssist, live, target, mount, command)
+        assisting.current = assist.active
+        return withAimAssist(command, assist)
       })
       current.current = takeSnapshot(runtime)
     } else { runtime.pause(); previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current }
@@ -101,9 +113,11 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     camera.updateMatrixWorld()
     tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr)
     placeDrone(drone.current, previousWorld.current, world.current, alpha)
-    // Damage is applied inside the simulation. Nothing draws hits or reads events yet (hit effects,
-    // match score); drain both so the queues stay empty.
-    runtime.drainHits(); runtime.drainEvents()
+    // Damage is applied inside the simulation; the HUD only shows the player's confirmed hits.
+    // Nothing reads the raw hits yet (impact effects), so they are dropped.
+    runtime.drainHits()
+    const marks = gunnery.update(previousWorld.current, world.current, alpha,
+      { id: state.id, targetId: state.alive ? state.targeting.targetId : null, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, runtime.drainEvents(), session.running && assisting.current)
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
     // The held position is already clamped to the gate, so the marker is simply where it is.
@@ -121,7 +135,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
-    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity })
+    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks })
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
     // Counted over wall time while flying only; the window restarts on resume.
@@ -141,15 +155,11 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
 /** Draws the drone between ticks. Shot down it is hidden; just respawned it is drawn where it is, not swept from the wreck. */
 function placeDrone(group: Group | null, before: WorldState | null, now: WorldState | null, alpha: number) {
   if (!group) return
-  const drone = now?.aircraft.find(entity => entity.control !== 'pilot'), last = before?.aircraft.find(entity => entity.control !== 'pilot')
-  group.visible = !!drone?.alive
-  if (!drone?.alive) return
-  const from = last?.alive ? last : drone
-  group.position.set(from.position.x, from.position.y, from.position.z).lerp(dronePoint.set(drone.position.x, drone.position.y, drone.position.z), alpha)
-  group.quaternion.set(from.orientation.x, from.orientation.y, from.orientation.z, from.orientation.w)
-    .slerp(droneTurn.set(drone.orientation.x, drone.orientation.y, drone.orientation.z, drone.orientation.w), alpha)
+  const drone = between(before, now, entity => entity.control !== 'pilot', alpha)
+  group.visible = !!drone
+  if (!drone) return
+  group.position.copy(drone.position); group.quaternion.copy(drone.orientation)
 }
-const dronePoint = new Vector3(), droneTurn = new Quaternion()
 // Memoised: the page re-renders on every 10 Hz telemetry update, the scene never needs to.
 // With the menu open nothing moves, so the loop stops and frames are drawn only on demand.
 // Antialiasing comes from CondensationVolume's multisampled target, so the canvas carries none.

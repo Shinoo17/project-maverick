@@ -11,6 +11,7 @@ import type { FlightForces } from '../flight/flightForces'
 import type { GunState } from '../combat/gun'
 import type { Projectile } from '../combat/projectiles'
 import type { DronePath } from '../playground/dronePath'
+import type { TargetingState } from '../combat/targeting'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -29,6 +30,10 @@ export interface AircraftState {
   position: Vec3
   orientation: Quat
   velocity: Vec3
+  /** m/s², the velocity change over the last tick. The gun solution leads a turning target with it. */
+  acceleration: Vec3
+  /** The gun's selected target (src/game/combat/targeting.ts). */
+  targeting: TargetingState
   maneuver: ManeuverState
   stall: StallState
   speedDrive: number

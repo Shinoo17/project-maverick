@@ -12,7 +12,7 @@ export const flightActions = [
   'pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight',
   'speedUp', 'speedDown', 'afterburner', 'airbrake', 'cameraCycle', 'lookBack',
   // Newer actions go last: a saved key wins over a new action's default (parseBindings claims in this order).
-  'fireGun',
+  'fireGun', 'nextTarget',
 ] as const
 export type FlightAction = typeof flightActions[number]
 
@@ -36,6 +36,8 @@ export const defaultBindings: Readonly<KeyBindings> = {
   afterburner: ['ShiftLeft', 'ShiftRight'], airbrake: ['Space', null],
   // Left mouse also fires in the mouse preset (FlightInput.mouseGun); J is the keyboard gun key (doc 02).
   fireGun: ['KeyJ', null],
+  // T steps the gun's selected target (doc 02).
+  nextTarget: ['KeyT', null],
   cameraCycle: ['KeyV', null], lookBack: ['KeyR', null],
 }
 

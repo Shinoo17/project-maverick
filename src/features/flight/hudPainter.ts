@@ -14,6 +14,7 @@ nothing is recomposited when the frame changes.
 */
 import { MathUtils, Quaternion, Vector3, type Camera } from 'three'
 import type { EnvelopeLabel } from '../../game/flight/envelope'
+import { drawGunnery, type GunneryMarks, type Pen } from './gunnerySymbols'
 
 const HUD_GREEN = 'rgba(98, 255, 132, 0.98)'
 const HUD_GREEN_DIM = 'rgba(98, 255, 132, 0.66)'
@@ -95,6 +96,8 @@ export interface GlassState {
   /** The limiter's current permitted alpha: rises from alphaNormal as the envelope opens. */
   alphaLimit: number
   alphaMax: number
+  /** Gun reticle, target box and lead (gunnerySymbols.ts); null before the first flight frame. */
+  gunnery: GunneryMarks | null
 }
 
 /*
@@ -295,6 +298,19 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     ctx.strokeText(value, x, y)
     ctx.fillStyle = HUD_GREEN_DIM
     ctx.fillText(value, x, y)
+  }
+
+  // The drawing kit gunnerySymbols.ts borrows, bound to this frame's camera.
+  function pen(camera: Camera): Pen {
+    return {
+      ctx, line, luminous, text, font: display,
+      project: point => projectPoint(camera, point, width, height),
+      edge: (from, toward) => {
+        const mark = projectVelocityMarker(camera, from, { x: toward.x - from.x, y: toward.y - from.y, z: toward.z - from.z }, width, height, 40)
+        return mark && !mark.onScreen ? mark : null
+      },
+      green: HUD_GREEN, dim: HUD_GREEN_DIM, bright: HUD_GREEN_ALERT,
+    }
   }
 
   // --- Sightline --------------------------------------------------------------
@@ -611,6 +627,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       drawLadder(state, state.camera)
       drawNosePipper(state, state.camera)
       drawVelocityMarker(state, state.camera)
+      if (state.gunnery) drawGunnery(pen(state.camera), state.gunnery, state.camera, height, state.position)
     }
     if (state.live) drawAoaBracket(state)
     drawTape({

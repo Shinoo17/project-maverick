@@ -21,6 +21,10 @@ export class FlightInput {
   keyboard: KeyboardSettings
   /** Left mouse held while the pointer is locked to the flight surface. */
   mouseGun = false
+  // A next-target press waiting for the next command tick. One press is one action, however
+  // many ticks one frame runs, so it is taken by the first command and never repeated.
+  private nextTarget = false
+  private actionId = 1
   // Afterburner/airbrake switched on by a toggle-mode key press.
   private readonly latched = new Set<FlightAction>()
   constructor(mouse: MouseSettings = defaultMouseSettings, keyboard: KeyboardSettings = defaultKeyboardSettings) { this.mouse = { ...mouse }; this.keyboard = keyboard }
@@ -35,6 +39,7 @@ export class FlightInput {
   press(code: string, repeat = false) {
     this.held.add(code)
     const bound = repeat ? null : actionForCode(this.keyboard.bindings, code)
+    if (bound?.action === 'nextTarget') this.nextTarget = true
     if (bound && (bound.action === 'afterburner' || bound.action === 'airbrake') && this.keyboard[bound.action] === 'toggle') {
       if (this.latched.has(bound.action)) this.latched.delete(bound.action)
       else this.latched.add(bound.action)
@@ -48,7 +53,7 @@ export class FlightInput {
   gate: StickGate = stickGate(640, 480)
   // How far the airframe appears rotated inside the frame, and how much of that applies.
   screen: ScreenFrame = LEVEL_FRAME
-  clear() { this.mouseGun = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); this.screen = LEVEL_FRAME }
+  clear() { this.mouseGun = false; this.nextTarget = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); this.screen = LEVEL_FRAME }
   // The surface has taken the pointer: neutral and live from the first frame.
   engage() { engageStick(this.stick); this.since = { x: 0, y: 0 } }
   setViewport(width: number, height: number) {
@@ -92,6 +97,7 @@ export class FlightInput {
     c.airbrake = this.keyboard.airbrake === 'toggle' ? this.latched.has('airbrake') : has('airbrake')
     c.afterburner = this.keyboard.afterburner === 'toggle' ? this.latched.has('afterburner') : has('afterburner')
     c.gunHeld = has('fireGun') || (preset === 'mouse' && this.mouseGun)
+    if (this.nextTarget) { this.nextTarget = false; c.actions.push({ id: this.actionId++, type: 'next-target' }) }
     return c
   }
   // Like the pedal: once per command tick, however many frames or reads fall inside it.
