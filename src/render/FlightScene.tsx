@@ -32,6 +32,9 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const showHitboxes = useMemo(() => new URLSearchParams(window.location.search).has('hitboxes'), [])
   // The latest whole-world snapshot, for views of other entities (the target drone).
   const world = useRef<WorldState | null>(null)
+  // The snapshot before the last tick, for drawing the drone between ticks like the player.
+  const previousWorld = useRef<WorldState | null>(null)
+  const drone = useRef<Group>(null)
   const takeSnapshot = (runtime: GameRuntime) => { world.current = runtime.snapshot(); return world.current.aircraft[0] }
   const group = useRef<Group>(null)
   const elapsed = useRef(0), reset = useRef(-1)
@@ -45,9 +48,9 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const tracers = useMemo(createTracers, [])
   useEffect(() => () => tracers.dispose(), [tracers])
   useEffect(() => {
-    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], targetDrone: session.targetDrone })
+    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
     session.runtime = runtime; runtime.start(); runtime.pause()
-    previous.current = current.current = takeSnapshot(runtime)
+    previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     // Paused, the canvas draws on demand; the page asks for a frame after a paused change.
     session.invalidate = invalidate
     rig.reset(); onReady(); invalidate()
@@ -62,7 +65,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
       reset.current = session.resetId; rig.reset()
-      previous.current = current.current = takeSnapshot(runtime)
+      previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
     // The first running frame after the menu closes carries the whole pause as its delta.
@@ -71,7 +74,8 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     if (session.running) {
       runtime.resume()
       alpha = runtime.advance(resumed ? 0 : dt * session.timeScale, (tick, id) => {
-        const live = runtime.snapshot().aircraft[0]
+        previousWorld.current = runtime.snapshot()
+        const live = previousWorld.current.aircraft[0]
         previous.current = live
         // Refreshed per simulation tick, not per rendered frame: the sim steps at 120 Hz
         // inside one advance() call, and a correction held across four ticks of a 2 rad/s
@@ -82,7 +86,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
         return session.input.command(tick, id, session.preset)
       })
       current.current = takeSnapshot(runtime)
-    } else { runtime.pause(); previous.current = current.current = takeSnapshot(runtime) }
+    } else { runtime.pause(); previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current }
     const state = current.current!
     const tick = runtime.snapshot().tick
     const rigDt = session.running ? Math.min(dt, .1) * session.timeScale : rigTick.current >= 0 ? Math.max(0, tick - rigTick.current) * WORLD_STEP : 0
@@ -96,8 +100,10 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
     tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr)
-    // Nothing reads gun hits yet (damage comes next); drop them so the list stays empty.
-    runtime.drainHits()
+    placeDrone(drone.current, previousWorld.current, world.current, alpha)
+    // Damage is applied inside the simulation. Nothing draws hits or reads events yet (hit effects,
+    // match score); drain both so the queues stay empty.
+    runtime.drainHits(); runtime.drainEvents()
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
     // The held position is already clamped to the gate, so the marker is simply where it is.
@@ -130,8 +136,20 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   return <><group ref={group}><primitive object={model} dispose={null} />{showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}</group>
     <primitive object={tracers.mesh} />
     <FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} />
-    {targetDrone && <Suspense fallback={null}><TargetDrone world={world} showHitboxes={showHitboxes} /></Suspense>}</>
+    {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} showHitboxes={showHitboxes} /></Suspense>}</>
 }
+/** Draws the drone between ticks. Shot down it is hidden; just respawned it is drawn where it is, not swept from the wreck. */
+function placeDrone(group: Group | null, before: WorldState | null, now: WorldState | null, alpha: number) {
+  if (!group) return
+  const drone = now?.aircraft.find(entity => entity.control !== 'pilot'), last = before?.aircraft.find(entity => entity.control !== 'pilot')
+  group.visible = !!drone?.alive
+  if (!drone?.alive) return
+  const from = last?.alive ? last : drone
+  group.position.set(from.position.x, from.position.y, from.position.z).lerp(dronePoint.set(drone.position.x, drone.position.y, drone.position.z), alpha)
+  group.quaternion.set(from.orientation.x, from.orientation.y, from.orientation.z, from.orientation.w)
+    .slerp(droneTurn.set(drone.orientation.x, drone.orientation.y, drone.orientation.z, drone.orientation.w), alpha)
+}
+const dronePoint = new Vector3(), droneTurn = new Quaternion()
 // Memoised: the page re-renders on every 10 Hz telemetry update, the scene never needs to.
 // With the menu open nothing moves, so the loop stops and frames are drawn only on demand.
 // Antialiasing comes from CondensationVolume's multisampled target, so the canvas carries none.

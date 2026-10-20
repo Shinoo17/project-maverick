@@ -1,26 +1,27 @@
 /*
 The target drone (Playground practice modifier). It is an ordinary aircraft
-entity that the runtime holds still; this view only draws it where the latest
-world snapshot says it is. Painted high-visibility orange, like real aerial
-targets, on its own copies of the materials: the GLB cache shares materials
-with the player's aircraft and the menu scene, which must keep their colours.
+entity that the runtime holds still or moves along a path. This view only
+builds the model: FlightWorld places `group` each frame, interpolated between
+ticks like the player's aircraft (a useFrame here would run a frame late), and
+hides it while it is shot down. Painted high-visibility orange,
+like real aerial targets, on its own copies of the materials: the GLB cache
+shares materials with the player's aircraft and the menu scene, which must
+keep their colours.
 */
-import { useEffect, useMemo, useRef, type RefObject } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import { Color, Group, Mesh, MeshStandardMaterial, type Material } from 'three'
+import { useEffect, useMemo, type RefObject } from 'react'
+import { useThree } from '@react-three/fiber'
+import { Color, Mesh, MeshStandardMaterial, type Group, type Material } from 'three'
 import { getAircraft, modelUrl } from '../content/aircraft'
 import { targetDrone } from '../game/playground/practice'
-import type { WorldState } from '../game/state/WorldState'
 import { useAircraftAsset } from './aircraft/assetLoader'
 import { buildFlightModel } from './aircraft/flightModel'
 import { HitboxWireframe } from './HitboxWireframe'
 
 const highVisibility = new Color('#ff7a2e')
 
-export function TargetDrone({ world, showHitboxes }: { world: RefObject<WorldState | null>; showHitboxes: boolean }) {
+export function TargetDrone({ group, showHitboxes }: { group: RefObject<Group | null>; showHitboxes: boolean }) {
   const definition = getAircraft(targetDrone.aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
-  const group = useRef<Group>(null)
   const invalidate = useThree(state => state.invalidate)
   const { model, painted } = useMemo(() => {
     const model = buildFlightModel(asset, definition), painted: Material[] = []
@@ -45,14 +46,6 @@ export function TargetDrone({ world, showHitboxes }: { world: RefObject<WorldSta
   }, [model, painted])
   // Paused, the canvas draws on demand: draw once the model has loaded.
   useEffect(() => { invalidate() }, [model, invalidate])
-  useFrame(() => {
-    const drone = world.current?.aircraft.find(entity => entity.control === 'hold')
-    if (!group.current) return
-    group.current.visible = !!drone
-    if (!drone) return
-    group.current.position.set(drone.position.x, drone.position.y, drone.position.z)
-    group.current.quaternion.set(drone.orientation.x, drone.orientation.y, drone.orientation.z, drone.orientation.w)
-  })
   return <group ref={group} visible={false}>
     <primitive object={model} dispose={null} />
     {showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}

@@ -2,6 +2,7 @@ import type { GameRuntime } from '../../game/runtime/GameRuntime'
 import type { FlightInput, InputPreset } from '../../game/input/FlightInput'
 import type { CameraSettings } from '../../game/camera/cameraSettings'
 import type { GraphicsSettings } from '../../render/graphicsSettings'
+import type { TargetDroneMode } from '../../game/playground/dronePath'
 export interface FlightSession {
   runtime: GameRuntime | null
   input: FlightInput
@@ -13,8 +14,8 @@ export interface FlightSession {
   /** Mirrors the saved graphics settings; effects read it every frame. */
   graphics: GraphicsSettings
   running: boolean
-  /** Playground modifier; read when the scene creates its runtime. */
-  targetDrone: boolean
+  /** Playground modifier, null for none; read when the scene creates its runtime. */
+  targetDrone: TargetDroneMode | null
   resetId: number
   timeScale: number
   reducedMotion: boolean

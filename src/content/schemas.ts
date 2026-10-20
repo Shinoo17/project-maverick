@@ -1,3 +1,4 @@
+import type { TargetDroneMode } from '../game/playground/dronePath'
 import type { FlightProfileId } from './flight-profiles'
 import type { FlightSpeedOverride } from '../game/flight/profileTypes'
 export type AircraftId = string
@@ -41,8 +42,9 @@ export interface SessionConfig {
   mode: 'playground' | 'offline'
   mapId?: 'flat-range'
   aircraftIds: AircraftId[]
-  /** Playground only: adds a target drone that holds still ahead of the spawn. Absent = no drone. */
-  targetDrone?: boolean
+  /** Playground only: adds a target drone ahead of the spawn that holds still or flies a path
+   * (src/game/playground/dronePath.ts). Absent or false = no drone; true = 'still' (older sessions). */
+  targetDrone?: boolean | TargetDroneMode
   /** Per aircraft type, in the same ARCADE km/h units as its profile. */
   flightOverrides?: Record<AircraftId, FlightSpeedOverride>
 }
