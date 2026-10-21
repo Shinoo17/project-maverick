@@ -8,6 +8,7 @@ import { aircraft as roster, getAircraft, modelUrl } from '../../content/aircraf
 import type { AircraftId } from '../../content/schemas'
 import { prepareAnimations } from '../aircraft/animationStages'
 import { CondensationVolume } from '../vapor/CondensationVolume'
+import { vaporConditions } from '../vapor/conditions'
 import { createFlightRig } from '../aircraft/flightRig'
 import { GameRuntime } from '../../game/runtime/GameRuntime'
 import { stepThrustVectoring, tvcTargets } from '../../game/flight/thrustVectoring'
@@ -102,7 +103,7 @@ function frame(now: number) {
     actuatorTime -= FLIGHT_STEP
   }
   updateRig?.(state, dt); jet.updateMatrixWorld(true)
-  volume.update({ speed: 180, aoa: clouds ? 21 : 3, g: clouds ? 6.8 : 1, sideslip: 0, humidity: .78 }, dt, false, aircraft)
+  volume.update(vaporConditions({ speed: 180, aoa: clouds ? 21 : 3, g: clouds ? 6.8 : 1, sideslip: 0 }, 400), dt, false, aircraft)
   volume.updateExhaust({ ...flightExhaustConditions(state), nozzles: updateRig?.exhaust }, dt)
   if (modelReady) volume.render(renderer, scene, camera, jet.matrixWorld)
   else renderer.render(scene, camera)

@@ -120,3 +120,16 @@ Decision ID / วันที่ / ผู้แก้
   - แต้มคิดจากเวลาถือรวมของทีม เศษวินาทีไม่หาย
   - Flyover: จุดที่เพิ่งถูกยึดล็อก 5 s, ถือครบ 3 จุดได้ 2 แต้มต่อวินาที, เข้าจุดพร้อมกันเจ้าของไม่เปลี่ยน
   - ค่าเริ่มต้น: Priority Target 8 นาที/100 แต้ม, Flyover 10 นาที/300 แต้ม, รัศมีเก็บมงกุฎ 200 m, รัศมีจุด Flyover 300 m
+
+## D19 / 21 ตุลาคม 2026 / Vapor ขับด้วยแบบจำลองฟิสิกส์ (vapor overhaul)
+
+ผู้ใช้ขอปรับ vapor ตาม [แผน vapor overhaul](../vapor-overhaul-plan.md) ทำ Phase 0–2 และ vapor cone (Phase 5) แล้ว รายละเอียดและผล audit อยู่ในแผนนั้น
+
+- กฎเดิม: `vaporActivation` เปิด effect เดียวจาก speed × (AoA, G) × ความชื้น; `ambientHumidity(altitude)` ลดความชื้นตามความสูง; release fade 0.45 s
+- ข้อเสนอใหม่: แยก 4 effect (LEX vortex, wing fog, wingtip core, vapor cone) แต่ละตัวมีความเข้มของตัวเองจาก ΔT เทียบ dew-point depression D (`src/render/vapor/atmosphere.ts`, `vaporModel.ts`); ความเร็วใช้แค่ตัดตอนอากาศเกือบนิ่ง; release fade 0.12 s
+- **Refactor ไม่ rewrite:** effect ใหม่เป็น density field ใน ray march ของ `CondensationVolume` เดิม ไม่ใช่ tube mesh + `NormalBlending` ตามที่แผนเขียน เพราะ pass เดิมเป็นเจ้าของ MSAA resolve, depth และ exhaust อยู่แล้ว (doc 22 วางแผนต่อยอดจาก pass นี้)
+- **Mach อ่านจากความเร็ว HUD (arcade):** ความเร็ว simulation สูงสุดราว 259 m/s (M 0.76) ไม่ถึงช่วง vapor cone; ใช้ scale เดียวกับ HUD afterburner top 1,400 km/h ≈ M 1.1
+- **ต่างจากตัวเลขในแผน:** RH ลดลงครึ่งหนึ่งจากพื้นถึง 7 km แทน `Td(h) = Td0 − 2·h_km` (สูตรในแผนทำให้อากาศอิ่มตัวที่ราว 700 m); W ใช้ราก √(e_sat(Td)/e_sat(25 °C)) แทน clamp ขั้นต่ำ 0.15 (ขั้นต่ำทำให้ยังเห็น vapor ที่ 10 km); `K_wing` 1.5 แทน 2.5 (2.5 ทำให้เห็นหมอกที่ 1 G); local Mach gain 0.12 แทน 0.2 (0.2 ทำให้เกิด cone ทุกครั้งที่บินเต็ม cruise top speed M 0.87)
+- **AoA ของ LEX มาจากแรงยก:** flight model ดึง 12 G ที่ α จริงราว 4° จึงใช้ α ที่ `q·CL = n·W/S` ต้องการ (หรือ α จริงถ้ามากกว่า) ไม่งั้น LEX ไม่ขึ้นในเกมเลย
+- อากาศของ flat-range: 26 °C, RH 82% (D ≈ 3.3 K) เป็นค่าเดียวจนกว่า Environment ของ doc 22 จะมี; Environment ควรเพิ่มอุณหภูมิผิวพื้น (`temperatureC`) ข้าง `humidity`
+- ยังไม่ทำ: vapor ของบอท/ลำอื่น (`CondensationVolume` วาดได้ลำเดียว), lighting แบบ Henyey-Greenstein, LOD, วัด GPU time (Phase 6) และจูนเทียบภาพอ้างอิง (Phase 7)

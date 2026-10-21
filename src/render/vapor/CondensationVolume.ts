@@ -1,18 +1,27 @@
 import {
-  Camera, Color, Data3DTexture, DepthTexture, HalfFloatType, LinearFilter, Matrix4, Mesh,
+  Camera, Color, Data3DTexture, DepthTexture, HalfFloatType, LinearFilter, MathUtils, Matrix4, Mesh,
   NoBlending, PlaneGeometry, RedFormat, RepeatWrapping, Scene, ShaderMaterial,
   UnsignedByteType, UnsignedIntType, Vector2, Vector3, WebGLRenderer, WebGLRenderTarget,
 } from 'three'
 import type { AircraftId } from '../../content/schemas'
-import { defaultVaporSettings, vaporActivation, type VaporConditions, type VaporSettings } from './conditions'
+import { defaultVaporSettings, type VaporConditions, type VaporSettings } from './conditions'
+import { ConeTrigger, CONE_EVENT, vaporTargets } from './vaporModel'
 import { vaporFragment, vaporVertex } from './shaders'
-import { vortexAirflow, vortexProfile, getVaporProfile } from './profile'
+import { vortexAirflow, vortexProfile, getVaporProfile, LEX_PATH_POINTS, type ConeShape, type LexPath } from './profile'
 import { CloudSideTransition } from './CloudSideTransition'
 import { ExhaustResponse, getExhaustProfile, type ExhaustConditions } from '../exhaust/profile'
 import type { EffectQuality } from '../graphicsSettings'
 
 /** Ray samples per quality step. Off skips the effect (and its rays, when both are off). */
 const VAPOR_SAMPLES: Record<EffectQuality, number> = { off: 0, low: 12, high: 24 }
+/** LEX vortex and vapor-cone ray samples per quality. */
+const LEX_SAMPLES: Record<EffectQuality, number> = { off: 0, low: 16, high: 28 }
+/** Vapor builds in ~0.07 s; it clears over settings.fade. */
+const ATTACK_SECONDS = .07
+/** The pressure cloud's upper/lower crossfade keeps its original pace. */
+const SIDE_FADE_SECONDS = .45
+type Effect = 'lex' | 'fog' | 'tip' | 'cone'
+const EFFECTS: readonly Effect[] = ['lex', 'fog', 'tip', 'cone']
 const EXHAUST_SAMPLE_SCALE: Record<EffectQuality, number> = { off: 0, low: 0.5, high: 1 }
 const MSAA_SAMPLES = 4
 
@@ -29,11 +38,18 @@ export class CondensationVolume {
   private readonly camera = new Camera()
   private readonly size = new Vector2()
   private readonly flowDirection = new Vector3()
+  private fogFlicker = 1
   private readonly cloudSide = new CloudSideTransition()
   private readonly exhaust = new ExhaustResponse()
   private initialized = false
-  private strength = 0
-  private conditions: VaporConditions = { speed: 0, aoa: 0, g: 1, sideslip: 0, humidity: .78 }
+  /** Smoothed intensity of each effect, 0–1 (vaporModel.ts). */
+  readonly levels: Record<Effect, number> = { lex: 0, fog: 0, tip: 0, cone: 0 }
+  private burst = 1.2
+  private shock = 0
+  private shotSweep = 0
+  private flicker = 0
+  private readonly coneTrigger = new ConeTrigger()
+  private conditions: VaporConditions = { speed: 0, aoa: 0, g: 1, sideslip: 0, mach: 0, dynamicPressure: 0, temperatureC: 15, depression: 10, water: .5 }
 
   constructor(renderer: WebGLRenderer) {
     const data = new Uint8Array(32 ** 3)
@@ -67,8 +83,13 @@ export class CondensationVolume {
         densityGain: { value: 1 }, noiseGain: { value: 1 }, turbulence: { value: 1 },
         cloudAdvection: { value: new Vector3() }, lightDirection: { value: new Vector3() },
         cloudUpperWeight: { value: .5 },
-        alpha: { value: 0 }, load: { value: 0 }, speed: { value: 0 }, slip: { value: 0 }, humidity: { value: .78 },
+        alpha: { value: 0 }, load: { value: 0 }, speed: { value: 0 }, slip: { value: 0 }, fogStrength: { value: 0 },
         wingSpan: { value: 6.7 }, wingHeight: { value: -.74 },
+        lexStrength: { value: 0 }, lexBurst: { value: 1.2 }, lexFlow: { value: 0 }, lexSamples: { value: LEX_SAMPLES.high },
+        lexPath: { value: Array.from({ length: LEX_PATH_POINTS }, () => new Vector3()) }, lexPathS: { value: new Array<number>(LEX_PATH_POINTS).fill(0) },
+        lexBoxMin: { value: new Vector3() }, lexBoxMax: { value: new Vector3() }, lexRadius: { value: new Vector2() },
+        coneStrength: { value: 0 }, coneFront: { value: 0 }, coneBack: { value: 0 }, coneAxisY: { value: 0 },
+        coneRadius: { value: new Vector2() }, coneBoxMin: { value: new Vector3() }, coneBoxMax: { value: new Vector3() },
       },
     })
     this.quad = new Mesh(new PlaneGeometry(2, 2), this.material)
@@ -85,12 +106,15 @@ export class CondensationVolume {
   }
 
   reset() {
-    this.initialized = false; this.strength = 0
+    this.initialized = false
+    for (const effect of EFFECTS) this.levels[effect] = 0
+    this.coneTrigger.reset()
     this.exhaust.reset()
     this.material.uniforms.exhaustPower.value = 0
     this.material.uniforms.burnerStrength.value = 0
     this.cloudSide.reset()
     this.material.uniforms.flowPhase.value = 0
+    this.material.uniforms.lexFlow.value = 0
     this.material.uniforms.cloudAdvection.value.set(0, 0, 0)
   }
 
@@ -122,31 +146,79 @@ export class CondensationVolume {
   }
 
   update(next: VaporConditions, dt: number, reducedMotion = false, aircraft: AircraftId = 'f22', freezeFlow = false) {
-    const target = vaporActivation(next)
-    const blend = this.initialized ? 1 - Math.exp(-Math.max(0, dt) / (target > this.strength ? .16 : Math.max(.05, this.settings.fade))) : 1
+    const wing = getVaporProfile(aircraft), targets = vaporTargets(next, wing.rig, next)
+    const step = Math.max(0, dt), first = !this.initialized
     this.initialized = true
-    this.strength += (target - this.strength) * blend
-    for (const key of ['speed', 'aoa', 'g', 'sideslip', 'humidity'] as const) this.conditions[key] += (next[key] - this.conditions[key]) * blend
+    // The cone is a one-shot event; its envelope already rises and fades smoothly.
+    const coneShot = this.coneTrigger.update(next.mach, next.g, step)
+    targets.cone *= coneShot
+    for (const effect of EFFECTS) {
+      const target = targets[effect], level = this.levels[effect]
+      const seconds = target > level ? ATTACK_SECONDS : Math.max(.03, this.settings.fade)
+      this.levels[effect] = first || effect === 'cone' ? target : level + (target - level) * -Math.expm1(-step / seconds)
+    }
+    // Shape inputs follow the air a little slower than intensity, so the geometry does not twitch.
+    const shapeBlend = first ? 1 : -Math.expm1(-step / .1)
+    for (const key of ['speed', 'aoa', 'g', 'sideslip', 'mach', 'dynamicPressure', 'water'] as const) this.conditions[key] += (next[key] - this.conditions[key]) * shapeBlend
+    this.burst += (targets.burst - this.burst) * shapeBlend
+    this.shock += (targets.shock - this.shock) * shapeBlend
+    // During a shot the shock runs a little aft, so the collar sweeps down the fuselage.
+    this.shotSweep = Math.min(1, this.coneTrigger.age / CONE_EVENT.seconds) * .25
     const c = this.conditions, u = this.material.uniforms
-    u.cloudUpperWeight.value = this.cloudSide.update(next.aoa, dt, this.settings.fade)
-    const profile = vortexProfile(c), wing = getVaporProfile(aircraft), origins = wing.origins
-    u.strength.value = this.strength
+    u.cloudUpperWeight.value = this.cloudSide.update(next.aoa, dt, SIDE_FADE_SECONDS)
+    const profile = vortexProfile(c), origins = wing.origins
     u.trailLength.value = profile.length; u.trailRadius.value = profile.radius
     u.wingtipLeft.value.fromArray(origins.left); u.wingtipRight.value.fromArray(origins.right)
     u.airflowDirection.value.copy(vortexAirflow(c, this.flowDirection))
     u.alpha.value = c.aoa; u.load.value = Math.min(1, Math.max(0, (Math.abs(c.g) - 1) / 7))
-    u.speed.value = c.speed; u.slip.value = c.sideslip; u.humidity.value = c.humidity
+    u.speed.value = c.speed; u.slip.value = c.sideslip
     // Original pressure-sheet placement for the normalized F-22 / Su-57 wings.
     u.wingSpan.value = wing.span
     u.wingHeight.value = wing.height
     u.densityGain.value = this.settings.density; u.noiseGain.value = Math.min(1.5, this.settings.noise)
     u.turbulence.value = reducedMotion ? 0 : this.settings.turbulence * profile.turbulence
+    // Upper-surface fog flickers 8–15 Hz by about 15%: the real flow there is unsteady.
+    if (!reducedMotion && !freezeFlow) this.flicker += step
+    const t = this.flicker * Math.PI * 2
+    this.fogFlicker = reducedMotion ? 1 : 1 + .15 * (Math.sin(t * 9.3) * .6 + Math.sin(t * 13.1 + 1.7) * .4)
+    this.placeLex(wing.lex)
+    this.placeCone(wing.cone)
+    u.lexBurst.value = this.burst
     if (!reducedMotion && !freezeFlow) {
       // Density travels downstream continuously; the core itself stays straight.
-      u.flowPhase.value += c.speed * .35 * this.settings.airflow * Math.max(0, dt)
-      const cloudFlow = Math.min(12, .7 + c.speed * .027) * this.settings.airflow * Math.max(0, dt)
+      u.flowPhase.value += c.speed * .35 * this.settings.airflow * step
+      u.lexFlow.value += Math.min(14, 1 + c.speed * .05) * this.settings.airflow * step
+      const cloudFlow = Math.min(12, .7 + c.speed * .027) * this.settings.airflow * step
       u.cloudAdvection.value.addScaledVector(this.flowDirection, cloudFlow)
     }
+  }
+
+  /** The baked skin path, its normalized arc length, and a box that covers the burst cloud. */
+  private placeLex(path: LexPath) {
+    const u = this.material.uniforms, points: Vector3[] = u.lexPath.value, arc: number[] = u.lexPathS.value
+    const min = u.lexBoxMin.value.setScalar(Infinity), max = u.lexBoxMax.value.setScalar(-Infinity)
+    let length = 0
+    points.forEach((point, i) => {
+      point.fromArray(path.points[i])
+      if (i) length += point.distanceTo(points[i - 1])
+      arc[i] = length
+      min.min(point); max.max(point)
+    })
+    for (let i = 0; i < arc.length; i++) arc[i] /= Math.max(.001, length)
+    u.lexRadius.value.fromArray(path.radius)
+    // 3.5 radii (3 plus the turbulence push), ÷ .65 for the burst cloud's sideways spread (vortexShader.ts).
+    const margin = path.radius[1] * (this.burst < 1.15 ? 2.4 / .65 : 1) * 3.5
+    min.subScalar(margin); max.addScalar(margin)
+    min.z = -max.z
+  }
+
+  private placeCone(shape: ConeShape) {
+    const u = this.material.uniforms
+    const back = MathUtils.lerp(shape.back[0], shape.back[1], Math.min(1, this.shock + this.shotSweep)), r = shape.radius[1]
+    u.coneFront.value = shape.front; u.coneBack.value = back; u.coneAxisY.value = shape.axisY
+    u.coneRadius.value.fromArray(shape.radius)
+    u.coneBoxMin.value.set(back - r * 1.6 * .18 - .6, shape.axisY - r * 1.6, -r * 1.6)
+    u.coneBoxMax.value.set(shape.front + .1, shape.axisY + r * 1.6, r * 1.6)
   }
 
   render(renderer: WebGLRenderer, scene: Scene, camera: Camera, aircraftMatrix: Matrix4) {
@@ -159,12 +231,17 @@ export class CondensationVolume {
     u.exhaustResolution.value.copy(this.size)
     u.solidBackground.value = scene.background instanceof Color
     // Off zeroes an effect for this frame only; its state keeps running, so switching back is seamless.
-    const vapor = this.quality.vapor !== 'off' ? this.strength : 0, exhaust = this.quality.exhaust !== 'off' ? this.exhaust.power : 0
-    u.strength.value = vapor
+    const on = this.quality.vapor !== 'off' ? 1 : 0, exhaust = this.quality.exhaust !== 'off' ? this.exhaust.power : 0
+    const l = this.levels
+    u.strength.value = l.tip * on
+    u.fogStrength.value = l.fog * this.fogFlicker * on
+    u.lexStrength.value = l.lex * on
+    u.coneStrength.value = l.cone * on
     u.exhaustPower.value = exhaust
     u.vaporSamples.value = VAPOR_SAMPLES[this.quality.vapor]
+    u.lexSamples.value = LEX_SAMPLES[this.quality.vapor]
     u.exhaustSampleScale.value = EXHAUST_SAMPLE_SCALE[this.quality.exhaust]
-    u.passThrough.value = vapor * this.settings.density < .002 && exhaust < .002
+    u.passThrough.value = on * Math.max(l.tip, l.fog, l.lex, l.cone) * this.settings.density < .002 && exhaust < .002
     u.worldToAircraft.value.copy(aircraftMatrix).invert()
     u.cameraWorld.value.copy(camera.matrixWorld)
     u.inverseProjection.value.copy(camera.projectionMatrixInverse)

@@ -1,7 +1,7 @@
 // The original wing pressure cloud is a separate density field from the long,
 // straight wingtip cores. Each field gets its own tight raymarch bounds.
 export const pressureCloudShader = /* glsl */ `
-uniform float alpha, load, speed, slip, humidity, wingSpan, wingHeight;
+uniform float alpha, load, speed, slip, wingSpan, wingHeight, fogStrength;
 uniform float cloudUpperWeight;
 uniform vec3 cloudAdvection, lightDirection;
 
@@ -54,7 +54,8 @@ float pressureSideDensity(vec3 p, bool detail, float dorsal) {
   float textured = max(mix(shape, broken, noiseGain), contact);
   float base = smoothstep(-.16, -.035, aboveWing);
   float bounds = (1.0 - smoothstep(3.3, 4.6, abs(p.y))) * (1.0 - smoothstep(7.8, 9.4, aft));
-  return max(0.0, textured) * base * bounds * strength * densityGain * smoothstep(.26, .78, humidity) * .56;
+  // Moisture is already in fogStrength (vaporModel.ts).
+  return max(0.0, textured) * base * bounds * fogStrength * densityGain * .56;
 }
 
 float pressureDensity(vec3 p, bool detail) {
@@ -69,7 +70,7 @@ float pressureDensity(vec3 p, bool detail) {
 // RGB stores density-weighted lighting, A stores optical depth. Combining the
 // two fields in optical depth keeps overlap translucent instead of double-additive.
 vec4 cloudOpticalDepth(vec3 ray, float surfaceDistance, float forwardLight) {
-  if (strength * densityGain < .002) return vec4(0.0);
+  if (fogStrength * densityGain < .002) return vec4(0.0);
   vec3 safeRay = mix(vec3(-1.0), vec3(1.0), step(vec3(0.0), ray)) * max(abs(ray), vec3(1e-7));
   vec3 a = (vec3(-9.5, -4.8, -8.0) - cameraLocal) / safeRay;
   vec3 b = (vec3(5.8, 4.8, 8.0) - cameraLocal) / safeRay;
