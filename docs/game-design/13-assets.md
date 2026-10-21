@@ -80,3 +80,5 @@ Abort/ignore stale requests เมื่อเปลี่ยนเครื่�
 เก็บ `asset-manifest.json` มี source, author, licenseReference, modifications, variants และ verifiedDate; นี่เป็น metadata ของ content pipeline ไม่อนุมานว่า MIT ของ source code ครอบคลุม GLB ทุกไฟล์โดยอัตโนมัติ
 
 งาน: inspect F-22 จริง → เขียน manifest/rig → สร้าง flight variant → ทดสอบสอง instances → เพิ่มลำถัดไป ผ่านเมื่อ scale/axes/mounts/animation ถูกต้อง, gameplay LOD ไม่เปลี่ยน hitbox และสลับ scene หลายครั้งไม่มี resource โตต่อเนื่อง
+
+Combat effect sprites (21 ต.ค. 2026): Kenney Particle Pack 1.1 (kenney.nl, CC0 1.0, ผู้ใช้ดาวน์โหลดมาไว้ที่ `public/assets/vfx/kenney-particle/` พร้อม `License.txt`) ใช้ 8 รูปจาก `png_transparent`: smoke_04, smoke_07, fire_01, scorch_02, star_06, trace_01, circle_05, circle_02 รวมเป็น atlas 4×2 (256 px ต่อช่อง) บน canvas ตอนโหลด ([atlas.ts](../../src/render/vfx/atlas.ts)) ไม่แก้ไฟล์ต้นฉบับ ข้อควรรู้: ทั้งโฟลเดอร์ใน `public/` (~5 MB รวม Rotated และ preview) ถูก copy ไปใน build; ถ้าต้องลดขนาดให้เก็บเฉพาะ 8 รูปที่ใช้ หรือ prebake atlas เป็นไฟล์เดียว ตัวเลือกถัดไปสำหรับลูกไฟที่สมจริงขึ้นคือ Unity free VFX flipbooks (CC0) แปลงเป็น atlas ขนาดเล็ก

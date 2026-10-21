@@ -63,7 +63,15 @@ F ปล่อย flare burst ทดลอง 2 decoys ต่อ burst, inventor
 
 Radar missile เป็น extension หลัง IR ผ่าน: ต้องมี weapon profile แยก, support/active seeker rules, lock warning และ chaff ถ้ายังไม่มี counterplay ห้ามเปิด AIM-120 ใน combat เพียงเพราะมีโมเดลพร้อม ช่วงแรกให้ดู AIM-120 ในโรงเก็บได้อย่างเดียว
 
-## Damage, hit และ event ownership
+## Combat effects (view only)
+
+เพิ่ม 21 ต.ค. 2026 ตามที่ผู้ใช้ขอ (`src/render/vfx/`): effect อ่านจาก `drainHits()` และ `aircraft-destroyed` ที่ scene drain ครั้งเดียวต่อ frame แล้วแบ่งให้ HUD ใช้ด้วย ไม่เปลี่ยน simulation นับเวลาด้วยนาฬิกา sim จึงหยุดตอน pause และ reset ล้างทั้งหมด
+- กระสุนโดนเครื่อง: flash, ประกาย 3 เส้น, ควันเล็ก วิ่งไปกับเป้า และดึงเข้าหากล้อง 2.5 m ไม่ให้โมเดลบัง; โดนพื้น: ฝุ่น; แสดงไม่เกิน 6 hit ต่อ frame
+- เครื่องที่ไม่มีนักบิน (drone) ถูกยิงตก: ระเบิดกลางอากาศ (flash, วงคลื่น, ลูกไฟส้มกลายเป็นเขม่า, ประกายตก, ควันค้าง) แล้วซาก (โมเดลสีไหม้) เสียการควบคุม: ได้แรงกด 25 m/s ลง, ตกตาม gravity drag เบา, หมุน roll 2.6 rad/s, หัวค่อยๆ ชี้ตามทางตก จาก 400 m ใช้ ~7 s ([wreck.ts](../../src/render/vfx/wreck.ts)) ระหว่างตกมีไฟและควันตามหลัง ถึงพื้นระเบิดอีกครั้งพร้อมฝุ่นและเสาควัน ~10 s ซากเป็น view อย่างเดียว drone ใน sim ยังเกิดใหม่ 3 s ตามเดิม ตกพร้อมกันได้ 2 ซาก
+- ผู้เล่นตายยังไม่มี effect
+- particle เป็น billboard instanced สองชั้น: glow (additive, เฉพาะ flash/ประกาย) และ smoke (alpha, ลูกไฟและควัน) เพราะฟ้าสนามซีด additive แทบไม่เห็น; มีขนาดขั้นต่ำเป็น pixel ให้เห็นจากไกล ค่าทั้งหมด provisional ดูได้ที่ `vfx-preview.html` (`?at=วินาที` render ช่วงเวลาเดียว)
+
+
 
 ใช้ HP ก้อนเดียวใน MVP ไม่เพิ่ม damage subsystem ปีก/เครื่องยนต์จน flight loop นิ่ง การ hit ลด HP, ส่ง `damage-applied`; เปลี่ยน alive เป็น false ได้ครั้งเดียวและส่ง `aircraft-destroyed` ให้ mode รับ ห้าม renderer นับ score เอง
 

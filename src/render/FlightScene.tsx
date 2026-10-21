@@ -6,7 +6,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Box3, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import { AssetLoaderProvider, useAircraftAsset } from './aircraft/assetLoader'
 import { buildFlightModel } from './aircraft/flightModel'
-import { TargetDrone } from './TargetDrone'
+import { DroneWrecks, TargetDrone } from './TargetDrone'
+import { createCombatEffects } from './vfx/combatEffects'
 import { HitboxWireframe } from './HitboxWireframe'
 import { createTracers } from './tracers'
 import { between, createGunnery } from './gunneryFrame'
@@ -50,6 +51,8 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
   const tracers = useMemo(createTracers, [])
+  const effects = useMemo(createCombatEffects, [])
+  const wreckModels = useRef<(Group | null)[]>([])
   const gunnery = useMemo(() => createGunnery(aircraftId), [aircraftId])
   const mount = useMemo(() => gunMountOf(aircraftId), [aircraftId])
   // Whether aim assist moved the stick on the last command; the HUD names it.
@@ -57,6 +60,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   // Whether the pilot held the gun trigger on the last command; the camera zooms on the target while it is.
   const firing = useRef(false)
   useEffect(() => () => tracers.dispose(), [tracers])
+  useEffect(() => () => effects.dispose(), [effects])
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
     session.runtime = runtime; runtime.start(); runtime.pause()
@@ -74,7 +78,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
-      reset.current = session.resetId; rig.reset(); gunnery.reset(); assisting.current = false; firing.current = false
+      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); assisting.current = false; firing.current = false
       previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
@@ -118,11 +122,12 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     camera.updateMatrixWorld()
     tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr)
     placeDrone(drone.current, droneModel.current, previousWorld.current, world.current, alpha, camera.position)
-    // Damage is applied inside the simulation; the HUD only shows the player's confirmed hits.
-    // Nothing reads the raw hits yet (impact effects), so they are dropped.
-    runtime.drainHits()
+    // Each queue is drained once a frame and shared: a second drain would come back empty.
+    // Damage is applied inside the simulation; the HUD shows the player's confirmed hits, the effects show every hit and kill.
+    const hits = runtime.drainHits(), events = runtime.drainEvents()
+    effects.update({ clock: ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP, events, hits, world: world.current, camera: camera as PerspectiveCamera, viewportHeight: size.height, wreckModels: wreckModels.current })
     const marks = gunnery.update(previousWorld.current, world.current, alpha,
-      { id: state.id, targetId: state.alive ? state.targeting.targetId : null, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, runtime.drainEvents(), session.running && assisting.current)
+      { id: state.id, targetId: state.alive ? state.targeting.targetId : null, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, events, session.running && assisting.current)
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
     // The held position is already clamped to the gate, so the marker is simply where it is.
@@ -154,8 +159,9 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   })
   return <><group ref={group}><primitive object={model} dispose={null} />{showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}</group>
     <primitive object={tracers.mesh} />
+    <primitive object={effects.mesh} />
     <FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} />
-    {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} scaled={droneModel} showHitboxes={showHitboxes} /></Suspense>}</>
+    {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} scaled={droneModel} showHitboxes={showHitboxes} /><DroneWrecks models={wreckModels} /></Suspense>}</>
 }
 const view = new Vector3(), toTarget = new Vector3()
 /** The gun zoom's share: none without a live target, fading as the target sits off the view axis (last frame's view). */
