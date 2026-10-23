@@ -18,8 +18,8 @@ import { MathUtils } from 'three'
 export const visibility = {
   near: 300,
   far: 1000,
-  maxScale: 2,
-  zoom: 0.15,
+  maxScale: 1.5,
+  zoom: 0.30,
   fullDeg: 8,
   noneDeg: 20,
 } as const

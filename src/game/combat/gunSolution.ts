@@ -117,3 +117,12 @@ export function solveGun(shooter: ShooterPose, mount: GunMount, target: TargetMo
     reachable: reaches(shooter, mount, aim, time),
   }
 }
+
+/** The reticle the HUD draws and the cursor aims with: at the target's range while a reachable
+ * solution exists, otherwise at `DEFAULT_RANGE`. One rule for both, so the × and the drawn ring
+ * always mean the same point. */
+export function drawnReticle(shooter: ShooterPose, mount: GunMount, target?: TargetMotion | null) {
+  const solution = target ? solveGun(shooter, mount, target) : null
+  const reachable = !!solution?.reachable
+  return { reticle: reachable ? solution!.reticle : defaultReticle(shooter, mount), solution: reachable ? solution : null }
+}

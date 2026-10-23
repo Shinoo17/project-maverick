@@ -10,9 +10,9 @@ import { DroneWrecks, TargetDrone } from './TargetDrone'
 import { createCombatEffects } from './vfx/combatEffects'
 import { HitboxWireframe } from './HitboxWireframe'
 import { createTracers } from './tracers'
-import { between, createGunnery } from './gunneryFrame'
+import { between, createGunnery, lockOf } from './gunneryFrame'
 import { distanceScale, zoomShare } from './targetVisibility'
-import { aimAssist, withAimAssist } from '../game/combat/aimAssist'
+import { aimAssist, aimMagnet, withAimAssist } from '../game/combat/aimAssist'
 import { gunMountOf } from '../game/combat/gunSolution'
 import { getAircraft, modelUrl } from '../content/aircraft'
 import type { AircraftId } from '../content/schemas'
@@ -22,6 +22,7 @@ import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
 import { WORLD_STEP } from '../game/runtime/clock'
 import { MOUSE_RELATIVE, MOUSE_STICK, screenFrame } from '../game/input/mouseStick'
+import { cursorRay, markOnScreen } from '../game/input/mouseAim'
 import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
@@ -78,7 +79,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
-      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); assisting.current = false; firing.current = false
+      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); session.input.resyncAim(); assisting.current = false; firing.current = false
       previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
@@ -97,9 +98,19 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
         const profile = getFlightProfile(live.aircraftId)
         session.input.highAoa = interpretEnvelope(live, observeAirflow(live, profile), profile).highAoa
         session.input.screen = screenFrame(live, session.camera)
+        session.input.cursorFrame = session.camera.roll === 'horizon' ? screenFrame(live, { roll: 'horizon', horizonStyle: 'dynamic' }) : session.input.screen
+        session.input.pose = live
+        const target = previousWorld.current.aircraft.find(entity => entity.id === live.targeting.targetId)
+        session.input.target = target ?? null
+        // World-locked mouse aim: the assist draws the aim, which the instructor then flies in this
+        // same command. Screen-locked aim reads the aim off the × every tick; its assist moves the
+        // × itself, once per frame below.
+        const aiming = session.preset === 'mouse' && session.input.aiming
+        const worldAim = aiming && session.input.mouse.mode === 'aim'
+        const drawn = worldAim && session.input.aim.synced && aimMagnet(session.input.mouse.aimAssist, live, target, mount, session.input.aim.direction, WORLD_STEP, session.input.triggerHeld)
         // Aim assist joins the command here, so the simulation and a replay see the assisted stick.
         const command = session.input.command(tick, id, session.preset)
-        const target = previousWorld.current.aircraft.find(entity => entity.id === live.targeting.targetId)
+        if (aiming) { if (worldAim) assisting.current = drawn && session.input.aim.share > 0; firing.current = command.gunHeld; return command }
         const assist = aimAssist(session.input.mouse.aimAssist, live, target, mount, command)
         assisting.current = assist.active
         firing.current = command.gunHeld
@@ -118,21 +129,40 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
     rig.baseFov = session.cameraFov; rig.snapFov = !session.running
     rig.gunZoom = session.running && firing.current && state.alive ? zoomOn(camera, world.current, state.targeting.targetId) : 0
+    const aiming = session.preset === 'mouse' && session.input.aiming && session.input.aim.synced && state.alive
+    // World aim looks along the aim; the screen-locked cursor keeps the ordinary nose camera.
+    const cursor = session.input.mouse.mode === 'cursor'
+    rig.aim = aiming && !cursor ? session.input.aim.direction : null
     rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
+    // Mouse motion turns the aim about the view as drawn: right is right and up is up on screen.
+    session.input.setView(viewRight.set(1, 0, 0).applyQuaternion(camera.quaternion), viewUp.set(0, 1, 0).applyQuaternion(camera.quaternion))
+    // The × keeps its angle through a change of lens (speed, burner, the gun zoom).
+    session.input.setLens((camera as PerspectiveCamera).fov)
     tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr)
     placeDrone(drone.current, droneModel.current, previousWorld.current, world.current, alpha, camera.position)
     // Each queue is drained once a frame and shared: a second drain would come back empty.
     // Damage is applied inside the simulation; the HUD shows the player's confirmed hits, the effects show every hit and kill.
     const hits = runtime.drainHits(), events = runtime.drainEvents()
     effects.update({ clock: ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP, events, hits, world: world.current, camera: camera as PerspectiveCamera, viewportHeight: size.height, wreckModels: wreckModels.current })
-    const marks = gunnery.update(previousWorld.current, world.current, alpha,
+    let marks = gunnery.update(previousWorld.current, world.current, alpha,
       { id: state.id, targetId: state.alive ? state.targeting.targetId : null, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, events, session.running && assisting.current)
+    if (cursor && aiming) {
+      // Screen-locked aim assist: the × drawn toward the lead marker as this frame shows it.
+      const lead = session.running && marks.lead ? markOnScreen(camera, marks.lead, session.input.stick, size.width, size.height) : null
+      const target = lead && marks.target ? markOnScreen(camera, marks.target.position, session.input.stick, size.width, size.height) : null
+      assisting.current = session.input.drawCursor(lead && lead.point, lead?.errorDeg ?? Infinity, target?.errorDeg ?? Infinity, Math.min(dt, 0.1) * session.timeScale)
+      marks = { ...marks, assist: session.running && assisting.current }
+      marks.lock = lockOf(marks)
+    } else if (cursor && session.preset === 'mouse') assisting.current = false
+    // Cursor mode reads the × through this very camera, so the × and the drawn reticle meet.
+    session.input.cursorRay = cursor && state.alive ? cursorRay(camera, session.input.stick.px, session.input.stick.py, size.width, size.height, pose.position) : null
     // The gate is the window, so it follows a resized one.
     session.input.setViewport(size.width, size.height)
+    session.input.fov = session.cameraFov
     // The held position is already clamped to the gate, so the marker is simply where it is.
     const marker = indicators.stick.current, input = session.input
-    const reach = (input.mouse.mode === 'relative' ? MOUSE_RELATIVE : MOUSE_STICK).reach * input.gate.radius
+    const reach = input.mouse.mode === 'stick' ? input.stickRadius : (input.mouse.mode === 'relative' ? MOUSE_RELATIVE : MOUSE_STICK).reach * input.gate.radius
     if (marker) {
       marker.style.left = `${size.width / 2 + input.stick.px}px`
       marker.style.top = `${size.height / 2 + input.stick.py}px`
@@ -145,7 +175,8 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
-    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks })
+    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks,
+      aim: aiming ? cursor ? { screen: { x: input.stick.px, y: input.stick.py }, share: session.input.aim.share } : { direction: session.input.aim.direction, share: session.input.aim.share } : null })
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
     // Counted over wall time while flying only; the window restarts on resume.
@@ -163,7 +194,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     <FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} />
     {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} scaled={droneModel} showHitboxes={showHitboxes} /><DroneWrecks models={wreckModels} /></Suspense>}</>
 }
-const view = new Vector3(), toTarget = new Vector3()
+const view = new Vector3(), toTarget = new Vector3(), viewRight = new Vector3(), viewUp = new Vector3()
 /** The gun zoom's share: none without a live target, fading as the target sits off the view axis (last frame's view). */
 function zoomOn(camera: { position: Vector3; getWorldDirection(target: Vector3): Vector3 }, now: WorldState | null, targetId: string | null) {
   const target = now?.aircraft.find(entity => entity.id === targetId && entity.alive)

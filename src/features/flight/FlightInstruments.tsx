@@ -22,7 +22,9 @@ import { burnerStatus, flightAttitude } from './telemetry'
 import { createGlassPainter, type BurnerState, type GlassState } from './hudPainter'
 import type { GunneryMarks } from './gunnerySymbols'
 
-export interface HudFrame { camera: Camera; state: AircraftState; position: Vec3; orientation: AircraftState['orientation']; velocity: Vec3; gunnery?: GunneryMarks | null }
+export interface HudFrame { camera: Camera; state: AircraftState; position: Vec3; orientation: AircraftState['orientation']; velocity: Vec3; gunnery?: GunneryMarks | null
+  /** Mouse aim's direction and the instructor's share (game/input/mouseAim.ts); null in the stick modes. */
+  aim?: GlassState['aim'] }
 export type HudDriver = (frame: HudFrame) => void
 
 // Past 2x the backing store is pixels nobody can see, repainted every frame.
@@ -34,11 +36,11 @@ const zero = { x: 0, y: 0, z: 0 }
 const standby: GlassState = {
   live: false, camera: null, position: zero, forward: { x: 1, y: 0, z: 0 }, right: { x: 0, y: 0, z: 1 }, velocity: zero, speed: 0, mach: 0, altitude: 0, heading: null, pitch: 0, bank: null,
   verticalSpeed: 0, aoa: 0, gLoad: 1, power: 0, groundClearance: 0, edge: 0, burnerReserve: 0, burnerSeconds: 0, burnerState: 'ready', gunHeat: 0, gunOverheated: false, airbrake: false, highG: false, psm: false,
-  regime: 'NORMAL', incidence: 0, alphaNormal: 20, alphaCritical: 30, alphaLimit: 20, alphaMax: 90, gunnery: null,
+  regime: 'NORMAL', incidence: 0, alphaNormal: 20, alphaCritical: 30, alphaLimit: 20, alphaMax: 90, gunnery: null, aim: null,
 }
 
 const nose = new Vector3(), wing = new Vector3(), attitudeQuaternion = new Quaternion()
-export function glassState({ camera, state, position, orientation, velocity, gunnery }: HudFrame): GlassState {
+export function glassState({ camera, state, position, orientation, velocity, gunnery, aim }: HudFrame): GlassState {
   const m = state.maneuver, profile = getFlightProfile(state.aircraftId), maneuverProfile = profile.maneuver
   const airflow = observeAirflow({ orientation, velocity }, profile)
   const envelope = interpretEnvelope(state, airflow, profile)
@@ -59,7 +61,7 @@ export function glassState({ camera, state, position, orientation, velocity, gun
     gunHeat: state.gun.heat, gunOverheated: state.gun.overheated,
     airbrake: m.airbrake > 0.1, highG: envelope.gAllowance > 1.06, psm: label === 'HIGH_AOA' || label === 'POST_STALL' || label === 'RECOVERING',
     regime: label, incidence: airflow.incidenceDeg * airflow.confidence, alphaNormal: profile.aero.alphaNormalDeg, alphaCritical: profile.aero.alphaCriticalDeg,
-    alphaLimit: envelope.alphaLimitDeg, alphaMax: profile.aero.maxControllableAlphaDeg, gunnery: gunnery ?? null,
+    alphaLimit: envelope.alphaLimitDeg, alphaMax: profile.aero.maxControllableAlphaDeg, gunnery: gunnery ?? null, aim: aim ?? null,
   }
 }
 

@@ -58,3 +58,67 @@ export function withAimAssist<T extends { pitch: number; yaw: number }>(command:
   const clamp = (value: number) => Math.max(-1, Math.min(1, value))
   return { ...command, pitch: clamp(command.pitch + assist.pitch), yaw: clamp(command.yaw + assist.yaw) }
 }
+
+/*
+Mouse aim's assist (src/game/input/mouseAim.ts). There the stick belongs to the instructor,
+which would take back any nudge on the next tick, so the assist moves the aim instead: inside
+the same cone it draws the aim toward where the nose must point for the gun line to lie on
+the solution, and the instructor flies there. Moving the mouse away still wins: the draw is
+a rate, and it lets go outside the cone.
+
+Holding the trigger tightens it (user request 23 Oct 2026, "point at the target and fire, and it
+pulls onto it"): the draw runs `firingBoost` times faster and stays whole out to the edge of the
+cone, so a burst stays on the lead while the target moves. Idle, it only eases the aim in.
+
+- World-locked aim ('aim'): `aimMagnet` turns the aim direction, once per command tick.
+- Screen-locked aim ('cursor'): the aim is wherever the × is, read afresh every tick, so the
+  assist moves the × itself toward the lead marker on screen (`cursorDraw`, once per rendered
+  frame, like a hand). Moving the × rather than the aim behind it means letting go never snaps
+  the jet back to where the × was. A hand moving fast gives way, so the × is never glued.
+*/
+export const aimMagnetRates: Record<Exclude<AimAssistLevel, 'off'>, number> = { standard: 4, strong: 8 }
+export const firingBoost = 3
+const noseAim = new Vector3(), wingAxis = new Vector3(), drawAxis = new Vector3()
+/** Draws `aim` (a world direction, changed in place) toward the solution for one tick of `dt` seconds. True while it acts. */
+export function aimMagnet(level: AimAssistLevel, shooter: AircraftState, target: AircraftState | undefined, mount: GunMount, aim: Vector3, dt: number, firing = false) {
+  if (level === 'off' || !target?.alive || !shooter.alive) return false
+  const profile = aimAssistProfiles[level]
+  const solution = solveGun(shooter, mount, target)
+  if (!solution?.reachable) return false
+  const { x, y, z, w } = shooter.orientation
+  turn.set(x, y, z, w)
+  // The gun line sits elevationDeg above the nose, so the nose goes that far below the aim.
+  wingAxis.set(0, 0, 1).applyQuaternion(turn)
+  noseAim.set(solution.aim.x, solution.aim.y, solution.aim.z).normalize().applyAxisAngle(wingAxis, -mount.elevationDeg * Math.PI / 180)
+  const error = aim.angleTo(noseAim) * 180 / Math.PI
+  if (error >= profile.cone || error < 1e-6) return error < 1e-6
+  drawAxis.crossVectors(aim, noseAim)
+  if (drawAxis.lengthSq() < 1e-12) return true
+  const share = draw(level, error, dt, firing)
+  aim.applyAxisAngle(drawAxis.normalize(), aim.angleTo(noseAim) * share).normalize()
+  return true
+}
+
+/** The share (0..1) of the way to the lead the aim moves in `dt` seconds, `error` degrees off it. */
+function draw(level: Exclude<AimAssistLevel, 'off'>, error: number, dt: number, firing: boolean) {
+  const profile = aimAssistProfiles[level]
+  if (error >= profile.cone) return 0
+  const reach = firing || error <= profile.full ? 1 : 1 - (error - profile.full) / (profile.cone - profile.full)
+  return (1 - Math.exp(-aimMagnetRates[level] * (firing ? firingBoost : 1) * dt)) * reach
+}
+
+/** Hand speed (pixels per second) at which the cursor draw starts to give way, and is gone. */
+export const handGiveWay = [150, 700] as const
+/** Cursor mode: the share (0..1) of the way from the × to the lead marker the × moves this frame.
+ * `leadError` and `targetError` are degrees from the × to the lead marker and to the target
+ * through the lens; `handPixels` is how far the hand moved the × this frame.
+
+ While firing, a × on the target itself captures too: against a crossing target the lead sits
+ about (target speed / round speed) off the airframe at any range — 7° at 150 m/s, 12° at 250 —
+ so "point at it and fire" would otherwise miss the cone. The draw still goes to the lead. */
+export function cursorDraw(level: AimAssistLevel, leadError: number, targetError: number, dt: number, firing: boolean, handPixels: number) {
+  if (level === 'off' || !(dt > 0)) return 0
+  const speed = handPixels / dt
+  const giveWay = 1 - Math.min(1, Math.max(0, (speed - handGiveWay[0]) / (handGiveWay[1] - handGiveWay[0])))
+  return draw(level, firing ? Math.min(leadError, targetError) : leadError, dt, firing) * giveWay
+}

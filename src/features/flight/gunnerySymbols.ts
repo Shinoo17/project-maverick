@@ -10,7 +10,11 @@ why), so the reticle sitting on the lead marker on screen means a hit.
   closure, an HP bar under it, and IN RNG / OUT RNG. Off screen, an arrow at the frame edge points to it.
 - Lead marker: a diamond where the target will be when the rounds arrive, tied to the box by a
   dashed line, with an arc that empties as the range closes. Doubled when the reticle is on it.
-- ASSIST under the reticle while aim assist is moving the stick.
+- ASSIST under the reticle while aim assist is moving the stick (or, under mouse aim, the aim).
+- Lock colour, the only colour on the glass besides phosphor green (user request 23 Oct 2026):
+  the lead marker turns amber while aim assist has captured it and red once the reticle sits
+  on it with the target in range, where rounds fired now hit. The mouse-aim × takes the same
+  colour (hudPainter.ts). It only tells: rounds never steer and hitboxes never grow (doc 07).
 - Hit: ticks flare off the box corners for a moment after each confirmed hit. SPLASH where
   the target went down. Both are timed in simulation ticks, so pause freezes them.
 */
@@ -46,18 +50,22 @@ export interface GunneryMarks {
   splash: { tick: number; position: Vec3Like } | null
   /** Aim assist acted on the last command. */
   assist: boolean
+  /** Free, captured by aim assist, or locked: the reticle on the lead in range (gunneryFrame.ts). */
+  lock: 'free' | 'captured' | 'locked'
 }
 
 export interface Pen {
   ctx: CanvasRenderingContext2D
   line(x1: number, y1: number, x2: number, y2: number, lineWidth?: number, color?: string): void
-  luminous(paint: () => void, lineWidth: number, color: string): void
+  luminous(paint: () => void, lineWidth: number, color: string, bloom?: string): void
   text(value: string, x: number, y: number, font: string, color?: string, align?: CanvasTextAlign, baseline?: CanvasTextBaseline): void
   project(point: Vec3Like): Point | null
   /** A point off the frame clamped to its edge, with the outward angle; null when on screen. */
   edge(from: Vec3Like, toward: Vec3Like): { x: number; y: number; angle: number } | null
   font(size: number, weight?: number): string
   green: string; dim: string; bright: string
+  /** Lock colours, each with its own bloom so it glows its own colour. */
+  captured: { color: string; bloom: string }; locked: { color: string; bloom: string }
 }
 
 const HIT_SECONDS = 0.25, SPLASH_SECONDS = 1.6
@@ -138,7 +146,8 @@ function drawLead(pen: Pen, marks: GunneryMarks, box: { x: number; y: number; ha
   const at = pen.project(marks.lead!)
   if (!at) return
   const { ctx } = pen, s = 7
-  const color = marks.inRange ? pen.bright : pen.dim
+  const lock = marks.lock === 'free' ? null : pen[marks.lock]
+  const color = lock?.color ?? (marks.inRange ? pen.bright : pen.dim), bloom = lock?.bloom
   // Dashed tie to the box, so the eye knows whose lead it is.
   if (box && Math.hypot(at.x - box.x, at.y - box.y) > box.half + s * 2) {
     const dx = at.x - box.x, dy = at.y - box.y, d = Math.hypot(dx, dy)
@@ -147,11 +156,11 @@ function drawLead(pen: Pen, marks: GunneryMarks, box: { x: number; y: number; ha
     ctx.setLineDash([])
   }
   const diamond = (size: number) => { ctx.beginPath(); ctx.moveTo(at.x, at.y - size); ctx.lineTo(at.x + size, at.y); ctx.lineTo(at.x, at.y + size); ctx.lineTo(at.x - size, at.y); ctx.closePath(); ctx.stroke() }
-  pen.luminous(() => diamond(s), 1.6, color)
-  if (marks.onSolution) pen.luminous(() => diamond(s + 5), 1.6, pen.bright)
+  pen.luminous(() => diamond(s), lock ? 2 : 1.6, color, bloom)
+  if (marks.onSolution) pen.luminous(() => diamond(s + 5), 1.6, color, bloom)
   // Range arc: full at 1,000 m and beyond, empty at the target.
   const share = Math.min(1, (marks.target?.range ?? MAX_ARC_RANGE) / MAX_ARC_RANGE)
-  pen.luminous(() => { ctx.beginPath(); ctx.arc(at.x, at.y, s + 10, -Math.PI / 2, -Math.PI / 2 + share * Math.PI * 2); ctx.stroke() }, 1.4, color)
+  pen.luminous(() => { ctx.beginPath(); ctx.arc(at.x, at.y, s + 10, -Math.PI / 2, -Math.PI / 2 + share * Math.PI * 2); ctx.stroke() }, 1.4, color, bloom)
 }
 
 function drawSplash(pen: Pen, marks: GunneryMarks) {

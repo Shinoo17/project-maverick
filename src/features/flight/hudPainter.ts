@@ -21,6 +21,14 @@ const HUD_GREEN_DIM = 'rgba(98, 255, 132, 0.66)'
 const HUD_GREEN_CAUTION = 'rgba(98, 255, 132, 0.84)'
 const HUD_GREEN_ALERT = 'rgba(122, 255, 151, 1)'
 const HUD_BLOOM = 'rgba(48, 255, 104, 0.2)'
+// The mouse aim cursor is the pilot's hand, not flight data: a green-tinted white sets it apart from
+// the symbology while keeping it in the same family.
+const HUD_CURSOR = { color: 'rgba(230, 255, 236, 0.98)', bloom: 'rgba(180, 255, 200, 0.2)' } as const
+/** Gun lock (gunnerySymbols.ts): amber while aim assist has the lead, red when rounds fired now hit. */
+const HUD_LOCK = {
+  captured: { color: 'rgba(255, 200, 72, 0.98)', bloom: 'rgba(255, 176, 40, 0.24)' },
+  locked: { color: 'rgba(255, 76, 64, 1)', bloom: 'rgba(255, 48, 40, 0.28)' },
+} as const
 // Lines carry no dark edge. Text casts a soft dark glow that follows each glyph, so digits read
 // over bright sky or sand without a hard outline. Blur is in device pixels, hence the ratio.
 const HUD_TEXT_SHADOW = 'rgba(0, 10, 4, 0.75)'
@@ -124,6 +132,9 @@ export interface GlassState {
   alphaMax: number
   /** Gun reticle, target box and lead (gunnerySymbols.ts); null before the first flight frame. */
   gunnery: GunneryMarks | null
+  /** Mouse aim: where the instructor is flying the nose (a world direction), or in cursor mode
+   * the held × as pixels from the middle of the frame; and its share (fades the world cursor). */
+  aim: { direction: Vec3Like; share: number } | { screen: { x: number; y: number }; share: number } | null
 }
 
 /*
@@ -282,9 +293,9 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
 
   // Every stroke goes down three times: a narrow translucent phosphor pass, the coloured mark,
   // then a thin near-white core.
-  function luminous(paint: () => void, lineWidth: number, color: string) {
+  function luminous(paint: () => void, lineWidth: number, color: string, bloom = HUD_BLOOM) {
     ctx.lineWidth = lineWidth + 1.2
-    ctx.strokeStyle = HUD_BLOOM
+    ctx.strokeStyle = bloom
     paint()
     ctx.lineWidth = lineWidth
     ctx.strokeStyle = color
@@ -349,7 +360,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
         const mark = projectVelocityMarker(camera, from, { x: toward.x - from.x, y: toward.y - from.y, z: toward.z - from.z }, width, height, 40)
         return mark && !mark.onScreen ? mark : null
       },
-      green: HUD_GREEN, dim: HUD_GREEN_DIM, bright: HUD_GREEN_ALERT,
+      green: HUD_GREEN, dim: HUD_GREEN_DIM, bright: HUD_GREEN_ALERT, ...HUD_LOCK,
     }
   }
 
@@ -415,6 +426,9 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.restore()
       return
     }
+    // The gun reticle sits on the gun line, 0.5° above the nose, and stands in for the ring.
+    // The edge chevron above stays: the reticle has none.
+    if (state.gunnery?.reticle) return
     // Tilted with the wings like the -W-, so the top tick points to the canopy: where a pull takes the nose.
     ctx.save()
     ctx.translate(cx, cy)
@@ -449,6 +463,29 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)
     }
     strokeLuminous(separated ? 2 : 1.6, separated ? HUD_GREEN_ALERT : HUD_GREEN)
+    ctx.restore()
+  }
+
+  // Mouse aim cursor: a gapped ×, unlike the nose pipper's winged ring and the reticle's gapped
+  // circle, small enough to sit inside the reticle's gaps when the nose arrives. It fades as the
+  // instructor hands over to the stick in post-stall, where it no longer flies the nose.
+  function drawAimCursor(aim: NonNullable<GlassState['aim']>, state: GlassState, camera: Camera) {
+    // The screen-locked × is the hand on the stick: always drawn, dimmer once it is a plain stick.
+    const held = 'screen' in aim
+    if (!held && aim.share <= 0.02) return
+    const point = held ? { x: layout.cx + aim.screen.x, y: layout.cy + aim.screen.y } : projectVelocityMarker(camera, state.position, aim.direction, width, height, 24)
+    if (!point || ('onScreen' in point && !point.onScreen)) return
+    // The same lock colour as the lead marker, so the hand knows the gun has it.
+    const lock = state.gunnery && state.gunnery.lock !== 'free' ? HUD_LOCK[state.gunnery.lock] : null
+    ctx.save()
+    ctx.globalAlpha = held ? 0.55 + 0.45 * aim.share : aim.share
+    luminous(() => {
+      ctx.beginPath()
+      for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const) {
+        ctx.moveTo(point.x + sx * 4, point.y + sy * 4); ctx.lineTo(point.x + sx * 10, point.y + sy * 10)
+      }
+      ctx.stroke()
+    }, lock ? 2.2 : 1.8, (lock ?? HUD_CURSOR).color, (lock ?? HUD_CURSOR).bloom)
     ctx.restore()
   }
 
@@ -663,6 +700,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       drawLadder(state, state.camera)
       drawNosePipper(state, state.camera)
       drawVelocityMarker(state, state.camera)
+      if (state.aim) drawAimCursor(state.aim, state, state.camera)
       if (state.gunnery) drawGunnery(pen(state.camera), state.gunnery, state.camera, height, state.position)
     }
     if (state.live) drawAoaBracket(state)

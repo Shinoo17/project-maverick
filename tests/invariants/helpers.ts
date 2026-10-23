@@ -12,6 +12,13 @@ import { defaultMouseSettings, type MouseSettings } from '../../src/game/input/m
  * relative stick and the body frame the default (owner decision D5); tests written for the
  * positional stick opt into it explicitly and keep testing the same behavior. */
 export const positionalHorizon: MouseSettings = { ...defaultMouseSettings, mode: 'stick', frame: 'horizon' }
+/** Positional stick mode rate-limits its axes like example/F22: command from `from` for `ticks`
+ * ticks so they reach the reading, and return the last command. */
+export function settleStick(input: { command(tick: number, id: string, preset: 'mouse'): PilotCommand }, from = 0, ticks = 8, id = 'a') {
+  let command = input.command(from, id, 'mouse')
+  for (let i = 1; i < ticks; i++) command = input.command(from + i, id, 'mouse')
+  return command
+}
 
 export function assertAircraftValid(state: AircraftState) {
   const visit = (value: unknown, path: string) => {

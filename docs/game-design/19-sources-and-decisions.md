@@ -48,7 +48,7 @@
 | D02 | W/S | target speed จริง; ลบ semantics throttle/power และ W+S extreme chord เดิม | 02/03 |
 | D03 | ปล่อย W/S | target หยุดปรับทันที; actual ยังมี inertia เพื่อลด overshoot ของคำสั่ง | 03 |
 | D04 | Speed | world m/s ถูกบีบ; HUD multiplier เดียวพร้อม label Arcade | 03 |
-| D05 | Mouse | virtual stick baseline ต่อจากของเดิม; instructor aim-point รอ playtest | 02 |
+| D05 | Mouse | 2026-10-21: Mouse aim (instructor บินพาหัวเครื่องไปที่จุดเล็ง) เป็น default ตามที่เจ้าของเลือก; relative/positional stick ยังเลือกได้ใน Settings ภาพ PSM ต้องเป็น Phase 7 shot เดิมทุกเฟรม | 02 |
 | D06 | Maneuver | High-G กับ PSM แยก intent; PSM release/recovery/budget ชัดเจน | 04 |
 | D07 | กล้อง | view และ roll mode แยก; Horizon default สำหรับมือใหม่ | 11 |
 | D08 | Aircraft identity | F/A-18E ระบุรุ่นชัด; ข้อได้เปรียบ gameplay ไม่อ้างเป็นอันดับจริง | 05 |
@@ -120,6 +120,22 @@ Decision ID / วันที่ / ผู้แก้
   - แต้มคิดจากเวลาถือรวมของทีม เศษวินาทีไม่หาย
   - Flyover: จุดที่เพิ่งถูกยึดล็อก 5 s, ถือครบ 3 จุดได้ 2 แต้มต่อวินาที, เข้าจุดพร้อมกันเจ้าของไม่เปลี่ยน
   - ค่าเริ่มต้น: Priority Target 8 นาที/100 แต้ม, Flyover 10 นาที/300 แต้ม, รัศมีเก็บมงกุฎ 200 m, รัศมีจุด Flyover 300 m
+
+## D18 / 20 ตุลาคม 2026 / Environment & Maps (Track E)
+
+ผู้ใช้ขอแผนสามระบบ: สภาพอากาศ, แสงที่เกิด lens flare แบบ ghost และ halo เมื่อเงยมองพระอาทิตย์, และแผนที่หลายแบบ (terrain ปกติ, ทะเล, ภูเขา) ผู้ใช้กำหนดเพิ่มว่าแสงเงาและสภาพอากาศต้องใช้ได้กับทุกแผนที่ แผนเต็มอยู่ใน [22](22-environment-and-maps.md)
+
+- กฎเดิม: ท้องฟ้า ทิศพระอาทิตย์ หมอก และเมฆเป็นค่าคงที่ของสนามฝึก (`TrainingRange.tsx`, `range/shaders.ts`); พื้นราบ `y <= 3` อยู่ใน `stepFlight`; 14 เลื่อน weather ไว้หลัง MVP
+- ข้อเสนอใหม่: แยก Map ("ที่ไหน") กับ Environment ("เมื่อไหร่และอย่างไร") รวมกันที่ `resolveEnvironment` จุดเดียว; ทุก renderer อ่าน uniform ชุดเดียว; collision ย้ายไป `src/game/world`; เพิ่ม track E0–E9 แยกเลขจาก Master P และ PSM Phase
+- Weather ใน E1–E8 เป็น visual อย่างเดียว ไม่เปลี่ยน LOS หรือ flight forces ตามกฎของ 14; E9 (ผลต่อ gameplay) ทำเมื่อผู้ใช้อนุมัติเท่านั้น
+- **รอผู้ใช้ตัดสิน:**
+  1. Track E แทรกตรงไหนเทียบกับ P4 damage/death ที่ค้างอยู่
+  2. เวลาของวันมีแค่ dawn/noon/dusk หรือไม่ (กลางคืนแยก phase)
+  3. Weather มีผลต่อ gameplay หรือไม่ (E9)
+  4. สไตล์ flare: subtle สมจริง หรือ cinematic แบบ Ace Combat 7
+  5. Terrain data: procedural seeded ตอนโหลด (ข้อเสนอ) หรือ bake binary ผ่าน LFS
+  6. แดดบังตามีผลต่อบอทหรือไม่
+  7. หยดน้ำบนเลนส์ตอนฝนตก
 
 ## D19 / 21 ตุลาคม 2026 / Vapor ขับด้วยแบบจำลองฟิสิกส์ (vapor overhaul)
 

@@ -27,7 +27,7 @@ describe('P2 maneuvers (Phase 6: no PSM phase, entry envelope or C)', () => {
 })
 
 import { FlightInput } from '../src/game/input/FlightInput'
-import { positionalHorizon } from './invariants/helpers'
+import { positionalHorizon, settleStick } from './invariants/helpers'
 import { runFlightReplay } from '../src/game/playground/replay'
 describe('P2 playground lifecycle', () => {
   it('maps Space to the airbrake, leaves X and C unbound, and blends the inverted mouse frame with incidence', () => {
@@ -37,13 +37,13 @@ describe('P2 playground lifecycle', () => {
     }
     input.press('Space'); expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true }); input.held.delete('Space')
     input.engage(); input.move(0, -input.gate.radius); input.screen = { angle: Math.PI, blend: 1 }
-    expect(input.command(0, 'a', 'mouse').pitch).toBe(-1)
-    input.press('Space'); expect(input.command(1, 'a', 'mouse').pitch).toBe(-1)
+    expect(settleStick(input, 0).pitch).toBe(-1)
+    input.press('Space'); expect(input.command(8, 'a', 'mouse').pitch).toBe(-1)
     input.held.delete('Space'); input.highAoa = 0.5
-    expect(input.command(2, 'a', 'mouse').pitch).toBeCloseTo(0, 12)
+    expect(settleStick(input, 9).pitch).toBeCloseTo(0, 12)
     input.highAoa = 1
-    expect(input.command(2, 'a', 'mouse').pitch).toBe(1)
-    input.clear(); expect(input.command(3, 'a', 'mouse')).toEqual(neutralCommand(3, 'a'))
+    expect(settleStick(input, 17).pitch).toBe(1)
+    input.clear(); expect(input.command(30, 'a', 'mouse')).toEqual(neutralCommand(30, 'a'))
   })
   it('uses the selected spawn, single-steps only while paused, and replays exported commands exactly', () => {
     const r = make(); r.reset('cobra'); r.start(); r.pause()

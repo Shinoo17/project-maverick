@@ -18,7 +18,7 @@ import { getAircraft } from '../content/aircraft'
 import { hitboxes } from '../content/hitboxes'
 import { boundingRadius } from '../game/combat/collision'
 import { AIRCRAFT_HP } from '../game/combat/damage'
-import { defaultReticle, EFFECTIVE_RANGE, gunMountOf, solveGun, type ShooterPose } from '../game/combat/gunSolution'
+import { defaultReticle, drawnReticle, EFFECTIVE_RANGE, gunMountOf, type ShooterPose } from '../game/combat/gunSolution'
 import type { GameEvent } from '../game/runtime/events'
 import type { AircraftState, WorldState } from '../game/state/WorldState'
 import type { GunneryMarks } from '../features/flight/gunnerySymbols'
@@ -52,6 +52,13 @@ function radiusOf(entity: AircraftState) {
   return radii.get(id)!
 }
 
+/** Locked: the reticle is on the lead and the target in range, so rounds fired now hit. Captured:
+ * aim assist is drawing the aim onto the lead. Free otherwise. */
+export function lockOf(marks: Pick<GunneryMarks, 'onSolution' | 'inRange' | 'assist'>): GunneryMarks['lock'] {
+  return marks.onSolution && marks.inRange ? 'locked' : marks.assist ? 'captured' : 'free'
+}
+const withLock = (marks: Omit<GunneryMarks, 'lock'>): GunneryMarks => ({ ...marks, lock: lockOf(marks) })
+
 export function createGunnery(aircraftId: string) {
   const mount = gunMountOf(aircraftId)
   let hitTick: number | null = null
@@ -71,25 +78,25 @@ export function createGunnery(aircraftId: string) {
     const clock = (now?.tick ?? 0) - 1 + alpha
     const target = shooter.targetId ? between(before, now, entity => entity.id === shooter.targetId, alpha) : null
     const base = { now: clock, hitTick, splash, assist }
-    if (!target) return { ...base, reticle: defaultReticle(shooter, mount), target: null, lead: null, inRange: false, onSolution: false }
-    const solution = solveGun(shooter, mount, { position: target.position, velocity: target.velocity, acceleration: target.entity.acceleration })
+    if (!target) return withLock({ ...base, reticle: defaultReticle(shooter, mount), target: null, lead: null, inRange: false, onSolution: false })
+    const { reticle, solution } = drawnReticle(shooter, mount, { position: target.position, velocity: target.velocity, acceleration: target.entity.acceleration })
     const p = shooter.position, v = shooter.velocity
     const toTarget = target.position.clone().sub(new Vector3(p.x, p.y, p.z))
     const range = toTarget.length()
     const closure = range > 1e-6 ? -toTarget.dot(target.velocity.clone().sub(new Vector3(v.x, v.y, v.z))) / range : 0
     const radius = radiusOf(target.entity)
-    const reachable = !!solution?.reachable
+    const reachable = !!solution
     const miss = solution ? new Vector3(solution.reticle.x - solution.lead.x, solution.reticle.y - solution.lead.y, solution.reticle.z - solution.lead.z).length() : Infinity
-    return {
+    return withLock({
       ...base,
       // Out of reach, the reticle at the target's range would mark a point no round arrives at.
-      reticle: reachable ? solution!.reticle : defaultReticle(shooter, mount),
+      reticle,
       target: { position: target.position, radius: radius * distanceScale(range), range, closure, hp: target.entity.hp / AIRCRAFT_HP, label: targetLabel(target.entity) },
       lead: reachable ? solution!.lead : null,
       inRange: reachable && range <= EFFECTIVE_RANGE,
       // Within most of the target's size: rounds through that point hit the airframe.
       onSolution: reachable && miss <= radius * 0.6,
-    }
+    })
   }
   return { update, reset }
 }

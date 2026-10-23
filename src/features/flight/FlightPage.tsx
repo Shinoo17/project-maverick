@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { selectCamera, useSessionSettings } from '../../app/sessionStore'
 import { cameraRollOption, horizonStyleOption, nextCameraSettings } from '../../game/camera/cameraSettings'
 import { actionForCode } from '../../game/input/keyBindings'
+import { mouseHintKey } from '../../game/input/mouseStick'
 import { useReducedMotion, useUiScale } from '../menu/hooks'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { bindingNames } from '../settings/KeyPrompt'
@@ -161,8 +162,8 @@ export function FlightPage() {
       <FlightSystemStatus state={telemetry} />
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
       {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
-      {running && preset === 'mouse' && <div ref={indicators.gate} className="flight-stick-gate" aria-hidden="true" />}
-      {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true">
+      {running && preset === 'mouse' && controls.mode !== 'aim' && controls.mode !== 'cursor' && <div ref={indicators.gate} className="flight-stick-gate" aria-hidden="true" />}
+      {running && preset === 'mouse' && controls.mode !== 'aim' && controls.mode !== 'cursor' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true">
         <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" pathLength="96" /><path d="M50 14V8M86 50H92M50 86V92M14 50H8" /></svg>
       </div>}
       {/* Active practice modifiers stay on screen while flying (docs/game-design/10-playground.md). */}
@@ -193,7 +194,7 @@ export function FlightPage() {
           <section className="flight-brief-section" aria-labelledby="flight-brief-controls">
             <h2 id="flight-brief-controls">{t('briefControls')}</h2>
             <p className="flight-brief-keys">{controlsHint}</p>
-            {preset === 'mouse' && <details className="flight-brief-more"><summary>{t('mousePreset')}</summary><p>{t(controls.mode === 'relative' ? 'mouseHintRelative' : 'mouseHint')}</p><p>{t('mouseTips')}</p></details>}
+            {preset === 'mouse' && <details className="flight-brief-more"><summary>{t('mousePreset')}</summary><p>{t(mouseHintKey(controls.mode))}</p>{controls.mode !== 'aim' && controls.mode !== 'cursor' && <p>{t('mouseTips')}</p>}</details>}
             <details className="flight-brief-more"><summary>{t('psmControlsHelp')}</summary><p>{t('psmControlsDetail')}</p></details>
             <details className="flight-brief-more flight-lab-settings"><summary>{t('flightLab')}</summary>
               <div className="flight-lab-grid">
