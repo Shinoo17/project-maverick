@@ -17,6 +17,7 @@ import type { AircraftState, Vec3 } from '../../game/state/WorldState'
 import { arcadeSpeed } from '../../game/flight/speed'
 import { getFlightProfile } from '../../game/flight/profile'
 import { trainingMap } from '../../content/maps'
+import { machNumber } from '../../render/vapor/atmosphere'
 import { burnerStatus, flightAttitude } from './telemetry'
 import { createGlassPainter, type BurnerState, type GlassState } from './hudPainter'
 import type { GunneryMarks } from './gunnerySymbols'
@@ -31,7 +32,7 @@ const burnerStates: Record<string, BurnerState> = {
 }
 const zero = { x: 0, y: 0, z: 0 }
 const standby: GlassState = {
-  live: false, camera: null, position: zero, forward: { x: 1, y: 0, z: 0 }, right: { x: 0, y: 0, z: 1 }, velocity: zero, speed: 0, altitude: 0, heading: null, pitch: 0, bank: null,
+  live: false, camera: null, position: zero, forward: { x: 1, y: 0, z: 0 }, right: { x: 0, y: 0, z: 1 }, velocity: zero, speed: 0, mach: 0, altitude: 0, heading: null, pitch: 0, bank: null,
   verticalSpeed: 0, aoa: 0, gLoad: 1, power: 0, groundClearance: 0, edge: 0, burnerReserve: 0, burnerSeconds: 0, burnerState: 'ready', gunHeat: 0, gunOverheated: false, airbrake: false, highG: false, psm: false,
   regime: 'NORMAL', incidence: 0, alphaNormal: 20, alphaCritical: 30, alphaLimit: 20, alphaMax: 90, gunnery: null,
 }
@@ -46,9 +47,10 @@ export function glassState({ camera, state, position, orientation, velocity, gun
   nose.set(1, 0, 0).applyQuaternion(attitudeQuaternion.set(orientation.x, orientation.y, orientation.z, orientation.w))
   wing.set(0, 0, 1).applyQuaternion(attitudeQuaternion)
   const altitude = position.y
+  const speed = arcadeSpeed(Math.hypot(velocity.x, velocity.y, velocity.z))
   return {
     live: true, camera, position, velocity, forward: nose, right: wing,
-    speed: arcadeSpeed(Math.hypot(velocity.x, velocity.y, velocity.z)),
+    speed, mach: machNumber(speed / 3.6, altitude),
     altitude, heading: attitude.heading, pitch: attitude.pitch, bank: attitude.bank,
     verticalSpeed: velocity.y, aoa: m.alpha, gLoad: m.g, power: state.enginePower,
     groundClearance: altitude,
@@ -94,6 +96,7 @@ export function FlightSystemStatus({ state }: { state: AircraftState | null }) {
   const empty = '—'
   return <dl className="hud-a11y-readout" aria-label={t('hudFlightData')}>
     <div><dt>{t('hudSpeed')}</dt><dd>{state ? Math.round(arcadeSpeed(Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z))) : empty} {t('arcadeUnit')}</dd></div>
+    <div><dt>{t('hudMach')}</dt><dd>{state ? machNumber(arcadeSpeed(Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z)) / 3.6, state.position.y).toFixed(2) : empty}</dd></div>
     <div><dt>{t('altitude')}</dt><dd>{state ? Math.round(state.position.y) : empty} {t('metres')}</dd></div>
     <div><dt>{t('heading')}</dt><dd>{heading === null ? empty : `${Math.round(heading) % 360}°`}</dd></div>
     <div><dt>{t('burner')}</dt><dd>{t(burnerStatus(state))}</dd></div>

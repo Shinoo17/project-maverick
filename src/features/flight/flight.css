@@ -8,7 +8,7 @@
 /* --hud-advisory-* and --hud-status-top are set by FlightInstruments from the glass layout. */
 .flight-hud {
   --hud-ice: #62ff84; --hud-green-dim: rgba(98, 255, 132, 0.68); --hud-green-soft: rgba(98, 255, 132, 0.24);
-  --hud-glyph: 0 0 7px rgba(48, 255, 104, 0.34); --hud-plate: rgba(3, 9, 12, 0.72); --hud-panel: rgba(7, 12, 15, 0.86); --hud-panel-line: rgba(98, 255, 132, 0.22);
+  --hud-glyph: 0 0 3px rgba(0, 10, 4, 0.75), 0 0 6px rgba(48, 255, 104, 0.2); --hud-plate: rgba(3, 9, 12, 0.72); --hud-panel: rgba(7, 12, 15, 0.86); --hud-panel-line: rgba(98, 255, 132, 0.22);
   color: var(--hud-ice); padding: 0; font-family: 'DIN Alternate', 'Arial Narrow', 'Aptos Narrow', sans-serif; font-variant-numeric: tabular-nums; text-shadow: var(--hud-glyph);
 }
 .hud-glass { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }

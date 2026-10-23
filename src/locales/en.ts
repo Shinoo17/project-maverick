@@ -202,6 +202,7 @@ export const en = {
   hudFlightData: "Flight instruments",
   hudGunHeat: "Gun heat", hudGunOverheated: "Overheated",
   hudSpeed: "Speed",
+  hudMach: "Mach",
   hudGForce: "G-force",
   hudVerticalSpeed: "Climb / descent",
   hudAttitude: "Attitude",

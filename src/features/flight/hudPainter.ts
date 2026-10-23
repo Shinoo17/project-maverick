@@ -20,7 +20,31 @@ const HUD_GREEN = 'rgba(98, 255, 132, 0.98)'
 const HUD_GREEN_DIM = 'rgba(98, 255, 132, 0.66)'
 const HUD_GREEN_CAUTION = 'rgba(98, 255, 132, 0.84)'
 const HUD_GREEN_ALERT = 'rgba(122, 255, 151, 1)'
-const HUD_BLOOM = 'rgba(48, 255, 104, 0.24)'
+const HUD_BLOOM = 'rgba(48, 255, 104, 0.2)'
+// Lines carry no dark edge. Text casts a soft dark glow that follows each glyph, so digits read
+// over bright sky or sand without a hard outline. Blur is in device pixels, hence the ratio.
+const HUD_TEXT_SHADOW = 'rgba(0, 10, 4, 0.75)'
+const HUD_TEXT_SHADOW_BLUR = 3
+// The display face is narrow and light; a hairline of the fill colour thickens every glyph.
+const HUD_TEXT_EMBOLDEN = 0.7
+// Like a real HUD's saturated phosphor, each line's centre runs near white: it reads by brightness
+// against sky and sand, where a pure green competes on hue alone.
+const HUD_CORE_WHITE = 0.6
+const HUD_TEXT_WHITE = 0.2
+const coreCache = new Map<string, string>()
+function towardWhite(color: string, amount: number) {
+  const key = `${color}|${amount}`
+  const cached = coreCache.get(key)
+  if (cached) return cached
+  const rgba = color.match(/^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)$/)
+  const mixed = rgba
+    ? `rgba(${[1, 2, 3].map(i => Math.round(Number(rgba[i]) + (255 - Number(rgba[i])) * amount)).join(', ')}, ${rgba[4] ?? 1})`
+    : color
+  coreCache.set(key, mixed)
+  return mixed
+}
+// Line pitch of the readouts hanging beneath a tape's value box.
+const SUBREADOUT_LINE = 15
 const DISPLAY = '"DIN Alternate", "Arial Narrow", "Aptos Narrow", sans-serif'
 
 type Tape = { minor: number; major: number; span: number }
@@ -65,6 +89,8 @@ export interface GlassState {
   velocity: Vec3Like
   /** ARCADE km/h */
   speed: number
+  /** Mach from the arcade speed, so it agrees with the tape and with the vapor cone. */
+  mach: number
   /** Metres above the flat range. */
   altitude: number
   heading: number | null
@@ -224,7 +250,7 @@ export function projectRung(camera: Camera, position: Vec3Like, forward: Vec3Lik
   return left && right ? { left, right } : null
 }
 
-const display = (size: number, weight = 600) => `${weight} ${size}px ${DISPLAY}`
+const display = (size: number, weight = 700) => `${weight} ${size + 1}px ${DISPLAY}`
 const pad = (value: number, width: number) => String(Math.max(0, Math.round(value))).padStart(width, '0')
 const signed = (value: number) => {
   const rounded = Math.round(value)
@@ -243,9 +269,10 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d')!
   let width = 0, height = 0
   let layout = glassLayout(1, 1)
+  let ratio = 1
 
   function resize(cssWidth: number, cssHeight: number, pixelRatio: number) {
-    width = cssWidth; height = cssHeight
+    width = cssWidth; height = cssHeight; ratio = pixelRatio
     canvas.width = Math.max(1, Math.floor(cssWidth * pixelRatio))
     canvas.height = Math.max(1, Math.floor(cssHeight * pixelRatio))
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
@@ -253,26 +280,28 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     return layout
   }
 
-  // Every stroke goes down twice: a broad translucent phosphor pass, then the crisp mark.
+  // Every stroke goes down three times: a narrow translucent phosphor pass, the coloured mark,
+  // then a thin near-white core.
   function luminous(paint: () => void, lineWidth: number, color: string) {
-    ctx.lineWidth = lineWidth + 2.4
+    ctx.lineWidth = lineWidth + 1.2
     ctx.strokeStyle = HUD_BLOOM
     paint()
     ctx.lineWidth = lineWidth
     ctx.strokeStyle = color
     paint()
+    ctx.lineWidth = lineWidth * 0.5
+    ctx.strokeStyle = towardWhite(color, HUD_CORE_WHITE)
+    paint()
+  }
+  // The same three passes over the path already built on ctx.
+  function strokeLuminous(lineWidth: number, color: string) {
+    luminous(() => ctx.stroke(), lineWidth, color)
   }
   function line(x1: number, y1: number, x2: number, y2: number, lineWidth = 1.4, color = HUD_GREEN) {
     luminous(() => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }, lineWidth, color)
   }
   function pitchLine(x1: number, y1: number, x2: number, y2: number, lineWidth: number, color: string) {
-    const paint = () => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }
-    ctx.lineWidth = lineWidth + 3
-    ctx.strokeStyle = HUD_BLOOM
-    paint()
-    ctx.lineWidth = lineWidth
-    ctx.strokeStyle = color
-    paint()
+    luminous(() => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }, lineWidth, color)
   }
   function box(x: number, y: number, w: number, h: number, lineWidth = 1.5, color = HUD_GREEN) {
     luminous(() => { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.stroke() }, lineWidth, color)
@@ -281,23 +310,34 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     ctx.font = font
     ctx.textAlign = align
     ctx.textBaseline = baseline
-    ctx.lineWidth = 3.2
     ctx.lineJoin = 'round'
+    glyphs(value, x, y, color, true)
+  }
+  function glyphs(value: string, x: number, y: number, color: string, shadow = false) {
+    ctx.lineWidth = 1.6
     ctx.strokeStyle = HUD_BLOOM
     ctx.strokeText(value, x, y)
-    ctx.fillStyle = color
+    const fill = towardWhite(color, HUD_TEXT_WHITE)
+    // The shadow goes with the emboldening stroke, the glyph's outer edge, so nothing drawn after
+    // it gets darkened.
+    if (shadow) {
+      ctx.shadowColor = HUD_TEXT_SHADOW
+      ctx.shadowBlur = HUD_TEXT_SHADOW_BLUR * ratio
+    }
+    ctx.lineWidth = HUD_TEXT_EMBOLDEN
+    ctx.strokeStyle = fill
+    ctx.strokeText(value, x, y)
+    ctx.shadowColor = 'transparent'
+    ctx.fillStyle = fill
     ctx.fillText(value, x, y)
   }
   function pitchText(value: string, x: number, y: number, align: CanvasTextAlign) {
     ctx.font = display(12)
     ctx.textAlign = align
     ctx.textBaseline = 'middle'
-    ctx.lineWidth = 2.4
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = HUD_BLOOM
-    ctx.strokeText(value, x, y)
-    ctx.fillStyle = HUD_GREEN_DIM
-    ctx.fillText(value, x, y)
+    // No shadow: the ladder stays clean across the view.
+    glyphs(value, x, y, HUD_GREEN_DIM)
   }
 
   // The drawing kit gunnerySymbols.ts borrows, bound to this frame's camera.
@@ -364,8 +404,6 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     if (!point) return
     const { x: cx, y: cy, onScreen, angle } = point
     const r = Math.max(layout.half * 0.018, 6)
-    ctx.lineWidth = 1.6
-    ctx.strokeStyle = HUD_GREEN
     ctx.beginPath()
     if (!onScreen) {
       ctx.save()
@@ -373,7 +411,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.rotate(angle)
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)
       ctx.moveTo(-17, -6); ctx.lineTo(-7, 0); ctx.lineTo(-17, 6)
-      ctx.stroke()
+      strokeLuminous(1.6, HUD_GREEN)
       ctx.restore()
       return
     }
@@ -385,7 +423,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     ctx.moveTo(-r, 0); ctx.lineTo(-r * 2.6, 0)
     ctx.moveTo(r, 0); ctx.lineTo(r * 2.6, 0)
     ctx.moveTo(0, -r); ctx.lineTo(0, -r * 2.2)
-    ctx.stroke()
+    strokeLuminous(1.6, HUD_GREEN)
     ctx.restore()
   }
 
@@ -397,8 +435,6 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     const separated = state.regime === 'POST_STALL' || state.regime === 'DEPARTED'
     ctx.save()
     ctx.translate(x, y)
-    ctx.lineWidth = separated ? 2 : 1.6
-    ctx.strokeStyle = separated ? HUD_GREEN_ALERT : HUD_GREEN
     ctx.beginPath()
     if (onScreen) {
       // -W-: wings, then a W whose middle peak is the path point (the Ace Combat look).
@@ -412,7 +448,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.rotate(angle)
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)
     }
-    ctx.stroke()
+    strokeLuminous(separated ? 2 : 1.6, separated ? HUD_GREEN_ALERT : HUD_GREEN)
     ctx.restore()
   }
 
@@ -446,8 +482,8 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   }
 
   // --- Tapes ------------------------------------------------------------------
-  function drawTape({ x, value, side, tape, label, subreadout, live, digits }: {
-    x: number; value: number; side: 'left' | 'right'; tape: Tape; label: string; subreadout?: string; live: boolean; digits: number
+  function drawTape({ x, value, side, tape, label, subreadouts = [], live, digits }: {
+    x: number; value: number; side: 'left' | 'right'; tape: Tape; label: string; subreadouts?: readonly string[]; live: boolean; digits: number
   }) {
     const top = layout.cy - layout.tapeHeight / 2
     const bottom = layout.cy + layout.tapeHeight / 2
@@ -471,7 +507,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
         const length = isMajor ? 13 : 7
         line(x, y, x + dir * length, y, isMajor ? 1.4 : 1.2, isMajor ? HUD_GREEN : HUD_GREEN_DIM)
         // Nor under the sub-readout hanging beneath the box.
-        const underSubreadout = !!subreadout && y > layout.cy && y - layout.cy < 46
+        const underSubreadout = subreadouts.length > 0 && y > layout.cy && y - layout.cy < 31 + SUBREADOUT_LINE * subreadouts.length
         if (isMajor && Math.abs(y - layout.cy) > 26 && !underSubreadout) {
           text(String(Math.round(v)), x + dir * (length + 6), y, display(12), HUD_GREEN_DIM, side === 'left' ? 'right' : 'left')
         }
@@ -494,7 +530,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     }, 1.5, HUD_GREEN)
     text(live ? pad(value, digits) : '–'.repeat(digits), boxX + boxW / 2, layout.cy + 1, display(16, 700), HUD_GREEN, 'center')
     text(label, side === 'left' ? boxX : boxX + boxW, layout.cy - boxH / 2 - 11, display(10), HUD_GREEN_DIM, side === 'left' ? 'left' : 'right')
-    if (subreadout) text(subreadout, boxX + boxW / 2, layout.cy + boxH / 2 + 10, display(11, 700), HUD_GREEN_DIM, 'center', 'top')
+    subreadouts.forEach((readout, i) => text(readout, boxX + boxW / 2, layout.cy + boxH / 2 + 10 + i * SUBREADOUT_LINE, display(11, 700), HUD_GREEN_DIM, 'center', 'top'))
   }
 
   function drawHeadingTape(state: GlassState) {
@@ -632,7 +668,8 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     if (state.live) drawAoaBracket(state)
     drawTape({
       x: layout.cx - layout.half * layout.tapeOffset, value: state.speed, side: 'left', tape: SPEED_TAPE,
-      label: 'KM/H', subreadout: state.live ? `PWR ${Math.round(state.power * 100)}%` : 'PWR –––', digits: 4, live: state.live,
+      label: 'KM/H', digits: 4, live: state.live,
+      subreadouts: state.live ? [`PWR ${Math.round(state.power * 100)}%`, `M ${state.mach.toFixed(2)}`] : ['PWR –––', 'M –.––'],
     })
     drawTape({
       x: layout.cx + layout.half * layout.tapeOffset, value: Math.max(0, state.altitude), side: 'right', tape: ALTITUDE_TAPE,

@@ -2,7 +2,7 @@ import { observeAirflow } from '../../game/flight/airflow'
 import { getFlightProfile } from '../../game/flight/profile'
 import { arcadeSpeed } from '../../game/flight/speedLimits'
 import type { AircraftState } from '../../game/state/WorldState'
-import { airDensity, flatRangeAtmosphere, sampleAir, speedOfSound, type VaporAtmosphere } from './atmosphere'
+import { airDensity, flatRangeAtmosphere, machNumber, sampleAir, type VaporAtmosphere } from './atmosphere'
 
 export interface VaporConditions {
   /** Simulation airspeed, m/s. */
@@ -36,7 +36,7 @@ export function vaporConditions(flight: VaporFlightSample, altitude: number, atm
   const air = sampleAir(atmosphere, altitude), speed = arcadeSpeed(flight.speed) / 3.6
   return {
     ...flight,
-    mach: speed / speedOfSound(air.temperatureC),
+    mach: machNumber(speed, altitude, atmosphere),
     dynamicPressure: .5 * airDensity(altitude) * speed * speed,
     temperatureC: air.temperatureC, depression: air.depression, water: air.water,
   }

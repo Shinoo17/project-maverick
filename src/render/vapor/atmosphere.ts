@@ -66,3 +66,7 @@ export const airDensity = (altitude: number) => 1.225 * Math.pow(Math.max(0, 1 -
 
 /** Speed of sound in dry air, m/s. */
 export const speedOfSound = (temperatureC: number) => 20.05 * Math.sqrt(Math.max(1, temperatureC + 273.15))
+
+/** Mach for a speed in m/s at an altitude. The HUD readout and the vapor model share it. */
+export const machNumber = (speed: number, altitude: number, atmosphere: VaporAtmosphere = flatRangeAtmosphere) =>
+  speed / speedOfSound(airTemperature(atmosphere, altitude))

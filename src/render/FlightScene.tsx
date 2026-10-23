@@ -192,22 +192,24 @@ export default memo(function FlightScene(props: Props) {
   </Canvas>
 })
 
-/** Asks for frames at most `fps` times a second. The browser still caps it at the display's refresh rate. */
+/** Renders at most `fps` times a second. The browser still caps it at the display's refresh rate. */
 function FrameLimiter({ fps }: { fps: number }) {
-  const invalidate = useThree(state => state.invalidate)
+  const advance = useThree(state => state.advance)
   useEffect(() => {
     const interval = 1000 / fps
-    let last = performance.now(), id = requestAnimationFrame(loop)
+    let last = -Infinity, id = requestAnimationFrame(loop)
     function loop(now: number) {
       id = requestAnimationFrame(loop)
       // 1 ms of slack: a 60 Hz display ticks at 16.6–16.8 ms, so a strict 60 FPS cap would drop frames.
       // Advancing by whole intervals keeps the average rate right on displays that are not a multiple.
       if (now - last < interval - 1) return
       last = Math.max(last + interval, now - interval)
-      invalidate()
+      // Render in this frame. invalidate() would queue R3F's demand loop for the next one, and that
+      // loop stops after each frame, so asking every refresh rendered only every other refresh:
+      // a 120 FPS limit ran at 60 on a 120 Hz display.
+      advance(now)
     }
-    invalidate()
     return () => cancelAnimationFrame(id)
-  }, [fps, invalidate])
+  }, [fps, advance])
   return null
 }

@@ -203,6 +203,7 @@ export const th: Translation = {
   hudFlightData: "เครื่องวัดการบิน",
   hudGunHeat: "ความร้อนปืน", hudGunOverheated: "ร้อนเกิน",
   hudSpeed: "ความเร็ว",
+  hudMach: "มัค",
   hudGForce: "แรง G",
   hudVerticalSpeed: "ไต่ / ลดระดับ",
   hudAttitude: "ท่าทางเครื่องบิน",
