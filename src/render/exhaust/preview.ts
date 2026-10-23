@@ -15,6 +15,8 @@ import { stepThrustVectoring, tvcTargets } from '../../game/flight/thrustVectori
 import { FLIGHT_STEP } from '../../game/runtime/clock'
 import { getFlightProfile } from '../../game/flight/profile'
 import { flightExhaustConditions } from './profile'
+import { JetExhaust } from './JetExhaust'
+import { resolveExhaustStyle } from './style'
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
 const renderer = new WebGLRenderer({ antialias: true })
@@ -37,6 +39,8 @@ const scenario = params.get('scenario')
 let paused = false, modelReady = false, aircraft: AircraftId = roster.find(entry => entry.id === params.get('aircraft'))?.id ?? roster[0].id, loadId = 0
 let power = Number(params.get('power') ?? 1), burner = params.get('burner') !== 'off', vector = Number(params.get('pitch') ?? 0), clouds = false, dark = false
 let actuatorTime = 0
+let exhaust = new JetExhaust(resolveExhaustStyle(aircraft))
+jet.add(exhaust.group)
 let updateRig: ReturnType<typeof createFlightRig> | undefined
 let state = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraft] }).snapshot().aircraft[0]
 element<HTMLSelectElement>('aircraft').replaceChildren(...roster.map(entry => new Option(entry.designation, entry.id)))
@@ -55,7 +59,8 @@ async function loadModel() {
   try {
     const definition = getAircraft(aircraft), asset = await loader.loadAsync(modelUrl(definition))
     if (id !== loadId) { disposeModel(asset.scene); return }
-    for (const child of [...jet.children]) { jet.remove(child); disposeModel(child as Group) }
+    for (const child of [...jet.children]) if (child !== exhaust.group) { jet.remove(child); disposeModel(child as Group) }
+    exhaust.dispose(); exhaust = new JetExhaust(resolveExhaustStyle(aircraft)); jet.add(exhaust.group)
     for (const name of definition.removeNodes) asset.scene.getObjectByName(name)?.removeFromParent()
     prepareAnimations(asset.scene, asset.animations)
     const orientation = new Group(); orientation.rotation.set(...definition.rotation); orientation.add(asset.scene)
@@ -70,7 +75,7 @@ async function loadModel() {
 const views = { quarter: [-19, 3.2, 12], rear: [-17, -.45, 0], side: [-9, 1.2, 19], front: [22, 3, 12] } as const
 function view(id: keyof typeof views) { camera.position.fromArray(views[id]); controls.target.set(-6.5, -.45, 0); controls.update() }
 for (const id of Object.keys(views) as (keyof typeof views)[]) element(id).onclick = () => view(id)
-view('quarter')
+view((Object.keys(views) as (keyof typeof views)[]).find(id => id === params.get('view')) ?? 'quarter')
 element('power').oninput = () => { power = Number(element<HTMLInputElement>('power').value); element('powerValue').textContent = `${Math.round(power * 100)}%` }
 element('vector').oninput = () => { vector = Number(element<HTMLInputElement>('vector').value); element('vectorValue').textContent = `${vector}°` }
 element('burner').onclick = () => { burner = !burner; element('burner').textContent = `Afterburner: ${burner ? 'ON' : 'OFF'}`; element('burner').setAttribute('aria-pressed', String(burner)) }
@@ -104,11 +109,17 @@ function frame(now: number) {
   }
   updateRig?.(state, dt); jet.updateMatrixWorld(true)
   volume.update(vaporConditions({ speed: 180, aoa: clouds ? 21 : 3, g: clouds ? 6.8 : 1, sideslip: 0 }, 400), dt, false, aircraft)
-  volume.updateExhaust({ ...flightExhaustConditions(state), nozzles: updateRig?.exhaust }, dt)
-  if (modelReady) volume.render(renderer, scene, camera, jet.matrixWorld)
+  const conditions = { ...flightExhaustConditions(state), nozzles: updateRig?.exhaust }
+  volume.exhaustPlume = exhaust.activeStyle.volumePlume
+  volume.exhaustCavity = exhaust.activeStyle.volumeCavity
+  volume.updateExhaust(conditions, dt)
+  exhaust.update(conditions, dt, camera, jet.matrixWorld)
+  if (modelReady) volume.render(renderer, scene, camera, jet.matrixWorld, [exhaust])
   else renderer.render(scene, camera)
   frames++; duration += rawDelta
   if (duration > 1 && modelReady) { element('status').textContent = `${Math.round(frames / duration)} FPS · ${paused ? 'หยุดการไหล' : 'ไอพ่นไหลต่อเนื่อง'}${profile.thrustVectoring ? ` · L ${state.thrustVectoring.left.toFixed(1)}° / R ${state.thrustVectoring.right.toFixed(1)}°` : ''}`; frames = 0; duration = 0 }
 }
 requestAnimationFrame(frame)
-addEventListener('pagehide', event => { if (event.persisted) return; volume.dispose(); controls.dispose(); ktx2.dispose(); disposeModel(jet); renderer.dispose() }, { once: true })
+// Handle for scripted screenshots: camera placement and per-source toggles.
+Object.assign(window, { exhaustPreview: { camera, controls, volume, get exhaust() { return exhaust } } })
+addEventListener('pagehide', event => { if (event.persisted) return; volume.dispose(); exhaust.dispose(); controls.dispose(); ktx2.dispose(); disposeModel(jet); renderer.dispose() }, { once: true })

@@ -9,7 +9,9 @@ import { ConeTrigger, CONE_EVENT, vaporTargets } from './vaporModel'
 import { vaporFragment, vaporVertex } from './shaders'
 import { vortexAirflow, vortexProfile, getVaporProfile, LEX_PATH_POINTS, type ConeShape, type LexPath } from './profile'
 import { CloudSideTransition } from './CloudSideTransition'
-import { ExhaustResponse, getExhaustProfile, type ExhaustConditions } from '../exhaust/profile'
+import { ExhaustResponse, getExhaustProfile, nozzleShapes, type ExhaustConditions } from '../exhaust/profile'
+import { HeatHazePass } from '../exhaust/heatHaze'
+import type { JetExhaust } from '../exhaust/JetExhaust'
 import type { EffectQuality } from '../graphicsSettings'
 
 /** Ray samples per quality step. Off skips the effect (and its rays, when both are off). */
@@ -30,6 +32,12 @@ export class CondensationVolume {
   readonly settings: VaporSettings = { ...defaultVaporSettings }
   /** Graphics settings. The studio keeps the defaults (High, antialiased). */
   quality: { vapor: EffectQuality; exhaust: EffectQuality } = { vapor: 'high', exhaust: 'high' }
+  /** Ray-marched plume (ExhaustStyle.volumePlume). Off: only the hot nozzle cavity; JetExhaust draws the flame. */
+  exhaustPlume = false
+  /** Ray-marched nozzle cavity glow, 0–1 (ExhaustStyle.volumeCavity). */
+  exhaustCavity = 1
+  private readonly haze: HeatHazePass
+  private readonly shapes = { left: { origin: new Vector3(), axis: new Vector3(), up: new Vector3(), width: 0, height: 0 }, right: { origin: new Vector3(), axis: new Vector3(), up: new Vector3(), width: 0, height: 0 } }
   private readonly target: WebGLRenderTarget
   private readonly noise: Data3DTexture
   private readonly material: ShaderMaterial
@@ -74,7 +82,8 @@ export class CondensationVolume {
         exhaustPower: { value: 0 }, burnerStrength: { value: 0 }, exhaustTime: { value: 0 },
         nozzleInset: { value: 0 }, nozzleRound: { value: 0 },
         chamberRadius: { value: 0 }, burnerViolet: { value: 0 },
-        exhaustLength: { value: 0 }, exhaustTurbulence: { value: 0 }, exhaustSampleScale: { value: 1 }, vaporSamples: { value: VAPOR_SAMPLES.high },
+        exhaustLength: { value: 0 }, exhaustTurbulence: { value: 0 }, exhaustPlume: { value: 0 }, exhaustCavity: { value: 1 },
+        heatDistort: { value: null }, heatOn: { value: false }, exhaustSampleScale: { value: 1 }, vaporSamples: { value: VAPOR_SAMPLES.high },
         solidBackground: { value: false }, passThrough: { value: false }, sceneColor: { value: this.target.texture }, sceneDepth: { value: this.target.depthTexture }, noiseTex: { value: this.noise },
         inverseProjection: { value: new Matrix4() }, cameraWorld: { value: new Matrix4() }, worldToAircraft: { value: new Matrix4() },
         cameraLocal: { value: new Vector3() }, airflowDirection: { value: new Vector3(-1, 0, 0) }, flowPhase: { value: 0 },
@@ -92,6 +101,7 @@ export class CondensationVolume {
         coneRadius: { value: new Vector2() }, coneBoxMin: { value: new Vector3() }, coneBoxMax: { value: new Vector3() },
       },
     })
+    this.haze = new HeatHazePass(renderer)
     this.quad = new Mesh(new PlaneGeometry(2, 2), this.material)
     this.quad.frustumCulled = false
     this.scene.add(this.quad)
@@ -121,22 +131,13 @@ export class CondensationVolume {
   updateExhaust(next: ExhaustConditions, dt: number, reducedMotion = false) {
     this.exhaust.update(next, dt, reducedMotion)
     const p = getExhaustProfile(next.aircraftId), u = this.material.uniforms
+    nozzleShapes(next, this.shapes)
     for (const side of ['Left', 'Right'] as const) {
-      const key = side === 'Left' ? 'left' : 'right'
-      const frame = next.nozzles?.[key]
-      if (frame) {
-        u[`nozzle${side}`].value.copy(frame.origin)
-        u[`nozzleAxis${side}`].value.copy(frame.axis)
-        u[`nozzleUp${side}`].value.copy(frame.up)
-        u[`nozzleRadius${side}`].value.set(frame.radius, frame.radius)
-      } else {
-        const angle = next.vectorAngles?.[key] ?? next.vectorAngle
-        const pivot = p.lipArm
-        u[`nozzle${side}`].value.set(p.lipX + pivot * (1 - Math.cos(angle)), p.height + pivot * Math.sin(angle), p.centerZ + (side === 'Left' ? -1 : 1) * p.spacing)
-        u[`nozzleAxis${side}`].value.set(-Math.cos(angle), Math.sin(angle), 0)
-        u[`nozzleUp${side}`].value.set(Math.sin(angle), Math.cos(angle), 0)
-        u[`nozzleRadius${side}`].value.set(p.width, p.radiusY)
-      }
+      const shape = this.shapes[side === 'Left' ? 'left' : 'right']
+      u[`nozzle${side}`].value.copy(shape.origin)
+      u[`nozzleAxis${side}`].value.copy(shape.axis)
+      u[`nozzleUp${side}`].value.copy(shape.up)
+      u[`nozzleRadius${side}`].value.set(shape.width, shape.height)
     }
     u.nozzleInset.value = p.inset; u.nozzleRound.value = p.round
     u.chamberRadius.value = p.chamberRadius; u.burnerViolet.value = p.burnerViolet
@@ -221,7 +222,8 @@ export class CondensationVolume {
     u.coneBoxMax.value.set(shape.front + .1, shape.axisY + r * 1.6, r * 1.6)
   }
 
-  render(renderer: WebGLRenderer, scene: Scene, camera: Camera, aircraftMatrix: Matrix4) {
+  /** `exhausts` add their heat haze; the composite refracts the scene through it. */
+  render(renderer: WebGLRenderer, scene: Scene, camera: Camera, aircraftMatrix: Matrix4, exhausts: readonly JetExhaust[] = []) {
     const previousTarget = renderer.getRenderTarget()
     // The scene always resolves through the multisampled target, so the canvas itself
     // needs no antialiasing; with exhaust and condensation both off, the rays are skipped.
@@ -241,6 +243,8 @@ export class CondensationVolume {
     u.vaporSamples.value = VAPOR_SAMPLES[this.quality.vapor]
     u.lexSamples.value = LEX_SAMPLES[this.quality.vapor]
     u.exhaustSampleScale.value = EXHAUST_SAMPLE_SCALE[this.quality.exhaust]
+    u.exhaustPlume.value = this.exhaustPlume ? 1 : 0
+    u.exhaustCavity.value = this.exhaustCavity
     u.passThrough.value = on * Math.max(l.tip, l.fog, l.lex, l.cone) * this.settings.density < .002 && exhaust < .002
     u.worldToAircraft.value.copy(aircraftMatrix).invert()
     u.cameraWorld.value.copy(camera.matrixWorld)
@@ -251,12 +255,15 @@ export class CondensationVolume {
     try {
       renderer.setRenderTarget(this.target)
       renderer.render(scene, camera)
+      // Needs the resolved opaque depth, so it runs between the scene and the composite.
+      const distortion = this.haze.render(renderer, camera, this.target.depthTexture!, exhausts)
+      u.heatDistort.value = distortion; u.heatOn.value = !!distortion
       renderer.setRenderTarget(previousTarget)
       renderer.render(this.scene, this.camera)
     } finally { renderer.setRenderTarget(previousTarget) }
   }
 
   dispose() {
-    this.target.dispose(); this.noise.dispose(); this.material.dispose(); this.quad.geometry.dispose()
+    this.target.dispose(); this.haze.dispose(); this.noise.dispose(); this.material.dispose(); this.quad.geometry.dispose()
   }
 }

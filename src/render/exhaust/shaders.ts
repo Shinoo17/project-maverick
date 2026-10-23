@@ -9,6 +9,11 @@ uniform float exhaustLength, exhaustTurbulence;
 // Graphics › Exhaust effects: 1 on High, fewer ray samples on Low.
 uniform float exhaustSampleScale;
 uniform float chamberRadius, burnerViolet;
+// 1: the full ray-marched plume. 0: only the hot nozzle cavity; JetExhaust's
+// mesh shells draw the flame and its heat haze (ExhaustStyle.volumePlume).
+uniform float exhaustPlume;
+// Nozzle cavity glow (hot bed + duct gas). JetExhaust can draw its own and turn this down.
+uniform float exhaustCavity;
 
 vec2 exhaustBounds(vec3 ro, vec3 rd, float lengthMax, vec2 nozzleRadius) {
   vec3 safe = mix(vec3(-1.0), vec3(1.0), step(vec3(0.0), rd)) * max(abs(rd), vec3(1e-7));
@@ -26,13 +31,13 @@ vec4 exhaustRay(vec3 ray, vec3 origin, vec3 axis, vec3 up, vec2 nozzleRadius, fl
   vec3 offset = cameraLocal - origin;
   vec3 ro = vec3(dot(offset, across), dot(offset, up), dot(offset, axis));
   vec3 rd = vec3(dot(ray, across), dot(ray, up), dot(ray, axis));
-  float plumeLength = mix(.38 + exhaustPower * .32, exhaustLength * (.60 + .40 * exhaustPower), burnerStrength);
+  float plumeLength = mix(.25, mix(.38 + exhaustPower * .32, exhaustLength * (.60 + .40 * exhaustPower), burnerStrength), exhaustPlume);
   vec2 hit = exhaustBounds(ro, rd, plumeLength, nozzleRadius);
   float start = max(0.0, hit.x), end = min(surfaceDistance, hit.y);
   if (end <= start) return vec4(0.0);
   // Dry exhaust is short and smooth; reserve fine integration for compression
   // cells. This keeps a close rear view inexpensive when the burner is off.
-  float sampleCount = max(4.0, floor((burnerStrength > .002 ? 48.0 : 16.0) * exhaustSampleScale));
+  float sampleCount = max(4.0, floor((burnerStrength * exhaustPlume > .002 ? 48.0 : 16.0) * exhaustSampleScale));
   float ds = (end - start) / sampleCount;
   vec3 emission = vec3(0.0);
   float chamberFlicker = 1.0 + .014 * sin(exhaustTime * 23.0 + seed)
@@ -49,7 +54,7 @@ vec4 exhaustRay(vec3 ray, vec3 origin, vec3 axis, vec3 up, vec2 nozzleRadius, fl
     vec3 faceColor = mix(vec3(3.2, .68, .025), vec3(2.1, .23, .006), smoothstep(.08, .70, faceR));
     faceColor = mix(faceColor, vec3(1.2, .055, .002), smoothstep(.62, 1.05, faceR));
     if (faceDistance >= start && faceDistance <= end) {
-      emission += faceColor * faceEdge * exhaustPower * chamberFlicker * (.96 + .08 * heatNoise);
+      emission += faceColor * faceEdge * exhaustPower * chamberFlicker * (.96 + .08 * heatNoise) * exhaustCavity;
     }
   }
   float haze = 0.0;
@@ -132,11 +137,11 @@ vec4 exhaustRay(vec3 ray, vec3 origin, vec3 axis, vec3 up, vec2 nozzleRadius, fl
       float ignition = smoothstep(-nozzleInset * .65, -.06, p.z);
       hot *= ignition; flame *= ignition; shocks *= ignition;
     }
-    emission += (chamber + hot + flame + shocks)
+    emission += (chamber * exhaustCavity + (hot + flame + shocks) * exhaustPlume)
               * root * tail * ds * exhaustPower * flicker;
     // Haze lives in the outer shear layer, NEVER over the hot core/diamonds.
     haze += smoothstep(.95, 1.18, r) * (1.0 - smoothstep(1.30, 1.65, r))
-          * smoothstep(0.0, .35, downstream) * tail * ds * exhaustPower;
+          * smoothstep(0.0, .35, downstream) * tail * ds * exhaustPower * exhaustPlume;
   }
   return vec4(emission, min(haze, 1.0));
 }

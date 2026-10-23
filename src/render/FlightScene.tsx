@@ -191,7 +191,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   return <><group ref={group}><primitive object={model} dispose={null} />{showHitboxes && <HitboxWireframe profileId={definition.hitboxProfileId} />}</group>
     <primitive object={tracers.mesh} />
     <primitive object={effects.mesh} />
-    <FlightEffects session={session} aircraft={group} nozzles={updateRig.exhaust} />
+    <FlightEffects session={session} aircraft={group} aircraftId={aircraftId} nozzles={updateRig.exhaust} />
     {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} scaled={droneModel} showHitboxes={showHitboxes} /><DroneWrecks models={wreckModels} /></Suspense>}</>
 }
 const view = new Vector3(), toTarget = new Vector3(), viewRight = new Vector3(), viewUp = new Vector3()

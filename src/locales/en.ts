@@ -411,7 +411,7 @@ export const en = {
   settingsRenderScaleDetail: "Pixels drawn per screen pixel. Auto uses your screen's ratio, up to 1.5. Values above your screen's ratio cost a lot of GPU time.",
   settingsAntialias: "Anti-aliasing",
   settingsAntialiasDetail: "Smooths jagged edges in flight (4× MSAA). The menu scene always keeps it on.",
-  settingsExhaust: "Exhaust effects", settingsExhaustDetail: "Engine plume and afterburner flame. Low draws fewer samples; Off hides them.",
+  settingsExhaust: "Exhaust effects", settingsExhaustDetail: "Engine plume, afterburner flame and heat haze. Low uses simpler flames without heat haze; Off hides them.",
   settingsVapor: "Vapor effects", settingsVaporDetail: "Wingtip vortices and condensation under high load. Low draws fewer samples; Off hides them.",
   settingsFrameRate: "Frame rate limit",
   settingsFrameRateDetail: "Caps frames per second in flight. The browser never draws faster than your display, so 120 only matters on a 120 Hz screen or faster.",

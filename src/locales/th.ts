@@ -412,7 +412,7 @@ export const th: Translation = {
   settingsRenderScaleDetail: "จำนวนพิกเซลที่วาดต่อพิกเซลจอ อัตโนมัติใช้ค่าของจอ ไม่เกิน 1.5 ค่าที่สูงกว่าค่าของจอจะกิน GPU มาก",
   settingsAntialias: "ลดรอยหยัก (AA)",
   settingsAntialiasDetail: "ทำขอบภาพให้เรียบขณะบิน (MSAA 4×) ฉากเมนูเปิดไว้เสมอ",
-  settingsExhaust: "เอฟเฟกต์ไอเสีย", settingsExhaustDetail: "ไอเสียเครื่องยนต์และเปลวสันดาปท้าย ต่ำ = วาดน้อยลง ปิด = ซ่อน",
+  settingsExhaust: "เอฟเฟกต์ไอเสีย", settingsExhaustDetail: "ไอเสียเครื่องยนต์ เปลวสันดาปท้าย และไอร้อนบิดภาพ ต่ำ = เปลวแบบเรียบและไม่มีไอร้อน ปิด = ซ่อน",
   settingsVapor: "เอฟเฟกต์ไอน้ำ", settingsVaporDetail: "กระแสวนปลายปีกและไอน้ำควบแน่นตอนรับแรง G สูง ต่ำ = วาดน้อยลง ปิด = ซ่อน",
   settingsFrameRate: "จำกัดเฟรมเรต",
   settingsFrameRateDetail: "จำกัดจำนวนเฟรมต่อวินาทีขณะบิน browser วาดได้ไม่เกิน refresh rate ของจอ ค่า 120 จึงมีผลเฉพาะจอ 120 Hz ขึ้นไป",
