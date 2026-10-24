@@ -41,10 +41,10 @@ export function between(before: WorldState | null, now: WorldState | null, pick:
 }
 
 const radii = new Map<string, number>()
-/** No pilot names yet: the designation, marked DRONE for an entity with no pilot. */
+/** No pilot names yet: the designation, marked DRONE for an entity with no pilot and BANDIT for a combat bot. */
 export function targetLabel(entity: AircraftState) {
   const designation = getAircraft(entity.aircraftId).designation.toUpperCase()
-  return entity.control === 'pilot' ? designation : `DRONE · ${designation}`
+  return entity.control === 'pilot' ? designation : `${entity.control === 'bot' ? 'BANDIT' : 'DRONE'} · ${designation}`
 }
 function radiusOf(entity: AircraftState) {
   const id = getAircraft(entity.aircraftId).hitboxProfileId

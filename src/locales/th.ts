@@ -186,6 +186,8 @@ export const th: Translation = {
   drone_still: "ลอยนิ่ง",
   drone_racetrack: "บินตรงแล้ววนกลับ",
   drone_circle: "วนรอบสนาม",
+  drone_bot: "บอทต่อสู้",
+  combatBotHint: "Su-57 ฝ่ายศัตรูบินสวนเข้ามาจาก 3 กม. และสู้ด้วยปืน ไล่ยิงคุณ และเลี้ยวหนีเมื่อคุณเข้าท้าย ยิงตกแล้วลำใหม่จะบินเข้ามาใน 3 วินาที",
   briefPractice: "ตั้งค่าการฝึก",
   briefControls: "การควบคุม",
   lessonPrevious: "บทฝึกก่อนหน้า",

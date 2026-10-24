@@ -185,6 +185,8 @@ export const en = {
   drone_still: "Holds still",
   drone_racetrack: "Straight, turns back",
   drone_circle: "Circles the range",
+  drone_bot: "Combat bot",
+  combatBotHint: "An enemy Su-57 flies at you from 3 km and fights with its gun: it chases you and breaks when you get behind it. Shoot it down and a new one comes at you 3 s later.",
   briefPractice: "Practice setup",
   briefControls: "Controls",
   lessonPrevious: "Previous lesson",

@@ -12,16 +12,20 @@ import type { GunState } from '../combat/gun'
 import type { Projectile } from '../combat/projectiles'
 import type { DronePath } from '../playground/dronePath'
 import type { TargetingState } from '../combat/targeting'
+import type { BotState } from '../bot/botPilot'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
 export interface AircraftState {
   id: string
   aircraftId: AircraftId
-  /** Who flies it. The target drone never reads a command: 'hold' keeps its pose, 'path' follows `path`. */
-  control: 'pilot' | 'hold' | 'path'
+  /** Who flies it. The target drone never reads a command: 'hold' keeps its pose, 'path' follows `path`.
+   * 'bot' is flown by the combat bot (src/game/bot/botPilot.ts), through commands like a pilot's. */
+  control: 'pilot' | 'hold' | 'path' | 'bot'
   /** The moving target drone's path; set with control 'path'. */
   path?: DronePath
+  /** The combat bot's own state; set with control 'bot'. */
+  bot?: BotState
   /** Resolved session limits, in simulation m/s. */
   speedLimits: SpeedLimits
   /** Per-entity inventory for future combat. The gun never consumes it: gun ammo is unlimited and heat limits bursts. */

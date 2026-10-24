@@ -64,7 +64,7 @@ export function validateSession(config: SessionConfig) {
   if (!['playground', 'offline'].includes(config.mode)) throw new Error('session.mode: unsupported mode')
   if (config.mapId !== undefined && config.mapId !== 'flat-range') throw new Error('session.mapId: unsupported map')
   if (!config.aircraftIds.length) throw new Error('session.aircraftIds: expected at least one aircraft')
-  if (config.targetDrone !== undefined && typeof config.targetDrone !== 'boolean' && !['still', 'racetrack', 'circle'].includes(config.targetDrone)) throw new Error('session.targetDrone: expected true, false, still, racetrack or circle')
+  if (config.targetDrone !== undefined && typeof config.targetDrone !== 'boolean' && !['still', 'racetrack', 'circle', 'bot'].includes(config.targetDrone)) throw new Error('session.targetDrone: expected true, false, still, racetrack, circle or bot')
   if (config.targetDrone && config.mode !== 'playground') throw new Error('session.targetDrone: Playground only')
   config.aircraftIds.forEach((id, index) => {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }

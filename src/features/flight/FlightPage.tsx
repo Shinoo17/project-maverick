@@ -33,7 +33,7 @@ const FlightScene = lazy(() => import('../../render/FlightScene'))
 // Menu title for each way a flight can stop.
 const stopTitle = { weapon: 'shotDown', terrain: 'crashed', boundary: 'boundaryReached' } as const
 // Speed and size of each drone, from the same values the runtime flies.
-const droneDetail = (mode: TargetDroneMode | 'off') => mode === 'still' ? '0 m/s' : mode === 'racetrack' ? `${dronePaths.speed} m/s` : mode === 'circle' ? `${dronePaths.speed} m/s · r ${dronePaths.circleRadius / 1000} km` : undefined
+const droneDetail = (mode: TargetDroneMode | 'off') => mode === 'still' ? '0 m/s' : mode === 'racetrack' ? `${dronePaths.speed} m/s` : mode === 'circle' ? `${dronePaths.speed} m/s · r ${dronePaths.circleRadius / 1000} km` : mode === 'bot' ? 'GUN' : undefined
 export function FlightPage() {
   const { t } = useTranslation()
   const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics } = useSessionSettings()
@@ -198,9 +198,9 @@ export function FlightPage() {
               options={(Object.keys(practiceSpawns) as PracticePreset[]).map(id => { const [name, detail] = t(`spawn_${id}`).split(' · '); return { value: id, name, detail } })} />
             <BriefingStepper label={t('practiceLesson')} disabled={!ready} values={lessonLabels.map(key => t(key))} index={lesson} previousLabel={t('lessonPrevious')} nextLabel={t('lessonNext')}
               onChange={value => { setLesson(value); const spawn: PracticePreset = value === 6 ? 'cobra' : value === 5 ? 'recovery' : value === 4 ? 'highG' : 'free'; setPracticePreset(spawn); resetFlight(spawn) }} />
-            <BriefingChoice label={t('targetDroneToggle')} hint={targetDrone ? t('targetDroneHint') : undefined} disabled={!ready} value={targetDrone ?? 'off'}
+            <BriefingChoice label={t('targetDroneToggle')} hint={targetDrone ? t(targetDrone === 'bot' ? 'combatBotHint' : 'targetDroneHint') : undefined} disabled={!ready} value={targetDrone ?? 'off'}
               onChange={value => chooseTargetDrone(value === 'off' ? null : value)}
-              options={(['off', 'still', 'racetrack', 'circle'] as const).map(id => ({ value: id, name: t(`drone_${id}`), detail: droneDetail(id) }))} />
+              options={(['off', 'still', 'racetrack', 'circle', 'bot'] as const).map(id => ({ value: id, name: t(`drone_${id}`), detail: droneDetail(id) }))} />
           </section>
           <section className="flight-brief-section" aria-labelledby="flight-brief-controls">
             <h2 id="flight-brief-controls">{t('briefControls')}</h2>

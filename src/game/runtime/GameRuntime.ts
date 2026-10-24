@@ -4,7 +4,7 @@ import type { WorldState } from '../state/WorldState'
 import { FixedClock, FLIGHT_STEP, WORLD_STEP } from './clock'
 import { commandSchemaVersion, neutralCommand, type PilotCommand } from './commands'
 import { stepFlight } from '../flight/stepFlight'
-import { createPracticeState, droneRespawnPose, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
+import { botSpawnPose, combatBot, createPracticeState, droneRespawnPose, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
 import { circleFrom, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
 import { createThrustVectoringState } from '../flight/thrustVectoring'
 import { createPilotIntent } from '../flight/intent'
@@ -18,6 +18,8 @@ import { boundingRadius } from '../combat/collision'
 import { AIRCRAFT_HP, applyHits } from '../combat/damage'
 import { createTargetingState, stepTargeting } from '../combat/targeting'
 import type { GameEvent } from './events'
+import { botCommand, createBotState, createBotSteering } from '../bot/botPilot'
+import type { MouseAim } from '../input/mouseAim'
 import { getAircraft } from '../../content/aircraft'
 import { getFlightProfile, flightProfileVersion } from '../flight/profile'
 import { resolveSpeedLimits } from '../flight/speedLimits'
@@ -34,6 +36,8 @@ function combatBody(entity: AircraftState, from: CombatBody['from'], to: CombatB
   if (!radii.has(profileId)) radii.set(profileId, boundingRadius(shapes))
   return { id: entity.id, shapes, radius: radii.get(profileId)!, from, to }
 }
+/** Flown through commands: the player, or a bot. */
+const flown = (entity: AircraftState) => entity.control === 'pilot' || entity.control === 'bot'
 const poseOf = (entity: AircraftState): CombatBody['from'] =>
   ({ position: { ...entity.position }, orientation: { ...entity.orientation }, velocity: { ...entity.velocity } })
 
@@ -51,6 +55,9 @@ export class GameRuntime {
   // Game events since the last drainEvents(). Ids count up per session, so a replay gives the same ids.
   private events: GameEvent[] = []
   private nextEventId = 1
+  // Each bot's instructor memory (mouseAim.ts), by entity id. Not world state: it holds three.js
+  // vectors, and it is rebuilt from nothing on every life and every reset, so a replay matches.
+  private steering = new Map<string, MouseAim>()
 
   constructor(config: SessionConfig) {
     validateSession(config)
@@ -67,15 +74,24 @@ export class GameRuntime {
     const spawn = practiceSpawns[this.preset]
     const aircraft = this.config.aircraftIds.map((aircraftId, index) => this.createAircraft(`aircraft-${index + 1}`, aircraftId, { x: index * 40, y: spawn.altitude, z: 0 }))
     // The drone is not in aircraftIds: those are the flown aircraft, and ids aircraft-1..n stay theirs.
-    if (this.config.targetDrone) aircraft.push(this.createDrone({ x: targetDrone.ahead, y: spawn.altitude + targetDrone.above, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 }, 0))
+    if (this.config.targetDrone === 'bot') {
+      const { position, heading, orientation } = botSpawnPose(aircraft[0])
+      aircraft.push(this.createDrone(position, heading, orientation, 0))
+    } else if (this.config.targetDrone) aircraft.push(this.createDrone({ x: targetDrone.ahead, y: spawn.altitude + targetDrone.above, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 }, 0))
     return { tick: 0, practice: createPracticeState(), aircraft, projectiles: [], nextProjectileId: 1 }
   }
   /** A still drone keeps `orientation`; a moving one starts its path at `position`, heading `heading`, on `tick`. */
   private createDrone(position: Vec3, heading: Vec3, orientation: AircraftState['orientation'], tick: number) {
-    const drone = this.createAircraft('drone-1', targetDrone.aircraftId, position)
-    drone.control = 'hold'; drone.velocity = { x: 0, y: 0, z: 0 }; drone.orientation = orientation
     const mode = this.config.targetDrone as TargetDroneMode
-    if (mode !== 'still') {
+    const drone = this.createAircraft('drone-1', targetDrone.aircraftId, position, mode === 'bot' ? combatBot.speed : undefined)
+    drone.control = 'hold'; drone.velocity = { x: 0, y: 0, z: 0 }; drone.orientation = orientation
+    if (mode === 'bot') {
+      // Its own speed whatever the practice preset (Low energy spawns below the stall), with the engine trimmed for it.
+      const speed = combatBot.speed
+      drone.control = 'bot'; drone.bot = createBotState(0x5eed ^ tick)
+      drone.velocity = { x: heading.x * speed, y: heading.y * speed, z: heading.z * speed }
+      this.steering.set(drone.id, createBotSteering())
+    } else if (mode !== 'still') {
       drone.control = 'path'
       drone.path = mode === 'racetrack' ? racetrackFrom(position, heading, tick) : circleFrom(position, position.y, tick)
       Object.assign(drone, dronePose(drone.path, 0))
@@ -88,11 +104,11 @@ export class GameRuntime {
     if (world.droneRespawnTick === undefined || world.tick < world.droneRespawnTick) return
     delete world.droneRespawnTick
     const index = world.aircraft.findIndex(entity => entity.id === 'drone-1')
-    const { position, heading, orientation } = droneRespawnPose(world.aircraft[0])
+    const { position, heading, orientation } = (this.config.targetDrone === 'bot' ? botSpawnPose : droneRespawnPose)(world.aircraft[0])
     if (index >= 0) world.aircraft[index] = this.createDrone(position, heading, orientation, world.tick)
   }
 
-  private createAircraft(id: string, aircraftId: string, position: AircraftState['position']): AircraftState {
+  private createAircraft(id: string, aircraftId: string, position: AircraftState['position'], speed: number = practiceSpawns[this.preset].speed): AircraftState {
     const flight = getFlightProfile(aircraftId).flight
     const speedLimits = resolveSpeedLimits(flight, this.config.flightOverrides?.[aircraftId])
     return {
@@ -100,11 +116,11 @@ export class GameRuntime {
       stores: fullArmament(getAircraft(aircraftId)), gun: createGunState(gunOf(aircraftId).weapon.id),
       position,
       orientation: { x: 0, y: 0, z: 0, w: 1 },
-      velocity: { x: practiceSpawns[this.preset].speed, y: 0, z: 0 }, acceleration: { x: 0, y: 0, z: 0 }, targeting: createTargetingState(), hp: AIRCRAFT_HP, alive: true,
+      velocity: { x: speed, y: 0, z: 0 }, acceleration: { x: 0, y: 0, z: 0 }, targeting: createTargetingState(), hp: AIRCRAFT_HP, alive: true,
       maneuver: createManeuverState(), stall: createStallState(), thrustVectoring: createThrustVectoringState(),
       speedDrive: 0, intent: createPilotIntent(), limiterOpen: 0, pathAssistWeight: 1,
-      engine: { requestedPower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * practiceSpawns[this.preset].speed ** 2 },
-      enginePower: flight.drag * practiceSpawns[this.preset].speed ** 2 / dryThrustLimit(flight, speedLimits),
+      engine: { requestedPower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * speed ** 2 },
+      enginePower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits),
       rates: { pitch: 0, yaw: 0, roll: 0 },
     }
   }
@@ -121,14 +137,20 @@ export class GameRuntime {
       const wasAlive = this.world.aircraft.map(entity => entity.alive)
       const triggers = new Map<string, boolean>()
       const nextTarget = new Set<string>()
+      // Every bot decides from the world as the tick began, before anything moves, so the order
+      // aircraft are stepped in never changes what a bot does.
+      const botCommands = new Map<string, PilotCommand>()
+      this.world.aircraft.forEach((entity, index) => {
+        if (entity.control === 'bot' && entity.bot) botCommands.set(entity.id, botCommand(entity.bot, this.steering.get(entity.id)!, entity, this.world.aircraft, this.world.tick, index))
+      })
       for (const entity of this.world.aircraft) {
         // The drone has no pilot: it is never asked for a command, so player input is read once per tick.
         // A moving one is put where its path is at the end of this tick.
-        if (entity.control !== 'pilot') {
+        if (!flown(entity)) {
           if (entity.path && entity.alive) Object.assign(entity, dronePose(entity.path, (this.world.tick + 1 - entity.path.startTick) * WORLD_STEP))
           continue
         }
-        const command = commandAtTick?.(this.world.tick, entity.id) ?? neutralCommand(this.world.tick, entity.id)
+        const command = botCommands.get(entity.id) ?? commandAtTick?.(this.world.tick, entity.id) ?? neutralCommand(this.world.tick, entity.id)
         const safe = { ...command }
         for (const key of ['pitch', 'roll', 'yaw', 'speedAdjust'] as const) safe[key] = Number.isFinite(command[key]) ? Math.max(-1, Math.min(1, command[key])) : 0
         safe.gunHeld = command.gunHeld === true
@@ -172,7 +194,7 @@ export class GameRuntime {
     world.projectiles = world.projectiles.filter(round => fly(round, 0))
     for (const entity of world.aircraft) {
       const shooter = bodies.get(entity.id)
-      if (!shooter || entity.control !== 'pilot') continue
+      if (!shooter || !flown(entity)) continue
       const gun = gunOf(entity.aircraftId)
       const firstShot = entity.gun.shots
       // Spread follows the heat the gun had when the tick began.
@@ -229,7 +251,7 @@ export class GameRuntime {
   }
   reset(preset: PracticePreset = this.preset) {
     if (this.status === 'disposed') return
-    this.preset = preset; this.track = []; this.hits = []; this.events = []; this.nextEventId = 1
+    this.preset = preset; this.track = []; this.hits = []; this.events = []; this.nextEventId = 1; this.steering.clear()
     this.world = this.createWorld()
     this.clock.reset()
     this.clock.droppedSeconds = 0

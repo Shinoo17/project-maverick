@@ -13,7 +13,8 @@ and out over the first and last ROLL_METRES of each turn so it never snaps.
 */
 import type { Quat, Vec3 } from '../state/WorldState'
 
-export type TargetDroneMode = 'still' | 'racetrack' | 'circle'
+/** 'bot' is not a path: the drone is flown by the combat bot (src/game/bot/botPilot.ts). */
+export type TargetDroneMode = 'still' | 'racetrack' | 'circle' | 'bot'
 
 /** Provisional values, waiting on playtest. */
 export const dronePaths = {
