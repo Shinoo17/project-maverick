@@ -17,7 +17,7 @@ import { gunMountOf } from '../game/combat/gunSolution'
 import { getAircraft, modelUrl } from '../content/aircraft'
 import type { AircraftId } from '../content/schemas'
 import { GameRuntime } from '../game/runtime/GameRuntime'
-import type { AircraftState, WorldState } from '../game/state/WorldState'
+import type { AircraftState, Vec3, WorldState } from '../game/state/WorldState'
 import type { FlightSession } from '../features/flight/session'
 import { FlightCamera } from './FlightCamera'
 import { WORLD_STEP } from '../game/runtime/clock'
@@ -40,6 +40,8 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const world = useRef<WorldState | null>(null)
   // The snapshot before the last tick, for drawing the drone between ticks like the player.
   const previousWorld = useRef<WorldState | null>(null)
+  // The last tick's hit points by round id, for tracers of rounds removed on that tick.
+  const endedHits = useRef<{ tick: number; points: Map<number, Vec3> }>({ tick: -1, points: new Map() })
   const drone = useRef<Group>(null), droneModel = useRef<Group>(null)
   const takeSnapshot = (runtime: GameRuntime) => { world.current = runtime.snapshot(); return world.current.aircraft[0] }
   const group = useRef<Group>(null)
@@ -139,11 +141,16 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     session.input.setView(viewRight.set(1, 0, 0).applyQuaternion(camera.quaternion), viewUp.set(0, 1, 0).applyQuaternion(camera.quaternion))
     // The × keeps its angle through a change of lens (speed, burner, the gun zoom).
     session.input.setLens((camera as PerspectiveCamera).fov)
-    tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr)
+    const hits = runtime.drainHits(), events = runtime.drainEvents()
+    // Rounds removed on the last tick still fly the part of it on screen, up to where they hit.
+    // Frames between ticks reuse that tick's hit points: the queue is empty on those frames.
+    const lastTick = world.current?.tick ?? -1
+    if (lastTick !== endedHits.current.tick) endedHits.current = { tick: lastTick, points: new Map(hits.map(entry => [entry.projectileId, entry.hit.point])) }
+    const ended = session.running && previousWorld.current ? { previous: previousWorld.current.projectiles, hits: endedHits.current.points } : undefined
+    tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr, ended)
     placeDrone(drone.current, droneModel.current, previousWorld.current, world.current, alpha, camera.position)
     // Each queue is drained once a frame and shared: a second drain would come back empty.
     // Damage is applied inside the simulation; the HUD shows the player's confirmed hits, the effects show every hit and kill.
-    const hits = runtime.drainHits(), events = runtime.drainEvents()
     effects.update({ clock: ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP, events, hits, world: world.current, camera: camera as PerspectiveCamera, viewportHeight: size.height, wreckModels: wreckModels.current })
     let marks = gunnery.update(previousWorld.current, world.current, alpha,
       { id: state.id, targetId: state.alive ? state.targeting.targetId : null, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, events, session.running && assisting.current)

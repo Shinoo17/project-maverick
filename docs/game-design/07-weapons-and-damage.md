@@ -8,7 +8,7 @@
 
 ## ปืน: projectile ที่มีเวลาเดินทาง
 
-ใช้ ballistic projectile จำลองเป็นข้อมูลและ swept collision ไม่สร้าง rigid body หรือ React component ต่อกระสุน รูป tracer เป็น pool/instanced view ต่างหาก ไม่ต้องวาดกระสุนทุกนัด
+ใช้ ballistic projectile จำลองเป็นข้อมูลและ swept collision ไม่สร้าง rigid body หรือ React component ต่อกระสุน รูป tracer เป็น pool/instanced view ต่างหาก ไม่ต้องวาดกระสุนทุกนัด: 20 มม. วาดทุกนัดที่สี่ 30 มม. ทุกนัดที่สอง (หนาขึ้นเล็กน้อย) ให้ได้ราว 12 เส้นต่อวินาทีเท่ากัน; กระสุนที่ชนใน tick ล่าสุดยังวาดต่อจนถึงจุดชน
 
 ปืนแยกสองตระกูล (owner 2026-10-24) ตั้ง damage ต่อวินาทีเท่ากันที่ 100 HP/s เพื่อให้ต่างกันที่ความรู้สึก ไม่ใช่ความแรง: M61 สำหรับ F-14/F-15/F-16/F/A-18/F-22 และ GSh-30-1 สำหรับตระกูล Su และ MiG-29 ค่าเป็น gameplay ช้ากว่าปืนจริง และ provisional รอ playtest
 
