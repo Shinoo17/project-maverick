@@ -131,6 +131,8 @@ export interface GlassState {
   /** Mouse aim: where the instructor is flying the nose (a world direction), or in cursor mode
    * the held × as pixels from the middle of the frame; and its share (fades the world cursor). */
   aim: { direction: Vec3Like; share: number } | { screen: { x: number; y: number }; share: number } | null
+  /** Radar contacts by world bearing (degrees, the heading's convention), for the heading tape. */
+  contacts: { bearing: number; painted: boolean; locked: boolean }[]
 }
 
 /*
@@ -586,6 +588,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
         if (isMajor) text(headingLabel(deg), x, y + 6, display(11), HUD_GREEN_DIM, 'center', 'top')
       }
       ctx.restore()
+      drawContacts(state.contacts, heading, y, halfW, pixelsPerDegree)
     }
     luminous(() => {
       ctx.beginPath()
@@ -595,6 +598,31 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.stroke()
     }, 1.6, HUD_GREEN)
     text(state.live && heading !== null ? `${pad(heading, 3)}°` : '–––', layout.cx, y - 21, display(15, 700), HUD_GREEN, 'center', 'bottom')
+  }
+
+  /*
+  Radar contacts on the heading tape (user request 24 Oct 2026): a caret under the tape at each
+  contact's bearing, so the pilot knows which way to turn. Off the tape's span the caret rides
+  its end as an arrow pointing on round. The locked one is red with a box around its caret (shape
+  as well as colour); one seen only by eye is dim.
+  */
+  function drawContacts(contacts: GlassState['contacts'], heading: number, y: number, halfW: number, pixelsPerDegree: number) {
+    const ordered = [...contacts].sort((a, b) => Number(a.locked) - Number(b.locked))
+    for (const contact of ordered) {
+      const off = MathUtils.euclideanModulo(contact.bearing - heading + 180, 360) - 180
+      const color = contact.locked ? HUD_LOCK.locked : null
+      const tone = color?.color ?? (contact.painted ? HUD_GREEN : HUD_GREEN_DIM)
+      const top = y + 22
+      if (Math.abs(off) <= HEADING_HALF_SPAN) {
+        const x = layout.cx + off * pixelsPerDegree
+        luminous(() => { ctx.beginPath(); ctx.moveTo(x - 5, top + 8); ctx.lineTo(x, top); ctx.lineTo(x + 5, top + 8); ctx.closePath(); ctx.stroke() }, 1.6, tone, color?.bloom)
+        if (contact.locked) box(x - 8, top - 3, 16, 14, 1.2, tone)
+      } else {
+        const side = Math.sign(off), x = layout.cx + side * (halfW + 10)
+        luminous(() => { ctx.beginPath(); ctx.moveTo(x - side * 4, top - 1); ctx.lineTo(x + side * 4, top + 4); ctx.lineTo(x - side * 4, top + 9); ctx.stroke() }, 1.6, tone, color?.bloom)
+        if (contact.locked) box(x - 8, top - 4, 16, 16, 1.2, tone)
+      }
+    }
   }
 
   // --- Status block -------------------------------------------------------------

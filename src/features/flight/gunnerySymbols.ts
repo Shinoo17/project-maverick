@@ -7,7 +7,10 @@ why), so the reticle sitting on the lead marker on screen means a hit.
   target's range when there is one, otherwise at 500 m. It swings away from the nose in a
   pull, because the rounds keep the aircraft's own velocity.
 - Target box: corner brackets sized to the drawn target, its designation above, its range and
-  closure, an HP bar under it, and IN RNG / OUT RNG. Off screen, an arrow at the frame edge points to it.
+  closure, an HP bar under it, and IN RNG / OUT RNG. The boxed target is the lock (targeting.ts).
+- Locked and off screen: a red arrow at the frame edge points to it, with its range (user request
+  24 Oct 2026). Once the target is outside the radar cone the lock is on its grace time: the arrow
+  blinks and counts the seconds left. Red here means "locked", as on the radar scope.
 - Lead marker: a diamond where the target will be when the rounds arrive, tied to the box by a
   dashed line, with an arc that empties as the range closes. Doubled when the reticle is on it.
 - ASSIST under the reticle while aim assist is moving the stick (or, under mouse aim, the aim).
@@ -38,6 +41,8 @@ export interface GunneryMarks {
     hp: number
     /** Designation, e.g. "DRONE · SU-57". */
     label: string
+    /** Seconds before the lock drops, while the target is outside the radar cone; null inside it. */
+    lockLeft: number | null
   } | null
   /** Where the target will be when the rounds arrive (world); null without a reachable solution. */
   lead: Vec3Like | null
@@ -106,15 +111,20 @@ function drawTarget(pen: Pen, marks: GunneryMarks, target: NonNullable<GunneryMa
   const off = pen.edge(shooter, target.position)
   const range = `${(target.range / 1000).toFixed(2)} KM`
   if (!at || off) {
-    // Off the frame: an arrow on the edge toward it, with its range.
+    // Off the frame: a red arrow on the edge toward the lock, with its range. On its grace time it
+    // blinks (simulation time, so pause holds it) and counts down.
     const edge = off ?? { x: 0, y: 0, angle: 0 }
-    const { ctx } = pen
+    const { ctx } = pen, red = pen.locked
+    const fading = target.lockLeft !== null
+    const shown = !fading || Math.floor(marks.now * WORLD_STEP * 4) % 2 === 0
     ctx.save()
     ctx.translate(edge.x, edge.y)
     ctx.rotate(edge.angle)
-    pen.luminous(() => { ctx.beginPath(); ctx.moveTo(-14, -8); ctx.lineTo(0, 0); ctx.lineTo(-14, 8); ctx.closePath(); ctx.stroke() }, 1.6, pen.green)
+    if (shown) pen.luminous(() => { ctx.beginPath(); ctx.moveTo(-16, -9); ctx.lineTo(0, 0); ctx.lineTo(-16, 9); ctx.lineTo(-11, 0); ctx.closePath(); ctx.stroke() }, 2, red.color, red.bloom)
     ctx.restore()
-    pen.text(range, edge.x - Math.cos(edge.angle) * 30, edge.y - Math.sin(edge.angle) * 22, pen.font(12, 700), pen.green, 'center')
+    const labelX = edge.x - Math.cos(edge.angle) * 34, labelY = edge.y - Math.sin(edge.angle) * 26
+    pen.text(range, labelX, labelY, pen.font(12, 700), red.color, 'center')
+    if (fading) pen.text(`LOST ${target.lockLeft!.toFixed(1)}`, labelX, labelY + 15, pen.font(11, 700), red.color, 'center')
     return null
   }
   const half = Math.min(90, Math.max(13, target.radius / Math.max(1, target.range) * focal * 1.15))
@@ -139,6 +149,7 @@ function drawTarget(pen: Pen, marks: GunneryMarks, target: NonNullable<GunneryMa
   const barX = at.x - barWidth / 2
   pen.line(barX, barY, barX + barWidth, barY, 1, pen.dim)
   if (target.hp > 0) pen.line(barX, barY, barX + barWidth * target.hp, barY, 3.4, color)
+  if (target.lockLeft !== null) pen.text(`LOST ${target.lockLeft.toFixed(1)}`, at.x, barY + 14, pen.font(11, 700), pen.locked.color, 'center')
   return { x: at.x, y: at.y, half }
 }
 

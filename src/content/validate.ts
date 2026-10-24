@@ -18,6 +18,8 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
     if (!Object.hasOwn(weaponStations, entry.weaponStationProfileId)) throw new Error(`${path}.weaponStationProfileId: unknown profile`)
     if (!Object.hasOwn(hitboxes, entry.hitboxProfileId)) throw new Error(`${path}.hitboxProfileId: unknown profile`)
     validateHitboxes(hitboxes[entry.hitboxProfileId], `${path}.hitboxes`)
+    if (!(entry.radar?.coneDeg > 0 && entry.radar.coneDeg <= 180)) throw new Error(`${path}.radar.coneDeg: expected 0 to 180 degrees`)
+    if (!(entry.radar.rangeM > 0)) throw new Error(`${path}.radar.rangeM: expected positive metres`)
     const stations = weaponStations[entry.weaponStationProfileId]
     const stationIds = new Set<string>()
     for (const station of stations) {

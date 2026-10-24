@@ -3,6 +3,7 @@ import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand, type PilotCommand } from '../src/game/runtime/commands'
 import { runFlightReplay } from '../src/game/playground/replay'
 import { candidates, stepTargeting, targetingRules } from '../src/game/combat/targeting'
+import { radarContacts, radarOf, radarRules } from '../src/game/combat/radar'
 import { FlightInput } from '../src/game/input/FlightInput'
 import { WORLD_STEP } from '../src/game/runtime/clock'
 import { dronePaths } from '../src/game/playground/dronePath'
@@ -26,11 +27,11 @@ describe('target selection', () => {
     stepTargeting(me, [me, other, drone], false, WORLD_STEP)
     expect(me.targeting.targetId).toBeNull()
   })
-  it('keeps a target outside the cone for the grace time, then drops it; drops a dead one at once', () => {
+  it('keeps a lock outside the radar cone for the grace time, then drops it; drops a dead one at once', () => {
     const [me, , drone] = world('still').aircraft
     stepTargeting(me, [me, drone], false, WORLD_STEP)
     drone.position = { x: 0, y: 425, z: 1300 }
-    const graceTicks = Math.round(targetingRules.keepGraceSeconds / WORLD_STEP)
+    const graceTicks = Math.round(targetingRules.lockGraceSeconds / WORLD_STEP)
     for (let tick = 1; tick < graceTicks; tick++) stepTargeting(me, [me, drone], false, WORLD_STEP)
     expect(me.targeting.targetId).toBe('drone-1')
     stepTargeting(me, [me, drone], false, WORLD_STEP)
@@ -40,6 +41,37 @@ describe('target selection', () => {
     drone.alive = false
     stepTargeting(me, [me, drone], false, WORLD_STEP)
     expect(me.targeting.targetId).toBeNull()
+  })
+  it('locks only what the radar paints, and keeps a lock whose nose comes back inside the grace time', () => {
+    const [me, other, drone] = world('still').aircraft
+    // 45° off the nose: inside the F-22's 60° cone, outside the 30° auto-acquire cone.
+    other.position = { x: 1000, y: 400, z: 1000 }
+    drone.alive = false
+    stepTargeting(me, [me, other, drone], false, WORLD_STEP)
+    expect(me.targeting.targetId).toBeNull()
+    stepTargeting(me, [me, other, drone], true, WORLD_STEP)
+    expect(me.targeting.targetId).toBe('aircraft-2')
+    // Out past the cone for most of the grace time, then back inside: the lock holds and the timer resets.
+    other.position = { x: -1000, y: 400, z: 1000 }
+    for (let tick = 0; tick < Math.round(targetingRules.lockGraceSeconds / WORLD_STEP) - 2; tick++) stepTargeting(me, [me, other], false, WORLD_STEP)
+    expect(me.targeting.outside).toBeGreaterThan(targetingRules.lockGraceSeconds - 0.1)
+    other.position = { x: 1000, y: 400, z: 1000 }
+    stepTargeting(me, [me, other], false, WORLD_STEP)
+    expect(me.targeting).toEqual({ targetId: 'aircraft-2', outside: 0 })
+    // Past the radar's reach the lock runs out as well.
+    other.position = { x: radarOf('f22').rangeM + 500, y: 400, z: 0 }
+    for (let tick = 0; tick < Math.round(targetingRules.lockGraceSeconds / WORLD_STEP); tick++) stepTargeting(me, [me, other], false, WORLD_STEP)
+    expect(me.targeting.targetId).toBeNull()
+  })
+  it('shows painted, locked and close aircraft as contacts, and nothing else', () => {
+    const [me, other, drone] = world('still').aircraft
+    // Behind, close: seen without the radar. Behind and far: not seen.
+    other.position = { x: -radarRules.visualRange + 200, y: 400, z: 0 }
+    expect(radarContacts(me, [me, other, drone]).map(c => [c.entity.id, c.painted])).toEqual([['drone-1', true], ['aircraft-2', false]])
+    other.position = { x: -radarRules.visualRange - 200, y: 400, z: 0 }
+    expect(radarContacts(me, [me, other, drone]).map(c => c.entity.id)).toEqual(['drone-1'])
+    // A lock outside the cone stays a contact while it holds.
+    expect(radarContacts(me, [me, other, drone], 'aircraft-2').map(c => [c.entity.id, c.locked])).toEqual([['drone-1', false], ['aircraft-2', true]])
   })
   it('steps to the next candidate by angle and wraps', () => {
     const [me, other, drone] = world('still').aircraft
@@ -52,7 +84,7 @@ describe('target selection', () => {
     expect(me.targeting.targetId).toBe('drone-1')
   })
   it('reaches the circle drone where it spawns', () => {
-    expect(dronePaths.circleRadius).toBeLessThanOrEqual(targetingRules.acquireRange)
+    expect(dronePaths.circleRadius).toBeLessThanOrEqual(radarOf('f22').rangeM)
   })
 })
 

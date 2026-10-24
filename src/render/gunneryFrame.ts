@@ -23,6 +23,7 @@ import type { GameEvent } from '../game/runtime/events'
 import type { AircraftState, WorldState } from '../game/state/WorldState'
 import type { GunneryMarks } from '../features/flight/gunnerySymbols'
 import { distanceScale } from './targetVisibility'
+import { targetingRules } from '../game/combat/targeting'
 
 /** An aircraft between the last two ticks; null when it is not alive now. */
 export function between(before: WorldState | null, now: WorldState | null, pick: (entity: AircraftState) => boolean, alpha: number) {
@@ -67,7 +68,7 @@ export function createGunnery(aircraftId: string) {
   function reset() { hitTick = null; splash = null }
 
   /** `events` are the ones drained this frame; `alpha` is how far the frame is past the last tick. */
-  function update(before: WorldState | null, now: WorldState | null, alpha: number, shooter: ShooterPose & { id: string; targetId: string | null }, events: readonly GameEvent[], assist = false): GunneryMarks {
+  function update(before: WorldState | null, now: WorldState | null, alpha: number, shooter: ShooterPose & { id: string; targetId: string | null; lockOutside?: number }, events: readonly GameEvent[], assist = false): GunneryMarks {
     for (const event of events) {
       if (event.type === 'damage-applied' && event.sourceId === shooter.id) hitTick = event.tick
       if (event.type === 'aircraft-destroyed' && event.sourceId === shooter.id) {
@@ -91,7 +92,8 @@ export function createGunnery(aircraftId: string) {
       ...base,
       // Out of reach, the reticle at the target's range would mark a point no round arrives at.
       reticle,
-      target: { position: target.position, radius: radius * distanceScale(range), range, closure, hp: target.entity.hp / AIRCRAFT_HP, label: targetLabel(target.entity) },
+      target: { position: target.position, radius: radius * distanceScale(range), range, closure, hp: target.entity.hp / AIRCRAFT_HP, label: targetLabel(target.entity),
+        lockLeft: shooter.lockOutside ? Math.max(0, targetingRules.lockGraceSeconds - shooter.lockOutside) : null },
       lead: reachable ? solution!.lead : null,
       inRange: reachable && range <= EFFECTIVE_RANGE,
       // Within most of the target's size: rounds through that point hit the airframe.

@@ -22,6 +22,7 @@ import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { FlightSession } from './session'
 import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
+import { RadarScope, type RadarDriver } from './RadarScope'
 import { WeaponPanel } from './WeaponPanel'
 import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
 import { practiceSpawns, targetDrone as droneSpawn, type PracticePreset } from '../../game/playground/practice'
@@ -56,7 +57,7 @@ export function FlightPage() {
   const preset = keyboard.preset
   const [telemetry, setTelemetry] = useState<AircraftState | null>(null)
   const [webgl] = useState(supportsWebGL2)
-  const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), gate: createRef<HTMLDivElement>(), hud: createRef<HudDriver>(), fps: createRef<HTMLSpanElement>() }), [])
+  const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), gate: createRef<HTMLDivElement>(), hud: createRef<HudDriver>(), radar: createRef<RadarDriver>(), fps: createRef<HTMLSpanElement>() }), [])
   // Mouse settings are input only; the next command tick reads them.
   useEffect(() => { session.input.mouse = { ...controls } }, [session, controls])
   // Camera settings are saved; the scene reads the session copy on its next frame.
@@ -166,6 +167,7 @@ export function FlightPage() {
     </div>
     <div className="flight-hud">
       <FlightInstruments driver={indicators.hud} />
+      <RadarScope driver={indicators.radar} />
       <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
       <div className="flight-actions">{graphics.showFps && <span ref={indicators.fps} className="flight-fps" aria-hidden="true" />}<span>{t(cameraRollOption(camera.roll).labelKey)}{camera.roll === 'horizon' ? ` · ${t(horizonStyleOption(camera.horizonStyle).labelKey)}` : ''}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />

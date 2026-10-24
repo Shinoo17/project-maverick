@@ -12,6 +12,7 @@ import { createCombatEffects } from './vfx/combatEffects'
 import { HitboxWireframe } from './HitboxWireframe'
 import { createTracers } from './tracers'
 import { between, createGunnery, lockOf } from './gunneryFrame'
+import { radarFrame } from './radarFrame'
 import { distanceScale, zoomShare } from './targetVisibility'
 import { aimAssist, aimMagnet, withAimAssist } from '../game/combat/aimAssist'
 import { gunMountOf } from '../game/combat/gunSolution'
@@ -28,9 +29,10 @@ import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import type { HudDriver } from '../features/flight/FlightInstruments'
+import type { RadarDriver } from '../features/flight/RadarScope'
 import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 
-export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; fps?: RefObject<HTMLElement | null> }
+export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; fps?: RefObject<HTMLElement | null> }
 interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
 function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
@@ -160,7 +162,10 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // Damage is applied inside the simulation; the HUD shows the player's confirmed hits, the effects show every hit and kill.
     effects.update({ clock: ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP, events, hits, world: world.current, camera: camera as PerspectiveCamera, viewportHeight: size.height, wreckModels: wreckModels.current })
     let marks = gunnery.update(previousWorld.current, world.current, alpha,
-      { id: state.id, targetId: state.alive ? state.targeting.targetId : null, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, events, session.running && assisting.current)
+      { id: state.id, targetId: state.alive ? state.targeting.targetId : null, lockOutside: state.targeting.outside, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, events, session.running && assisting.current)
+    // What the radar shows: the scope at the bottom left and the carets on the heading tape.
+    const radar = radarFrame(previousWorld.current, world.current, alpha, state, pose)
+    indicators.radar?.current?.(radar, ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP)
     if (cursor && aiming) {
       // Screen-locked aim assist: the × drawn toward the lead marker as this frame shows it.
       const lead = session.running && marks.lead ? markOnScreen(camera, marks.lead, session.input.stick, size.width, size.height) : null
@@ -189,7 +194,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
-    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks,
+    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks, radar,
       aim: aiming ? cursor ? { screen: { x: input.stick.px, y: input.stick.py }, share: session.input.aim.share } : { direction: session.input.aim.direction, share: session.input.aim.share } : null })
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }

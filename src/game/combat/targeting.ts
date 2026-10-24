@@ -1,54 +1,40 @@
 /*
-Target selection for the gun (doc 07, doc 12). Selecting a target is not a lock: it only
-tells the HUD which aircraft to box and to compute the gun solution for. Bots will use the
-same rules.
+Target selection and the lock (doc 07, doc 12). The selected target is the lock: the HUD boxes
+it, solves the gun for it and points a red arrow at it from the frame edge while it is off
+screen; aim assist and bots use the same rules. Only what the radar paints can be locked
+(radar.ts): inside the aircraft's radar cone and range.
 
-- With no target, the aircraft nearest the nose inside ACQUIRE_CONE and ACQUIRE_RANGE is
-  picked on its own.
-- A selected target is kept while it is alive and within KEEP_RANGE. It is dropped once it
-  has stayed outside KEEP_CONE for KEEP_GRACE_SECONDS, or at once when it dies.
-- The next-target action (T) steps to the next candidate by angle off the nose, wrapping.
+- With no lock, the painted aircraft nearest the nose inside ACQUIRE_CONE is locked on its own.
+- The next-target action (T) steps to the next painted aircraft by angle off the nose, wrapping.
+  Locking another drops the old lock at once.
+- A lock is kept while the target stays inside the radar cone and range. Outside them a timer
+  runs, and the lock drops once it reaches `lockGraceSeconds`: turn the nose back before then
+  and the lock holds. It drops at once when the target dies.
 
-There are no teams yet, so every other live aircraft is a candidate. Friendly aircraft
-must be left out here once teams exist (doc 07, IFF).
+The radar cone stands in for "off screen": the lock lives in the simulation (replays, aim assist,
+bots), and the screen belongs to the camera, which the simulation never sees.
 */
-import { Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
+import { bearing, insideRadar, radarContacts, radarOf } from './radar'
 
-/** Provisional values, waiting on playtest. The circle drone flies 3 km out, so acquire reaches past it. */
+export { bearing } from './radar'
+
+/** Provisional values, waiting on playtest. */
 export const targetingRules = {
   acquireConeDeg: 30,
-  acquireRange: 3500,
-  keepConeDeg: 60,
-  keepRange: 4500,
-  keepGraceSeconds: 1,
+  lockGraceSeconds: 3,
 } as const
 
 export interface TargetingState {
   targetId: string | null
-  /** Seconds the selected target has spent outside the keep cone. */
+  /** Seconds the locked target has spent outside the radar cone or range. */
   outside: number
 }
 export const createTargetingState = (): TargetingState => ({ targetId: null, outside: 0 })
 
-const nose = new Vector3(), toTarget = new Vector3(), turn = new Quaternion()
-/** Angle off the nose in degrees and distance in metres, from `shooter` to `target`. */
-export function bearing(shooter: AircraftState, target: AircraftState) {
-  const { x, y, z, w } = shooter.orientation
-  nose.set(1, 0, 0).applyQuaternion(turn.set(x, y, z, w))
-  toTarget.set(target.position.x - shooter.position.x, target.position.y - shooter.position.y, target.position.z - shooter.position.z)
-  const range = toTarget.length()
-  const angle = range > 1e-6 ? nose.angleTo(toTarget) * 180 / Math.PI : 0
-  return { angle, range }
-}
-
-/** Live aircraft the shooter could pick, nearest the nose first. */
+/** Aircraft the shooter could lock: painted by its radar, nearest the nose first. */
 export function candidates(shooter: AircraftState, aircraft: readonly AircraftState[]) {
-  return aircraft
-    .filter(entity => entity.id !== shooter.id && entity.alive)
-    .map(entity => ({ entity, ...bearing(shooter, entity) }))
-    .filter(({ angle, range }) => angle <= targetingRules.acquireConeDeg && range <= targetingRules.acquireRange)
-    .sort((a, b) => a.angle - b.angle || (a.entity.id < b.entity.id ? -1 : 1))
+  return radarContacts(shooter, aircraft, null).filter(contact => contact.painted)
 }
 
 /** One tick of selection for `shooter`. `next` is true when the pilot pressed next-target this tick. */
@@ -57,14 +43,18 @@ export function stepTargeting(shooter: AircraftState, aircraft: readonly Aircraf
   const current = aircraft.find(entity => entity.id === state.targetId && entity.alive)
   if (current) {
     const { angle, range } = bearing(shooter, current)
-    state.outside = angle > targetingRules.keepConeDeg ? state.outside + dt : 0
-    if (range > targetingRules.keepRange || state.outside >= targetingRules.keepGraceSeconds) drop(state)
+    state.outside = insideRadar(radarOf(shooter.aircraftId), angle, range) ? 0 : state.outside + dt
+    // A hair under the grace: 180 ticks of 1/60 s sum to just below 3 s in floating point.
+    if (state.outside >= targetingRules.lockGraceSeconds - 1e-9) drop(state)
   } else drop(state)
   const options = candidates(shooter, aircraft)
   if (next && options.length > 0) {
     const index = options.findIndex(option => option.entity.id === state.targetId)
     state.targetId = options[(index + 1) % options.length].entity.id
     state.outside = 0
-  } else if (state.targetId === null && options.length > 0) state.targetId = options[0].entity.id
+  } else if (state.targetId === null) {
+    const nearest = options.find(option => option.angle <= targetingRules.acquireConeDeg)
+    if (nearest) state.targetId = nearest.entity.id
+  }
 }
 function drop(state: TargetingState) { state.targetId = null; state.outside = 0 }
