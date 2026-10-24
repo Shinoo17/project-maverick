@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
-import { aimAssist, assistRange, cursorDraw, rangeShare, withAimAssist, type AimAssistLevel } from '../src/game/combat/aimAssist'
+import { aimAssist, aimMagnetMaxRate, assistRange, cursorDraw, rangeShare, withAimAssist, type AimAssistLevel } from '../src/game/combat/aimAssist'
 import { gunMountOf, solveGun } from '../src/game/combat/gunSolution'
 import { parseMouseSettings } from '../src/game/input/mouseStick'
 import { runFlightReplay } from '../src/game/playground/replay'
@@ -86,20 +86,31 @@ describe('aim assist in flight', () => {
     expect(kills).toBe(1)
     expect(runFlightReplay(runtime.exportReplay()).aircraft[1].hp).toBe(runtime.snapshot().aircraft[1].hp)
   })
-  it('acts in full out to 800 m, fades to nothing at 1,000 m, and the cursor and aim draws fade with it', () => {
-    expect(assistRange).toEqual([800, 1000])
-    expect([500, 800, 900, 1000, 1200].map(rangeShare)).toEqual([1, 1, 0.5, 0, 0])
+  it('acts in full out to 800 m and fades to nothing at 1,000 m; the close fade under mouse aim is off ([0, 1])', () => {
+    expect(assistRange).toEqual({ near: [0, 1], far: [800, 1000] })
+    const ranges = [0, 0.5, 50, 100, 200, 500, 800, 900, 1000, 1200]
+    expect(ranges.map(range => rangeShare(range))).toEqual([0, 0.5, 1, 1, 1, 1, 1, 0.5, 0, 0])
+    expect(ranges.map(range => rangeShare(range, false))).toEqual([1, 1, 1, 1, 1, 1, 1, 0.5, 0, 0])
+    expect(cursorDraw('standard', 2, 2, 1 / 60, false, 0, 50)).toBeCloseTo(cursorDraw('standard', 2, 2, 1 / 60, false, 0, 500), 9)
     const [me, drone] = pair()
     // Straight ahead and a little high: inside the cone at every range here, and in the rounds' reach.
     const pitchAt = (x: number) => { drone.position = { x, y: 400 + x * 0.03, z: 0 }; return aimAssist('strong', me, drone, mount, { pitch: 0, yaw: 0 }) }
     expect(pitchAt(700).pitch).toBeGreaterThan(0)
     expect(pitchAt(900).pitch).toBeGreaterThan(0)
     expect(pitchAt(900).pitch).toBeLessThan(pitchAt(700).pitch)
+    // The stick assist never rolls the jet, so it keeps working up close.
+    expect(pitchAt(80).pitch).toBeGreaterThan(0)
     drone.position = { x: 1100, y: 433, z: 0 }
     expect(solveGun(me, mount, drone)?.reachable).toBe(true)
     expect(aimAssist('strong', me, drone, mount, { pitch: 0, yaw: 0 }).active).toBe(false)
     expect(cursorDraw('standard', 2, 2, 1 / 60, false, 0, 900)).toBeCloseTo(cursorDraw('standard', 2, 2, 1 / 60, false, 0, 500) / 2, 9)
     expect(cursorDraw('standard', 2, 2, 1 / 60, true, 0, 1000)).toBe(0)
+  })
+  it('never turns the aim or moves the × faster than its top rate, twice that while firing', () => {
+    expect(aimMagnetMaxRate).toEqual({ standard: 30, strong: 45 })
+    // Idle 3° off the lead the draw (12°/s) is under the 30°/s cap; firing 6° off, 65°/s is held to 60°/s.
+    expect(cursorDraw('standard', 3, 3, 1 / 60, false, 0, 500)).toBeCloseTo(1 - Math.exp(-4 / 60), 9)
+    expect(cursorDraw('standard', 6, 6, 1 / 60, true, 0, 500) * 6).toBeCloseTo(60 / 60, 9)
   })
   it('never acts on a solution the rounds cannot reach', () => {
     const [me, drone] = pair()

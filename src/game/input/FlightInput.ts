@@ -1,7 +1,7 @@
 import { neutralCommand } from '../runtime/commands'
 import { WORLD_STEP } from '../runtime/clock'
 import { LEVEL_FRAME, MOUSE_POSITIONAL, MOUSE_RELATIVE, MOUSE_STICK, clearStick, createMouseStick, defaultMouseSettings, engageStick, moveDiscStick, moveRelativeStick, moveStick, positionalRadius, readPositionalAxes, readStickAxes, springStick, stickGate, type MouseSettings, type ScreenFrame, type StickGate } from './mouseStick'
-import { aimAtCursor, aimAtRay, createMouseAim, instruct, stepAim, trackLead, turnAim, unsyncAim, type CursorRay } from './mouseAim'
+import { aimAtCursor, aimAtRay, createMouseAim, followTarget, instruct, stepAim, trackLead, turnAim, unsyncAim, type CursorRay } from './mouseAim'
 import { gunMountOf, type GunMount } from '../combat/gunSolution'
 import { cursorDraw } from '../combat/aimAssist'
 import { capturePush, createPushCapture } from './pushCapture'
@@ -235,6 +235,8 @@ export class FlightInput {
     // Cursor mode on a moving target: the lead's own turn is fed forward while the × is on it.
     if (cursor && !this.aim.recovering && !keyHeld) trackLead(this.aim, this.pose, this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
     else this.aim.tracking = 0
+    // Close behind the locked target: the instructor turns with it.
+    followTarget(this.aim, this.pose, !this.aim.recovering && !keyHeld && this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
     const share = this.aim.share, pilot = this.mouse.invertPitch && !cursor ? -stick.pitch : stick.pitch
     const flown = share > 0 ? instruct(this.aim, this.pose) : { pitch: 0, roll: 0, yaw: 0 }
     c.pitch = strongest(c.pitch, share * flown.pitch + (1 - share) * pilot)

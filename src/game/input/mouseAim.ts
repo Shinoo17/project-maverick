@@ -117,6 +117,12 @@ export interface MouseAim {
   /** How much the aim is on a target's lead this tick, 0..1 (`trackLead`): gunnery, so the
    * instructor flies it tighter. */
   tracking: number
+  /** Close-in follow (`followTarget`): the locked target's acceleration, smoothed (world, m/s²),
+   * the share it takes of the instructor's turn this tick (0..1), and the target and tick it was for. */
+  follow: Vector3
+  following: number
+  followId: string | null
+  followTick: number
   /** The instructor's last command and the tick it was for: each axis slews from it. */
   flown: { pitch: number; roll: number; yaw: number }
   flownTick: number
@@ -126,9 +132,9 @@ export interface MouseAim {
   recovering: boolean
   tick: number
 }
-export const createMouseAim = (): MouseAim => ({ direction: new Vector3(1, 0, 0), synced: false, share: 0, pushing: false, rate: new Vector3(), previous: new Vector3(1, 0, 0), flown: { pitch: 0, roll: 0, yaw: 0 }, flownTick: -1, lead: new Vector3(1, 0, 0), leadRate: new Vector3(), leadTick: -1, leadId: null, tracking: 0, handsOff: 0, recovering: false, tick: -1 })
+export const createMouseAim = (): MouseAim => ({ direction: new Vector3(1, 0, 0), synced: false, share: 0, pushing: false, rate: new Vector3(), previous: new Vector3(1, 0, 0), flown: { pitch: 0, roll: 0, yaw: 0 }, flownTick: -1, lead: new Vector3(1, 0, 0), leadRate: new Vector3(), leadTick: -1, leadId: null, tracking: 0, follow: new Vector3(), following: 0, followId: null, followTick: -1, handsOff: 0, recovering: false, tick: -1 })
 
-export function unsyncAim(aim: MouseAim) { aim.synced = false; aim.share = 0; aim.pushing = false; aim.flownTick = -1; aim.leadTick = -1; aim.leadId = null; aim.leadRate.set(0, 0, 0); aim.tracking = 0; aim.rate.set(0, 0, 0); aim.handsOff = 0; aim.recovering = false; aim.tick = -1; return aim }
+export function unsyncAim(aim: MouseAim) { aim.synced = false; aim.share = 0; aim.pushing = false; aim.flownTick = -1; aim.leadTick = -1; aim.leadId = null; aim.leadRate.set(0, 0, 0); aim.tracking = 0; aim.follow.set(0, 0, 0); aim.following = 0; aim.followId = null; aim.followTick = -1; aim.rate.set(0, 0, 0); aim.handsOff = 0; aim.recovering = false; aim.tick = -1; return aim }
 
 const PATH = new Vector3(), SETTLE_TO = new Vector3()
 const NOSE = new Vector3(), BODY = new Vector3(), AXIS = new Vector3(), TURN = new Vector3(), LIFT = new Vector3(), SPIN = new Vector3()
@@ -322,6 +328,47 @@ export function trackLead(aim: MouseAim, state: AircraftState, target: (TargetMo
 }
 
 /*
+Close-in follow (user request 25 Oct 2026: "fly smoothly along the locked target's path up close").
+Close behind a target the line of sight and the lead swing several degrees with every move it
+makes. The aim follows them, the instructor feeds the aim's turn into the bank, and the jet rolls
+from side to side behind it. To fly the target's path is to pull what it pulls, in the plane it
+pulls in: so once the target is close and the aim is on it, the instructor's turn comes from the
+target's own acceleration, smoothed, instead of from the aim's turn. The aim still corrects the
+nose (pitch, rudder and the small pull toward it); only the turn being fed forward changes.
+*/
+export const FOLLOW = {
+  /** Metres to the target: whole inside the first, gone past the second. */
+  range: [300, 600] as const,
+  /** Degrees from the aim to the target or its lead, whichever is nearer: whole inside the first, gone past the second. */
+  onDeg: [8, 15] as const,
+  /** Seconds the target's acceleration is smoothed over: its bank changes are not steps for us. */
+  smoothSeconds: 0.3,
+  /** While following, the pull toward the aim keeps only this share in the bank (pitch still
+   * takes all of it), and the rudder trims out to these degrees: the aim is corrected inside the
+   * target's plane instead of by rolling toward it. */
+  turnShare: 0.2,
+  rudderDeg: [8, 20] as const,
+}
+const FOLLOW_TO = new Vector3(), FOLLOW_ACCEL = new Vector3()
+/** Once per command tick, after `stepAim`: how much the instructor turns with `target` this tick. */
+export function followTarget(aim: MouseAim, state: AircraftState, target: (TargetMotion & { id: string }) | null, mount: GunMount, tick: number) {
+  if (!target) { aim.following = 0; aim.followId = null; aim.followTick = -1; return aim }
+  const ticks = aim.followTick < 0 || tick < aim.followTick ? 0 : tick - aim.followTick
+  FOLLOW_ACCEL.set(target.acceleration.x, target.acceleration.y, target.acceleration.z)
+  if (aim.followId !== target.id || ticks === 0) aim.follow.copy(FOLLOW_ACCEL)
+  else aim.follow.lerp(FOLLOW_ACCEL, 1 - Math.exp(-ticks * WORLD_STEP / FOLLOW.smoothSeconds))
+  aim.followId = target.id; aim.followTick = tick
+  const p = state.position
+  FOLLOW_TO.set(target.position.x - p.x, target.position.y - p.y, target.position.z - p.z)
+  const range = FOLLOW_TO.length()
+  let offDeg = MathUtils.radToDeg(aim.direction.angleTo(FOLLOW_TO))
+  const solution = solveGun(state, mount, target)
+  if (solution) offDeg = Math.min(offDeg, MathUtils.radToDeg(aim.direction.angleTo(LEAD.set(solution.aim.x, solution.aim.y, solution.aim.z))))
+  aim.following = (1 - MathUtils.smoothstep(range, FOLLOW.range[0], FOLLOW.range[1])) * (1 - MathUtils.smoothstep(offDeg, FOLLOW.onDeg[0], FOLLOW.onDeg[1]))
+  return aim
+}
+
+/*
 Cursor mode before the first rendered frame (and in tests without a camera): the × read as a
 direction through a lens of `fovDeg` vertical field of view centred on the nose. `screenAngle`
 is how far the airframe appears rotated on screen (ScreenFrame angle × blend).
@@ -391,7 +438,10 @@ export function instruct(aim: MouseAim, state: AircraftState) {
   // itself. Banked for that and gravity together, a held turn neither sinks nor climbs.
   const pullRate = profile(off, MOUSE_AIM.brake.pitch, MOUSE_AIM.gain.pitch, pullCeiling(state))
   if (TURN.lengthSq() > 1e-12) TURN.normalize().multiplyScalar(pullRate * Math.max(speed, 30) * Math.min(1, offDeg / MOUSE_AIM.turnKneeDeg))
-  LIFT.copy(aim.rate).cross(SPIN.set(velocity.x, velocity.y, velocity.z)).add(SPIN.set(0, GRAVITY, 0))
+  // The turn fed forward: the aim's own, or close behind a target, the target's (`followTarget`).
+  LIFT.copy(aim.rate).cross(SPIN.set(velocity.x, velocity.y, velocity.z))
+  if (aim.following > 0) { LIFT.lerp(aim.follow, aim.following); TURN.multiplyScalar(MathUtils.lerp(1, FOLLOW.turnShare, aim.following)) }
+  LIFT.add(SPIN.set(0, GRAVITY, 0))
   const holding = LIFT.length()
   LIFT.add(TURN)
   const liftUp = LIFT.y
@@ -424,7 +474,8 @@ export function instruct(aim: MouseAim, state: AircraftState) {
   // The aim's turn in the body frame: about +Z is pitch up, about −Y is yaw right.
   SPIN.copy(aim.rate).applyQuaternion(INVERSE)
   const pitchError = Math.atan2(BODY.y, BODY.x), yawError = Math.atan2(BODY.z, BODY.x)
-  const rudder = 1 - MathUtils.smoothstep(offDeg, MOUSE_AIM.rudderDeg[0], MOUSE_AIM.rudderDeg[1])
+  const rudderDeg = [MathUtils.lerp(MOUSE_AIM.rudderDeg[0], FOLLOW.rudderDeg[0], aim.following), MathUtils.lerp(MOUSE_AIM.rudderDeg[1], FOLLOW.rudderDeg[1], aim.following)]
+  const rudder = 1 - MathUtils.smoothstep(offDeg, rudderDeg[0], rudderDeg[1])
   const { brake, track } = MOUSE_AIM, rates = state.rates
   const tight = 1 + aim.tracking * (LEAD_TRACK.gainScale - 1)
   const gain = { pitch: MOUSE_AIM.gain.pitch * tight, roll: MOUSE_AIM.gain.roll, yaw: MOUSE_AIM.gain.yaw * tight }

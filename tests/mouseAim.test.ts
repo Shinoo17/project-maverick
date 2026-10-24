@@ -501,14 +501,14 @@ describe('screen-locked aim assist', () => {
   const offLead = (): Hand => {
     let moved = false
     return (lead, _cursor, _frame, _target, range) => {
-      if (range > assistRange[0]) return lead
+      if (range > assistRange.far[0]) return lead
       if (moved) return null
       moved = true
       return { x: lead.x + 40, y: lead.y - 30 }
     }
   }
   /** Frames from the hand letting go, inside 800 m. */
-  const fromRelease = (frames: Frame[]) => frames.slice(frames.findIndex(frame => frame.range <= assistRange[0]) + 1)
+  const fromRelease = (frames: Frame[]) => frames.slice(frames.findIndex(frame => frame.range <= assistRange.far[0]) + 1)
 
   it('is not dead in cursor mode: it draws the × onto the lead, and off it does nothing', () => {
     const drawn = fromRelease(duel('standard', 6.5, offLead())), alone = fromRelease(duel('off', 6.5, offLead()))

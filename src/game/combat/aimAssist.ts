@@ -11,10 +11,15 @@ command that reaches the simulation already carries it and replays repeat it exa
 - Error: the solution's aim direction against the current gun line, in the body frame:
   vertical error → pitch, horizontal error → yaw (rolling to turn stays the pilot's job).
 - Reach: full inside `full` degrees of error, fading to nothing at `cone` degrees.
-- Range: full out to `assistRange[0]` metres (the HUD's IN RNG), fading to nothing at
-  `assistRange[1]` (user decision 25 Oct 2026). The rounds fly on to 1,500 m, but out there the
-  spread is as wide as the airframe, so the assist would only steer a spray. Fading instead of
-  cutting off means a target easing out of range never lets go with a jolt.
+- Range: full from `assistRange.near[1]` out to `assistRange.far[0]` metres (the HUD's IN RNG),
+  fading to nothing at `assistRange.far[1]` (user decision 25 Oct 2026): the rounds fly on to
+  1,500 m, but out there the spread is as wide as the airframe, so the assist would only steer a
+  spray. Under mouse aim `assistRange.near` can fade it out up close too, to nothing at near[0].
+  A 100–200 m fade was tried (25 Oct 2026) against the instructor rolling the jet from side to
+  side behind a close target; the user set it to [0, 1], effectively off, once the close-in follow
+  (mouseAim.ts, `followTarget`) took that job. The stick assist never has it: it only adds pitch
+  and yaw, never roll. Fading instead of cutting off means a target easing out of an edge never
+  lets go with a jolt.
 - Sharing: small pilot corrections keep the full assist; past a third of the stick on an
   axis the assist gives way, and a full stick is never fought.
 */
@@ -31,11 +36,14 @@ export const aimAssistProfiles: Record<Exclude<AimAssistLevel, 'off'>, { cone: n
   strong: { cone: 14, full: 8, pitchGain: 9, yawGain: 12 },
 }
 
-/** Metres to the target: full assist out to the first, none from the second. Provisional. */
-export const assistRange = [800, 1000] as const
-/** The assist's share (0..1) at `range` metres from the target. */
-export function rangeShare(range: number) {
-  return 1 - Math.min(1, Math.max(0, (range - assistRange[0]) / (assistRange[1] - assistRange[0])))
+/** Metres to the target: full from near[1] (mouse aim) or 0 (stick) out to far[0], none from far[1];
+ * under mouse aim none inside near[0]. near [0, 1] (user setting 25 Oct 2026) leaves the close fade
+ * effectively off; near[1] must stay above near[0]. Provisional. */
+export const assistRange = { near: [0, 1], far: [800, 1000] } as const
+const ramp = (value: number, [from, to]: readonly [number, number]) => Math.min(1, Math.max(0, (value - from) / (to - from)))
+/** The assist's share (0..1) at `range` metres from the target; `near` false leaves out the close fade (the stick assist). */
+export function rangeShare(range: number, near = true) {
+  return (near ? ramp(range, assistRange.near) : 1) * (1 - ramp(range, assistRange.far))
 }
 
 export interface AimAssist { pitch: number; yaw: number; active: boolean }
@@ -48,7 +56,7 @@ export function aimAssist(level: AimAssistLevel, shooter: AircraftState, target:
   const profile = aimAssistProfiles[level]
   const solution = solveGun(shooter, mount, target)
   if (!solution?.reachable) return none
-  const fade = rangeShare(solution.range)
+  const fade = rangeShare(solution.range, false)
   if (fade <= 0) return none
   const { x, y, z, w } = shooter.orientation
   aimBody.set(solution.aim.x, solution.aim.y, solution.aim.z).applyQuaternion(turn.set(x, y, z, w).invert())
@@ -83,6 +91,10 @@ Holding the trigger tightens it (user request 23 Oct 2026, "point at the target 
 pulls onto it"): the draw runs `firingBoost` times faster and stays whole out to the edge of the
 cone, so a burst stays on the lead while the target moves. Idle, it only eases the aim in.
 
+The draw never turns the aim faster than `aimMagnetMaxRate` degrees per second (doubled while
+firing; user decision 25 Oct 2026). A lead that jumps is followed, not snapped to: snapping to it
+up close is what rolled the jet from side to side behind a target.
+
 - World-locked aim ('aim'): `aimMagnet` turns the aim direction, once per command tick.
 - Screen-locked aim ('cursor'): the aim is wherever the × is, read afresh every tick, so the
   assist moves the × itself toward the lead marker on screen (`cursorDraw`, once per rendered
@@ -91,6 +103,8 @@ cone, so a burst stays on the lead while the target moves. Idle, it only eases t
 */
 export const aimMagnetRates: Record<Exclude<AimAssistLevel, 'off'>, number> = { standard: 4, strong: 8 }
 export const firingBoost = 3
+/** Degrees per second: the fastest the draw turns the aim (or moves the ×), idle; twice this while firing. Provisional. */
+export const aimMagnetMaxRate: Record<Exclude<AimAssistLevel, 'off'>, number> = { standard: 30, strong: 45 }
 const noseAim = new Vector3(), wingAxis = new Vector3(), drawAxis = new Vector3()
 /** Draws `aim` (a world direction, changed in place) toward the solution for one tick of `dt` seconds. True while it acts. */
 export function aimMagnet(level: AimAssistLevel, shooter: AircraftState, target: AircraftState | undefined, mount: GunMount, aim: Vector3, dt: number, firing = false) {
@@ -109,7 +123,7 @@ export function aimMagnet(level: AimAssistLevel, shooter: AircraftState, target:
   if (error >= profile.cone || error < 1e-6) return error < 1e-6
   drawAxis.crossVectors(aim, noseAim)
   if (drawAxis.lengthSq() < 1e-12) return true
-  const share = draw(level, error, dt, firing) * fade
+  const share = capped(level, draw(level, error, dt, firing) * fade, error, dt, firing)
   aim.applyAxisAngle(drawAxis.normalize(), aim.angleTo(noseAim) * share).normalize()
   return true
 }
@@ -120,6 +134,12 @@ function draw(level: Exclude<AimAssistLevel, 'off'>, error: number, dt: number, 
   if (error >= profile.cone) return 0
   const reach = firing || error <= profile.full ? 1 : 1 - (error - profile.full) / (profile.cone - profile.full)
   return (1 - Math.exp(-aimMagnetRates[level] * (firing ? firingBoost : 1) * dt)) * reach
+}
+
+/** `share` of the way across `error` degrees, kept to the draw's top rate for `dt` seconds. */
+function capped(level: Exclude<AimAssistLevel, 'off'>, share: number, error: number, dt: number, firing: boolean) {
+  const most = aimMagnetMaxRate[level] * (firing ? 2 : 1) * dt
+  return error * share > most ? most / error : share
 }
 
 /** Hand speed (pixels per second) at which the cursor draw starts to give way, and is gone. */
@@ -138,5 +158,6 @@ export function cursorDraw(level: AimAssistLevel, leadError: number, targetError
   if (fade <= 0) return 0
   const speed = handPixels / dt
   const giveWay = 1 - Math.min(1, Math.max(0, (speed - handGiveWay[0]) / (handGiveWay[1] - handGiveWay[0])))
-  return draw(level, firing ? Math.min(leadError, targetError) : leadError, dt, firing) * giveWay * fade
+  // The × moves toward the lead, so the top rate applies to the lead's distance.
+  return capped(level, draw(level, firing ? Math.min(leadError, targetError) : leadError, dt, firing) * giveWay * fade, leadError, dt, firing)
 }
