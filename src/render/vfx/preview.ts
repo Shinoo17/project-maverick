@@ -2,12 +2,15 @@
 vfx-preview.html: the combat effects on their own, over the training range's sky and haze.
 A target flies past at 400 m and 150 m/s; the buttons fire hits on it, blow it up in the air,
 or shoot it down so its wreck falls and explodes on the ground. Loop replays the shoot-down.
+The sprite button swaps the sprite sets (atlas.ts) under the running effects; ?sprites=
+picks the first.
 Drives the same createCombatEffects as the flight scene, with made-up hits and events.
 */
 import { BoxGeometry, Color, FogExp2, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Scene, SRGBColorSpace, HemisphereLight, DirectionalLight, ACESFilmicToneMapping, WebGLRenderer } from 'three'
 import type { ProjectileHit } from '../../game/combat/projectiles'
 import type { GameEvent } from '../../game/runtime/events'
 import type { WorldState } from '../../game/state/WorldState'
+import { SPRITE_SETS, type SpriteSet } from './atlas'
 import { createCombatEffects, WRECK_SLOTS } from './combatEffects'
 import { distanceScale } from '../targetVisibility'
 
@@ -22,7 +25,8 @@ const ground = new Mesh(new PlaneGeometry(40000, 40000), new MeshStandardMateria
 ground.rotation.x = -Math.PI / 2; scene.add(ground)
 const camera = new PerspectiveCamera(56, 1, 0.5, 14000)
 
-const effects = createCombatEffects()
+const params = new URLSearchParams(location.search)
+const effects = createCombatEffects({ sprites: SPRITE_SETS.includes(params.get('sprites') as SpriteSet) ? params.get('sprites') as SpriteSet : 'smoke' })
 scene.add(effects.mesh)
 const target = new Mesh(new BoxGeometry(20, 3, 13), new MeshStandardMaterial({ color: '#ff7a2e', emissive: '#ff7a2e', emissiveIntensity: 0.35 }))
 scene.add(target)
@@ -46,7 +50,13 @@ loopButton.onclick = () => { loop = !loop; loopButton.setAttribute('aria-pressed
 const pauseButton = document.getElementById('pause')!
 pauseButton.onclick = () => { paused = !paused; pauseButton.setAttribute('aria-pressed', String(paused)) }
 const distance = document.getElementById('distance') as HTMLInputElement, distanceValue = document.getElementById('distanceValue')!
-const params = new URLSearchParams(location.search)
+const spritesButton = document.getElementById('sprites')!
+const SPRITE_LABEL: Record<SpriteSet, string> = { classic: 'Sprite: ชุดเดิม (Particle Pack)', smoke: 'Sprite: ชุดใหม่ (Smoke Particles)' }
+spritesButton.textContent = SPRITE_LABEL[effects.sprites]
+spritesButton.onclick = () => {
+  effects.useSprites(effects.sprites === 'smoke' ? 'classic' : 'smoke')
+  spritesButton.textContent = SPRITE_LABEL[effects.sprites]
+}
 if (params.has('distance')) distance.value = params.get('distance')!
 
 /** One step of the made-up world: hits while firing, the kill, the respawn. */

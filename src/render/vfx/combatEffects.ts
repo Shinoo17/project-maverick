@@ -13,7 +13,8 @@ latest world snapshot, and changes nothing in the simulation.
 - Up to WRECK_SLOTS wrecks fall at once. Another death then blows up the oldest in the air.
 
 Everything is timed by the simulation clock passed in, so pause freezes it, and reset() clears
-it when the flight is reset.
+it when the flight is reset. useSprites() swaps the sprite set (atlas.ts) under live effects;
+each set is loaded once, on first use.
 */
 import { Group, Vector3, type PerspectiveCamera } from 'three'
 import type { ProjectileHit } from '../../game/combat/projectiles'
@@ -21,7 +22,7 @@ import { GROUND_Y } from '../../game/combat/projectiles'
 import type { GameEvent } from '../../game/runtime/events'
 import type { WorldState } from '../../game/state/WorldState'
 import { distanceScale } from '../targetVisibility'
-import { loadParticleAtlas } from './atlas'
+import { loadParticleAtlas, type ParticleAtlas, type SpriteSet } from './atlas'
 import { airExplosion, createTrail, groundExplosion, groundHit, hitSpark, randomStream, type EffectLayers } from './effects'
 import { createParticleLayer } from './particles'
 import { advanceWreck, createWreck, type Wreck } from './wreck'
@@ -46,7 +47,7 @@ export interface EffectsFrame {
   wreckModels: readonly (Group | null)[]
 }
 
-export function createCombatEffects() {
+export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   const layers: EffectLayers = {
     smoke: createParticleLayer({ capacity: 700, additive: false, order: 5 }),
     glow: createParticleLayer({ capacity: 400, additive: true, order: 6 }),
@@ -55,12 +56,18 @@ export function createCombatEffects() {
   const mesh = new Group().add(layers.smoke.mesh, layers.glow.mesh)
   const random = randomStream(7)
   const slots: ({ wreck: Wreck; trail: ReturnType<typeof createTrail>; started: number } | null)[] = Array(WRECK_SLOTS).fill(null)
-  let lastClock: number | null = null, deaths = 0, disposed = false
-  const atlas = loadParticleAtlas()
-  atlas.then(texture => {
-    if (disposed) { texture.dispose(); return }
-    layers.glow.setAtlas(texture); layers.smoke.setAtlas(texture)
-  }).catch(error => console.warn(error))
+  let lastClock: number | null = null, deaths = 0, disposed = false, wanted = sprites
+  const atlases = new Map<SpriteSet, Promise<ParticleAtlas>>()
+  /** Draws with `set` once it has loaded, unless another set was asked for meanwhile. */
+  function useSprites(set: SpriteSet) {
+    wanted = set
+    if (!atlases.has(set)) atlases.set(set, loadParticleAtlas(set))
+    atlases.get(set)!.then(atlas => {
+      if (disposed || wanted !== set) return
+      layers.glow.setAtlas(atlas); layers.smoke.setAtlas(atlas)
+    }).catch(error => console.warn(error))
+  }
+  useSprites(sprites)
 
   const eye = new Vector3(), at = new Vector3(), nose = new Vector3(), centre = new Vector3()
   const scaleAt = (point: { x: number; y: number; z: number }) => distanceScale(eye.distanceTo(at.set(point.x, point.y, point.z)))
@@ -141,7 +148,7 @@ export function createCombatEffects() {
   function dispose() {
     disposed = true
     layers.smoke.dispose(); layers.glow.dispose()
-    atlas.then(texture => texture.dispose()).catch(() => {})
+    for (const atlas of atlases.values()) atlas.then(loaded => loaded.texture.dispose()).catch(() => {})
   }
-  return { mesh, update, reset, dispose }
+  return { mesh, update, reset, dispose, useSprites, get sprites() { return wanted } }
 }

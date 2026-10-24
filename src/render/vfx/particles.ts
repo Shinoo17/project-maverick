@@ -1,7 +1,8 @@
 /*
 Billboard particles for combat effects: one instanced quad mesh per layer, sprites from the
 atlas (atlas.ts), every particle a camera-facing square, or a streak stretched along its
-motion for sparks.
+motion for sparks. A particle names a sprite role; where the atlas has several cells for it,
+particles take them in turn by spawn order, so a replay draws the same shapes.
 
 Particles are a view only. Each one is a pure function of its age: position under linear drag
 and a constant vertical acceleration (gravity, or smoke's lift) has a closed form, so nothing
@@ -20,9 +21,9 @@ pixels, so small marks are given a floor.
 */
 import {
   AdditiveBlending, Color, DynamicDrawUsage, InstancedBufferAttribute, InstancedBufferGeometry, MathUtils, Mesh, NormalBlending,
-  PlaneGeometry, ShaderMaterial, UniformsLib, UniformsUtils, type PerspectiveCamera, type Texture,
+  PlaneGeometry, ShaderMaterial, UniformsLib, UniformsUtils, type PerspectiveCamera,
 } from 'three'
-import { ATLAS, type SpriteIndex } from './atlas'
+import { ATLAS, type ParticleAtlas, type SpriteIndex } from './atlas'
 
 type Vec3Like = { x: number; y: number; z: number }
 
@@ -54,7 +55,7 @@ export interface ParticleSpec {
   /** Seconds after the spawn time before it appears. */
   delay?: number
 }
-interface Particle { spec: ParticleSpec; born: number }
+interface Particle { spec: ParticleSpec; born: number; order: number }
 
 export interface ParticleState { x: number; y: number; z: number; vx: number; vy: number; vz: number; size: number; alpha: number; r: number; g: number; b: number }
 
@@ -87,8 +88,10 @@ attribute vec4 iColor;
 attribute vec4 iShape;   // size (m), rotation (rad), sprite, minimum size (CSS px)
 attribute vec4 iStretch; // world direction, extra length (m); length 0 draws a square
 uniform float uPixel;    // metres one CSS pixel covers per metre of distance
+uniform vec4 uPainted[${ATLAS.columns * ATLAS.rows}]; // per cell: reference tint, 1 if painted
 varying vec2 vUv;
 varying vec4 vColor;
+varying vec4 vPainted;
 varying float vFogDepth;
 void main() {
   vec4 mvPosition = modelViewMatrix * vec4(iPosition, 1.0);
@@ -111,6 +114,7 @@ void main() {
   // The canvas texture is flipped: row 0 (top of the canvas) is the top of v.
   vUv = vec2((column + uv.x) / ${ATLAS.columns}.0, 1.0 - (row + 1.0 - uv.y) / ${ATLAS.rows}.0);
   vColor = iColor;
+  vPainted = uPainted[int(iShape.z + 0.5)];
   vFogDepth = distance;
 }`
 
@@ -123,11 +127,15 @@ uniform float fogNear;
 uniform float fogFar;
 varying vec2 vUv;
 varying vec4 vColor;
+varying vec4 vPainted;
 varying float vFogDepth;
 void main() {
   vec4 sprite = texture2D(map, vUv);
-  // The sprite's grey shading gives smoke its lumps; tint carries the colour.
-  vec3 color = vColor.rgb * mix(0.55, 1.25, sprite.r);
+  vec3 color;
+  // A painted sprite keeps its colour, shifted by the tint relative to the cell's reference.
+  if (vPainted.w > 0.5) color = sRGBTransferEOTF(vec4(sprite.rgb, 1.0)).rgb * vColor.rgb / max(vPainted.rgb, vec3(0.02));
+  // A grey sprite's shading gives smoke its lumps; tint carries the colour.
+  else color = vColor.rgb * mix(0.55, 1.25, sprite.r);
   float alpha = sprite.a * vColor.a;
   #ifdef USE_FOG
     #ifdef FOG_EXP2
@@ -154,7 +162,9 @@ export function createParticleLayer({ capacity, additive, order }: { capacity: n
   geometry.setAttribute('iPosition', position).setAttribute('iColor', color).setAttribute('iShape', shape).setAttribute('iStretch', stretch)
   geometry.instanceCount = 0
   const material = new ShaderMaterial({
-    uniforms: UniformsUtils.merge([UniformsLib.fog, { map: { value: null }, uPixel: { value: 0.001 }, uAdditive: { value: additive ? 1 : 0 } }]),
+    uniforms: UniformsUtils.merge([UniformsLib.fog, {
+      map: { value: null }, uPixel: { value: 0.001 }, uAdditive: { value: additive ? 1 : 0 }, uPainted: { value: new Float32Array(ATLAS.columns * ATLAS.rows * 4) },
+    }]),
     vertexShader, fragmentShader,
     transparent: true, depthWrite: false, fog: true, toneMapped: false,
     blending: additive ? AdditiveBlending : NormalBlending,
@@ -166,11 +176,12 @@ export function createParticleLayer({ capacity, additive, order }: { capacity: n
   mesh.visible = false
 
   const particles: Particle[] = []
+  let atlas: ParticleAtlas | null = null, spawned = 0
   const state: ParticleState = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, size: 0, alpha: 0, r: 0, g: 0, b: 0 }
 
   /** Adds a particle born at `now` (simulation seconds). Over the cap it replaces the oldest. */
   function spawn(spec: ParticleSpec, now: number) {
-    const particle = { spec, born: now + (spec.delay ?? 0) }
+    const particle = { spec, born: now + (spec.delay ?? 0), order: spawned++ }
     if (particles.length < capacity) { particles.push(particle); return }
     let oldest = 0
     for (let index = 1; index < particles.length; index++) if (particles[index].born < particles[oldest].born) oldest = index
@@ -189,7 +200,8 @@ export function createParticleLayer({ capacity, additive, order }: { capacity: n
       const spec = particle.spec
       position.setXYZ(drawn, s.x, s.y, s.z)
       color.setXYZW(drawn, s.r, s.g, s.b, s.alpha)
-      shape.setXYZW(drawn, s.size, (spec.rotation ?? 0) + (spec.spin ?? 0) * age, spec.sprite, spec.minPx ?? 0)
+      const cells = atlas?.cells[spec.sprite], cell = cells?.length ? cells[particle.order % cells.length] : spec.sprite
+      shape.setXYZW(drawn, s.size, (spec.rotation ?? 0) + (spec.spin ?? 0) * age, cell, spec.minPx ?? 0)
       const speed = Math.hypot(s.vx, s.vy, s.vz)
       if (spec.stretch && speed > 1e-3) stretch.setXYZW(drawn, s.vx / speed, s.vy / speed, s.vz / speed, speed * spec.stretch)
       else stretch.setXYZW(drawn, 0, 0, 0, 0)
@@ -203,8 +215,13 @@ export function createParticleLayer({ capacity, additive, order }: { capacity: n
     if (camera) material.uniforms.uPixel.value = 2 * Math.tan(MathUtils.degToRad(camera.fov) / 2) / Math.max(1, viewportHeight)
   }
 
-  function setAtlas(texture: Texture) { material.uniforms.map.value = texture; mesh.visible = true }
-  function clear() { particles.length = 0; geometry.instanceCount = 0 }
+  /** Draws with this atlas from the next update on, live particles included. */
+  function setAtlas(next: ParticleAtlas) {
+    atlas = next
+    material.uniforms.map.value = next.texture; material.uniforms.uPainted.value = next.painted
+    mesh.visible = true
+  }
+  function clear() { particles.length = 0; geometry.instanceCount = 0; spawned = 0 }
   function dispose() { geometry.dispose(); material.dispose() }
   return { mesh, spawn, update, setAtlas, clear, dispose, get count() { return particles.length } }
 }
