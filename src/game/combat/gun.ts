@@ -8,8 +8,12 @@ cooldown carries over a release, so tapping the trigger never beats the rate,
 and a tap on a rested gun fires one round at once.
 
 Heat: builds with trigger time, not per round, so continuous fire from cold
-overheats after exactly `heatSeconds`. An overheated gun cannot fire and keeps
-cooling, even with the trigger held, until heat falls below `resumeHeat`.
+overheats after exactly `heatSeconds`. Two lockouts, both cooling even with the
+trigger held (the user's two-tier rule, 2026-10-24):
+- Release the trigger at or above `lockHeat`: cooling lockout until heat falls below `resumeHeat`.
+- Reach full heat: overheat lockout until heat is down to `overheatResumeHeat`, the longer wait.
+Firing on into overheat buys a little more fire for a longer silence; stopping in the warning band
+costs a short one.
 */
 import type { GunProfile } from '../../content/weapons'
 
@@ -18,6 +22,8 @@ export interface GunState {
   /** 0 = cold, 1 = overheated. */
   heat: number
   overheated: boolean
+  /** Released in the warning band: locked out until heat falls below the profile's `resumeHeat`. */
+  cooling: boolean
   /** Seconds until the next round may fire; 0 when rested. */
   cooldown: number
   /** Rounds fired so far; seeds each round's spread. */
@@ -25,13 +31,13 @@ export interface GunState {
 }
 
 export function createGunState(weaponId: string): GunState {
-  return { weaponId, heat: 0, overheated: false, cooldown: 0, shots: 0 }
+  return { weaponId, heat: 0, overheated: false, cooling: false, cooldown: 0, shots: 0 }
 }
 
 /** Advances the gun by `dt`. Returns the birth time of each round fired, in seconds from the start of the tick. */
 export function stepGun(gun: GunState, profile: GunProfile, held: boolean, dt: number): number[] {
   const births: number[] = []
-  if (held && !gun.overheated) {
+  if (held && !gun.overheated && !gun.cooling) {
     let t = gun.cooldown
     for (; t < dt - 1e-12; t += 1 / profile.rate) births.push(t)
     gun.cooldown = t - dt
@@ -39,9 +45,12 @@ export function stepGun(gun: GunState, profile: GunProfile, held: boolean, dt: n
     // Summed float steps land a hair under 1 at exactly heatSeconds.
     if (gun.heat >= 1 - 1e-9) { gun.heat = 1; gun.overheated = true }
   } else {
+    if (!held && !gun.overheated && gun.heat >= profile.lockHeat) gun.cooling = true
     gun.cooldown = Math.max(0, gun.cooldown - dt)
     gun.heat = Math.max(0, gun.heat - dt * profile.coolRate)
-    if (gun.overheated && gun.heat < profile.resumeHeat) gun.overheated = false
+    // At most: heat stops at 0, so an overheat resume mark of 0 is reached exactly.
+    if (gun.overheated && gun.heat <= profile.overheatResumeHeat) gun.overheated = false
+    if (gun.cooling && gun.heat < profile.resumeHeat) gun.cooling = false
   }
   gun.shots += births.length
   return births

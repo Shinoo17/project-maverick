@@ -117,6 +117,8 @@ export interface GlassState {
   /** Gun heat, 0–1; an overheated gun cannot fire until it cools below its resume mark. */
   gunHeat: number
   gunOverheated: boolean
+  /** Locked after a release in the warning band (game/combat/gun.ts). */
+  gunCooling: boolean
   airbrake: boolean
   highG: boolean
   /** Any high-AoA regime (HIGH_AOA, POST_STALL or RECOVERING). */
@@ -654,8 +656,8 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     const burnerClock = live ? `${state.burnerSeconds.toFixed(1)}s` : '––.–s'
 
     // Gun heat as a number: the burst budget, and OVHT while the gun is locked out.
-    const gunLabel = !live ? 'GUN –––' : state.gunOverheated ? 'GUN OVHT' : `GUN ${Math.round(state.gunHeat * 100)}%`
-    const gunColor = !live ? HUD_GREEN_DIM : state.gunOverheated ? HUD_GREEN_ALERT : state.gunHeat > GUN_HEAT_CAUTION ? HUD_GREEN_CAUTION : HUD_GREEN_DIM
+    const gunLabel = !live ? 'GUN –––' : state.gunOverheated ? 'GUN OVHT' : state.gunCooling ? 'GUN COOL' : `GUN ${Math.round(state.gunHeat * 100)}%`
+    const gunColor = !live ? HUD_GREEN_DIM : state.gunOverheated || state.gunCooling ? HUD_GREEN_ALERT : state.gunHeat > GUN_HEAT_CAUTION ? HUD_GREEN_CAUTION : HUD_GREEN_DIM
 
     // Narrow frames have no room outboard of the tapes; both gauges become digits.
     if (layout.compact) {

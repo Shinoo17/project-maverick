@@ -59,6 +59,7 @@
 .flight-lab div { display: flex; justify-content: space-between; gap: 10px; margin: 4px 0; }
 .flight-lab dd { margin: 0; color: var(--hud-ice); font-weight: 700; text-align: right; }
 .flight-controls { position: absolute; bottom: 8px; left: 20px; right: 20px; margin: 0; text-align: center; color: var(--hud-green-dim); font-size: 10px; line-height: 1.5; letter-spacing: 0.04em; }
+.flight-hud:has(.wpn) .flight-controls { right: 340px; }
 .flight-timescale { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); margin: 0; padding: 3px 10px; border: 1px solid var(--hud-green-soft); border-radius: 2px; background: var(--hud-plate); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
 @media (max-height: 760px) {
   .flight-controls { display: none; }

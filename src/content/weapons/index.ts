@@ -33,8 +33,12 @@ export interface GunProfile {
   heatSeconds: number
   /** Heat lost per second while not firing, on a 0–1 scale. Provisional: doc 07 gives no rate. */
   coolRate: number
-  /** An overheated gun fires again once heat falls below this. */
+  /** Releasing the trigger at or above this heat locks the gun until it cools below `resumeHeat`. */
+  lockHeat: number
+  /** A gun locked by a release in the warning band fires again once heat falls below this. */
   resumeHeat: number
+  /** An overheated gun fires again once heat is down to this; lower than `resumeHeat`, so overheating costs more. */
+  overheatResumeHeat: number
 }
 export interface WeaponStation {
   id: string
@@ -55,18 +59,26 @@ export interface WeaponStation {
 export interface WeaponStore { stationId: string; weaponId: string; count: number }
 const label = (en: string, th: string): LocalizedText => ({ en, th })
 const usaf = 'https://www.af.mil/About-Us/Fact-Sheets/Display/Article/104506/f22/f-22-raptor/'
-// One baseline for both guns until playtests give a reason to split them (doc 07).
-const baselineGun: GunProfile = {
-  rate: 80, muzzleSpeed: 900, damage: 2, spreadDeg: 0.3, hotSpread: 0.5,
-  lifetime: 1.2, maxDistance: 1000, heatSeconds: 2, coolRate: 0.5, resumeHeat: 0.35,
+// Two gun families (user decision 2026-10-24), tuned to the same 100 HP/s so neither side wins
+// on paper: the choice is feel. Gameplay values, slower than the real guns, and provisional.
+// - M61 (F-14, F-15, F-16, F/A-18, F-22): rotary 20 mm, a dense tracer stream, flat and fast.
+//   Muzzle speed of the real M61A2 with PGU-28 rounds (about 1,030 m/s).
+// - GSh-30-1 family (Su-27/30/35/57, MiG-29): single-barrel 30 mm, a slow heavy beat that needs
+//   more lead (about 870 m/s) and a wider cone.
+const gunHeat = { coolRate: 0.5, lockHeat: 0.8, resumeHeat: 0.35, overheatResumeHeat: 0 } as const
+const m61Gun: GunProfile = {
+  rate: 50, muzzleSpeed: 1030, damage: 2, spreadDeg: 0.3, hotSpread: 0.5,
+  lifetime: 1.2, maxDistance: 1000, heatSeconds: 3, ...gunHeat,
 }
-// Muzzle speed of the real M61A2 with PGU-28 rounds (about 1,030 m/s); less drop and less lead than the baseline.
-const m61Gun: GunProfile = { ...baselineGun, muzzleSpeed: 1030 }
+const gsh30Gun: GunProfile = {
+  rate: 25, muzzleSpeed: 870, damage: 4, spreadDeg: 0.45, hotSpread: 0.5,
+  lifetime: 1.2, maxDistance: 1000, heatSeconds: 3.5, ...gunHeat,
+}
 export const weapons: readonly WeaponDefinition[] = [
   { id: 'm61a2', name: label('M61A2 · 20 mm', 'M61A2 · 20 มม.'), kind: 'gun', calibreMm: 20, gun: m61Gun, source: usaf },
   { id: 'aim9', name: label('AIM-9 Sidewinder', 'AIM-9 Sidewinder'), kind: 'ir', model: { file: 'AIM9_compact.glb', rotation: [0, Math.PI / 2, 0], length: 3.02 }, source: usaf },
   { id: 'aim120', name: label('AIM-120 AMRAAM', 'AIM-120 AMRAAM'), kind: 'radar', model: { file: 'AIM120_compact.glb', rotation: [0, Math.PI / 2, 0], length: 3.66 }, source: usaf },
-  { id: 'su57-cannon', name: label('30 mm aircraft cannon', 'ปืนใหญ่อากาศ 30 มม.'), kind: 'gun', calibreMm: 30, gun: baselineGun, source: 'https://www.rostec.ru/media/news/istrebitel-su-57-pyatoe-pokolenie-na-vzlet/' },
+  { id: 'su57-cannon', name: label('30 mm aircraft cannon', 'ปืนใหญ่อากาศ 30 มม.'), kind: 'gun', calibreMm: 30, gun: gsh30Gun, source: 'https://www.rostec.ru/media/news/istrebitel-su-57-pyatoe-pokolenie-na-vzlet/' },
   // Placeholder identities deliberately avoid claiming a confirmed domestic missile variant.
   { id: 'training-ir', name: label('IR training missile', 'มิสไซล์ IR สำหรับฝึก'), kind: 'ir', provisional: true },
   { id: 'training-radar', name: label('Radar training missile', 'มิสไซล์เรดาร์สำหรับฝึก'), kind: 'radar', provisional: true },

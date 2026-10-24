@@ -103,7 +103,7 @@ describe('damage and death in the runtime', () => {
 
 describe('target drone respawn', () => {
   it('brings a fresh drone back ahead of the player after the wait, and it can be shot down again', () => {
-    const { runtime, events } = shootDrone(60, 6.5)
+    const { runtime, events } = shootDrone(60)
     const killTick = events.find(event => event.type === 'aircraft-destroyed')!.tick
     const waitTicks = Math.round(targetDrone.respawnSeconds / WORLD_STEP)
     // Run to the tick just before the drone is due, and check it is still down.

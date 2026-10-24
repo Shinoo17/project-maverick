@@ -56,6 +56,8 @@ function validateGunProfile(gun: GunProfile | undefined, path: string) {
   }
   for (const key of ['spreadDeg', 'hotSpread'] as const) if (!(Number.isFinite(gun[key]) && gun[key] >= 0)) throw new Error(`${path}.${key}: expected zero or more`)
   if (!(gun.resumeHeat > 0 && gun.resumeHeat < 1)) throw new Error(`${path}.resumeHeat: expected between 0 and 1`)
+  if (!(gun.lockHeat > gun.resumeHeat && gun.lockHeat < 1)) throw new Error(`${path}.lockHeat: expected between resumeHeat and 1`)
+  if (!(gun.overheatResumeHeat >= 0 && gun.overheatResumeHeat <= gun.resumeHeat)) throw new Error(`${path}.overheatResumeHeat: expected between 0 and resumeHeat`)
 }
 
 export function validateSession(config: SessionConfig) {

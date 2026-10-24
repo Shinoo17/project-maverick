@@ -22,6 +22,7 @@ import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { FlightSession } from './session'
 import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
+import { WeaponPanel } from './WeaponPanel'
 import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
 import { practiceSpawns, targetDrone as droneSpawn, type PracticePreset } from '../../game/playground/practice'
 import { dronePaths, type TargetDroneMode } from '../../game/playground/dronePath'
@@ -43,6 +44,12 @@ export function FlightPage() {
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
   const [timeScale, setTimeScale] = useState(1), [targetDrone, setTargetDrone] = useState<TargetDroneMode | null>(null)
   const [view, setView] = useState<'pause' | 'settings'>('pause')
+  // The selected missile slot (0 short range, 1 medium range). Display only until missiles fly.
+  const [missile, setMissile] = useState(0)
+  // Trigger presses refused by a locked gun (cooling or overheated); each one shakes the gun card.
+  const [gunDenied, setGunDenied] = useState(0)
+  const latest = useRef<AircraftState | null>(null)
+  const denyIfLocked = useCallback(() => { const gun = latest.current?.gun; if (gun && (gun.overheated || gun.cooling)) setGunDenied(count => count + 1) }, [])
   const [hasStarted, setHasStarted] = useState(false)
   const [ready, setReady] = useState(false), [running, setRunning] = useState(false), [failed, setFailed] = useState(false)
   const [retry, setRetry] = useState(0), [pointerError, setPointerError] = useState(false)
@@ -70,7 +77,7 @@ export function FlightPage() {
   }, [session])
   const onReady = useCallback(() => setReady(true), [])
   const onError = useCallback(() => { setFailed(true); pause() }, [pause])
-  const onTelemetry = useCallback((state: AircraftState) => { setTelemetry(state); if (!state.alive) pause() }, [pause])
+  const onTelemetry = useCallback((state: AircraftState) => { latest.current = state; setTelemetry(state); if (!state.alive) pause() }, [pause])
   useEffect(() => {
     if (!running) { if (!dialog.current?.open) dialog.current?.showModal() }
     else { closeDialog(); setView('pause') }
@@ -87,13 +94,15 @@ export function FlightPage() {
       if (!bound) return
       e.preventDefault()
       if (bound.action === 'cameraCycle') { if (!e.repeat) { selectCamera(nextCameraSettings(session.camera)); setCameraChanged(true) }; return }
+      if (bound.action === 'selectMissile1' || bound.action === 'selectMissile2') { setMissile(bound.action === 'selectMissile1' ? 0 : 1); return }
+      if (bound.action === 'fireGun' && !e.repeat) denyIfLocked()
       // Look back is bound but has no camera behind it yet (Settings lists it as pending).
       if (bound.action !== 'lookBack') session.input.press(e.code, e.repeat)
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
     const move = (e: MouseEvent) => { if (session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.move(e.movementX, e.movementY) }
     // Only a press made while already locked fires: the click that takes the lock never does (doc 02).
-    const mousedown = (e: MouseEvent) => { if (e.button === 0 && session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.mouseGun = true }
+    const mousedown = (e: MouseEvent) => { if (e.button === 0 && session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') { session.input.mouseGun = true; denyIfLocked() } }
     const mouseup = (e: MouseEvent) => { if (e.button === 0) session.input.mouseGun = false }
     const lock = () => { session.input.clear(); if (!document.pointerLockElement && session.preset === 'mouse' && session.running) pause() }
     const hidden = () => { if (document.hidden) pause() }
@@ -106,7 +115,7 @@ export function FlightPage() {
       document.removeEventListener('pointerlockchange', lock); document.removeEventListener('visibilitychange', hidden)
       session.running = false; session.input.clear(); if (document.pointerLockElement === surface.current) document.exitPointerLock()
     }
-  }, [pause, session])
+  }, [pause, session, denyIfLocked])
   async function begin() {
     session.input.clear(); setPointerError(false)
     // Close the top-layer dialog before asking the browser to lock the scene.
@@ -160,6 +169,8 @@ export function FlightPage() {
       <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
       <div className="flight-actions">{graphics.showFps && <span ref={indicators.fps} className="flight-fps" aria-hidden="true" />}<span>{t(cameraRollOption(camera.roll).labelKey)}{camera.roll === 'horizon' ? ` · ${t(horizonStyleOption(camera.horizonStyle).labelKey)}` : ''}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />
+      {/* The Flight Lab readout takes the same corner, so the column steps aside while it is open. */}
+      {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} selected={missile} denied={gunDenied} preset={preset} bindings={keyboard.bindings} reducedMotion={reducedMotion} />}
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
       {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
       {running && preset === 'mouse' && controls.mode !== 'aim' && controls.mode !== 'cursor' && <div ref={indicators.gate} className="flight-stick-gate" aria-hidden="true" />}

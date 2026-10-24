@@ -2,7 +2,7 @@
 // without WebGL, pointer lock or the pause dialog. Query: ?t=12 freezes the clock,
 // ?lang=en, ?lesson=2, ?lab, ?warning, ?stall, ?recovering, ?psm, ?size=1280x672,
 // ?gun (a target crossing 550 m ahead: box, HP, lead, reticle; ?gun=hit adds a hit each second,
-// ?gun=assist shows the ASSIST label).
+// ?gun=assist shows the ASSIST label). Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?deny (a refused trigger press each second), ?hp=25, ?sel=1, ?firing.
 import { createRef, StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useTranslation } from 'react-i18next'
@@ -12,12 +12,17 @@ import { GameRuntime } from '../../game/runtime/GameRuntime'
 import type { AircraftState } from '../../game/state/WorldState'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import { PlaygroundHud } from './PlaygroundHud'
+import { WeaponPanel } from './WeaponPanel'
 import { flightWarning } from './telemetry'
 import { defaultBindings } from '../../game/input/keyBindings'
 import { bindingNames } from '../settings/KeyPrompt'
 import { angleOfAttack } from '../../game/flight/stall'
 import { createGunnery } from '../../render/gunneryFrame'
 import type { GameEvent } from '../../game/runtime/events'
+import '@fontsource/barlow-condensed/600.css'
+import '@fontsource/barlow-condensed/600-italic.css'
+import '@fontsource/barlow-condensed/700-italic.css'
+import '@fontsource/ibm-plex-mono/500.css'
 import '../../ui/styles.css'
 import './flight.css'
 
@@ -28,6 +33,7 @@ if (params.get('lang')) void i18n.changeLanguage(params.get('lang')!)
 const [frameWidth, frameHeight] = (params.get('size') ?? '').split('x').map(Number)
 const frame = frameWidth && frameHeight ? { flex: 'none', width: frameWidth, height: frameHeight, minHeight: 0 } : undefined
 const deg = Math.PI / 180, up = new Vector3(0, 1, 0)
+const aircraftId = params.get('aircraft') ?? 'f22'
 
 function fly(state: AircraftState, t: number) {
   const heading = 40 + t * 12, pitch = 9 * Math.sin(t * 0.45), bank = 38 * Math.sin(t * 0.37), speed = 110 + 22 * Math.sin(t * 0.3)
@@ -51,12 +57,24 @@ function fly(state: AircraftState, t: number) {
   }
   if (params.has('stall')) state.stall = { severity: 0.8, cause: 'aoa', aoaDeg: 42 }
   if (params.has('recovering')) state.stall = { severity: 0.4, cause: 'none', aoaDeg: 10 }
+  state.rates = { pitch: 0.1, yaw: 0, roll: 0.9 * Math.cos(t * 0.37) }
+  if (params.get('heat') === 'cycle') {
+    // 2 s of fire to overheat, then the overheat lockout cooling to 0 at 0.5/s, like the M61 profile.
+    const phase = t % 4
+    state.gun.heat = phase < 2 ? phase / 2 : Math.max(0, 1 - (phase - 2) * 0.5)
+    state.gun.overheated = phase >= 2 && state.gun.heat > 0
+    state.gun.shots = phase < 2 ? Math.floor(t * 50) : state.gun.shots
+  } else if (params.has('heat')) state.gun.heat = Number(params.get('heat'))
+  if (params.has('ovht')) { state.gun.heat = 0.9; state.gun.overheated = true }
+  if (params.has('cooling')) { state.gun.heat = 0.6; state.gun.cooling = true }
+  if (params.has('firing')) state.gun.shots = Math.floor(t * 50)
+  if (params.has('hp')) state.hp = Number(params.get('hp'))
 }
 
 function Preview() {
   const { t } = useTranslation()
   const [driver] = useState(() => createRef<HudDriver>())
-  const [world] = useState(() => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'], targetDrone: 'still' }).snapshot())
+  const [world] = useState(() => new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], targetDrone: 'still' }).snapshot())
   const state = world.aircraft[0], target = world.aircraft[1]
   const [telemetry, setTelemetry] = useState<AircraftState>(() => structuredClone(state))
   useEffect(() => {
@@ -99,6 +117,7 @@ function Preview() {
     <div className="flight-identity"><strong>F-22</strong><span>{t('training')} / {t('flatRange')}</span></div>
     <div className="flight-actions"><span>{t('cameraRollHorizon')}</span><button>{t('pauseFlight')} · Esc</button></div>
     <FlightSystemStatus state={telemetry} />
+    {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} selected={Number(params.get('sel') ?? 0)} denied={params.has('deny') ? Math.floor(performance.now() / 1000) : 0} preset="mouse" bindings={defaultBindings} reducedMotion={false} />}
     <PlaygroundHud state={telemetry} lesson={lesson} cameraChanged={false} lab={lab} />
     <p className="flight-warning" role="status">{warning ? t(warning) : ''}</p>
     <p className="flight-controls">{t('controlsHint', bindingNames(defaultBindings))}</p>

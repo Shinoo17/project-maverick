@@ -1,0 +1,122 @@
+/* Weapons column (WeaponPanel.tsx). Off-white symbology over a set-back grid plane; the HUD's
+   green marks only the selected missile, red only heat and damage. */
+.wpn {
+  --wpn-ink: #f2f4ee; --wpn-dim: rgba(242, 244, 238, 0.66); --wpn-faint: rgba(242, 244, 238, 0.17);
+  --wpn-select: #62ff84; --wpn-caution: #ffd08a; --wpn-alert: #ff5c5c;
+  --wpn-shade: 0 1px 2px rgba(0, 0, 0, 0.6), 0 0 1px rgba(0, 0, 0, 0.5);
+  position: absolute; right: 24px; bottom: 26px; width: 300px;
+  perspective: 1000px; perspective-origin: 0% 40%;
+  color: var(--wpn-ink); text-shadow: var(--wpn-shade);
+  font-family: 'Barlow Condensed', 'IBM Plex Sans Thai', 'Arial Narrow', sans-serif; font-variant-numeric: tabular-nums;
+  transform-origin: 100% 100%;
+}
+.wpn-stage {
+  position: relative; display: flex; flex-direction: column; gap: 5px; transform-style: preserve-3d;
+  transform: translateY(var(--wpn-drop, 0px)) rotateX(calc(5deg + var(--wpn-sag, 0deg))) rotateY(calc(-12deg + var(--wpn-sway, 0deg)));
+  transition: transform 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.wpn-stage > * { transition: transform 500ms cubic-bezier(0.2, 0.9, 0.2, 1), opacity 300ms ease-out; }
+.wpn-back {
+  position: absolute; inset: -12px -12px -10px; transform: translateZ(-60px); pointer-events: none;
+  background:
+    linear-gradient(rgba(242, 244, 238, 0.055) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgba(242, 244, 238, 0.055) 1px, transparent 1px) 0 0 / 24px 24px,
+    rgba(4, 7, 10, 0.4);
+  -webkit-mask: radial-gradient(130% 110% at 70% 60%, #000 40%, transparent 88%); mask: radial-gradient(130% 110% at 70% 60%, #000 40%, transparent 88%);
+}
+
+/* HP: the user's reference — italic label, slanted segments, value and state in words. */
+.wpn-hp { display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 4px; transform: translateZ(10px); }
+.wpn-hp-label { font-style: italic; font-weight: 700; font-size: 16px; letter-spacing: 0.04em; }
+.wpn-hp-bar { flex: 1; display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; padding: 0 4px; }
+.wpn-hp-bar i { height: 13px; background: var(--wpn-faint); transform: skewX(-22deg); }
+.wpn-hp-bar i[data-on] { background: var(--wpn-ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
+.wpn-hp-value { min-width: 36px; font-style: italic; font-weight: 700; font-size: 24px; line-height: 1; text-align: right; }
+.wpn-hp-state { width: 52px; font-weight: 600; font-size: 10px; letter-spacing: 0.2em; color: var(--wpn-dim); }
+.wpn[data-health="damaged"] .wpn-hp-bar i[data-on] { background: var(--wpn-caution); }
+.wpn[data-health="damaged"] .wpn-hp-state { color: var(--wpn-caution); }
+.wpn[data-health="critical"] .wpn-hp-bar i[data-on], .wpn[data-health="critical"] .wpn-hp-value, .wpn[data-health="critical"] .wpn-hp-state { animation: wpn-blink 0.5s steps(1, end) infinite; }
+.wpn[data-health="critical"] .wpn-hp-bar i[data-on] { background: var(--wpn-alert); }
+.wpn[data-health="critical"] .wpn-hp-value, .wpn[data-health="critical"] .wpn-hp-state { color: var(--wpn-alert); }
+
+/* Cards: icon left, category over name, one large numeral, the input at the bottom right. */
+.wpn-card {
+  position: relative; display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; grid-template-rows: 12px 17px 1fr;
+  column-gap: 10px; height: 52px; padding: 6px 10px 5px;
+}
+.wpn-icon { grid-column: 1; grid-row: 1 / 3; align-self: center; width: 84px; height: 22px; overflow: visible; }
+.wpn-icon * { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linejoin: round; stroke-linecap: round; }
+.wpn-cat { grid-column: 2; grid-row: 1; font-weight: 600; font-size: 10px; line-height: 12px; letter-spacing: 0.2em; color: var(--wpn-dim); white-space: nowrap; }
+.wpn-name { grid-column: 2; grid-row: 2; overflow: hidden; font-weight: 600; font-size: 14px; line-height: 17px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; text-overflow: ellipsis; }
+.wpn-value { grid-column: 3; grid-row: 1 / 3; align-self: center; font-style: italic; font-weight: 600; font-size: 28px; line-height: 1; text-align: right; }
+.wpn-value small { margin-left: 1px; font-size: 14px; color: var(--wpn-dim); }
+.wpn-row { grid-column: 1 / -1; grid-row: 3; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.wpn-foot { font-weight: 600; font-size: 10px; letter-spacing: 0.2em; color: var(--wpn-dim); }
+
+.wpn kbd {
+  display: inline-block; min-width: 18px; padding: 2px 5px 1px; border: 1px solid rgba(242, 244, 238, 0.5); border-bottom-width: 2px; border-radius: 2px;
+  background: rgba(4, 7, 10, 0.5); color: var(--wpn-ink); font: 500 10px/1.2 'IBM Plex Mono', monospace; text-align: center; text-shadow: none;
+}
+.wpn-key { display: inline-flex; align-items: center; gap: 4px; font: 500 10px/1 'IBM Plex Mono', monospace; letter-spacing: 0.06em; }
+.wpn-key b { font-weight: 400; color: var(--wpn-dim); }
+.wpn-mouse { position: relative; width: 9px; height: 13px; border: 1.5px solid currentColor; border-radius: 5px; }
+.wpn-mouse::before { content: ''; position: absolute; top: 0; left: 0; width: 50%; height: 45%; background: currentColor; border-radius: 3px 0 0 0; }
+.wpn-mouse[data-button="right"]::before { left: auto; right: 0; border-radius: 0 3px 0 0; }
+
+/* Gun: the card is the heat gauge. Cold, it has no plate or outline. Warm, a faint track and a
+   slightly stronger hairline appear, and a fill runs from the left edge (0%) to the right (100%):
+   off-white while firing, red and flashing past 80%, solid red while locked out (released past 80%:
+   until 35%; overheated: until 0). Eased over the 100 ms between telemetry updates; the plate fades out once the gun is cold. */
+.wpn-gun { transform: translateZ(24px); }
+.wpn-heat {
+  --heat: 242, 244, 238; position: absolute; inset: 0; z-index: -1; overflow: hidden; opacity: 0; transition: opacity 300ms ease-out;
+  background: rgba(var(--heat), 0.06); box-shadow: inset 0 0 0 1px rgba(var(--heat), 0.2);
+}
+.wpn-heat i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(var(--heat), 0.22); border-right: 2px solid rgba(var(--heat), 0.9); transition: width 100ms linear; }
+.wpn-gun[data-heat] .wpn-heat { opacity: 1; }
+.wpn-gun:not([data-state="ready"]) .wpn-heat { --heat: 255, 92, 92; }
+.wpn-gun[data-state="hot"] .wpn-heat i { animation: wpn-blink 0.3s steps(1, end) infinite; }
+.wpn-gun[data-state="overheat"] .wpn-heat i, .wpn-gun[data-state="cooling"] .wpn-heat i { background: rgba(var(--heat), 0.45); }
+/* Text stays off-white over the red fill; the words carry the state. */
+.wpn-gun:not([data-state="ready"]) .wpn-foot { color: var(--wpn-ink); font-weight: 700; }
+.wpn-flash { opacity: 0; }
+.wpn-gun[data-firing] .wpn-flash { color: var(--wpn-caution); animation: wpn-blink 0.09s steps(1, end) infinite; opacity: 1; }
+.wpn-gun[data-firing] .wpn-barrel { stroke-dasharray: 6 3; animation: wpn-spin 0.12s linear infinite; }
+
+/* Missiles: the selected card steps toward the pilot; the other recedes. */
+.wpn-missile { transform: translateZ(-18px); opacity: 0.5; }
+.wpn-missile[data-selected] { transform: translateZ(40px) translateX(-10px); opacity: 1; }
+.wpn-missile[data-selected] .wpn-icon { color: var(--wpn-select); }
+.wpn-missile::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 1px; background: var(--wpn-faint); }
+.wpn-missile[data-selected]::after { height: 2px; background: var(--wpn-select); }
+.wpn-pips { display: flex; gap: 4px; padding-left: 3px; padding-bottom: 3px; }
+.wpn-pips i { width: 7px; height: 9px; background: var(--wpn-faint); transform: skewX(-22deg); }
+.wpn-pips i[data-on] { background: var(--wpn-ink); }
+.wpn-missile[data-selected] .wpn-pips i[data-on] { background: var(--wpn-select); }
+.wpn-launch { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; }
+.wpn-launch[data-pending] kbd { border-style: dashed; }
+.wpn-missile[data-empty] .wpn-icon * { stroke-dasharray: 2 2.5; }
+.wpn-missile[data-empty] .wpn-value { color: var(--wpn-dim); }
+.wpn-a11y { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* A trigger press on a locked gun: the card shudders sideways, the gun refusing to fire. */
+.wpn-gun[data-denied="a"] { animation: wpn-deny-a 320ms; }
+.wpn-gun[data-denied="b"] { animation: wpn-deny-b 320ms; }
+@keyframes wpn-deny-a { 15% { translate: -5px 0; } 35% { translate: 4px 0; } 55% { translate: -3px 0; } 75% { translate: 2px 0; } 100% { translate: 0 0; } }
+@keyframes wpn-deny-b { 15% { translate: -5px 0; } 35% { translate: 4px 0; } 55% { translate: -3px 0; } 75% { translate: 2px 0; } 100% { translate: 0 0; } }
+.wpn[data-hit="a"] { animation: wpn-hit-a 420ms; }
+.wpn[data-hit="b"] { animation: wpn-hit-b 420ms; }
+@keyframes wpn-hit-a { 10% { translate: -6px 3px; } 25% { translate: 5px -3px; } 45% { translate: -3px 2px; } 70% { translate: 2px -1px; } 100% { translate: 0 0; } }
+@keyframes wpn-hit-b { 10% { translate: -6px 3px; } 25% { translate: 5px -3px; } 45% { translate: -3px 2px; } 70% { translate: 2px -1px; } 100% { translate: 0 0; } }
+/* Tracking breaks Thai vowel and tone marks. */
+:lang(th) .wpn-name { letter-spacing: 0; }
+@keyframes wpn-blink { 0% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes wpn-spin { to { stroke-dashoffset: -9; } }
+
+@media (max-width: 1000px), (max-height: 700px) { .wpn { right: 20px; bottom: 30px; scale: 0.8; } }
+@media (max-width: 760px) { .wpn { right: 8px; bottom: 12px; scale: 0.64; } }
+@media (prefers-reduced-motion: reduce) {
+  .wpn-stage, .wpn-stage > * { transition: none; }
+  .wpn[data-hit], .wpn-gun[data-denied] { animation: none; }
+  .wpn-gun[data-firing] .wpn-barrel { animation: none; }
+}

@@ -10,21 +10,29 @@
 
 ใช้ ballistic projectile จำลองเป็นข้อมูลและ swept collision ไม่สร้าง rigid body หรือ React component ต่อกระสุน รูป tracer เป็น pool/instanced view ต่างหาก ไม่ต้องวาดกระสุนทุกนัด
 
-| Baseline ทดลอง | ค่า |
+ปืนแยกสองตระกูล (owner 2026-10-24) ตั้ง damage ต่อวินาทีเท่ากันที่ 100 HP/s เพื่อให้ต่างกันที่ความรู้สึก ไม่ใช่ความแรง: M61 สำหรับ F-14/F-15/F-16/F/A-18/F-22 และ GSh-30-1 สำหรับตระกูล Su และ MiG-29 ค่าเป็น gameplay ช้ากว่าปืนจริง และ provisional รอ playtest
+
+| Baseline ทดลอง | M61 (20 มม. ลำกล้องหมุน) | GSh-30-1 (30 มม. ลำกล้องเดียว) |
+|---|---:|---:|
+| Rate | 50 นัด/s; สะสม shot budget ตาม dt | 25 นัด/s |
+| Muzzle speed สัมพัทธ์เครื่องยิง | 1,030 m/s (M61A2 กับ PGU-28) | 870 m/s |
+| Damage | 2 HP ต่อ hit | 4 HP ต่อ hit |
+| Spread (มุมยอดเต็ม) | 0.3° | 0.45° |
+| ยิงต่อเนื่องจน overheat | 3 s | 3.5 s |
+
+| ใช้ร่วมกัน | ค่า |
 |---|---:|
-| Rate | 80 นัด/s; สะสม shot budget ตาม dt |
-| Muzzle speed | 900 m/s สัมพัทธ์เครื่องยิง; M61A2 ของ F-22 ใช้ 1,030 m/s ตามของจริง |
 | แนวปืน | เงยขึ้นจากแนวลำตัว 0.5° (gun harmonisation) ชดเชย AoA ขณะเลี้ยวและการตก; วัดที่ 500 m: บินตรงสูงกว่าแนวหัว ~1.3 m, ดึงเต็มต่ำกว่า ~3 m (1.5° สูงเกินไป 4–9 m เพราะ flight model คุม AoA แค่ 1–4°) |
-| Damage | 2 HP ต่อ hit; aircraft baseline 100 HP |
-| Spread | cone 0.3° (มุมยอดเต็ม คือข้างละ 0.15°) seeded ต่อนัดจาก ownerId + ลำดับนัด; ร้อนเต็มกว้างขึ้น 50% |
+| HP | aircraft baseline 100 HP |
+| Spread | cone ตามตารางบน (ครึ่งหนึ่งต่อข้าง) seeded ต่อนัดจาก ownerId + ลำดับนัด; ร้อนเต็มกว้างขึ้น 50% |
 | ระยะที่อยากให้ใช้ | 200–700 m |
 | Lifetime / path distance cap | 1.2 s หรือเดินทางรวม 1,000 m อย่างใดถึงก่อน |
 | Ammo model MVP | ไม่จำกัดนัด แต่ heat จำกัด burst; ไม่ใช่จำนวนกระสุนจริงของเครื่อง |
-| Heat | ยิงต่อเนื่อง 2 s จึง overheat; cool จนต่ำกว่า 35% จึงยิงใหม่; เย็นลง 0.5/s ขณะไม่ยิงหรือ overheat (provisional รอ playtest) |
+| Heat | ยิงต่อเนื่องตามตารางบนจึง overheat; เย็นลง 0.5/s ขณะไม่ยิงหรือถูก lock; โทษสองระดับ (owner 2026-10-24): ปล่อยไกที่ heat ≥ 80% → lock จนต่ำกว่า 35% (~0.9–1.3 s), ยิงจนถึง 100% → overheat lock จนเย็นถึง 0% (2 s); ปล่อยไกต่ำกว่า 80% ยิงต่อได้ทันที (provisional รอ playtest) |
 
 velocity เริ่มต้น = shooter velocity + muzzle direction × muzzle speed; gun direction อิง hardpoint simulation transform ใน aircraft profile ไม่ raycast จาก camera และไม่ยิงไปหา selected target อัตโนมัติ
 
-ที่ 100% hits มี ideal damage time `100/(80×2) = 0.625 s`; ของจริงต้องนานกว่านี้จาก spread/geometry เป้าหมาย playtest คือ burst หลายครั้งรวมประมาณ 2–5 s ของการกดไกเพื่อ kill อย่าเพิ่ม HP ก่อนตรวจว่าปัญหาอยู่ที่ firing window หรือความแม่นยำ
+ที่ 100% hits มี ideal damage time `100/100 = 1 s` ทั้งสองตระกูล (M61 `50×2`, GSh `25×4`); ของจริงต้องนานกว่านี้จาก spread/geometry เป้าหมาย playtest คือ burst หลายครั้งรวมประมาณ 2–5 s ของการกดไกเพื่อ kill อย่าเพิ่ม HP ก่อนตรวจว่าปัญหาอยู่ที่ firing window หรือความแม่นยำ
 
 MVP ช่วยด้วยการแสดงผล และ aim assist ที่ stick (ผู้ใช้ขอเพิ่ม 21 ต.ค. 2026 หลังลองแบบแสดงผลอย่างเดียวแล้วเล็งไม่ได้) ไม่ทำ bullet magnetism: กระสุนไม่เลี้ยว hitbox ไม่ขยาย Aim assist (`src/game/combat/aimAssist.ts`) เติม pitch/yaw เข้าหา gun solution เมื่อ reticle ห่างจาก solution ไม่เกิน cone (ปกติ 8°, แรง 14°; เต็มที่ภายใน 4°/8°) และกระสุนไปถึงได้ ไม่สั่ง roll ยอมให้เมื่อผู้เล่นโยกคันเกินหนึ่งในสาม คิดตอนสร้าง command จึงบันทึกใน replay และบอทใช้ได้ ตั้งค่า ปิด/ปกติ/แรง ใน Settings › การเล็ง (ค่าเริ่มต้นปกติ) HUD ขึ้น ASSIST ใต้ reticle ขณะทำงาน; ค่าทั้งหมด provisional. Mouse aim (ผู้ใช้ขอ 23 ต.ค. 2026): โหมด world-locked ดึงทิศ aim เข้าหา solution ทุก tick; โหมด × ค้างบนจอ (`'cursor'`) ดึงตัว × เข้าหา lead marker ทุก frame เหมือนมือ (ปล่อยแล้วเครื่องไม่สะบัดกลับ) มือที่ขยับเร็วกว่า ~150–700 px/s ชนะแรงดูด; กดยิงค้างดูดแรงขึ้น 3 เท่าและเต็มแรงทั้ง cone และจับได้แม้ × ชี้ที่ตัวเป้า (เป้าตัดขวาง lead ห่างตัวเป้า ≈ ความเร็วเป้า/ความเร็วกระสุน เช่น 7° ที่ 150 m/s) แล้วดูดไปที่ lead (trigger แบบ A) ใน cursor mode reticle ที่ × เล็งคือ reticle เดียวกับที่ HUD วาด (`drawnReticle`: ที่ระยะเป้าเมื่อมี solution) และ × คงมุมเดิมเมื่อ FOV เปลี่ยน (ความเร็ว, burner, gun zoom) เลือกเป้าใน sim (`src/game/combat/targeting.ts`): อัตโนมัติจากเป้าที่ใกล้หัวเครื่องที่สุดใน cone 30° / 3.5 km, T สลับเป้าทีละหนึ่งต่อการกด, ค้างเป้าไว้จนตาย, ไกลเกิน 4.5 km หรืออยู่นอก cone 60° นาน 1 s; การเลือกไม่ใช่ lock Gun solution (`gunSolution.ts`) ใช้ physics เดียวกับ `spawnRound`/`stepRound` (muzzle offset, elevation, ความเร็วเครื่องบวก muzzle speed, gravity) และนำเป้าด้วยความเร็วกับความเร่งของเป้า จึงนำเป้าที่กำลังเลี้ยวได้ HUD แสดง computed gun reticle (จุดที่กระสุนที่ยิงตอนนี้จะอยู่ ที่ระยะของเป้า หรือ 500 m ถ้าไม่มีเป้า) และ lead marker (จุดที่เป้าจะอยู่เมื่อกระสุนไปถึง) ทั้งสองเป็นจุดใน world จึงเอา reticle ทับ lead marker แล้วโดนจริงจากกล้องใดก็ได้ ถ้ากระสุนไปไม่ถึงก่อน lifetime/1,000 m ให้ซ่อน lead และแสดง OUT RNG; IN RNG ที่ ≤ 800 m (provisional) ตัวกรอบเป้าช่วยมอง แต่ไม่เพิ่ม collider ตามขนาด UI Distance scale (`src/render/targetVisibility.ts`, ผู้ใช้ขอ 21 ต.ค. 2026): เครื่องบินลำอื่นวาดใหญ่ขึ้นตามระยะจากกล้อง 1× ที่ ≤ 300 m ถึง 2× ที่ ≥ 1 km (smoothstep, provisional) เหมือน model visibility ของ DCS เฉพาะภาพเท่านั้น hitbox, collision และ on-solution ยังใช้ขนาดจริง; `?hitboxes` แสดง hitbox จริงไม่ขยาย
 

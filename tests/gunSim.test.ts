@@ -31,35 +31,52 @@ function flyRound(round: Projectile, targets: (tick: number) => CombatBody[]) {
 const shooterAt = (y: number, speed = 0) => body('shooter', { x: 0, y, z: 0 }, { x: 0, y, z: 0 }, { x: speed, y: 0, z: 0 })
 
 describe('gun cadence and heat', () => {
-  it('fires 80 rounds a second, a tap fires one at once, and taps never beat the rate', () => {
+  it('fires `rate` rounds a second, a tap fires one at once, and taps never beat the rate', () => {
     const held = createGunState('m61a2')
     let rounds = 0
     for (let tick = 0; tick < 60; tick++) rounds += stepGun(held, profile, true, WORLD_STEP).length
-    expect(rounds).toBe(80)
+    expect(rounds).toBe(profile.rate)
     expect(stepGun(createGunState('m61a2'), profile, true, WORLD_STEP)[0]).toBe(0)
     const tapped = createGunState('m61a2')
     let tapRounds = 0
     for (let tick = 0; tick < 60; tick++) tapRounds += stepGun(tapped, profile, tick % 2 === 0, WORLD_STEP).length
-    expect(tapRounds).toBeLessThanOrEqual(80)
+    expect(tapRounds).toBeLessThanOrEqual(profile.rate)
   })
-  it('overheats after 2 s of fire, then stays silent until heat falls below 35%', () => {
+  it('overheats after `heatSeconds` of fire, then stays silent until it has cooled to 0', () => {
     const gun = createGunState('m61a2')
     let ticks = 0, rounds = 0
     while (!gun.overheated) { rounds += stepGun(gun, profile, true, WORLD_STEP).length; ticks++ }
-    expect(ticks).toBe(120)
-    expect(rounds).toBe(160)
+    expect(ticks).toBe(Math.round(profile.heatSeconds / WORLD_STEP))
+    expect(Math.abs(rounds - profile.rate * profile.heatSeconds)).toBeLessThanOrEqual(1)
     let silent = 0
     // Trigger still held: the gun cools anyway.
     while (stepGun(gun, profile, true, WORLD_STEP).length === 0) silent++
-    const expected = Math.ceil((1 - profile.resumeHeat) / profile.coolRate / WORLD_STEP)
+    const expected = Math.ceil((1 - profile.overheatResumeHeat) / profile.coolRate / WORLD_STEP)
     expect(Math.abs(silent - expected)).toBeLessThanOrEqual(1)
+  })
+  it('a release in the warning band locks the gun until it cools below 35%; below it the gun fires again at once', () => {
+    const fireFor = (gun: ReturnType<typeof createGunState>, seconds: number) => { for (let t = 0; t < Math.round(seconds / WORLD_STEP); t++) stepGun(gun, profile, true, WORLD_STEP) }
+    const cold = createGunState('m61a2')
+    fireFor(cold, 0.5 * profile.heatSeconds)
+    stepGun(cold, profile, false, WORLD_STEP)
+    expect(cold.cooling).toBe(false)
+    expect(stepGun(cold, profile, true, WORLD_STEP).length).toBeGreaterThan(0)
+    const hot = createGunState('m61a2')
+    fireFor(hot, 0.85 * profile.heatSeconds)
+    stepGun(hot, profile, false, WORLD_STEP)
+    expect(hot.cooling).toBe(true)
+    let silent = 0
+    while (stepGun(hot, profile, true, WORLD_STEP).length === 0) silent++
+    expect(hot.cooling).toBe(false)
+    const expected = (0.85 - profile.resumeHeat) / profile.coolRate / WORLD_STEP
+    expect(Math.abs(silent - expected)).toBeLessThanOrEqual(2)
   })
 })
 
 describe('gun rounds', () => {
   it('leave the muzzle at muzzle speed plus the shooter velocity and drop under gravity', () => {
     const round = spawnRound(1, 0, shooterAt(500, 200), 0, [0, 0, 0], 'm61a2', { ...profile, spreadDeg: 0 }, 0, 0)
-    expect(round.velocity.x).toBeCloseTo(1100)
+    expect(round.velocity.x).toBeCloseTo(200 + profile.muzzleSpeed)
     stepRound(round, profile, 0, WORLD_STEP, [])
     expect(round.velocity.y).toBeCloseTo(-GRAVITY * WORLD_STEP)
   })
@@ -67,7 +84,7 @@ describe('gun rounds', () => {
     const gun = gunStation(getAircraft('f22'))
     expect(gun.elevationDeg).toBeGreaterThan(0)
     expect(gun.profile.muzzleSpeed).toBe(1030)
-    expect(gunStation(getAircraft('su57')).profile.muzzleSpeed).toBe(900)
+    expect(gunStation(getAircraft('su57')).profile.muzzleSpeed).toBe(870)
     const round = spawnRound(1, 0, shooterAt(500), 0, [0, 0, 0], 'm61a2', { ...profile, spreadDeg: 0 }, 0, 0, gun.elevationDeg)
     expect(Math.atan2(round.velocity.y, round.velocity.x) * 180 / Math.PI).toBeCloseTo(gun.elevationDeg, 9)
   })
@@ -87,19 +104,19 @@ describe('gun rounds', () => {
     expect((hit as SegmentHit).point.y).toBeCloseTo(0, 6)
   })
   it('hit a still target 600 m ahead although each step is longer than the target is thick', () => {
-    const drop = GRAVITY * (600 / 900) ** 2 / 2
+    const drop = GRAVITY * (600 / profile.muzzleSpeed) ** 2 / 2
     const { hit } = flyRound(spawnRound(1, 0, shooterAt(500), 0, [0, 0, 0], 'm61a2', profile, 0, 0), () => [body('drone', { x: 600, y: 500 - drop, z: 0 })])
     expect(hit).toMatchObject({ kind: 'aircraft', entityId: 'drone' })
   })
   it('hit a target crossing at 250 m/s only with lead', () => {
-    // Round time to 500 m is about 0.556 s; the target crosses z = 0 then when it starts 139 m out.
+    // Round time to 500 m is 500 / muzzle speed; the target crosses z = 0 then when it starts that time × 250 m/s out.
     const crossing = (startZ: number) => (tick: number) => {
       const z0 = startZ + 250 * tick * WORLD_STEP, z1 = z0 + 250 * WORLD_STEP
-      const drop = GRAVITY * (500 / 900) ** 2 / 2
+      const drop = GRAVITY * (500 / profile.muzzleSpeed) ** 2 / 2
       return [body('drone', { x: 500, y: 500 - drop, z: z0 }, { x: 500, y: 500 - drop, z: z1 }, { x: 0, y: 0, z: 250 })]
     }
     const fire = () => spawnRound(1, 0, shooterAt(500), 0, [0, 0, 0], 'm61a2', { ...profile, spreadDeg: 0 }, 0, 0)
-    expect(flyRound(fire(), crossing(-500 / 900 * 250)).hit).toMatchObject({ kind: 'aircraft', entityId: 'drone' })
+    expect(flyRound(fire(), crossing(-500 / profile.muzzleSpeed * 250)).hit).toMatchObject({ kind: 'aircraft', entityId: 'drone' })
     expect(flyRound(fire(), crossing(0)).hit).toBeNull()
   })
   it('ignore the shooter only while leaving the muzzle', () => {
@@ -126,7 +143,7 @@ describe('gun in the runtime', () => {
 
   it('gives the same rounds at 30, 60 and 144 fps', () => {
     const reference = fly(60, 1, trigger(0, 60)).world
-    expect(reference.aircraft[0].gun.shots).toBe(80)
+    expect(reference.aircraft[0].gun.shots).toBe(getWeapon('m61a2').gun!.rate)
     expect(new Set(reference.projectiles.map(round => round.id)).size).toBe(reference.projectiles.length)
     for (const fps of [30, 144]) {
       const world = fly(fps, 1, trigger(0, 60)).world
@@ -139,7 +156,7 @@ describe('gun in the runtime', () => {
   })
   it('hits the target drone with a slow pitch sweep, never the shooter, and a replay fires the same rounds', () => {
     // Close to about 650 m, sweep the nose up through the drone 25 m above, and let the rounds arrive.
-    const { runtime, world, hits } = fly(60, 7, trigger(300, 360, 0.15), true)
+    const { runtime, world, hits } = fly(60, 7, trigger(300, 390, 0.1), true)
     expect(hits.some(entry => entry.hit.kind === 'aircraft' && entry.hit.entityId === 'drone-1')).toBe(true)
     expect(hits.some(entry => entry.hit.kind === 'aircraft' && entry.hit.entityId === 'aircraft-1')).toBe(false)
     const replayed = runFlightReplay(runtime.exportReplay())
@@ -151,7 +168,7 @@ describe('gun in the runtime', () => {
     runtime.reset()
     const world = runtime.snapshot()
     expect(world.projectiles).toEqual([])
-    expect(world.aircraft[0].gun).toMatchObject({ heat: 0, shots: 0, cooldown: 0, overheated: false })
+    expect(world.aircraft[0].gun).toMatchObject({ heat: 0, shots: 0, cooldown: 0, overheated: false, cooling: false })
     expect(runtime.drainHits()).toEqual([])
   })
 })
