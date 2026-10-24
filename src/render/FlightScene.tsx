@@ -6,6 +6,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Box3, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import { AssetLoaderProvider, useAircraftAsset } from './aircraft/assetLoader'
 import { buildFlightModel } from './aircraft/flightModel'
+import { applyEnvironment, createSkyEnvironment } from './aircraft/skyEnvironment'
 import { DroneWrecks, TargetDrone } from './TargetDrone'
 import { createCombatEffects } from './vfx/combatEffects'
 import { HitboxWireframe } from './HitboxWireframe'
@@ -50,7 +51,13 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const previous = useRef<AircraftState | null>(null), current = useRef<AircraftState | null>(null)
   const wasRunning = useRef(false), fps = useRef({ frames: 0, since: -1 })
   const invalidate = useThree(state => state.invalidate)
+  const gl = useThree(state => state.gl)
   const model = useMemo(() => buildFlightModel(asset, definition), [asset, definition])
+  // Sky reflections on the airframe's own material copies; without them its metallic nacelles render black.
+  const sky = useMemo(() => createSkyEnvironment(gl), [gl])
+  const skinned = useMemo(() => applyEnvironment(model, sky, 1), [model, sky])
+  useEffect(() => () => sky.dispose(), [sky])
+  useEffect(() => () => skinned.forEach(material => material.dispose()), [skinned])
   const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
   const tracers = useMemo(createTracers, [])

@@ -13,7 +13,7 @@ component rescales them to each aircraft's nozzle.
 
 export type Rgb = readonly [number, number, number]
 
-/** One stylised flame shell. Intensity = intensity × (burner × abI + dry × dryGlow). */
+/** One stylised flame shell. Intensity = flameBrightness × intensity × (burner × abI + dry × dryGlow). */
 export interface FlameLayerStyle {
   /** Nozzle → mids[0] → mids[1] → tail. */
   colors: readonly [Rgb, Rgb, Rgb, Rgb]
@@ -35,6 +35,11 @@ export interface FlameLayerStyle {
   tint: Rgb; tintAmount: number
   /** Low-frequency drop-outs along the envelope. */
   patch: number
+  /**
+   * How much the layer covers what is behind it, 0–1. 0 is purely additive light; above 0 it
+   * also dims the background by its own strength, so it still reads against a bright day sky.
+   */
+  cover: number
   /** Layer multiplier, share of the afterburner and dry-thrust terms, and length relative to the plume. */
   intensity: number; burner: number; dry: number; length: number
 }
@@ -43,6 +48,8 @@ export interface ExhaustStyle {
   name: string
   /** Global multipliers (demo sliders). */
   flameLength: number; turbulence: number; nozzleGlow: number
+  /** Multiplies every flame layer's light; above 1 keeps the plume readable against a bright day sky. */
+  flameBrightness: number
   /** How far inside the lip the flame shells begin, in exit radii; the nozzle wall hides that part from the side. */
   flameStart: number
   /**
@@ -86,28 +93,28 @@ export interface ExhaustStyle {
   volumeCavity: number
 }
 
-const flameLayer = (layer: Omit<FlameLayerStyle, 'rim' | 'wobble' | 'bump' | 'tint' | 'tintAmount' | 'patch'> & Partial<FlameLayerStyle>): FlameLayerStyle =>
-  ({ rim: 0, wobble: .15, bump: .04, tint: [1, 1, 1], tintAmount: 0, patch: 0, ...layer })
+const flameLayer = (layer: Omit<FlameLayerStyle, 'rim' | 'wobble' | 'bump' | 'tint' | 'tintAmount' | 'patch' | 'cover'> & Partial<FlameLayerStyle>): FlameLayerStyle =>
+  ({ rim: 0, wobble: .15, bump: .04, tint: [1, 1, 1], tintAmount: 0, patch: 0, cover: 0, ...layer })
 
 /** GAME style, SIM FX palette: white-orange core and root, blue/violet outer envelope. */
 export const SIM_FX: ExhaustStyle = {
   name: 'simfx',
-  flameLength: 1, turbulence: .25, nozzleGlow: 1, flameStart: 1.2, insideAxial: .2,
+  flameLength: 1, turbulence: .25, nozzleGlow: 1, flameBrightness: 1.6, flameStart: 1.2, insideAxial: .2,
   layers: {
     glow: flameLayer({
       colors: [[1, .44, .12], [1, .36, .10], [.85, .28, .30], [.50, .24, .85]], mids: [.28, .62],
       r0: .6, r1: .3, shape: .9, edge: 3, axial: .18, falloff: 1.9, fadeIn: .14, flicker: .6,
-      hybrid: .8, ramp: .45, tail: .75, intensity: .4, burner: .16, dry: .6, length: .85,
+      hybrid: .8, ramp: .45, tail: .75, intensity: .4, burner: .16, dry: .6, length: .85, cover: .6,
     }),
     cone: flameLayer({
       colors: [[1, .60, .20], [1, .42, .09], [.95, .30, .22], [.58, .26, .85]], mids: [.28, .62],
       r0: .46, r1: .06, shape: .85, edge: 1.3, axial: .22, falloff: 1.35, fadeIn: .02, flicker: 1,
-      hybrid: 1, ramp: .45, tail: .9, intensity: .85, burner: .85, dry: 1, length: 1,
+      hybrid: 1, ramp: .45, tail: .9, intensity: .85, burner: .85, dry: 1, length: 1, cover: 1,
     }),
     core: flameLayer({
       colors: [[1, .86, .55], [1, .62, .24], [1, .46, .12], [1, .40, .10]], mids: [.4, .8],
       r0: .26, r1: 0, shape: .9, edge: 1.1, axial: .2, falloff: .9, fadeIn: .015, flicker: .5,
-      hybrid: .35, ramp: .55, tail: .95, intensity: .45, burner: .55, dry: .8, length: .38,
+      hybrid: .35, ramp: .55, tail: .95, intensity: .45, burner: .55, dry: .8, length: .38, cover: 1,
     }),
     sheath: flameLayer({
       colors: [[.50, .44, 1], [.44, .33, 1], [.38, .24, .85], [.30, .16, .62]], mids: [.25, .6],
@@ -139,6 +146,9 @@ export const exhaustStyleOverrides: Partial<Record<AircraftId, ExhaustStyleOverr
   // The ray-marched cavity draws the Su-57's blue throat ring and lit sleeve; on the
   // F-22 it is a second elliptical fill over `interior`, so only the Su-57 keeps it.
   su57: { volumeCavity: 1 },
+  // The F-22's flaps diverge ~1 m from a throat the size of `width`/`radiusY` to a taller exit;
+  // the duct plane and the flame both start at the throat, so the flaps frame them from every angle.
+  f22: { flameStart: 2.15, interior: { inset: 2.15 } },
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -162,7 +172,7 @@ function sanitizeLayer(layer: FlameLayerStyle): FlameLayerStyle {
     axial: clamp(layer.axial, 0, 2), falloff: clamp(layer.falloff, .05, 8), fadeIn: clamp(layer.fadeIn, .001, 1), flicker: clamp(layer.flicker, 0, 4),
     rim: clamp(layer.rim, 0, 1), wobble: clamp(layer.wobble, 0, 4), bump: clamp(layer.bump, 0, 2), hybrid: clamp(layer.hybrid, 0, 1),
     ramp: clamp(layer.ramp, .12, 1), tail: clamp(layer.tail, .3, 1.3), tint: color(layer.tint), tintAmount: clamp(layer.tintAmount, 0, 1),
-    patch: clamp(layer.patch, 0, 1), intensity: clamp(layer.intensity, 0, 8), burner: clamp(layer.burner, 0, 8), dry: clamp(layer.dry, 0, 8), length: clamp(layer.length, 0, 4),
+    patch: clamp(layer.patch, 0, 1), cover: clamp(layer.cover, 0, 1), intensity: clamp(layer.intensity, 0, 8), burner: clamp(layer.burner, 0, 8), dry: clamp(layer.dry, 0, 8), length: clamp(layer.length, 0, 4),
   }
 }
 
@@ -171,13 +181,13 @@ export function sanitizeExhaustStyle(style: ExhaustStyle): ExhaustStyle {
   const { layers, shock, interior, halo, hotspot, haze } = style
   return {
     ...style,
-    flameLength: clamp(style.flameLength, .1, 4), turbulence: clamp(style.turbulence, 0, 3), nozzleGlow: clamp(style.nozzleGlow, 0, 4),
+    flameLength: clamp(style.flameLength, .1, 4), turbulence: clamp(style.turbulence, 0, 3), nozzleGlow: clamp(style.nozzleGlow, 0, 4), flameBrightness: clamp(style.flameBrightness, 0, 4),
     flameStart: clamp(style.flameStart, 0, 4), insideAxial: clamp(style.insideAxial, 0, 1), volumeCavity: clamp(style.volumeCavity, 0, 1),
     layers: { glow: sanitizeLayer(layers.glow), cone: sanitizeLayer(layers.cone), core: sanitizeLayer(layers.core), sheath: sanitizeLayer(layers.sheath) },
     shock: { ...shock, intensity: clamp(shock.intensity, 0, 4), colors: [color(shock.colors[0]), color(shock.colors[1])], cells: Math.round(clamp(shock.cells, 1, 12)) },
     interior: {
       ...interior, intensity: clamp(interior.intensity, 0, 4), colors: [color(interior.colors[0]), color(interior.colors[1]), color(interior.colors[2])],
-      rings: clamp(interior.rings, 0, 1), depth: clamp(interior.depth, .1, 6), oversize: clamp(interior.oversize, 1, 2), taper: clamp(interior.taper, .2, 1), plane: clamp(interior.plane, .5, 2), inset: clamp(interior.inset, 0, 1),
+      rings: clamp(interior.rings, 0, 1), depth: clamp(interior.depth, .1, 6), oversize: clamp(interior.oversize, 1, 2), taper: clamp(interior.taper, .2, 1), plane: clamp(interior.plane, .5, 2), inset: clamp(interior.inset, 0, 3),
       wall: clamp(interior.wall, 0, 4), gas: clamp(interior.gas, 0, 4), core: clamp(interior.core, .02, 1),
     },
     halo: { color: color(halo.color), intensity: clamp(halo.intensity, 0, 4), scale: clamp(halo.scale, 0, 6), depth: clamp(halo.depth, -1, 4) },

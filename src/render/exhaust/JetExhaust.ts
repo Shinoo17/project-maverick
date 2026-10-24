@@ -1,6 +1,6 @@
 import {
   AdditiveBlending, AddEquation, Camera, Color, CustomBlending, CylinderGeometry, DataTexture, DoubleSide, FrontSide,
-  Group, LinearFilter, Matrix4, Mesh, OneFactor, PlaneGeometry, RGBAFormat, Scene, ShaderMaterial, Sprite, SpriteMaterial,
+  Group, LinearFilter, Matrix4, Mesh, OneFactor, OneMinusSrcAlphaFactor, PlaneGeometry, RGBAFormat, Scene, ShaderMaterial, Sprite, SpriteMaterial,
   Texture, Vector2, Vector3, type BufferGeometry, type IUniform,
 } from 'three'
 import type { EffectQuality } from '../graphicsSettings'
@@ -50,6 +50,8 @@ function haloTexture() {
 }
 
 const additive = { transparent: true, depthWrite: false, side: DoubleSide, blending: AdditiveBlending } as const
+/** Premultiplied light over the background: alpha 0 is plain additive, alpha 1 replaces what is behind. */
+const covering = { ...additive, blending: CustomBlending, blendEquation: AddEquation, blendSrc: OneFactor, blendDst: OneMinusSrcAlphaFactor } as const
 
 interface Nozzle {
   anchor: Group
@@ -123,7 +125,7 @@ export class JetExhaust {
         u.uEdge.value = layer.edge; u.uAxial.value = layer.axial; u.uFalloff.value = layer.falloff
         u.uFadeIn.value = layer.fadeIn; u.uFlicker.value = layer.flicker; u.uRim.value = layer.rim
         u.uTailCut.value = layer.tail; u.uBumpRamp.value = layer.ramp
-        u.uInnerTint.value.setRGB(...layer.tint); u.uTintAmt.value = layer.tintAmount; u.uPatch.value = layer.patch
+        u.uInnerTint.value.setRGB(...layer.tint); u.uTintAmt.value = layer.tintAmount; u.uPatch.value = layer.patch; u.uCover.value = layer.cover
       }
       const s = nozzle.shock.material.uniforms
       s.uColA.value.setRGB(...style.shock.colors[0]); s.uColB.value.setRGB(...style.shock.colors[1]); s.uCells.value = style.shock.cells
@@ -173,7 +175,7 @@ export class JetExhaust {
       nozzle.flame.position.z = -start * tail
       for (const name of LAYERS) {
         const layer: FlameLayerStyle = style.layers[name], mesh = nozzle.layers[name], u = mesh.material.uniforms
-        const intensity = layer.intensity * (layer.burner * abI + layer.dry * dry), hybrid = layer.hybrid
+        const intensity = style.flameBrightness * layer.intensity * (layer.burner * abI + layer.dry * dry), hybrid = layer.hybrid
         u.uTime.value = time; u.uScroll.value = scroll; u.uLength.value = length * layer.length + start; u.uIntensity.value = intensity
         u.uInside.value = start / Math.max(u.uLength.value, 1e-4); u.uInsideAxial.value = style.insideAxial
         // Hybrid layers get SIM-style boundary motion, faded in by uBumpRamp so the root stays tight.
@@ -269,10 +271,10 @@ export class JetExhaust {
         uFreq: { value: 1 }, uBumpRamp: { value: .12 }, uIntensity: { value: 0 }, uEdge: { value: 1 }, uAxial: { value: 0 },
         uFalloff: { value: 1 }, uFadeIn: { value: .02 }, uMid: { value: .4 }, uMid2: { value: .98 }, uFlicker: { value: 0 },
         uRim: { value: 0 }, uHybrid: { value: 0 }, uTailCut: { value: 1 }, uInnerTint: { value: new Color(1, 1, 1) },
-        uTintAmt: { value: 0 }, uPatch: { value: 0 }, uInside: { value: 0 }, uInsideAxial: { value: 1 },
+        uTintAmt: { value: 0 }, uPatch: { value: 0 }, uCover: { value: 0 }, uInside: { value: 0 }, uInsideAxial: { value: 1 },
         uColA: { value: new Color() }, uColB: { value: new Color() }, uColC: { value: new Color() }, uColD: { value: new Color() },
       }
-      layers[name] = place(new Mesh(this.geometry.high, new ShaderMaterial({ vertexShader: flameVertex, fragmentShader: flameFragment, uniforms, ...additive })), 2, flame)
+      layers[name] = place(new Mesh(this.geometry.high, new ShaderMaterial({ vertexShader: flameVertex, fragmentShader: flameFragment, uniforms, ...covering })), 2, flame)
     }
     const shock = place(new Mesh(this.geometry.high, new ShaderMaterial({
       vertexShader: shockVertex, fragmentShader: shockFragment, ...additive,

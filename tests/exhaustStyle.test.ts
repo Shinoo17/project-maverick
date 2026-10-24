@@ -10,8 +10,14 @@ const conditions = { aircraftId: 'su57' as const, power: 1, afterburner: true, v
 describe('exhaust style', () => {
   it('gives every aircraft the GAME / SIM FX profile by default', () => {
     expect(sanitizeExhaustStyle(SIM_FX)).toEqual(SIM_FX)
-    // Only the Su-57 keeps the ray-marched cavity (its throat ring); everything else is SIM_FX.
-    for (const definition of aircraft) expect({ ...resolveExhaustStyle(definition.id), volumeCavity: SIM_FX.volumeCavity }).toEqual(SIM_FX)
+    // Only the Su-57 keeps the ray-marched cavity (its throat ring) and only the F-22 moves its
+    // duct plane and flame start in to the throat; everything else is SIM_FX.
+    for (const definition of aircraft) {
+      const style = resolveExhaustStyle(definition.id)
+      expect({ ...style, volumeCavity: SIM_FX.volumeCavity, flameStart: SIM_FX.flameStart, interior: { ...style.interior, inset: SIM_FX.interior.inset } }).toEqual(SIM_FX)
+    }
+    expect(resolveExhaustStyle('f22').interior.inset).toBe(2.15)
+    expect(resolveExhaustStyle('f22').flameStart).toBe(2.15)
     expect(resolveExhaustStyle('su57').volumeCavity).toBe(1)
     expect(resolveExhaustStyle('f22').volumeCavity).toBe(0)
   })

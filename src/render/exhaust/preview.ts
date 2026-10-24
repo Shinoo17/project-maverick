@@ -17,6 +17,7 @@ import { getFlightProfile } from '../../game/flight/profile'
 import { flightExhaustConditions } from './profile'
 import { JetExhaust } from './JetExhaust'
 import { resolveExhaustStyle } from './style'
+import { applyEnvironment, createSkyEnvironment } from '../aircraft/skyEnvironment'
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
 const renderer = new WebGLRenderer({ antialias: true })
@@ -35,6 +36,8 @@ controls.target.set(0, .4, 0); controls.minDistance = 2; controls.maxDistance = 
 const jet = new Group(); scene.add(jet)
 const volume = new CondensationVolume(renderer)
 const params = new URLSearchParams(location.search)
+// Same sky reflections as the flight scene, so metallic nozzles are not black here either.
+const sky = createSkyEnvironment(renderer), envIntensity = Number(params.get('env') ?? 1)
 const scenario = params.get('scenario')
 let paused = false, modelReady = false, aircraft: AircraftId = roster.find(entry => entry.id === params.get('aircraft'))?.id ?? roster[0].id, loadId = 0
 let power = Number(params.get('power') ?? 1), burner = params.get('burner') !== 'off', vector = Number(params.get('pitch') ?? 0), clouds = false, dark = false
@@ -53,7 +56,7 @@ element('burner').textContent = `Afterburner: ${burner ? 'ON' : 'OFF'}`
 element('burner').setAttribute('aria-pressed', String(burner))
 const ktx2 = new KTX2Loader().setTranscoderPath('/basis/').detectSupport(renderer)
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2)
-function disposeModel(root: Group) { root.traverse(object => { if (object instanceof Mesh) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(m => { for (const value of Object.values(m)) if (value instanceof Texture) value.dispose(); m.dispose() }); if ('skeleton' in object) (object.skeleton as { dispose(): void }).dispose() } }) }
+function disposeModel(root: Group) { root.traverse(object => { if (object instanceof Mesh) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(m => { for (const value of Object.values(m)) if (value instanceof Texture && value !== sky) value.dispose(); m.dispose() }); if ('skeleton' in object) (object.skeleton as { dispose(): void }).dispose() } }) }
 async function loadModel() {
   const id = ++loadId; modelReady = false; element('status').textContent = 'กำลังโหลดโมเดล…'
   try {
@@ -67,6 +70,7 @@ async function loadModel() {
     const bounds = new Box3().setFromObject(orientation), size = bounds.getSize(new Vector3())
     orientation.position.copy(bounds.getCenter(new Vector3())).negate()
     const root = new Group(); root.add(orientation); root.scale.setScalar(18.9 / Math.max(size.x, size.y, size.z)); jet.add(root)
+    applyEnvironment(root, sky, envIntensity)
     modelReady = true; actuatorTime = 0; volume.reset(); updateRig = createFlightRig(root, aircraft)
     state = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraft] }).snapshot().aircraft[0]
     element('error').textContent = ''; document.querySelector('h1')!.textContent = `${definition.designation} / Exhaust`
@@ -122,4 +126,4 @@ function frame(now: number) {
 requestAnimationFrame(frame)
 // Handle for scripted screenshots: camera placement and per-source toggles.
 Object.assign(window, { exhaustPreview: { camera, controls, volume, get exhaust() { return exhaust } } })
-addEventListener('pagehide', event => { if (event.persisted) return; volume.dispose(); exhaust.dispose(); controls.dispose(); ktx2.dispose(); disposeModel(jet); renderer.dispose() }, { once: true })
+addEventListener('pagehide', event => { if (event.persisted) return; volume.dispose(); exhaust.dispose(); controls.dispose(); ktx2.dispose(); disposeModel(jet); sky.dispose(); renderer.dispose() }, { once: true })

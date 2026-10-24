@@ -102,7 +102,7 @@ void main() {
 // breakup and a fast-dissolving tail.
 export const flameFragment = /* glsl */ `
 uniform float uTime, uScroll, uPhase, uIntensity, uEdge, uAxial, uFalloff, uFadeIn, uMid, uMid2;
-uniform float uFlicker, uRim, uHybrid, uTailCut, uTintAmt, uPatch;
+uniform float uFlicker, uRim, uHybrid, uTailCut, uTintAmt, uPatch, uCover;
 // Share of s inside the nozzle, and how much end-on glow that part keeps.
 uniform float uInside, uInsideAxial;
 uniform vec3 uInnerTint, uColA, uColB, uColC, uColD;
@@ -114,8 +114,13 @@ void main() {
   vec3 V = normalize(-vViewPos);
   float facing = abs(dot(normalize(vViewNormal), V));
   // Full end-on glow from just upstream of the lip outward, so the exit has no dark band.
-  float insideAxial = uInside > 0.0 ? mix(uInsideAxial, 1.0, smoothstep(uInside * 0.4, uInside, vS)) : 1.0;
-  float base = max(pow(facing, uEdge), uAxial * insideAxial * smoothstep(0.45, 0.97, abs(dot(normalize(vAxisV), V))));
+  float lipward = smoothstep(uInside * 0.4, uInside, vS);
+  float insideAxial = uInside > 0.0 ? mix(uInsideAxial, 1.0, lipward) : 1.0;
+  float alongAxis = abs(dot(normalize(vAxisV), V));
+  float base = max(pow(facing, uEdge), uAxial * insideAxial * smoothstep(0.45, 0.97, alongAxis));
+  // The part inside the nozzle is only seen through the exit. From the side or below it
+  // would show through gaps in the airframe's nozzle as a bright box, so it fades out there.
+  if (uInside > 0.0) base *= mix(smoothstep(0.85, 0.98, alongAxis), 1.0, smoothstep(uInside * 0.75, uInside, vS));
   // uRim > 0: hollow sheath, brightest between centre and silhouette
   float rim = smoothstep(0.0, 0.55, facing) * (1.0 - smoothstep(0.25, 0.95, facing)) * 1.8;
   float thick = mix(base, rim + 0.25 * base, uRim);
@@ -148,7 +153,8 @@ void main() {
     tail *= mix(1.0, smoothstep(-0.25, 0.55, pn), uPatch);
     a *= mix(1.0, edge * pulses * breakup * root * tail, uHybrid);
   }
-  gl_FragColor = vec4(col * a, 1.0);
+  // Premultiplied: adds the flame's light and dims the background by uCover of its strength.
+  gl_FragColor = vec4(col * a, clamp(a * uCover, 0.0, 1.0));
 }
 `
 
@@ -219,8 +225,11 @@ export const interiorVertex = /* glsl */ `
 // Plane half-size in duct units: below 1, the duct runs wider than the plane.
 uniform float uPlane;
 varying vec3 vBox, vCam;
+// The plane in exit units: the opening is the unit circle (round) or the unit square.
+varying vec2 vExit;
 void main() {
   vec3 scale = vec3(uPlane, uPlane, 1.0);
+  vExit = position.xy;
   vBox = position * scale;
   vCam = (inverse(modelMatrix) * vec4(cameraPosition, 1.0)).xyz * scale;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -231,10 +240,15 @@ export const interiorFragment = /* glsl */ `
 uniform float uIntensity, uAB, uTime, uScroll, uPhase, uRingAmt, uDepth, uTaper, uRound, uWall, uGas, uCore;
 uniform vec3 uC0, uC1, uC2;
 varying vec3 vBox, vCam;
+varying vec2 vExit;
 ${noise}
 void main() {
+  // Clip to the exit's own outline (vBox is in the wider duct's units), softened over a
+  // pixel or two so the lip does not alias.
+  float rim = uRound > 0.5 ? length(vExit) : max(abs(vExit.x), abs(vExit.y));
+  float lip = 1.0 - smoothstep(1.0 - max(2.0 * fwidth(rim), 1e-4), 1.0, rim);
+  if (lip <= 0.0) discard;
   vec3 p = vec3(vBox.xy, 0.0);
-  if (uRound > 0.5 && dot(p.xy, p.xy) > 1.0) discard;
   vec3 d = p - vCam;
   if (d.z > -1e-5) discard;
   float tBack = -uDepth / d.z, tWall = 1e9;
@@ -279,7 +293,7 @@ void main() {
   col *= pow(depth, 1.6 / max(uWall, 0.05));
   // Hot gas filling the duct: brightest straight down the middle, where the ray runs deepest.
   col += mix(uC2, uC1, 0.6) * uGas * depth * exp(-1.2 * dot(p.xy, p.xy));
-  gl_FragColor = vec4(col * uIntensity, 1.0);
+  gl_FragColor = vec4(col * uIntensity * lip, 1.0);
 }
 `
 
