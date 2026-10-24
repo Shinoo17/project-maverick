@@ -4,7 +4,7 @@ import { gunStation } from '../src/content/weapons'
 import { getAircraft } from '../src/content/aircraft'
 import { hitboxes } from '../src/content/hitboxes'
 import { boundingRadius } from '../src/game/combat/collision'
-import { spawnRound, stepRound, type CombatBody } from '../src/game/combat/projectiles'
+import { GRAVITY, spawnRound, stepRound, type CombatBody } from '../src/game/combat/projectiles'
 import { defaultReticle, DEFAULT_RANGE, gunLine, muzzlePoint, solveGun, type ShooterPose, type TargetMotion } from '../src/game/combat/gunSolution'
 import { circleFrom, dronePose } from '../src/game/playground/dronePath'
 import { WORLD_STEP } from '../src/game/runtime/clock'
@@ -79,12 +79,29 @@ describe('gun solution', () => {
     expect(fire(pointed(shooter, straight.aim), poseAt)).toBeNull()
   })
   it('has no reachable solution past the distance cap, and the default reticle sits 500 m down the gun line', () => {
-    const far = solveGun(spawn, mount, { position: { x: 1400, y: 400, z: 0 }, velocity: still, acceleration: still })!
+    const far = solveGun(spawn, mount, { position: { x: 2000, y: 400, z: 0 }, velocity: still, acceleration: still })!
     expect(far.reachable).toBe(false)
     const reticle = defaultReticle(spawn, mount)
     const line = gunLine(spawn.orientation, mount.elevationDeg), start = muzzlePoint(spawn, mount)
     const along = (reticle.x - start.x) * line.x + (reticle.y - start.y) * line.y + (reticle.z - start.z) * line.z
     expect(distance(reticle, start)).toBeCloseTo(DEFAULT_RANGE, -1)
     expect(along).toBeGreaterThan(450)
+  })
+  it('solves head-on and fast crossing shots for both gun families', () => {
+    // The old fixed-point solve converged by closure / muzzle speed per step and gave up on these.
+    const fast: ShooterPose = { ...spawn, velocity: { x: 300, y: 0, z: 0 } }
+    for (const id of ['f22', 'su57']) {
+      const station = gunStation(getAircraft(id))
+      const gunMount = { muzzle: station.muzzle!, elevationDeg: station.elevationDeg!, profile: station.profile }
+      for (const range of [150, 400, 700]) for (const velocity of [{ x: -300, y: 0, z: 0 }, { x: 0, y: 0, z: 250 }]) {
+        const position = { x: range, y: 400, z: 0 }
+        const solution = solveGun(fast, gunMount, { position, velocity, acceleration: { x: 0, y: -20, z: 30 } })
+        expect(solution?.reachable).toBe(true)
+        // The round fired along the aim meets the target at the solved time.
+        const m = station.profile.muzzleSpeed, start = muzzlePoint(fast, gunMount), t = solution!.time
+        const round = { x: start.x + (fast.velocity.x + solution!.aim.x * m) * t, y: start.y + (fast.velocity.y + solution!.aim.y * m) * t - GRAVITY * t * t / 2, z: start.z + (fast.velocity.z + solution!.aim.z * m) * t }
+        expect(distance(round, solution!.lead)).toBeLessThan(0.01)
+      }
+    }
   })
 })

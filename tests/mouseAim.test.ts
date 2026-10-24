@@ -5,7 +5,7 @@ import { FlightInput } from '../src/game/input/FlightInput'
 import { defaultMouseSettings, parseMouseSettings, type MouseSettings } from '../src/game/input/mouseStick'
 import { createMouseAim, cursorRay, markOnScreen, stepAim } from '../src/game/input/mouseAim'
 import { createGunnery, lockOf } from '../src/render/gunneryFrame'
-import { cursorDraw, type AimAssistLevel } from '../src/game/combat/aimAssist'
+import { assistRange, cursorDraw, type AimAssistLevel } from '../src/game/combat/aimAssist'
 import type { TargetDroneMode } from '../src/game/playground/dronePath'
 import { defaultReticle } from '../src/game/combat/gunSolution'
 import { screenFrame } from '../src/game/input/mouseStick'
@@ -452,7 +452,7 @@ describe('screen-locked aim assist', () => {
   /** Flies cursor mode the way FlightScene does, against a still drone 1,300 m ahead. Frames are
    * kept from when the drone comes into the gun's reach (a lead marker, about 1,000 m, ~2.5 s in);
    * `hand` moves the × each of them (pixels), given the lead marker on screen; null leaves it be. */
-  type Hand = (lead: { x: number; y: number }, cursor: { x: number; y: number }, frame: number, target: { x: number; y: number }) => { x: number; y: number } | null
+  type Hand = (lead: { x: number; y: number }, cursor: { x: number; y: number }, frame: number, target: { x: number; y: number }, range: number) => { x: number; y: number } | null
   function duel(level: AimAssistLevel, seconds: number, hand: Hand, fire = false, drone: TargetDroneMode = 'still') {
     const runtime = new GameRuntime({ mode: 'playground', aircraftIds: ['f22'], targetDrone: drone })
     runtime.reset('free'); runtime.start()
@@ -469,11 +469,11 @@ describe('screen-locked aim assist', () => {
       const lead = marks.lead ? markOnScreen(camera, marks.lead, input.stick, W, H) : null
       const pixel = (p: { x: number; y: number; z: number }) => { const v = new Vector3(p.x, p.y, p.z).project(camera); return { x: v.x * W / 2, y: -v.y * H / 2 } }
       // Out of reach the hand keeps the × on the drone, as a pilot closing on it would.
-      const want = lead && marks.target ? hand(lead.point, { x: input.stick.px, y: input.stick.py }, frames.length, pixel(marks.target.position)) : marks.target ? pixel(marks.target.position) : null
+      const want = lead && marks.target ? hand(lead.point, { x: input.stick.px, y: input.stick.py }, frames.length, pixel(marks.target.position), marks.target.range) : marks.target ? pixel(marks.target.position) : null
       if (want) input.move(want.x - input.stick.px, want.y - input.stick.py)
       const after = lead && markOnScreen(camera, marks.lead!, input.stick, W, H)
       const body = after && marks.target ? markOnScreen(camera, marks.target.position, input.stick, W, H) : null
-      assisting = input.drawCursor(after && after.point, after?.errorDeg ?? Infinity, body?.errorDeg ?? Infinity, 1 / 60)
+      assisting = input.drawCursor(after && after.point, after?.errorDeg ?? Infinity, body?.errorDeg ?? Infinity, 1 / 60, marks.target?.range ?? Infinity)
       marks = { ...marks, assist: assisting }; marks.lock = lockOf(marks)
       if (marks.lead && marks.reticle) {
         const l = pixel(marks.lead), r = pixel(marks.reticle)
@@ -496,10 +496,22 @@ describe('screen-locked aim assist', () => {
     return frames
   }
   // The hand puts the × 3° (50 px) off the lead once, then lets go.
-  const offLead = (lead: { x: number; y: number }, _: unknown, frame: number) => frame === 0 ? { x: lead.x + 40, y: lead.y - 30 } : null
+  // The hand keeps the × on the lead until the target is inside the assist's full range (800 m),
+  // then puts it off the lead once and lets go.
+  const offLead = (): Hand => {
+    let moved = false
+    return (lead, _cursor, _frame, _target, range) => {
+      if (range > assistRange[0]) return lead
+      if (moved) return null
+      moved = true
+      return { x: lead.x + 40, y: lead.y - 30 }
+    }
+  }
+  /** Frames from the hand letting go, inside 800 m. */
+  const fromRelease = (frames: Frame[]) => frames.slice(frames.findIndex(frame => frame.range <= assistRange[0]) + 1)
 
   it('is not dead in cursor mode: it draws the × onto the lead, and off it does nothing', () => {
-    const drawn = duel('standard', 4.5, offLead), alone = duel('off', 4.5, offLead)
+    const drawn = fromRelease(duel('standard', 6.5, offLead())), alone = fromRelease(duel('off', 6.5, offLead()))
     expect(drawn.at(-1)!.cursorToLead).toBeLessThan(6)
     expect(alone.at(-1)!.cursorToLead).toBeGreaterThan(30)
     expect(drawn.some(frame => frame.lock === 'captured')).toBe(true)
@@ -517,23 +529,23 @@ describe('screen-locked aim assist', () => {
 
   it('draws harder while the trigger is held', () => {
     const settled = (frames: Frame[]) => frames.findIndex(frame => frame.cursorToLead < 4)
-    const idle = settled(duel('standard', 4, offLead)), firing = settled(duel('standard', 4, offLead, true))
+    const idle = settled(fromRelease(duel('standard', 6, offLead()))), firing = settled(fromRelease(duel('standard', 6, offLead(), true)))
     expect(firing).toBeGreaterThan(0)
     expect(firing).toBeLessThan(idle * 0.6)
   })
 
   it('gives way to a hand that moves the × away, even while firing', () => {
-    // From on the lead, the hand sweeps right at 600 px/s.
-    const frames = duel('standard', 4.5, (lead, cursor, frame) => frame === 0 ? lead : { x: cursor.x + 10, y: cursor.y }, true)
+    // From on the lead, the hand sweeps right at 600 px/s for 2.5 s (the drone spawns inside the gun's reach).
+    const frames = duel('standard', 2.5, (lead, cursor, frame) => frame === 0 ? lead : { x: cursor.x + 10, y: cursor.y }, true)
     expect(frames.at(-1)!.cursorToLead).toBeGreaterThan(150)
   })
 
   it('captures a × on the target itself while firing, where a crossing target puts the lead outside the cone', () => {
     // A 250 m/s crossing target: the lead ~12° off the airframe, outside the standard 8° cone.
-    expect(cursorDraw('standard', 12, 0.5, 1 / 60, false, 0)).toBe(0)
-    expect(cursorDraw('standard', 12, 0.5, 1 / 60, true, 0)).toBeGreaterThan(0)
+    expect(cursorDraw('standard', 12, 0.5, 1 / 60, false, 0, 500)).toBe(0)
+    expect(cursorDraw('standard', 12, 0.5, 1 / 60, true, 0, 500)).toBeGreaterThan(0)
     // And neither near: nothing.
-    expect(cursorDraw('standard', 12, 9, 1 / 60, true, 0)).toBe(0)
+    expect(cursorDraw('standard', 12, 9, 1 / 60, true, 0, 500)).toBe(0)
   })
 
   it('keeps the reticle on a crossing target\'s lead with the × on it: red, not just amber', () => {

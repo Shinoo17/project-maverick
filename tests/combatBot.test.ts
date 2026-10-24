@@ -100,7 +100,7 @@ describe('combat bot', () => {
   }, 60000)
 
   it('fights a copy of itself without crashing: it can kill and be killed, and it breaks when chased', () => {
-    const { deaths, watch } = fight(80, asBot(123))
+    const { deaths, watch } = fight(80, asBot(4))
     expect(deaths.filter(death => death.cause !== 'weapon')).toEqual([])
     expect(deaths).toContainEqual(expect.objectContaining({ entityId: 'drone-1', sourceId: 'aircraft-1' }))
     expect(deaths).toContainEqual(expect.objectContaining({ entityId: 'aircraft-1', sourceId: 'drone-1' }))

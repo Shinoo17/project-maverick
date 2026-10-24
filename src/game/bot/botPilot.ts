@@ -92,11 +92,14 @@ export const botRules = {
   overtake: 15,
   brakeClosure: 70,
   brakeRange: 600,
-  /** Ground: pull up when the altitude `floorLookahead` seconds ahead is under `floor` metres;
-   * released once it is over `floorClear`. Climb angle in degrees. */
+  /** Ground: pull up when the lowest point of a pull-out started now is under `floor` metres;
+   * released once it is over `floorClear`. The pull-out is `floorReaction` seconds of the present
+   * sink, then a `floorPull` m/s² pull to level. (A straight 6 s look ahead, used before, pulled
+   * the bot out of every dive onto a target at 400 m and left it bobbing behind it.) Climb angle in degrees. */
   floor: 350,
   floorClear: 550,
-  floorLookahead: 6,
+  floorReaction: 1.5,
+  floorPull: 30,
   climbDeg: 25,
   /** Ceiling: the nose goes level above this. */
   ceiling: 6500,
@@ -380,7 +383,7 @@ function steer(bot: BotState, self: AircraftState, tick: number): Steer {
 /** Safety overrides, in doc 08's order: the ground, then the ceiling and the range edge. True while one holds. */
 function guard(bot: BotState, self: AircraftState, direction: Vector3) {
   const p = self.position, v = self.velocity
-  const ahead = p.y + Math.min(0, v.y) * botRules.floorLookahead
+  const sink = Math.max(0, -v.y), ahead = p.y - sink * botRules.floorReaction - sink * sink / (2 * botRules.floorPull)
   bot.climbing = bot.climbing ? ahead < botRules.floorClear || v.y < 0 : ahead < botRules.floor
   if (bot.climbing) { heading(v.x, v.z, botRules.climbDeg, direction); return true }
   if (p.y > botRules.ceiling && direction.y > 0) heading(direction.x, direction.z, -2, direction)

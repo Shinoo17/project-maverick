@@ -170,7 +170,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
       // Screen-locked aim assist: the × drawn toward the lead marker as this frame shows it.
       const lead = session.running && marks.lead ? markOnScreen(camera, marks.lead, session.input.stick, size.width, size.height) : null
       const target = lead && marks.target ? markOnScreen(camera, marks.target.position, session.input.stick, size.width, size.height) : null
-      assisting.current = session.input.drawCursor(lead && lead.point, lead?.errorDeg ?? Infinity, target?.errorDeg ?? Infinity, Math.min(dt, 0.1) * session.timeScale)
+      assisting.current = session.input.drawCursor(lead && lead.point, lead?.errorDeg ?? Infinity, target?.errorDeg ?? Infinity, Math.min(dt, 0.1) * session.timeScale, marks.target?.range ?? Infinity)
       marks = { ...marks, assist: session.running && assisting.current }
       marks.lock = lockOf(marks)
     } else if (cursor && session.preset === 'mouse') assisting.current = false

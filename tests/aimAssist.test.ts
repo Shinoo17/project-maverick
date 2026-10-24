@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
-import { aimAssist, withAimAssist, type AimAssistLevel } from '../src/game/combat/aimAssist'
+import { aimAssist, assistRange, cursorDraw, rangeShare, withAimAssist, type AimAssistLevel } from '../src/game/combat/aimAssist'
 import { gunMountOf, solveGun } from '../src/game/combat/gunSolution'
 import { parseMouseSettings } from '../src/game/input/mouseStick'
 import { runFlightReplay } from '../src/game/playground/replay'
@@ -15,7 +15,8 @@ describe('aim assist', () => {
     const [me, drone] = pair()
     expect(aimAssist('off', me, drone, mount, { pitch: 0, yaw: 0 }).active).toBe(false)
     expect(aimAssist('standard', me, undefined, mount, { pitch: 0, yaw: 0 }).active).toBe(false)
-    // The drone spawns 1,300 m out: past the rounds' 1,000 m.
+    // Past the rounds' 1,500 m.
+    drone.position = { x: 2000, y: 400, z: 0 }
     expect(aimAssist('standard', me, drone, mount, { pitch: 0, yaw: 0 }).active).toBe(false)
   })
   it('pushes the nose toward the solution, up and right for a target above and right', () => {
@@ -85,9 +86,24 @@ describe('aim assist in flight', () => {
     expect(kills).toBe(1)
     expect(runFlightReplay(runtime.exportReplay()).aircraft[1].hp).toBe(runtime.snapshot().aircraft[1].hp)
   })
+  it('acts in full out to 800 m, fades to nothing at 1,000 m, and the cursor and aim draws fade with it', () => {
+    expect(assistRange).toEqual([800, 1000])
+    expect([500, 800, 900, 1000, 1200].map(rangeShare)).toEqual([1, 1, 0.5, 0, 0])
+    const [me, drone] = pair()
+    // Straight ahead and a little high: inside the cone at every range here, and in the rounds' reach.
+    const pitchAt = (x: number) => { drone.position = { x, y: 400 + x * 0.03, z: 0 }; return aimAssist('strong', me, drone, mount, { pitch: 0, yaw: 0 }) }
+    expect(pitchAt(700).pitch).toBeGreaterThan(0)
+    expect(pitchAt(900).pitch).toBeGreaterThan(0)
+    expect(pitchAt(900).pitch).toBeLessThan(pitchAt(700).pitch)
+    drone.position = { x: 1100, y: 433, z: 0 }
+    expect(solveGun(me, mount, drone)?.reachable).toBe(true)
+    expect(aimAssist('strong', me, drone, mount, { pitch: 0, yaw: 0 }).active).toBe(false)
+    expect(cursorDraw('standard', 2, 2, 1 / 60, false, 0, 900)).toBeCloseTo(cursorDraw('standard', 2, 2, 1 / 60, false, 0, 500) / 2, 9)
+    expect(cursorDraw('standard', 2, 2, 1 / 60, true, 0, 1000)).toBe(0)
+  })
   it('never acts on a solution the rounds cannot reach', () => {
     const [me, drone] = pair()
-    drone.position = { x: 1400, y: 400, z: 0 }
+    drone.position = { x: 2000, y: 400, z: 0 }
     expect(solveGun(me, mount, drone)?.reachable).toBe(false)
     expect(aimAssist('strong', me, drone, mount, { pitch: 0, yaw: 0 }).active).toBe(false)
   })

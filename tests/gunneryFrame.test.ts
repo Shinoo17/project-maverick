@@ -20,14 +20,19 @@ describe('HUD gun marks', () => {
   it('boxes the target with its HP, and gives no lead out of the gun’s reach', () => {
     const snapshot = world()
     snapshot.aircraft[1].hp = 40
+    // Past the rounds' 1,500 m (the drone spawns at 1,300 m, now inside it).
+    snapshot.aircraft[1].position = { x: 1800, y: 425, z: 0 }
     const far = createGunnery('f22').update(snapshot, snapshot, 1, shooterOf(snapshot), [])
     expect(far.target).toMatchObject({ hp: 0.4, label: 'DRONE · SU-57' })
-    expect(far.target!.range).toBeCloseTo(Math.hypot(1300, 25), 0)
+    expect(far.target!.range).toBeCloseTo(Math.hypot(1800, 25), 0)
     expect(far.lead).toBeNull()
+    // Past the reach, the lead is still shown dashed so the shot can be set up.
+    expect(far.farLead).not.toBeNull()
     expect(far.inRange).toBe(false)
     snapshot.aircraft[1].position = { x: 500, y: 401, z: 0 }
     const near = createGunnery('f22').update(snapshot, snapshot, 1, shooterOf(snapshot), [])
     expect(near.lead).not.toBeNull()
+    expect(near.farLead).toBeNull()
     expect(near.inRange).toBe(true)
     // The box frames the model as drawn: larger with distance.
     expect(far.target!.radius / near.target!.radius).toBeCloseTo(distanceScale(far.target!.range) / distanceScale(near.target!.range), 6)

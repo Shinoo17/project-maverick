@@ -65,14 +65,17 @@ const usaf = 'https://www.af.mil/About-Us/Fact-Sheets/Display/Article/104506/f22
 //   Muzzle speed of the real M61A2 with PGU-28 rounds (about 1,030 m/s).
 // - GSh-30-1 family (Su-27/30/35/57, MiG-29): single-barrel 30 mm, a slow heavy beat that needs
 //   more lead (about 870 m/s) and a wider cone.
+// Reach (user decision 2026-10-24, up from 1,000 m): 1,500 m of round travel or 1.8 s, whichever
+// comes first. 1.8 s lets even the GSh at 870 m/s reach the cap from a standstill. The cap counts the
+// shooter's own speed, so against a target flying as fast the reach is about 1,070–1,310 m.
 const gunHeat = { coolRate: 0.5, lockHeat: 0.8, resumeHeat: 0.35, overheatResumeHeat: 0 } as const
 const m61Gun: GunProfile = {
   rate: 50, muzzleSpeed: 1030, damage: 2, spreadDeg: 0.3, hotSpread: 0.5,
-  lifetime: 1.2, maxDistance: 1000, heatSeconds: 3, ...gunHeat,
+  lifetime: 1.8, maxDistance: 1500, heatSeconds: 3, ...gunHeat,
 }
 const gsh30Gun: GunProfile = {
   rate: 25, muzzleSpeed: 870, damage: 4, spreadDeg: 0.45, hotSpread: 0.5,
-  lifetime: 1.2, maxDistance: 1000, heatSeconds: 3.5, ...gunHeat,
+  lifetime: 1.8, maxDistance: 1500, heatSeconds: 3.5, ...gunHeat,
 }
 export const weapons: readonly WeaponDefinition[] = [
   { id: 'm61a2', name: label('M61A2 · 20 mm', 'M61A2 · 20 มม.'), kind: 'gun', calibreMm: 20, gun: m61Gun, source: usaf },

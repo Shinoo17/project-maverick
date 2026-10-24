@@ -12,13 +12,17 @@ and are timed in ticks so pause freezes them.
 The box is sized to the drawn model, which grows with distance (targetVisibility.ts), and is
 labelled with the aircraft's designation. Whether the reticle is on the solution still uses
 the true hitbox.
+
+Closing on a target past the gun's reach, the lead is still solved (rounds that could fly that
+far) and drawn dashed as `farLead` inside FAR_LEAD_RANGE (user request 24 Oct 2026), so the pilot
+can set up the shot before it is in reach. Aim assist and the lock only ever use `lead`.
 */
 import { Quaternion, Vector3 } from 'three'
 import { getAircraft } from '../content/aircraft'
 import { hitboxes } from '../content/hitboxes'
 import { boundingRadius } from '../game/combat/collision'
 import { AIRCRAFT_HP } from '../game/combat/damage'
-import { defaultReticle, drawnReticle, EFFECTIVE_RANGE, gunMountOf, type ShooterPose } from '../game/combat/gunSolution'
+import { defaultReticle, drawnReticle, EFFECTIVE_RANGE, gunMountOf, solveGun, type ShooterPose } from '../game/combat/gunSolution'
 import type { GameEvent } from '../game/runtime/events'
 import type { AircraftState, WorldState } from '../game/state/WorldState'
 import type { GunneryMarks } from '../features/flight/gunnerySymbols'
@@ -40,6 +44,9 @@ export function between(before: WorldState | null, now: WorldState | null, pick:
     velocity: point(from.velocity).lerp(point(current.velocity), alpha),
   }
 }
+
+/** Metres. Out to this range a lead past the gun's reach is drawn dashed. Provisional. */
+export const FAR_LEAD_RANGE = 2000
 
 const radii = new Map<string, number>()
 /** No pilot names yet: the designation, marked DRONE for an entity with no pilot and BANDIT for a combat bot. */
@@ -79,14 +86,16 @@ export function createGunnery(aircraftId: string) {
     const clock = (now?.tick ?? 0) - 1 + alpha
     const target = shooter.targetId ? between(before, now, entity => entity.id === shooter.targetId, alpha) : null
     const base = { now: clock, hitTick, splash, assist }
-    if (!target) return withLock({ ...base, reticle: defaultReticle(shooter, mount), target: null, lead: null, inRange: false, onSolution: false })
-    const { reticle, solution } = drawnReticle(shooter, mount, { position: target.position, velocity: target.velocity, acceleration: target.entity.acceleration })
+    if (!target) return withLock({ ...base, reticle: defaultReticle(shooter, mount), target: null, lead: null, farLead: null, inRange: false, onSolution: false })
+    const motion = { position: target.position, velocity: target.velocity, acceleration: target.entity.acceleration }
+    const { reticle, solution } = drawnReticle(shooter, mount, motion)
     const p = shooter.position, v = shooter.velocity
     const toTarget = target.position.clone().sub(new Vector3(p.x, p.y, p.z))
     const range = toTarget.length()
     const closure = range > 1e-6 ? -toTarget.dot(target.velocity.clone().sub(new Vector3(v.x, v.y, v.z))) / range : 0
     const radius = radiusOf(target.entity)
     const reachable = !!solution
+    const far = !reachable && range <= FAR_LEAD_RANGE ? solveGun(shooter, mount, motion) : null
     const miss = solution ? new Vector3(solution.reticle.x - solution.lead.x, solution.reticle.y - solution.lead.y, solution.reticle.z - solution.lead.z).length() : Infinity
     return withLock({
       ...base,
@@ -95,6 +104,7 @@ export function createGunnery(aircraftId: string) {
       target: { position: target.position, radius: radius * distanceScale(range), range, closure, hp: target.entity.hp / AIRCRAFT_HP, label: targetLabel(target.entity),
         lockLeft: shooter.lockOutside ? Math.max(0, targetingRules.lockGraceSeconds - shooter.lockOutside) : null },
       lead: reachable ? solution!.lead : null,
+      farLead: far ? far.lead : null,
       inRange: reachable && range <= EFFECTIVE_RANGE,
       // Within most of the target's size: rounds through that point hit the airframe.
       onSolution: reachable && miss <= radius * 0.6,

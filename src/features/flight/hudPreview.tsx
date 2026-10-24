@@ -2,7 +2,7 @@
 // without WebGL, pointer lock or the pause dialog. Query: ?t=12 freezes the clock,
 // ?lang=en, ?lesson=2, ?lab, ?warning, ?stall, ?recovering, ?psm, ?size=1280x672,
 // ?gun (a target crossing 550 m ahead: box, HP, lead, reticle; ?gun=hit adds a hit each second,
-// ?gun=assist shows the ASSIST label). Radar: ?radar (four contacts: a lock off screen right on its
+// ?gun=assist shows the ASSIST label, ?gun=far puts it 1,300 m out, past the gun's reach: the dashed lead). Radar: ?radar (four contacts: a lock off screen right on its
 // grace time, one painted ahead, one close behind seen by eye, one painted past the scope; ?radar=held keeps
 // the lock inside the cone). Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?deny (a refused trigger press each second), ?hp=25, ?sel=1, ?firing.
 import { createRef, StrictMode, useEffect, useState } from 'react'
@@ -88,12 +88,12 @@ function Preview() {
   useEffect(() => {
     const camera = new PerspectiveCamera(69, 1, 0.5, 14000), start = performance.now()
     let request = 0, published = 0
-    // The target crosses 550 m out, a little right of the nose, turning at about 3 g, at 70% HP.
+    // The target crosses 550 m out (1,300 m with ?gun=far), a little right of the nose, turning at about 3 g, at 70% HP.
     const marks = createGunnery('f22')
     const previewGunnery = (seconds: number) => {
       const nose = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(state.orientation))
       const right = new Vector3(0, 0, 1).applyQuaternion(new Quaternion().copy(state.orientation))
-      const at = new Vector3().copy(state.position).addScaledVector(nose, 550).addScaledVector(right, 40)
+      const at = new Vector3().copy(state.position).addScaledVector(nose, params.get('gun') === 'far' ? 1300 : 550).addScaledVector(right, 40)
       target.position = { x: at.x, y: at.y, z: at.z }
       target.velocity = { x: -right.x * 150, y: -right.y * 150, z: -right.z * 150 }
       target.acceleration = { x: nose.x * 30, y: nose.y * 30, z: nose.z * 30 }

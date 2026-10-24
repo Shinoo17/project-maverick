@@ -159,16 +159,16 @@ export class FlightInput {
   /*
   Cursor mode's aim assist, once per rendered frame like a hand: draws the × toward the lead
   marker at `lead` (pixels from the middle), `leadDeg` off it through the lens, or `targetDeg`
-  off the target itself while firing (aimAssist.ts, `cursorDraw`). Not while the instructor is
+  off the target itself while firing, `range` metres from it (aimAssist.ts, `cursorDraw`). Not while the instructor is
   not flying (a key, post-stall, a recovery). Not a hand on the mouse, so it never counts
   against hands-off recovery. True while it acts.
   */
-  drawCursor(lead: { x: number; y: number } | null, leadDeg: number, targetDeg: number, dt: number) {
+  drawCursor(lead: { x: number; y: number } | null, leadDeg: number, targetDeg: number, dt: number, range: number) {
     const hand = this.handPixels
     this.handPixels = 0
     if (this.mouse.mode !== 'cursor' || !lead || !this.stick.live || !this.aim.synced || this.aim.share <= 0 || this.aim.recovering) return false
     if ((['pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight'] as const).some(action => this.holds(action))) return false
-    const share = cursorDraw(this.mouse.aimAssist, leadDeg, targetDeg, dt, this.triggerHeld, hand)
+    const share = cursorDraw(this.mouse.aimAssist, leadDeg, targetDeg, dt, this.triggerHeld, hand, range)
     if (share <= 0) return false
     moveStick(this.stick, (lead.x - this.stick.px) * share, (lead.y - this.stick.py) * share, this.gate)
     return true

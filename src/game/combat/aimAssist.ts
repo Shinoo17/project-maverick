@@ -11,6 +11,10 @@ command that reaches the simulation already carries it and replays repeat it exa
 - Error: the solution's aim direction against the current gun line, in the body frame:
   vertical error → pitch, horizontal error → yaw (rolling to turn stays the pilot's job).
 - Reach: full inside `full` degrees of error, fading to nothing at `cone` degrees.
+- Range: full out to `assistRange[0]` metres (the HUD's IN RNG), fading to nothing at
+  `assistRange[1]` (user decision 25 Oct 2026). The rounds fly on to 1,500 m, but out there the
+  spread is as wide as the airframe, so the assist would only steer a spray. Fading instead of
+  cutting off means a target easing out of range never lets go with a jolt.
 - Sharing: small pilot corrections keep the full assist; past a third of the stick on an
   axis the assist gives way, and a full stick is never fought.
 */
@@ -27,6 +31,13 @@ export const aimAssistProfiles: Record<Exclude<AimAssistLevel, 'off'>, { cone: n
   strong: { cone: 14, full: 8, pitchGain: 9, yawGain: 12 },
 }
 
+/** Metres to the target: full assist out to the first, none from the second. Provisional. */
+export const assistRange = [800, 1000] as const
+/** The assist's share (0..1) at `range` metres from the target. */
+export function rangeShare(range: number) {
+  return 1 - Math.min(1, Math.max(0, (range - assistRange[0]) / (assistRange[1] - assistRange[0])))
+}
+
 export interface AimAssist { pitch: number; yaw: number; active: boolean }
 const none: AimAssist = { pitch: 0, yaw: 0, active: false }
 
@@ -37,6 +48,8 @@ export function aimAssist(level: AimAssistLevel, shooter: AircraftState, target:
   const profile = aimAssistProfiles[level]
   const solution = solveGun(shooter, mount, target)
   if (!solution?.reachable) return none
+  const fade = rangeShare(solution.range)
+  if (fade <= 0) return none
   const { x, y, z, w } = shooter.orientation
   aimBody.set(solution.aim.x, solution.aim.y, solution.aim.z).applyQuaternion(turn.set(x, y, z, w).invert())
   if (aimBody.x <= 0) return none
@@ -45,7 +58,7 @@ export function aimAssist(level: AimAssistLevel, shooter: AircraftState, target:
   const yawError = Math.atan2(aimBody.z, aimBody.x)
   const error = Math.hypot(pitchError, yawError) * 180 / Math.PI
   if (error >= profile.cone) return none
-  const reach = error <= profile.full ? 1 : 1 - (error - profile.full) / (profile.cone - profile.full)
+  const reach = (error <= profile.full ? 1 : 1 - (error - profile.full) / (profile.cone - profile.full)) * fade
   // Small corrections from the pilot keep the full assist; it gives way as the stick goes past a third.
   const giveWay = (own: number) => 1 - Math.min(1, Math.max(0, Math.abs(own) - 0.35) / 0.65)
   const share = (gain: number, err: number, own: number) => Math.max(-1, Math.min(1, gain * err)) * reach * giveWay(own)
@@ -85,6 +98,8 @@ export function aimMagnet(level: AimAssistLevel, shooter: AircraftState, target:
   const profile = aimAssistProfiles[level]
   const solution = solveGun(shooter, mount, target)
   if (!solution?.reachable) return false
+  const fade = rangeShare(solution.range)
+  if (fade <= 0) return false
   const { x, y, z, w } = shooter.orientation
   turn.set(x, y, z, w)
   // The gun line sits elevationDeg above the nose, so the nose goes that far below the aim.
@@ -94,7 +109,7 @@ export function aimMagnet(level: AimAssistLevel, shooter: AircraftState, target:
   if (error >= profile.cone || error < 1e-6) return error < 1e-6
   drawAxis.crossVectors(aim, noseAim)
   if (drawAxis.lengthSq() < 1e-12) return true
-  const share = draw(level, error, dt, firing)
+  const share = draw(level, error, dt, firing) * fade
   aim.applyAxisAngle(drawAxis.normalize(), aim.angleTo(noseAim) * share).normalize()
   return true
 }
@@ -111,14 +126,17 @@ function draw(level: Exclude<AimAssistLevel, 'off'>, error: number, dt: number, 
 export const handGiveWay = [150, 700] as const
 /** Cursor mode: the share (0..1) of the way from the × to the lead marker the × moves this frame.
  * `leadError` and `targetError` are degrees from the × to the lead marker and to the target
- * through the lens; `handPixels` is how far the hand moved the × this frame.
+ * through the lens; `handPixels` is how far the hand moved the × this frame; `range` is metres
+ * to the target.
 
  While firing, a × on the target itself captures too: against a crossing target the lead sits
  about (target speed / round speed) off the airframe at any range — 7° at 150 m/s, 12° at 250 —
  so "point at it and fire" would otherwise miss the cone. The draw still goes to the lead. */
-export function cursorDraw(level: AimAssistLevel, leadError: number, targetError: number, dt: number, firing: boolean, handPixels: number) {
+export function cursorDraw(level: AimAssistLevel, leadError: number, targetError: number, dt: number, firing: boolean, handPixels: number, range: number) {
   if (level === 'off' || !(dt > 0)) return 0
+  const fade = rangeShare(range)
+  if (fade <= 0) return 0
   const speed = handPixels / dt
   const giveWay = 1 - Math.min(1, Math.max(0, (speed - handGiveWay[0]) / (handGiveWay[1] - handGiveWay[0])))
-  return draw(level, firing ? Math.min(leadError, targetError) : leadError, dt, firing) * giveWay
+  return draw(level, firing ? Math.min(leadError, targetError) : leadError, dt, firing) * giveWay * fade
 }

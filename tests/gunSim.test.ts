@@ -88,13 +88,13 @@ describe('gun rounds', () => {
     const round = spawnRound(1, 0, shooterAt(500), 0, [0, 0, 0], 'm61a2', { ...profile, spreadDeg: 0 }, 0, 0, gun.elevationDeg)
     expect(Math.atan2(round.velocity.y, round.velocity.x) * 180 / Math.PI).toBeCloseTo(gun.elevationDeg, 9)
   })
-  it('stop at the 1,000 m cap, never beyond, and at the 1.2 s lifetime when slower', () => {
+  it('stop at the 1,500 m cap, never beyond, and at the 1.8 s lifetime when slower', () => {
     const fast = flyRound(spawnRound(1, 0, shooterAt(2000, 250), 0, [0, 0, 0], 'm61a2', profile, 0, 0), () => [])
     expect(fast.hit).toBeNull()
-    expect(fast.round.travelled).toBeCloseTo(1000, 6)
+    expect(fast.round.travelled).toBeCloseTo(1500, 6)
     const slow = flyRound(spawnRound(2, 0, shooterAt(2000, -400), 0, [0, 0, 0], 'm61a2', profile, 0, 0), () => [])
-    expect(slow.round.age).toBeCloseTo(1.2, 9)
-    expect(slow.round.travelled).toBeLessThan(1000)
+    expect(slow.round.age).toBeCloseTo(1.8, 9)
+    expect(slow.round.travelled).toBeLessThan(1500)
   })
   it('end on the ground at y = 0', () => {
     const shooter = body('shooter', { x: 0, y: 50, z: 0 })

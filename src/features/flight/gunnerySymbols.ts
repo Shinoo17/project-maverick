@@ -13,6 +13,8 @@ why), so the reticle sitting on the lead marker on screen means a hit.
   blinks and counts the seconds left. Red here means "locked", as on the radar scope.
 - Lead marker: a diamond where the target will be when the rounds arrive, tied to the box by a
   dashed line, with an arc that empties as the range closes. Doubled when the reticle is on it.
+  Before the target is in the gun's reach the same marker is drawn dashed (`farLead`), never in
+  a lock colour: it shows where to point, not that rounds would get there.
 - ASSIST under the reticle while aim assist is moving the stick (or, under mouse aim, the aim).
 - Lock colour, the only colour on the glass besides phosphor green (user request 23 Oct 2026):
   the lead marker turns amber while aim assist has captured it and red once the reticle sits
@@ -46,6 +48,8 @@ export interface GunneryMarks {
   } | null
   /** Where the target will be when the rounds arrive (world); null without a reachable solution. */
   lead: Vec3Like | null
+  /** The lead while the target is still past the gun's reach (world), drawn dashed; null otherwise. */
+  farLead?: Vec3Like | null
   inRange: boolean
   /** The reticle is on the lead marker, within the target's size. */
   onSolution: boolean
@@ -80,7 +84,8 @@ export function drawGunnery(pen: Pen, marks: GunneryMarks, camera: Camera, heigh
   const { ctx } = pen
   const focal = height / 2 / Math.tan(((camera as PerspectiveCamera).fov ?? 60) * Math.PI / 360)
   const box = marks.target ? drawTarget(pen, marks, marks.target, focal, shooter) : null
-  if (marks.lead) drawLead(pen, marks, box)
+  if (marks.lead) drawLead(pen, marks, marks.lead, box)
+  else if (marks.farLead) drawLead(pen, { ...marks, lock: 'free', inRange: false, onSolution: false }, marks.farLead, box, true)
   if (marks.reticle) drawReticle(pen, marks.reticle, marks.assist)
   drawSplash(pen, marks)
   ctx.setLineDash([])
@@ -153,8 +158,8 @@ function drawTarget(pen: Pen, marks: GunneryMarks, target: NonNullable<GunneryMa
   return { x: at.x, y: at.y, half }
 }
 
-function drawLead(pen: Pen, marks: GunneryMarks, box: { x: number; y: number; half: number } | null) {
-  const at = pen.project(marks.lead!)
+function drawLead(pen: Pen, marks: GunneryMarks, lead: Vec3Like, box: { x: number; y: number; half: number } | null, far = false) {
+  const at = pen.project(lead)
   if (!at) return
   const { ctx } = pen, s = 7
   const lock = marks.lock === 'free' ? null : pen[marks.lock]
@@ -166,12 +171,15 @@ function drawLead(pen: Pen, marks: GunneryMarks, box: { x: number; y: number; ha
     pen.line(box.x + dx / d * box.half, box.y + dy / d * box.half, at.x - dx / d * (s + 4), at.y - dy / d * (s + 4), 1, pen.dim)
     ctx.setLineDash([])
   }
+  // Past the gun's reach the diamond and arc are dashed too.
+  if (far) ctx.setLineDash([3, 3])
   const diamond = (size: number) => { ctx.beginPath(); ctx.moveTo(at.x, at.y - size); ctx.lineTo(at.x + size, at.y); ctx.lineTo(at.x, at.y + size); ctx.lineTo(at.x - size, at.y); ctx.closePath(); ctx.stroke() }
   pen.luminous(() => diamond(s), lock ? 2 : 1.6, color, bloom)
   if (marks.onSolution) pen.luminous(() => diamond(s + 5), 1.6, color, bloom)
   // Range arc: full at 1,000 m and beyond, empty at the target.
   const share = Math.min(1, (marks.target?.range ?? MAX_ARC_RANGE) / MAX_ARC_RANGE)
   pen.luminous(() => { ctx.beginPath(); ctx.arc(at.x, at.y, s + 10, -Math.PI / 2, -Math.PI / 2 + share * Math.PI * 2); ctx.stroke() }, 1.4, color, bloom)
+  ctx.setLineDash([])
 }
 
 function drawSplash(pen: Pen, marks: GunneryMarks) {

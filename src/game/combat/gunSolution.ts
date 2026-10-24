@@ -15,8 +15,10 @@ camera sits metres behind it.
 - With no target, the reticle is drawn at DEFAULT_RANGE.
 
 Solving: the round must cover r(t) = r0 + Δv·t + ½(a_target − g)·t² at muzzle speed, so
-t = |r(t)| / muzzleSpeed, iterated from t = |r0| / muzzleSpeed. Relative speeds are far below
-muzzle speed, so it settles in a few steps.
+|r(t)| = muzzleSpeed·t. Without the acceleration term that is a quadratic in t; its positive
+root seeds Newton steps that fold the acceleration back in. (Iterating t = |r(t)| / muzzleSpeed
+instead converges only by the ratio closure / muzzle speed per step: head-on, or crossing fast,
+it had not settled after 12 steps and the HUD lost the lead, the slower GSh-30 most often.)
 */
 import { Quaternion, Vector3 } from 'three'
 import { gunStation, type GunProfile } from '../../content/weapons'
@@ -91,6 +93,15 @@ export function defaultReticle(shooter: ShooterPose, mount: GunMount): Vec3 {
   return roundAt(shooter, mount, direction, timeFor(shooter, mount, direction, DEFAULT_RANGE))
 }
 
+/** Smallest positive root of a·t² + b·t + c = 0, NaN when there is none. */
+function firstMeeting(a: number, b: number, c: number) {
+  if (Math.abs(a) < 1e-9) return b < 0 ? -c / b : NaN
+  const disc = b * b - 4 * a * c
+  if (disc < 0) return NaN
+  const root = Math.sqrt(disc), roots = [(-b - root) / (2 * a), (-b + root) / (2 * a)].filter(t => t > 0)
+  return roots.length ? Math.min(...roots) : NaN
+}
+
 export function solveGun(shooter: ShooterPose, mount: GunMount, target: TargetMotion): GunSolution | null {
   const start = muzzlePoint(shooter, mount), m = mount.profile.muzzleSpeed
   const p = target.position, v = target.velocity, a = target.acceleration, s = shooter.velocity
@@ -100,13 +111,19 @@ export function solveGun(shooter: ShooterPose, mount: GunMount, target: TargetMo
     y: r0.y + (v.y - s.y) * t + (a.y + GRAVITY) * t * t / 2,
     z: r0.z + (v.z - s.z) * t + a.z * t * t / 2,
   })
-  let time = Math.hypot(r0.x, r0.y, r0.z) / m, settled = false
-  for (let step = 0; step < 12 && !settled; step++) {
-    const r = needed(time), next = Math.hypot(r.x, r.y, r.z) / m
-    settled = Math.abs(next - time) < 1e-7
+  const dv = { x: v.x - s.x, y: v.y - s.y, z: v.z - s.z }
+  let time = firstMeeting(dv.x ** 2 + dv.y ** 2 + dv.z ** 2 - m * m, 2 * (r0.x * dv.x + r0.y * dv.y + r0.z * dv.z), r0.x ** 2 + r0.y ** 2 + r0.z ** 2)
+  // Newton on g(t) = |r(t)|² − m²t², with r'(t) = Δv + (a_target − g)·t.
+  for (let step = 0; step < 8 && time > 0; step++) {
+    const r = needed(time), rate = { x: dv.x + a.x * time, y: dv.y + (a.y + GRAVITY) * time, z: dv.z + a.z * time }
+    const g = r.x ** 2 + r.y ** 2 + r.z ** 2 - m * m * time * time
+    const slope = 2 * (r.x * rate.x + r.y * rate.y + r.z * rate.z) - 2 * m * m * time
+    if (slope === 0) break
+    const next = time - g / slope
+    if (Math.abs(next - time) < 1e-9) { time = next; break }
     time = next
   }
-  if (!settled || !(time > 0)) return null
+  if (!(time > 0) || !Number.isFinite(time)) return null
   const r = needed(time), length = Math.hypot(r.x, r.y, r.z)
   const aim = { x: r.x / length, y: r.y / length, z: r.z / length }
   const lead = { x: p.x + v.x * time + a.x * time * time / 2, y: p.y + v.y * time + a.y * time * time / 2, z: p.z + v.z * time + a.z * time * time / 2 }
