@@ -12,7 +12,7 @@ export const flightActions = [
   'pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight',
   'speedUp', 'speedDown', 'afterburner', 'airbrake', 'cameraCycle', 'lookBack',
   // Newer actions go last: a saved key wins over a new action's default (parseBindings claims in this order).
-  'fireGun', 'nextTarget', 'fireMissile', 'selectMissile1', 'selectMissile2', 'freeLook',
+  'fireGun', 'nextTarget', 'fireMissile', 'selectMissile1', 'selectMissile2', 'freeLook', 'countermeasure',
 ] as const
 export type FlightAction = typeof flightActions[number]
 
@@ -38,10 +38,12 @@ export const defaultBindings: Readonly<KeyBindings> = {
   fireGun: ['KeyJ', null],
   // T steps the gun's selected target (doc 02).
   nextTarget: ['KeyT', null],
-  // Right mouse also launches in the mouse preset; 2 and 3 pick the short- and medium-range missile.
-  fireMissile: ['KeyK', null], selectMissile1: ['Digit2', null], selectMissile2: ['Digit3', null],
+  // Right mouse also launches in the mouse preset; 1 and 2 pick the short- and medium-range missile.
+  fireMissile: ['KeyK', null], selectMissile1: ['Digit1', null], selectMissile2: ['Digit2', null],
   // C held turns the camera with the mouse; R held looks back. Both leave the jet on its course.
   cameraCycle: ['KeyV', null], lookBack: ['KeyR', null], freeLook: ['KeyC', null],
+  // F drops a salvo of flares and chaff together (doc 02).
+  countermeasure: ['KeyF', null],
 }
 
 export const defaultKeyboardSettings: Readonly<KeyboardSettings> = {

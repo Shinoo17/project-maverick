@@ -8,6 +8,8 @@ export const aircraft: readonly AircraftDefinition[] = [
     id: 'f22', flightProfileId: 'raptor-energy', presentationId: 'f22', weaponStationProfileId: 'f22', hitboxProfileId: 'f22',
     // Gameplay tuning (provisional): the longer reach of the two, the usual nose cone.
     radar: { coneDeg: 60, rangeM: 10000 },
+    // Gameplay tuning (provisional, user value 2026-10-25: five bursts). Dispensers under the aft fuselage, left and right.
+    countermeasures: { bursts: 5, points: [[-4.5, -0.9, -1.6], [-4.5, -0.9, 1.6]] },
     designation: 'F-22', name: 'Raptor', modelFile: 'F22_compact.glb',
     role: { th: 'เครื่องบินขับไล่ครองอากาศ · ตรวจจับยาก + ซูเปอร์ครูซ', en: 'Air superiority fighter · Stealth and supercruise' },
     rotation: [0, 0, 0], removeNodes: ['MLG_Bay_Fitting_01', 'MLG_Bay_Fitting_02'],
@@ -23,6 +25,7 @@ export const aircraft: readonly AircraftDefinition[] = [
     id: 'su57', flightProfileId: 'felon-agility', presentationId: 'su57', weaponStationProfileId: 'su57', hitboxProfileId: 'su57',
     // Gameplay tuning (provisional): a wider cone for its cheek-mounted side arrays, less reach.
     radar: { coneDeg: 70, rangeM: 9000 },
+    countermeasures: { bursts: 5, points: [[-5, -0.6, -1.5], [-5, -0.6, 1.5]] },
     designation: 'Su-57', name: 'Felon', modelFile: 'SU57_compact.glb',
     role: { th: 'เครื่องบินขับไล่อเนกประสงค์ · คล่องตัวสูง + เวกเตอร์แรงขับ', en: 'Multirole fighter · High agility and thrust vectoring' },
     rotation: [0, Math.PI / 2, 0],

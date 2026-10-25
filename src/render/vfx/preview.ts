@@ -5,6 +5,9 @@ or shoot it down so its wreck falls and explodes on the ground. Loop replays the
 The sprite button swaps the sprite sets (atlas.ts) under the running effects; ?sprites=
 picks the first.
 Drives the same createCombatEffects as the flight scene, with made-up hits and events.
+?scene=missile bursts a missile warhead beside the target every 3 s instead (with ?at, the moment
+that many seconds after the first burst), while an AIM-9 under motor flies across in front of it
+every 2.6 s, its plume seen side on.
 */
 import { BoxGeometry, Color, FogExp2, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Scene, SRGBColorSpace, HemisphereLight, DirectionalLight, ACESFilmicToneMapping, WebGLRenderer } from 'three'
 import type { ProjectileHit } from '../../game/combat/projectiles'
@@ -13,6 +16,7 @@ import type { WorldState } from '../../game/state/WorldState'
 import { SPRITE_SETS, type SpriteSet } from './atlas'
 import { createCombatEffects, WRECK_SLOTS } from './combatEffects'
 import { distanceScale } from '../targetVisibility'
+import { WORLD_STEP } from '../../game/runtime/clock'
 
 const HAZE = '#c4d4de', FOG_DENSITY = 0.00016
 const renderer = new WebGLRenderer({ antialias: true })
@@ -40,7 +44,7 @@ const SPEED = 150, START_X = -170
 const pathX = () => START_X + ((clock * SPEED) % 1200)
 const drone = () => ({ id: 'drone-1', control: 'path', alive, position: { x: pathX(), y: 400, z: 0 }, velocity: { x: SPEED, y: 0, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 } })
 // Timed on the preview's own clock, so pause and ?at= replay it exactly.
-let firingUntil = -1, destroyAt = -1, reviveAt = -1
+let firingUntil = -1, destroyAt = -1, reviveAt = -1, nextBurst = 0.5
 function fire(seconds: number, thenDestroy: boolean) { firingUntil = clock + seconds; if (thenDestroy) destroyAt = clock + seconds }
 document.getElementById('hits')!.onclick = () => fire(1, false)
 document.getElementById('burst')!.onclick = () => fire(0.2, true)
@@ -59,11 +63,26 @@ spritesButton.onclick = () => {
 }
 if (params.has('distance')) distance.value = params.get('distance')!
 
+/** The ?scene=missile AIM-9: across the view in front of the target, slowly enough (250 m/s) to stay
+ * in frame for its whole 2.2 s burn, a new one every 2.6 s. */
+function crossing() {
+  const loop = Math.floor(clock / 2.6), age = clock - loop * 2.6
+  return { id: 100 + loop, weaponId: 'aim9', mount: 'pylon', age, position: { x: -350 + age * 250, y: 410, z: 60 }, velocity: { x: 250, y: 0, z: 0 } }
+}
+
 /** One step of the made-up world: hits while firing, the kill, the respawn. */
 function step(dt: number) {
   clock += dt
   if (loop && clock >= nextLoop) { nextLoop = clock + 12; fire(0.6, true) }
   const events: GameEvent[] = [], hits: ProjectileHit[] = []
+  if (params.get('scene') === 'missile') {
+    if (clock >= nextBurst) {
+      nextBurst += 3
+      const at = drone().position
+      events.push({ id: `e${eventId++}`, tick: 0, type: 'missile-detonated', missileId: eventId, ownerId: 'aircraft-1', weaponId: 'aim9', position: { x: at.x - 12, y: at.y + 4, z: 8 }, cause: 'proximity', targetId: null })
+    }
+    return { events, hits }
+  }
   if (alive && clock < firingUntil) {
     // About two rounds arrive a frame while firing, on the box's side facing the camera (where a hitbox surface would be).
     for (let index = 0; index < 2; index++) {
@@ -87,7 +106,8 @@ function draw(frame: { events: GameEvent[]; hits: ProjectileHit[] }) {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); camera.updateMatrixWorld()
   renderer.setSize(innerWidth, innerHeight, false)
   // The world as it stood when the frame's events happened: the kill reads the drone's pose.
-  const world = { tick: 0, aircraft: [{ ...drone(), alive: true }] } as unknown as WorldState
+  // Its tick is the clock's, so missiles are drawn where they are now.
+  const world = { tick: clock / WORLD_STEP, aircraft: [{ ...drone(), alive: true }], missiles: params.get('scene') === 'missile' ? [crossing()] : [], decoys: [] } as unknown as WorldState
   target.visible = alive; target.position.set(pathX(), 400, 0)
   // Drawn larger with distance, like the drone in flight, so hits are checked against the drawn size.
   target.scale.setScalar(distanceScale(camera.position.distanceTo(target.position)))

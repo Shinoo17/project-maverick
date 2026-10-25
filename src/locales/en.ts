@@ -186,7 +186,7 @@ export const en = {
   drone_racetrack: "Straight, turns back",
   drone_circle: "Circles the range",
   drone_bot: "Combat bot",
-  combatBotHint: "An enemy Su-57 flies at you from 3 km and fights with its gun: it chases you and breaks when you get behind it. Shoot it down and a new one comes at you 3 s later.",
+  combatBotHint: "An enemy Su-57 flies at you from 3 km and fights with its gun and missiles: it chases you, breaks when you get behind it, and beams your missiles dropping flares and chaff. Drop yours (F) and turn hard when one is after you. Shoot it down and a new one comes at you 3 s later.",
   briefPractice: "Practice setup",
   briefControls: "Controls",
   lessonPrevious: "Previous lesson",
@@ -437,7 +437,7 @@ export const en = {
   bindAction_yawLeft: "Yaw left", bindAction_yawRight: "Yaw right", bindAction_speedUp: "Increase speed", bindAction_speedDown: "Decrease speed",
   bindAction_afterburner: "Afterburner", bindAction_airbrake: "Airbrake", bindAction_cameraCycle: "Cycle camera mode",
   bindAction_fireGun: "Fire gun", bindAction_nextTarget: "Next target", bindAction_lookBack: "Look back (hold)", bindAction_freeLook: "Free look (hold + mouse)", bindAction_pause: "Pause",
-  bindAction_fireMissile: "Launch missile", bindAction_selectMissile1: "Select short-range missile", bindAction_selectMissile2: "Select medium-range missile",
+  bindAction_countermeasure: "Flares and chaff", bindAction_fireMissile: "Launch missile", bindAction_selectMissile1: "Select short-range missile", bindAction_selectMissile2: "Select medium-range missile",
   weaponPanel: "Weapons",
 } as const
 export type Translation = { [Key in keyof typeof en]: string }

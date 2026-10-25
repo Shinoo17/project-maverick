@@ -11,6 +11,7 @@ import type { FlightForces } from '../flight/flightForces'
 import type { GunState } from '../combat/gun'
 import type { Projectile } from '../combat/projectiles'
 import type { Missile } from '../combat/missiles'
+import type { CountermeasureState, Decoy } from '../combat/countermeasures'
 import type { DronePath } from '../playground/dronePath'
 import type { TargetingState } from '../combat/targeting'
 import type { BotState } from '../bot/botPilot'
@@ -41,6 +42,8 @@ export interface AircraftState {
   targeting: TargetingState
   /** The first tick another missile may be launched on (missileRules.interval). */
   launchReadyTick: number
+  /** Flares and chaff left, and the salvo under way (src/game/combat/countermeasures.ts). */
+  countermeasures: CountermeasureState
   maneuver: ManeuverState
   stall: StallState
   speedDrive: number
@@ -70,7 +73,9 @@ export interface WorldState {
   projectiles: Projectile[]
   /** Missiles in flight (src/game/combat/missiles.ts). */
   missiles: Missile[]
-  /** The next projectile or missile id; only goes up, so ids are never reused. */
+  /** Flares and chaff in the air (src/game/combat/countermeasures.ts). */
+  decoys: Decoy[]
+  /** The next projectile, missile or decoy id; only goes up, so ids are never reused. */
   nextProjectileId: number
   /** Playground target drone shot down: the tick it comes back on. */
   droneRespawnTick?: number

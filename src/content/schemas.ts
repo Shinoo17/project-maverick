@@ -1,6 +1,7 @@
 import type { TargetDroneMode } from '../game/playground/dronePath'
 import type { FlightProfileId } from './flight-profiles'
 import type { FlightSpeedOverride } from '../game/flight/profileTypes'
+import type { Tuple3 } from './hitboxes'
 export type AircraftId = string
 export const presentationIds = ['f22', 'su57'] as const
 export type Locale = 'th' | 'en'
@@ -18,6 +19,8 @@ export interface AircraftDefinition {
   /** The search radar as the game models it (src/game/combat/radar.ts). Gameplay tuning, not the
    * real set's performance, which is not public (doc 05): never shown as a fact in the Hangar. */
   radar: RadarSpec
+  /** Flares and chaff (src/game/combat/countermeasures.ts). Gameplay tuning, like `radar`. */
+  countermeasures: CountermeasureSpec
   designation: string
   name: string
   /* Role / signature trait shown under the airframe name on the stage. */
@@ -35,6 +38,13 @@ export interface RadarSpec {
   coneDeg: number
   /** Metres it sees out to. */
   rangeM: number
+}
+
+export interface CountermeasureSpec {
+  /** Bursts carried per life. */
+  bursts: number
+  /** Dispensers, in the hitbox body frame (metres; +X forward, +Y up, −Z left), used in turn. */
+  points: Tuple3[]
 }
 
 export interface AircraftHangarInfo {

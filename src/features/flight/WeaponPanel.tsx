@@ -6,7 +6,8 @@
    shows a faint track and outline, filled left (0%) to right (100%) with heat in off-white, red and
    flashing past 80%, solid red while locked out (released past 80%: until
    35%; overheated: until 0); the selected missile card
-   steps toward the pilot and carries the launch key.
+   steps toward the pilot and carries the launch key. The countermeasure card closes the column:
+   bursts left as pips, with its key.
    MOTION: The column holds a fixed 3D tilt and sways a few degrees with roll rate and G, eased by
    CSS between 10 Hz telemetry updates; reduced motion keeps it still. */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
@@ -34,7 +35,9 @@ const icons: Record<WeaponKind, string> = {
   ir: '<path d="M8 11H70Q84 11.4 90 13Q84 14.6 70 15H8Z"/><path d="M10 11L6 4H15L20 11M10 15L6 22H15L20 15"/><path d="M62 11L61 8H66L68 11M62 15L61 18H66L68 15"/>',
   radar: '<path d="M4 11H74Q85 11.4 90 13Q85 14.6 74 15H4Z"/><path d="M7 11L3 3H13L18 11M7 15L3 23H13L18 15"/><path d="M40 11L37 6H45L49 11M40 15L37 20H45L49 15"/><path d="M60 11V15M64 11V15"/>',
 }
-const Icon = ({ kind }: { kind: WeaponKind }) => <svg className="wpn-icon" viewBox="-2 0 104 26" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icons[kind] }} />
+// Countermeasures: a flare dropping on a smoke arc, and a chaff cloud of dashes.
+const countermeasureIcon = '<path d="M6 6Q26 6 34 18"/><circle cx="36" cy="20" r="2.6"/><path d="M36 13V15M41 15L39.6 16.4M43 20H41M31 15L32.4 16.4"/><path class="wpn-chaff" d="M56 9H60M66 7H70M76 10H80M60 15H64M71 14H75M82 16H86M57 21H61M67 20H71M77 22H81"/>'
+const Icon = ({ kind }: { kind: WeaponKind | 'countermeasure' }) => <svg className="wpn-icon" viewBox="-2 0 104 26" aria-hidden="true" dangerouslySetInnerHTML={{ __html: kind === 'countermeasure' ? countermeasureIcon : icons[kind] }} />
 // The category line already carries the calibre: "M61A2 · 20 mm" → M61A2, "30 mm aircraft cannon" → aircraft cannon.
 const gunName = (name: string) => name.split(' · ')[0].replace(/\s*\d+\s*(mm|มม\.)\s*/i, ' ').trim()
 const category: Record<WeaponKind, string> = { gun: 'GUN', ir: 'IR · SRM', radar: 'RADAR · MRM' }
@@ -51,6 +54,7 @@ export function weaponRows(aircraftId: string, state: AircraftState | null) {
     gun: { station, weapon, count: count(station) },
     // In the seeker's selection order: short range first, so slot 0 is always the IR missile.
     missiles: missileStations(definition).map(row => ({ ...row, count: count(row.station) })),
+    countermeasures: { capacity: definition.countermeasures.bursts, count: state?.countermeasures.bursts ?? definition.countermeasures.bursts },
   }
 }
 
@@ -63,7 +67,7 @@ export function WeaponPanel({ aircraftId, state, selected, denied = 0, preset, b
   const { t } = useTranslation()
   const { locale } = useSessionSettings()
   const keys = bindingNames(bindings), mouse = preset === 'mouse'
-  const { gun, missiles } = weaponRows(aircraftId, state)
+  const { gun, missiles, countermeasures } = weaponRows(aircraftId, state)
 
   // A drop in HP shakes the column; a rising shot count spins the barrels. Damage lands every
   // telemetry update under sustained fire, so a shake never restarts before the last one ends.
@@ -122,6 +126,15 @@ export function WeaponPanel({ aircraftId, state, selected, denied = 0, preset, b
               : <kbd>{keys[index ? 'selectMissile2' : 'selectMissile1']}</kbd>}</span>
         </div>
       })}
+
+      <div className="wpn-card wpn-cm" data-empty={countermeasures.count === 0 || undefined}>
+        <Icon kind="countermeasure" />
+        <span className="wpn-cat">CM · BURST</span>
+        <span className="wpn-name">FLARE + CHAFF</span>
+        <strong className="wpn-value">{String(countermeasures.count).padStart(2, '0')}</strong>
+        <span className="wpn-row"><span className="wpn-pips" aria-hidden="true">{Array.from({ length: countermeasures.capacity }, (_, i) => <i key={i} data-on={i < countermeasures.count || undefined} />)}</span>
+          <span className="wpn-launch"><Key name={keys.countermeasure} />{countermeasures.count === 0 ? 'EMPTY' : 'DROP'}</span></span>
+      </div>
 
     </div>
   </section>

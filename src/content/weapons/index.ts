@@ -70,10 +70,19 @@ export interface MissileProfile {
   /** Most sideways pull the fins give, in g. Turn radius is v² / (maxG · 9.81): the faster the
    * missile, the wider it turns. */
   maxG: number
+  /** Fastest the missile can swing its path, in degrees per second. Caps the pull at low speed,
+   * where maxG alone would let a slow missile snap round: the pull is at most this rate × speed. */
+  turnRateDeg: number
+  /** Seconds after separation for the pull to build from nothing to full (the autopilot taking
+   * hold), so a missile never snaps onto the target off the rail. */
+  rampSeconds: number
+  /** Induced drag: m/s² of speed lost per g² of pull. A hard-turning missile bleeds energy. */
+  turnDrag: number
   /** Proportional navigation constant: how hard it turns into the target's sightline drift. */
   navigation: number
-  /** Seconds after launch before it steers, while it clears the aircraft. */
-  guideDelay: number
+  /** The warhead arms after `seconds` from launch or `metres` from the launcher, whichever comes
+   * first. Unarmed, the proximity fuse is off and a strike on an airframe or the ground is a dud. */
+  arm: { seconds: number; metres: number }
   /** Half-angle off the missile's own nose, in degrees, its seeker can look in flight. A target
    * outside it is lost. */
   gimbalDeg: number
@@ -81,6 +90,22 @@ export interface MissileProfile {
    * from launch (this is its seeker's reach); a radar missile flies on the launcher's radar
    * (datalink) until then, and goes active (pitbull) inside it. */
   activeRangeM: number
+  /** The seeker looks for its target only within this many degrees of where it expects it (the
+   * launcher's datalink, or the last track carried forward). A target that turned away from
+   * where it was heading is not found there. */
+  searchDeg: number
+  /** Seconds the target must stay in view, without a break, before the seeker takes it (again).
+   * An IR missile leaves the rail already tracking, so its first track skips this. */
+  acquireSeconds: number
+  /** IR seekers only, 0 to 1: how well it tells a flare from an aircraft. A flare looks
+   * (1 − flareResist) as hot to it as it is (missiles.ts, missileRules.heat). */
+  flareResist?: number
+  /** Radar seekers only, 0 to 1: how well it tells chaff from an aircraft (missiles.ts,
+   * missileRules.radar). */
+  chaffResist?: number
+  /** Seconds the seeker searches, once it has lost its track or reached where it expected the
+   * target, before it gives up for good. */
+  searchSeconds: number
   /** Metres: the launch range. Launched at a target holding its course inside it, the missile
    * arrives with energy to spare; the HUD shows SHOOT there. */
   launchRangeM: number
@@ -107,6 +132,14 @@ export interface WeaponStation {
    * to 1–4° in a gun turn, so the tilt is smaller than a real fighter's: at 0.5° rounds pass about
    * 1.3 m above the nose line at 500 m in level flight and about 3 m below it in a full pull. */
   elevationDeg?: number
+  /** Missile stations only: how missiles leave (missiles.ts `missileRules.mounts`) and the
+   * hardpoints they leave from, in the hitbox body frame, in firing order. A station fires from
+   * point (capacity − count) mod points.length, so a pair alternates left and right.
+   * - bay: an internal bay. The missile is ejected down from the bay, and lights its motor once
+   *   clear.
+   * - pylon: a wing pylon. The missile lights its motor at once and runs off the rail.
+   * Provisional: placed from the GLB's bay and launcher nodes, not a real carriage drawing. */
+  launch?: { kind: 'bay' | 'pylon'; points: Tuple3[] }
 }
 export interface WeaponStore { stationId: string; weaponId: string; count: number }
 const label = (en: string, th: string): LocalizedText => ({ en, th })
@@ -145,16 +178,19 @@ const trainingRadarSeeker: SeekerProfile = { ...aim120Seeker, rangeM: 7500, lock
 // - AIM-120: a longer burn and less drag, so it reaches further, but turns wider; flies on the
 //   launcher's radar until 3 km from the target, then on its own radar.
 // - Training rounds (Su-57) differ a little from each, so the two aircraft do not fly the same missile.
+// Arming (user decision 2026-10-25, playtest defaults): IR 0.15 s / 50 m, radar 0.25 s / 100 m.
 const aim9Missile: MissileProfile = {
-  burnSeconds: 2.2, thrust: 300, drag: 1.6e-4, maxG: 40, navigation: 4, guideDelay: 0.15,
-  gimbalDeg: 50, activeRangeM: 3500, launchRangeM: 3000, fuseM: 9, damage: 100, lifetime: 10, minSpeed: 160,
+  burnSeconds: 2.2, thrust: 300, drag: 1.6e-4, maxG: 40, turnRateDeg: 60, rampSeconds: 0.2, turnDrag: 0.06, navigation: 4,
+  arm: { seconds: 0.15, metres: 50 }, gimbalDeg: 50, activeRangeM: 3500, searchDeg: 4, acquireSeconds: 0.2, searchSeconds: 1, flareResist: 0.45,
+  launchRangeM: 3000, fuseM: 9, damage: 100, lifetime: 10, minSpeed: 160,
 }
 const aim120Missile: MissileProfile = {
-  burnSeconds: 4, thrust: 240, drag: 0.9e-4, maxG: 30, navigation: 4, guideDelay: 0.3,
-  gimbalDeg: 40, activeRangeM: 3000, launchRangeM: 7000, fuseM: 12, damage: 100, lifetime: 20, minSpeed: 160,
+  burnSeconds: 4, thrust: 240, drag: 0.9e-4, maxG: 30, turnRateDeg: 45, rampSeconds: 0.3, turnDrag: 0.06, navigation: 4,
+  arm: { seconds: 0.25, metres: 100 }, gimbalDeg: 40, activeRangeM: 3000, searchDeg: 6, acquireSeconds: 0.3, searchSeconds: 2, chaffResist: 0.5,
+  launchRangeM: 7000, fuseM: 12, damage: 100, lifetime: 20, minSpeed: 160,
 }
-const trainingIrMissile: MissileProfile = { ...aim9Missile, burnSeconds: 2, thrust: 310, maxG: 36, gimbalDeg: 45, activeRangeM: 3200, launchRangeM: 2800 }
-const trainingRadarMissile: MissileProfile = { ...aim120Missile, burnSeconds: 3.6, maxG: 28, activeRangeM: 3500, launchRangeM: 6500 }
+const trainingIrMissile: MissileProfile = { ...aim9Missile, burnSeconds: 2, thrust: 310, maxG: 36, turnRateDeg: 55, gimbalDeg: 45, activeRangeM: 3200, launchRangeM: 2800, flareResist: 0.3 }
+const trainingRadarMissile: MissileProfile = { ...aim120Missile, burnSeconds: 3.6, maxG: 28, turnRateDeg: 42, activeRangeM: 3500, launchRangeM: 6500, chaffResist: 0.35 }
 export const weapons: readonly WeaponDefinition[] = [
   { id: 'm61a2', name: label('M61A2 · 20 mm', 'M61A2 · 20 มม.'), kind: 'gun', calibreMm: 20, gun: m61Gun, source: usaf },
   { id: 'aim9', name: label('AIM-9 Sidewinder', 'AIM-9 Sidewinder'), kind: 'ir', model: { file: 'AIM9_compact.glb', rotation: [0, Math.PI / 2, 0], length: 3.02 }, seeker: aim9Seeker, missile: aim9Missile, source: usaf },
@@ -173,13 +209,19 @@ export function getWeapon(id: string): WeaponDefinition {
 export const weaponStations: Record<string, WeaponStation[]> = {
   f22: [
     { id: 'gun', name: label('Internal gun', 'ปืนประจำเครื่อง'), weaponId: 'm61a2', capacity: 1, muzzle: [1, -0.6, 1.3], elevationDeg: 0.5 },
-    { id: 'side-bays', name: label('Side bays', 'ช่องอาวุธด้านข้าง'), weaponId: 'aim9', capacity: 2 },
-    { id: 'main-bays', name: label('Main bays', 'ช่องอาวุธหลัก'), weaponId: 'aim120', capacity: 6 },
+    // Side bays: one AIM-9 under each launcher rail. Main bays: three AIM-120 a side, outer first.
+    { id: 'side-bays', name: label('Side bays', 'ช่องอาวุธด้านข้าง'), weaponId: 'aim9', capacity: 2,
+      launch: { kind: 'bay', points: [[0.9, -1.55, -1.3], [0.9, -1.55, 1.3]] } },
+    { id: 'main-bays', name: label('Main bays', 'ช่องอาวุธหลัก'), weaponId: 'aim120', capacity: 6,
+      launch: { kind: 'bay', points: [[0.47, -1.75, -0.85], [0.47, -1.75, 0.85], [0.47, -1.7, -0.5], [0.47, -1.7, 0.5], [0.47, -1.75, -0.2], [0.47, -1.75, 0.2]] } },
   ],
   su57: [
     { id: 'gun', name: label('Internal gun', 'ปืนประจำเครื่อง'), weaponId: 'su57-cannon', capacity: 1, muzzle: [3.5, -0.4, 1], elevationDeg: 0.5 },
-    { id: 'short-range', name: label('Short-range stations', 'จุดติดตั้งอาวุธระยะใกล้'), weaponId: 'training-ir', capacity: 2 },
-    { id: 'medium-range', name: label('Medium-range stations', 'จุดติดตั้งอาวุธระยะกลาง'), weaponId: 'training-radar', capacity: 4 },
+    // The wing-root side bays (Bay_l/r) for short range, the two tandem belly bays (Hatch_l/r) for medium.
+    { id: 'short-range', name: label('Short-range stations', 'จุดติดตั้งอาวุธระยะใกล้'), weaponId: 'training-ir', capacity: 2,
+      launch: { kind: 'bay', points: [[-0.4, -0.8, -2.68], [-0.4, -0.8, 2.68]] } },
+    { id: 'medium-range', name: label('Medium-range stations', 'จุดติดตั้งอาวุธระยะกลาง'), weaponId: 'training-radar', capacity: 4,
+      launch: { kind: 'bay', points: [[0, -0.8, -0.28], [0, -0.8, 0.28], [-4, -0.8, -0.28], [-4, -0.8, 0.28]] } },
   ],
 }
 /** Every aircraft starts with every station filled; no selectable presets. */

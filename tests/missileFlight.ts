@@ -1,10 +1,11 @@
 // Test harness: one missile against one aircraft flying a set course, stepped like the runtime.
 import { Quaternion, Vector3 } from 'three'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
-import { getWeapon } from '../src/content/weapons'
+import { getWeapon, type MissileProfile } from '../src/content/weapons'
 import { hitboxes } from '../src/content/hitboxes'
 import { boundingRadius } from '../src/game/combat/collision'
-import { launchMissile, stepMissile, type Missile, type MissileBurst } from '../src/game/combat/missiles'
+import { launchMissile, stepMissile, type Missile, type MissileBurst, type MissileMount } from '../src/game/combat/missiles'
+import { stepDecoy, type Decoy } from '../src/game/combat/countermeasures'
 import type { CombatBody } from '../src/game/combat/projectiles'
 import type { AircraftState, Vec3 } from '../src/game/state/WorldState'
 import { WORLD_STEP } from '../src/game/runtime/clock'
@@ -37,22 +38,30 @@ function move(entity: AircraftState, course: Course, dt: number) {
   entity.orientation = facing(entity.velocity)
 }
 
-/** Launches `weaponId` from an F-22 on `shooter`'s course at an Su-57 on `target`'s, and flies it out. */
-export function flyMissile(weaponId: string, shooter: Course, target: Course, options: { seconds?: number; onTick?: (missile: Missile, aircraft: AircraftState[], tick: number) => void } = {}) {
+/** Launches `weaponId` (from a bay unless `mount` says otherwise) from an F-22 on `shooter`'s course at an Su-57 on `target`'s, and flies it out.
+ * `prepare` may set up the two aircraft before launch; `onTick` may add flares and chaff to `decoys`, which fly like the runtime's. */
+export function flyMissile(weaponId: string, shooter: Course, target: Course, options: {
+  seconds?: number; mount?: MissileMount; profile?: Partial<MissileProfile>
+  prepare?: (shooter: AircraftState, target: AircraftState) => void
+  onTick?: (missile: Missile, aircraft: AircraftState[], tick: number, decoys: Decoy[]) => void
+} = {}) {
   const world = new GameRuntime({ mode: 'playground', aircraftIds: ['f22', 'su57'] }).snapshot()
   const [me, them] = world.aircraft
   for (const [entity, course] of [[me, shooter], [them, target]] as const) {
     entity.position = { ...course.position }; entity.velocity = { ...course.velocity }; entity.orientation = facing(course.velocity)
   }
+  options.prepare?.(me, them)
+  const decoys: Decoy[] = []
   const weapon = getWeapon(weaponId)
-  const missile = launchMissile(1, 0, me, weaponId, them)
+  const missile = launchMissile(1, 0, me, weaponId, them, { stationId: 'test', mount: options.mount ?? 'bay', point: [0.47, -1.75, 0.5] }, weapon.kind === 'radar')
   let burst: MissileBurst | null = null, tick = 0
   const limit = Math.round((options.seconds ?? weapon.missile!.lifetime + 1) / WORLD_STEP)
   for (; tick < limit && !burst; tick++) {
     const before = [me, them].map(entity => ({ position: { ...entity.position }, orientation: { ...entity.orientation }, velocity: { ...entity.velocity } }))
     move(me, shooter, WORLD_STEP); move(them, target, WORLD_STEP)
-    burst = stepMissile(missile, weapon.missile!, weapon.kind === 'radar', [me, them], [body(me, before[0]), body(them, before[1])], WORLD_STEP)
-    options.onTick?.(missile, [me, them], tick)
+    decoys.splice(0, decoys.length, ...decoys.filter(decoy => stepDecoy(decoy, WORLD_STEP)))
+    burst = stepMissile(missile, { ...weapon.missile!, ...options.profile }, weapon.kind === 'radar', [me, them], [body(me, before[0]), body(them, before[1])], WORLD_STEP, decoys)
+    options.onTick?.(missile, [me, them], tick, decoys)
   }
   return { burst, seconds: tick * WORLD_STEP, missile, shooter: me, target: them }
 }

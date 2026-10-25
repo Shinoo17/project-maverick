@@ -23,6 +23,7 @@ import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { FlightSession } from './session'
 import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
 import { RadarScope, type RadarDriver } from './RadarScope'
+import { RwrScope, type RwrDriver } from './RwrScope'
 import { WeaponPanel } from './WeaponPanel'
 import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
 import { practiceSpawns, targetDrone as droneSpawn, type PracticePreset } from '../../game/playground/practice'
@@ -34,7 +35,7 @@ const FlightScene = lazy(() => import('../../render/FlightScene'))
 // Menu title for each way a flight can stop.
 const stopTitle = { weapon: 'shotDown', terrain: 'crashed', boundary: 'boundaryReached' } as const
 // Speed and size of each drone, from the same values the runtime flies.
-const droneDetail = (mode: TargetDroneMode | 'off') => mode === 'still' ? '0 m/s' : mode === 'racetrack' ? `${dronePaths.speed} m/s` : mode === 'circle' ? `${dronePaths.speed} m/s · r ${dronePaths.circleRadius / 1000} km` : mode === 'bot' ? 'GUN' : undefined
+const droneDetail = (mode: TargetDroneMode | 'off') => mode === 'still' ? '0 m/s' : mode === 'racetrack' ? `${dronePaths.speed} m/s` : mode === 'circle' ? `${dronePaths.speed} m/s · r ${dronePaths.circleRadius / 1000} km` : mode === 'bot' ? 'GUN · MSL' : undefined
 export function FlightPage() {
   const { t } = useTranslation()
   const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics } = useSessionSettings()
@@ -55,7 +56,7 @@ export function FlightPage() {
   const preset = keyboard.preset
   const [telemetry, setTelemetry] = useState<AircraftState | null>(null)
   const [webgl] = useState(supportsWebGL2)
-  const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), gate: createRef<HTMLDivElement>(), hud: createRef<HudDriver>(), radar: createRef<RadarDriver>(), fps: createRef<HTMLSpanElement>() }), [])
+  const indicators = useMemo(() => ({ stick: createRef<HTMLDivElement>(), gate: createRef<HTMLDivElement>(), hud: createRef<HudDriver>(), radar: createRef<RadarDriver>(), rwr: createRef<RwrDriver>(), fps: createRef<HTMLSpanElement>() }), [])
   // Mouse settings are input only; the next command tick reads them.
   useEffect(() => { session.input.mouse = { ...controls } }, [session, controls])
   // Camera settings are saved; the scene reads the session copy on its next frame.
@@ -172,6 +173,7 @@ export function FlightPage() {
     <div className="flight-hud">
       <FlightInstruments driver={indicators.hud} />
       <RadarScope driver={indicators.radar} />
+      <RwrScope driver={indicators.rwr} />
       <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
       <div className="flight-actions">{graphics.showFps && <span ref={indicators.fps} className="flight-fps" aria-hidden="true" />}<span>{t(cameraRollOption(camera.roll).labelKey)}{camera.roll === 'horizon' ? ` · ${t(horizonStyleOption(camera.horizonStyle).labelKey)}` : ''}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />

@@ -10,8 +10,12 @@ latest world snapshot, and changes nothing in the simulation.
   wreck falls, trailing fire and smoke, until it hits the ground and explodes again. It
   crashing into terrain itself explodes on the ground. The player's own death has no effect
   yet.
-- A missile trails white smoke and its motor flame while the motor burns, and bursts where its
-  warhead goes off (missile-detonated); on the ground it kicks up dust instead.
+- A missile trails its motor's plume (a short yellow-orange tongue of fire) and white smoke while the motor burns (none while it drops
+  out of a bay), and bursts in a yellow-orange fireball where its warhead goes off
+  (missile-detonated), grown with distance like the aircraft; on the ground it
+  kicks up dust instead. A dud (struck before it armed) only sparks where it broke up.
+- A flare is a round orange ball trailing thick white smoke; each shrinks and dims on its own
+  as it burns out (flareHeat). Chaff scatters faint specks where it bursts, over a thin haze.
 - Up to WRECK_SLOTS wrecks fall at once. Another death then blows up the oldest in the air.
 
 Everything is timed by the simulation clock passed in, so pause freezes it, and reset() clears
@@ -25,9 +29,11 @@ import type { GameEvent } from '../../game/runtime/events'
 import type { WorldState } from '../../game/state/WorldState'
 import { distanceScale } from '../targetVisibility'
 import { loadParticleAtlas, type ParticleAtlas, type SpriteSet } from './atlas'
-import { airExplosion, createMissileTrail, createTrail, groundExplosion, groundHit, hitSpark, missileBurst, randomStream, type EffectLayers } from './effects'
+import { airExplosion, chaffBloom, createFlareTrail, createMissileTrail, createTrail, groundExplosion, groundHit, hitSpark, missileBurst, randomStream, type EffectLayers } from './effects'
 import { getWeapon } from '../../content/weapons'
 import { WORLD_STEP } from '../../game/runtime/clock'
+import { motorBurning } from '../../game/combat/missiles'
+import { flareHeat } from '../../game/combat/countermeasures'
 import { createParticleLayer } from './particles'
 import { advanceWreck, createWreck, type Wreck } from './wreck'
 
@@ -53,8 +59,9 @@ export interface EffectsFrame {
 
 export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   const layers: EffectLayers = {
-    smoke: createParticleLayer({ capacity: 1600, additive: false, order: 5 }),
-    glow: createParticleLayer({ capacity: 600, additive: true, order: 6 }),
+    // Each missile's lingering trail holds about 80 × 7 = 560 puffs; a flare burst up to 8 × 2.5 × 80 = 1,600.
+    smoke: createParticleLayer({ capacity: 6400, additive: false, order: 5 }),
+    glow: createParticleLayer({ capacity: 800, additive: true, order: 6 }),
   }
   // Smoke first, then the glow over it.
   const mesh = new Group().add(layers.smoke.mesh, layers.glow.mesh)
@@ -62,6 +69,9 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   const slots: ({ wreck: Wreck; trail: ReturnType<typeof createTrail>; started: number } | null)[] = Array(WRECK_SLOTS).fill(null)
   // Each missile's trail emitter, by missile id; dropped once the missile is gone.
   const trails = new Map<number, ReturnType<typeof createMissileTrail>>()
+  // Each flare's emitter, and the chaff already burst, by decoy id; dropped once the decoy is gone.
+  const flares = new Map<number, ReturnType<typeof createFlareTrail>>()
+  const bloomed = new Set<number>()
   let lastClock: number | null = null, deaths = 0, disposed = false, wanted = sprites
   const atlases = new Map<SpriteSet, Promise<ParticleAtlas>>()
   /** Draws with `set` once it has loaded, unless another set was asked for meanwhile. */
@@ -116,8 +126,9 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
     }
     for (const event of frame.events) {
       if (event.type === 'missile-detonated') {
-        if (event.cause === 'ground') groundHit(layers, clock, event.position, random)
-        else missileBurst(layers, clock, event.position, random)
+        if (event.cause === 'dud') hitSpark(layers, clock, event.position, { x: 0, y: 0, z: 0 }, random)
+        else if (event.cause === 'ground') groundHit(layers, clock, event.position, random)
+        else missileBurst(layers, clock, event.position, random, scaleAt(event.position))
         continue
       }
       if (event.type !== 'aircraft-destroyed') continue
@@ -133,14 +144,32 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
     const flying = new Set<number>()
     for (const missile of world?.missiles ?? []) {
       flying.add(missile.id)
-      if (missile.age >= getWeapon(missile.weaponId).missile!.burnSeconds) continue
+      if (!motorBurning(missile, getWeapon(missile.weaponId).missile!)) continue
       if (!trails.has(missile.id)) trails.set(missile.id, createMissileTrail())
-      // Where the missile is drawn between ticks (the snapshot is the tick's end), less 1.6 m to its tail.
+      // Where the missile is drawn between ticks (the snapshot is the tick's end), less 1.6 m to its
+      // tail, on the model as drawn: larger with distance (MissileModels.tsx).
       const speed = Math.hypot(missile.velocity.x, missile.velocity.y, missile.velocity.z) || 1
-      const back = 1.6 / speed - (clock - (world?.tick ?? 0) * WORLD_STEP)
-      trails.get(missile.id)!.emit(layers, clock, dt, { x: missile.position.x - missile.velocity.x * back, y: missile.position.y - missile.velocity.y * back, z: missile.position.z - missile.velocity.z * back }, missile.velocity, random)
+      const scale = scaleAt(missile.position)
+      const back = 1.6 * scale / speed - (clock - (world?.tick ?? 0) * WORLD_STEP)
+      trails.get(missile.id)!.emit(layers, clock, dt, { x: missile.position.x - missile.velocity.x * back, y: missile.position.y - missile.velocity.y * back, z: missile.position.z - missile.velocity.z * back }, missile.velocity, random, scale)
     }
     for (const id of trails.keys()) if (!flying.has(id)) trails.delete(id)
+    const airborne = new Set<number>()
+    for (const decoy of world?.decoys ?? []) {
+      airborne.add(decoy.id)
+      // Drawn where it is between ticks: the snapshot is the tick's end.
+      const ahead = clock - (world?.tick ?? 0) * WORLD_STEP
+      const point = { x: decoy.position.x + decoy.velocity.x * ahead, y: decoy.position.y + decoy.velocity.y * ahead, z: decoy.position.z + decoy.velocity.z * ahead }
+      if (decoy.kind === 'chaff') {
+        if (!bloomed.has(decoy.id)) { bloomed.add(decoy.id); chaffBloom(layers, clock, point, decoy.velocity, random) }
+        continue
+      }
+      if (!flares.has(decoy.id)) flares.set(decoy.id, createFlareTrail())
+      // The heat the seeker sees (countermeasures.ts): each flare dims on its own life.
+      flares.get(decoy.id)!.emit(layers, clock, dt, point, decoy.velocity, flareHeat(decoy), random)
+    }
+    for (const id of flares.keys()) if (!airborne.has(id)) flares.delete(id)
+    for (const id of bloomed) if (!airborne.has(id)) bloomed.delete(id)
     slots.forEach((slot, index) => {
       const model = frame.wreckModels[index]
       if (!slot) { if (model) model.visible = false; return }
@@ -169,7 +198,7 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   function reset() {
     layers.smoke.clear(); layers.glow.clear()
     slots.fill(null)
-    trails.clear()
+    trails.clear(); flares.clear(); bloomed.clear()
     lastClock = null
   }
   function dispose() {

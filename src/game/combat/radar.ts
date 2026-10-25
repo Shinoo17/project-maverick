@@ -9,6 +9,8 @@ so nothing on the map is out of reach of the lock and nothing lockable is missin
   lock that has dropped, still shows while it is that close.
 - The locked target is always a contact while the lock holds, even outside the cone during its
   grace time (targeting.ts).
+- Missiles (the scope only, `seesPoint`): its own always, as the fire control tracks them; any
+  other aircraft's by the same radar and visual rules as an aircraft.
 
 No line of sight yet: the flat range has nothing to hide behind. There are no teams either, so
 every other live aircraft is a possible contact; friends are left out once teams exist (IFF).
@@ -16,7 +18,7 @@ every other live aircraft is a possible contact; friends are left out once teams
 import { Quaternion, Vector3 } from 'three'
 import { getAircraft } from '../../content/aircraft'
 import type { RadarSpec } from '../../content/schemas'
-import type { AircraftState } from '../state/WorldState'
+import type { AircraftState, Vec3 } from '../state/WorldState'
 
 /** Provisional values, waiting on playtest. */
 export const radarRules = {
@@ -61,4 +63,13 @@ export function radarContacts(self: AircraftState, aircraft: readonly AircraftSt
     if (painted || locked || range <= radarRules.visualRange) contacts.push({ entity, angle, range, painted, locked })
   }
   return contacts.sort((a, b) => a.angle - b.angle || (a.entity.id < b.entity.id ? -1 : 1))
+}
+
+/** Whether `self` sees something at `position`: painted by its radar, or within visual range. */
+export function seesPoint(self: AircraftState, position: Vec3) {
+  const { x, y, z, w } = self.orientation
+  nose.set(1, 0, 0).applyQuaternion(turn.set(x, y, z, w))
+  toTarget.set(position.x - self.position.x, position.y - self.position.y, position.z - self.position.z)
+  const range = toTarget.length(), angle = range > 1e-6 ? nose.angleTo(toTarget) * 180 / Math.PI : 0
+  return insideRadar(radarOf(self.aircraftId), angle, range) || range <= radarRules.visualRange
 }

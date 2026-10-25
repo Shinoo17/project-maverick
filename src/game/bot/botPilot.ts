@@ -1,6 +1,6 @@
 /*
 The combat bot (doc 08, P4 slice): one enemy that chases the player and runs when chased, with
-the gun only.
+the gun and missiles.
 
 A bot is a pilot like the player. It writes an ordinary PilotCommand, once per world tick, and
 the aircraft flies it through the same flight model, gun, heat and damage. It never moves its
@@ -15,7 +15,8 @@ own plain-data state, with a seeded random stream and no clock.
   nothing to hide behind, so there is no line-of-sight test yet. A contact is refreshed at the
   decision rate and extrapolated in between, and is forgotten `memorySeconds` after it is lost.
 - Decide: patrol with no contact, engage, evade when the contact sits behind it in gun range,
-  extend to win back speed or to break off a turning fight neither side is winning. A change of tactic waits out the profile's reaction delay; safety
+  extend to win back speed or to break off a turning fight neither side is winning, and defend
+  above all of them against a missile its warning gear shows (see Defend). A change of tactic waits out the profile's reaction delay; safety
   (the ground, the range edge, a stall) never waits.
 - Steer: the bot picks a world direction for its nose and the mouse-aim instructor
   (src/game/input/mouseAim.ts) flies it there, exactly as it flies the player's aim: bank to
@@ -24,6 +25,21 @@ own plain-data state, with a seeded random stream and no clock.
 - Trigger: bursts while the bot believes its gun line is on the solution, released before the
   heat lockout. The belief carries a seeded aim error that drifts slowly (doc 08: never per-tick
   jitter); that error, not HP or turn rate, is what makes the bot beatable.
+- Missiles: while engaging, the bot picks the station for the range (the IR missile inside its
+  `launchRangeM`, the radar missile out to its own), with a little hysteresis so it does not
+  swap back and forth on the line, and fires through the same radar lock and seeker as the
+  player (targeting.ts, seeker.ts: the runtime steps them for bots too) once the seeker is
+  locked on its contact. One missile of its own in the air at a time, then a rest drawn from
+  `missileRestSeconds`, and none inside `missileMinRange` (the warhead could not arm).
+- Defend: the bot knows of missiles only what its own warning gear shows (rwr.ts): a bearing
+  and a level, never a range. A missile (MAWS, or a radar missile gone active) or a radar launch
+  warning makes it turn to put the threat square off its side (the beam: an IR seeker sees a
+  turning target slide off its flares, a radar seeker loses it in the chaff's Doppler notch),
+  burner off, a little nose down. Once it has seen the missile for `dispenseAfter` and is near
+  the beam, or `dispenseLate` regardless, it drops a burst, at most `burstsPerMissile` on one
+  missile, never wasted inside the cooldown. A launch warning alone gets the turn, not a burst:
+  chaff only works on an active seeker. Defence lasts while the warning does, plus
+  `threatMemorySeconds` (a coasting missile drops off MAWS).
 */
 import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { AircraftState, Vec3 } from '../state/WorldState'
@@ -34,8 +50,11 @@ import { EFFECTIVE_RANGE, gunMountOf, solveGun, type GunMount } from '../combat/
 import { boundingRadius } from '../combat/collision'
 import { hitboxes } from '../../content/hitboxes'
 import { getAircraft } from '../../content/aircraft'
+import { missileStations } from '../../content/weapons'
+import type { Missile } from '../combat/missiles'
+import { rwrPicture, type RwrThreat } from '../combat/rwr'
 
-export type BotTactic = 'patrol' | 'engage' | 'evade' | 'extend'
+export type BotTactic = 'patrol' | 'engage' | 'evade' | 'extend' | 'defend'
 
 /** One difficulty for now (doc 08's Normal). Provisional values, waiting on playtest. */
 export interface BotProfile {
@@ -50,9 +69,11 @@ export interface BotProfile {
   triggerDelaySeconds: number
   burstSeconds: readonly [number, number]
   restSeconds: readonly [number, number]
+  /** Seconds between one of its missiles ending and the next launch. */
+  missileRestSeconds: readonly [number, number]
 }
 export const botProfiles = {
-  normal: { reactionSeconds: [0.3, 0.5], aimErrorDeg: 0.7, aimErrorSeconds: 1.4, fireConeDeg: 1.2, triggerDelaySeconds: 0.25, burstSeconds: [0.4, 0.8], restSeconds: [0.5, 1.1] },
+  normal: { reactionSeconds: [0.3, 0.5], aimErrorDeg: 0.7, aimErrorSeconds: 1.4, fireConeDeg: 1.2, triggerDelaySeconds: 0.25, burstSeconds: [0.4, 0.8], restSeconds: [0.5, 1.1], missileRestSeconds: [6, 10] },
 } as const satisfies Record<string, BotProfile>
 export type BotDifficulty = keyof typeof botProfiles
 
@@ -114,6 +135,19 @@ export const botRules = {
   cornerSpeed: 115,
   /** Incidence (degrees) over which the pull is eased off: the bot never asks for post-stall. */
   alphaGuard: [12, 18] as const,
+  /** Defend: seconds a warning is kept after it goes; the beam is within `beamDeg` of square off
+   * the side; seconds on one missile before a burst near the beam, and before one regardless;
+   * bursts spent on one missile at most; speed held (m/s), burner off. */
+  threatMemorySeconds: 1.5,
+  beamDeg: 35,
+  dispenseAfter: 0.6,
+  dispenseLate: 1.4,
+  burstsPerMissile: 2,
+  defendSpeed: [170, 200] as const,
+  /** Missiles: no launch closer than this (m); the radar missile gives way to the IR one inside
+   * this share of the IR missile's launch range. */
+  missileMinRange: 400,
+  irHandover: 0.8,
 } as const
 
 export interface BotContact {
@@ -155,13 +189,20 @@ export interface BotState {
   lastGun: number
   /** World axis of a turn toward a goal far behind the nose, kept so the turn is never reversed half way. */
   turnAxis: Vec3 | null
+  /** The warning defended against: its source, world direction from the bot when last shown, a
+   * missile (not a launch warning), first and last tick shown, and bursts dropped on it. */
+  threat: { sourceId: string; direction: Vec3; missile: boolean; firstTick: number; lastTick: number; bursts: number } | null
+  /** The first tick it may launch another missile on, and the rest (ticks) drawn at its last launch,
+   * counted from when that missile is gone. */
+  missileReadyTick: number
+  missileRest: number
 }
 
 export function createBotState(seed: number, difficulty: BotDifficulty = 'normal'): BotState {
   return {
     difficulty, tactic: 'patrol', since: 0, contact: null, pending: null, rng: seed >>> 0,
     aimError: { from: [0, 0], to: [0, 0], start: 0 }, onAimSince: -1, burstUntil: -1, restUntil: -1,
-    waypoint: 0, breakSide: 1, reverseAt: 0, threatGone: 0, climbing: false, lastGun: 0, turnAxis: null,
+    waypoint: 0, breakSide: 1, reverseAt: 0, threatGone: 0, climbing: false, lastGun: 0, turnAxis: null, threat: null, missileReadyTick: 0, missileRest: 0,
   }
 }
 /** The instructor's memory for one bot. Kept by the runtime, beside the world, and started afresh each life. */
@@ -221,8 +262,30 @@ function perceive(bot: BotState, self: AircraftState, aircraft: readonly Aircraf
   else if (bot.contact && (tick - bot.contact.tick) * WORLD_STEP > botRules.memorySeconds) bot.contact = null
 }
 
+/** The world direction of a warning, from its bearing and elevation in `self`'s frame. */
+function threatDirection(self: AircraftState, threat: RwrThreat): Vec3 {
+  const b = MathUtils.degToRad(threat.bearing), e = MathUtils.degToRad(threat.elevation)
+  const out = new Vector3(Math.cos(e) * Math.cos(b), Math.sin(e), Math.cos(e) * Math.sin(b)).applyQuaternion(ORIENT.copy(self.orientation as Quaternion))
+  return { x: out.x, y: out.y, z: out.z }
+}
+
+/** Reads the warning gear: keeps the most urgent missile, or else a launch warning. */
+function perceiveThreats(bot: BotState, self: AircraftState, aircraft: readonly AircraftState[], missiles: readonly Missile[], tick: number) {
+  const picture = rwrPicture(self, { aircraft, missiles })
+  // The missile already defended against stays the one while it shows, so its burst count holds.
+  const shown = picture.find(threat => threat.sourceId === bot.threat?.sourceId && (threat.level === 'missile' || threat.level === 'launch'))
+    ?? picture.find(threat => threat.level === 'missile') ?? picture.find(threat => threat.level === 'launch')
+  if (shown) {
+    const missile = shown.level === 'missile'
+    if (bot.threat?.sourceId !== shown.sourceId) bot.threat = { sourceId: shown.sourceId, direction: threatDirection(self, shown), missile, firstTick: tick, lastTick: tick, bursts: 0 }
+    else Object.assign(bot.threat, { direction: threatDirection(self, shown), missile, lastTick: tick })
+  } else if (bot.threat && (tick - bot.threat.lastTick) * WORLD_STEP > botRules.threatMemorySeconds) bot.threat = null
+}
+
 /** The tactic the bot wants, from what it perceives. */
 function wanted(bot: BotState, self: AircraftState, tick: number): BotTactic {
+  // A missile or a launch warning comes before any fight.
+  if (bot.threat) return 'defend'
   if (!bot.contact) return 'patrol'
   const contact = contactNow(bot.contact, tick)
   const range = Math.hypot(contact.position.x - self.position.x, contact.position.y - self.position.y, contact.position.z - self.position.z)
@@ -251,8 +314,9 @@ function velocityFrame(v: Vec3) {
   return new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), FLAT.normalize())
 }
 
-function decide(bot: BotState, self: AircraftState, aircraft: readonly AircraftState[], tick: number) {
+function decide(bot: BotState, self: AircraftState, aircraft: readonly AircraftState[], missiles: readonly Missile[], tick: number) {
   perceive(bot, self, aircraft, tick)
+  perceiveThreats(bot, self, aircraft, missiles, tick)
   const next = wanted(bot, self, tick)
   if (next === bot.tactic) { bot.pending = null; return }
   if (bot.pending?.tactic !== next) bot.pending = { tactic: next, at: tick + ticks(between(bot, botProfiles[bot.difficulty].reactionSeconds)) }
@@ -300,6 +364,18 @@ interface Steer { direction: Vector3; speedAdjust: number; afterburner: boolean;
 function steer(bot: BotState, self: AircraftState, tick: number): Steer {
   const p = self.position, v = self.velocity, speed = speedOf(v)
   const out: Steer = { direction: AIM, speedAdjust: 0, afterburner: false, airbrake: false }
+  if (bot.tactic === 'defend') {
+    const threat = bot.threat
+    if (threat) {
+      // Beam it: level flight square to the threat, on the side nearer the present heading.
+      const across = Math.hypot(threat.direction.x, threat.direction.z) || 1
+      const sx = -threat.direction.z / across, sz = threat.direction.x / across
+      const side = sx * v.x + sz * v.z >= 0 ? 1 : -1
+      heading(side * sx, side * sz, p.y > 1500 ? -5 : 0, AIM)
+    } else heading(v.x, v.z, 0, AIM)
+    out.speedAdjust = speed < botRules.defendSpeed[0] ? 1 : speed > botRules.defendSpeed[1] ? -1 : 0
+    return out
+  }
   const contact = bot.contact && contactNow(bot.contact, tick)
   if (bot.tactic === 'patrol' || !contact) {
     const angle = bot.waypoint * Math.PI / 2, wx = Math.cos(angle) * botRules.patrolRadius, wz = Math.sin(angle) * botRules.patrolRadius
@@ -415,12 +491,51 @@ function holdTurn(bot: BotState, self: AircraftState, direction: Vector3) {
   direction.copy(NOSE).applyAxisAngle(AXIS, limit)
 }
 
-/** One tick of a bot: decisions at 10 Hz, steering and trigger every tick. `index` spreads decisions across bots. */
-export function botCommand(bot: BotState, steering: MouseAim, self: AircraftState, aircraft: readonly AircraftState[], tick: number, index = 0): PilotCommand {
+/** The missile actions this tick: pick the station for the range, then launch once locked (see the header). */
+function missileActions(bot: BotState, self: AircraftState, missiles: readonly Missile[], tick: number): PilotCommand['actions'] {
+  if (bot.tactic !== 'engage' || !bot.contact) return []
+  const contact = contactNow(bot.contact, tick)
+  const range = Math.hypot(contact.position.x - self.position.x, contact.position.y - self.position.y, contact.position.z - self.position.z)
+  const rows = missileStations(getAircraft(self.aircraftId)).map((row, slot) => ({ ...row, slot,
+    loaded: self.stores.some(store => store.stationId === row.station.id && store.count > 0) }))
+  const fits = (row: typeof rows[number]) => row.loaded && range <= row.weapon.missile!.launchRangeM
+  const ir = rows.find(row => row.weapon.kind === 'ir')
+  const current = rows[self.targeting.seeker.slot]
+  // Keep the station it has while it still fits, unless the IR missile is now well inside its range.
+  const closeIn = ir && fits(ir) && range <= ir.weapon.missile!.launchRangeM * botRules.irHandover
+  const choice = current && fits(current) && !(closeIn && current !== ir) ? current : closeIn ? ir : rows.find(fits)
+  if (!choice) return []
+  if (choice !== current) return [{ id: tick, type: 'select-secondary', slot: choice.slot }]
+  const seeker = self.targeting.seeker
+  if (tick < bot.missileReadyTick || range < botRules.missileMinRange || !seeker.locked || seeker.targetId !== contact.id) return []
+  // One of its own in the air at a time; the rest starts again when that one is gone.
+  if (missiles.some(missile => missile.ownerId === self.id)) { bot.missileReadyTick = tick + bot.missileRest; return [] }
+  bot.missileRest = ticks(between(bot, botProfiles[bot.difficulty].missileRestSeconds))
+  return [{ id: tick, type: 'fire-missile' }]
+}
+
+/** Drops a burst on the missile defended against once it is time (see the header), when the stock and cooldown allow. */
+function dispense(bot: BotState, self: AircraftState, tick: number) {
+  const threat = bot.threat, stock = self.countermeasures
+  if (bot.tactic !== 'defend' || !threat?.missile || threat.bursts >= botRules.burstsPerMissile) return false
+  if (stock.bursts <= 0 || stock.burst || tick < stock.readyTick) return false
+  const seen = (tick - threat.firstTick) * WORLD_STEP
+  if (seen < botRules.dispenseAfter) return false
+  // How far the threat sits from square off the side, now.
+  NOSE.set(1, 0, 0).applyQuaternion(ORIENT.copy(self.orientation as Quaternion))
+  const offBeam = Math.abs(90 - MathUtils.radToDeg(NOSE.angleTo(vec(threat.direction, TO))))
+  if (offBeam > botRules.beamDeg && seen < botRules.dispenseLate) return false
+  threat.bursts++
+  return true
+}
+
+/** One tick of a bot: decisions at 10 Hz, steering and trigger every tick. `index` spreads decisions across bots.
+ * `missiles` are those in flight, for its warning gear. */
+export function botCommand(bot: BotState, steering: MouseAim, self: AircraftState, aircraft: readonly AircraftState[], tick: number, index = 0, missiles: readonly Missile[] = []): PilotCommand {
   const command = neutralCommand(tick, self.id)
   if (!self.alive) return command
   const period = Math.round(1 / (botRules.decisionHz * WORLD_STEP))
-  if ((tick + index) % period === 0) decide(bot, self, aircraft, tick)
+  if ((tick + index) % period === 0) decide(bot, self, aircraft, missiles, tick)
   if (bot.pending && tick >= bot.pending.at) {
     if (bot.pending.tactic === 'evade') bot.breakSide = breakSide(self)
     switchTo(bot, bot.pending.tactic, tick)
@@ -447,6 +562,8 @@ export function botCommand(bot: BotState, steering: MouseAim, self: AircraftStat
   command.yaw = steering.share * flown.yaw
   command.speedAdjust = plan.speedAdjust; command.afterburner = plan.afterburner; command.airbrake = plan.airbrake
   command.gunHeld = gunning ? trigger(bot, self, plan.gun!, tick) : release(bot)
+  if (dispense(bot, self, tick)) command.actions.push({ id: tick, type: 'countermeasure' })
+  command.actions.push(...missileActions(bot, self, missiles, tick))
   return command
 }
 

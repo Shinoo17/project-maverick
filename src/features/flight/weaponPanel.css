@@ -96,6 +96,12 @@
 .wpn-launch { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; }
 .wpn-missile[data-empty] .wpn-icon * { stroke-dasharray: 2 2.5; }
 .wpn-missile[data-empty] .wpn-value { color: var(--wpn-dim); }
+/* Countermeasures: level with the gun, a hairline under it like a missile card. */
+.wpn-cm { transform: translateZ(10px); opacity: 0.85; }
+.wpn-cm::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 1px; background: var(--wpn-faint); }
+.wpn-cm .wpn-chaff { stroke-width: 1.6; }
+.wpn-cm[data-empty] .wpn-icon * { stroke-dasharray: 2 2.5; }
+.wpn-cm[data-empty] .wpn-value, .wpn-cm[data-empty] .wpn-launch { color: var(--wpn-dim); }
 .wpn-a11y { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* A trigger press on a locked gun: the card shudders sideways, the gun refusing to fire. */

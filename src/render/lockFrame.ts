@@ -33,7 +33,7 @@ export interface LockMarks {
   count: number
   /** The selected missile's short name, e.g. AIM-9. */
   missile: string
-  /** Locked with the target inside the missile's launch range: the HUD shows SHOOT. */
+  /** Locked with the target inside the missile's launch range and past its arming distance: the HUD shows SHOOT. */
   shoot: boolean
   /** Simulation time in ticks (fractional between ticks): the HUD's springs and blinks run on it, so pause freezes them. */
   now: number
@@ -107,7 +107,9 @@ export function createLockFrame() {
     marks.now = (now?.tick ?? 0) - 1 + alpha
     marks.still = still
     const p = shooter.position
-    marks.shoot = !!target && seeker.locked && Math.hypot(target.position.x - p.x, target.position.y - p.y, target.position.z - p.z) <= missile.weapon.missile!.launchRangeM
+    const range = target ? Math.hypot(target.position.x - p.x, target.position.y - p.y, target.position.z - p.z) : 0
+    // Closer than the arming distance a shot may strike before the warhead arms: no SHOOT.
+    marks.shoot = !!target && seeker.locked && range <= missile.weapon.missile!.launchRangeM && range > missile.weapon.missile!.arm.metres
     marks.count = target ? placeAnchors(marks.anchors, target.entity.aircraftId, target.position, target.orientation, distanceScale(eye.distanceTo(target.position))) : 0
     // Nothing to frame and nothing to report.
     return marks.targetId || marks.lost !== null ? marks : null
