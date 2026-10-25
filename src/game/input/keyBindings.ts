@@ -49,7 +49,7 @@ export const defaultKeyboardSettings: Readonly<KeyboardSettings> = {
 }
 
 /** Actions whose key does nothing yet. The Settings page lists them as pending. */
-export const pendingActions: readonly FlightAction[] = ['fireMissile']
+export const pendingActions: readonly FlightAction[] = []
 
 /** Keys a binding may never take: Esc and P always pause. */
 export const reservedCodes: readonly string[] = ['Escape', 'KeyP']

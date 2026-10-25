@@ -45,8 +45,6 @@ export function FlightPage() {
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
   const [timeScale, setTimeScale] = useState(1), [targetDrone, setTargetDrone] = useState<TargetDroneMode | null>(null)
   const [view, setView] = useState<'pause' | 'settings'>('pause')
-  // The selected missile slot (0 short range, 1 medium range). Display only until missiles fly.
-  const [missile, setMissile] = useState(0)
   // Trigger presses refused by a locked gun (cooling or overheated); each one shakes the gun card.
   const [gunDenied, setGunDenied] = useState(0)
   const latest = useRef<AircraftState | null>(null)
@@ -95,7 +93,6 @@ export function FlightPage() {
       if (!bound) return
       e.preventDefault()
       if (bound.action === 'cameraCycle') { if (!e.repeat) { selectCamera(nextCameraSettings(session.camera)); setCameraChanged(true) }; return }
-      if (bound.action === 'selectMissile1' || bound.action === 'selectMissile2') { setMissile(bound.action === 'selectMissile1' ? 0 : 1); return }
       if (bound.action === 'fireGun' && !e.repeat) denyIfLocked()
       session.input.press(e.code, e.repeat)
     }
@@ -103,16 +100,23 @@ export function FlightPage() {
     // The keyboard preset has no pointer lock, but free look still turns the camera with the mouse.
     const move = (e: MouseEvent) => { if (session.running && (document.pointerLockElement === surface.current && session.preset === 'mouse' || session.preset === 'keyboard' && session.input.holds('freeLook'))) session.input.move(e.movementX, e.movementY) }
     // Only a press made while already locked fires: the click that takes the lock never does (doc 02).
-    const mousedown = (e: MouseEvent) => { if (e.button === 0 && session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') { session.input.mouseGun = true; denyIfLocked() } }
+    const mousedown = (e: MouseEvent) => {
+      if (!session.running || document.pointerLockElement !== surface.current || session.preset !== 'mouse') return
+      if (e.button === 0) { session.input.mouseGun = true; denyIfLocked() }
+      // Right button: launch the selected missile (weapon panel rules).
+      if (e.button === 2) session.input.pressLaunch()
+    }
+    // The right button launches; it never opens the browser menu over the flight.
+    const menu = (e: MouseEvent) => { if (session.running) e.preventDefault() }
     const mouseup = (e: MouseEvent) => { if (e.button === 0) session.input.mouseGun = false }
     const lock = () => { session.input.clear(); if (!document.pointerLockElement && session.preset === 'mouse' && session.running) pause() }
     const hidden = () => { if (document.hidden) pause() }
     addEventListener('keydown', keydown); addEventListener('keyup', keyup); addEventListener('mousemove', move); addEventListener('blur', pause)
-    addEventListener('mousedown', mousedown); addEventListener('mouseup', mouseup)
+    addEventListener('mousedown', mousedown); addEventListener('mouseup', mouseup); addEventListener('contextmenu', menu)
     document.addEventListener('pointerlockchange', lock); document.addEventListener('visibilitychange', hidden)
     return () => {
       removeEventListener('keydown', keydown); removeEventListener('keyup', keyup); removeEventListener('mousemove', move); removeEventListener('blur', pause)
-      removeEventListener('mousedown', mousedown); removeEventListener('mouseup', mouseup)
+      removeEventListener('mousedown', mousedown); removeEventListener('mouseup', mouseup); removeEventListener('contextmenu', menu)
       document.removeEventListener('pointerlockchange', lock); document.removeEventListener('visibilitychange', hidden)
       session.running = false; session.input.clear(); if (document.pointerLockElement === surface.current) document.exitPointerLock()
     }
@@ -172,7 +176,7 @@ export function FlightPage() {
       <div className="flight-actions">{graphics.showFps && <span ref={indicators.fps} className="flight-fps" aria-hidden="true" />}<span>{t(cameraRollOption(camera.roll).labelKey)}{camera.roll === 'horizon' ? ` · ${t(horizonStyleOption(camera.horizonStyle).labelKey)}` : ''}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />
       {/* The Flight Lab readout takes the same corner, so the column steps aside while it is open. */}
-      {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} selected={missile} denied={gunDenied} preset={preset} bindings={keyboard.bindings} reducedMotion={reducedMotion} />}
+      {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} selected={telemetry?.targeting.seeker.slot ?? 0} denied={gunDenied} preset={preset} bindings={keyboard.bindings} reducedMotion={reducedMotion} />}
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
       {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
       {running && preset === 'mouse' && controls.mode !== 'aim' && controls.mode !== 'cursor' && <div ref={indicators.gate} className="flight-stick-gate" aria-hidden="true" />}

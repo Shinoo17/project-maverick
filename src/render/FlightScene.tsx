@@ -13,6 +13,9 @@ import { HitboxWireframe } from './HitboxWireframe'
 import { createTracers } from './tracers'
 import { between, createGunnery, lockOf } from './gunneryFrame'
 import { radarFrame } from './radarFrame'
+import { createLockFrame } from './lockFrame'
+import { createLockTone } from './lockTone'
+import { MissileModels, placeMissiles, type MissilePool } from './MissileModels'
 import { distanceScale, zoomShare } from './targetVisibility'
 import { aimAssist, aimMagnet, withAimAssist } from '../game/combat/aimAssist'
 import { gunMountOf } from '../game/combat/gunSolution'
@@ -34,7 +37,7 @@ import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; fps?: RefObject<HTMLElement | null> }
 interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
-function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, indicators }: Props) {
+function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
   const rig = useMemo(() => new FlightCamera(new URLSearchParams(window.location.search).has('driftCamera')), [])
@@ -46,6 +49,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   // The last tick's hit points by round id, for tracers of rounds removed on that tick.
   const endedHits = useRef<{ tick: number; points: Map<number, Vec3> }>({ tick: -1, points: new Map() })
   const drone = useRef<Group>(null), droneModel = useRef<Group>(null)
+  const missilePool = useRef<MissilePool | null>(null)
   const takeSnapshot = (runtime: GameRuntime) => { world.current = runtime.snapshot(); return world.current.aircraft[0] }
   const group = useRef<Group>(null)
   const elapsed = useRef(0), reset = useRef(-1)
@@ -66,6 +70,16 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
   const effects = useMemo(createCombatEffects, [])
   const wreckModels = useRef<(Group | null)[]>([])
   const gunnery = useMemo(() => createGunnery(aircraftId), [aircraftId])
+  const lockFrame = useMemo(createLockFrame, [])
+  const lockTone = useMemo(createLockTone, [])
+  useEffect(() => () => lockTone.dispose(), [lockTone])
+  // Paused or hidden, the loop may not draw again, so the tone is cut here rather than in a frame.
+  useEffect(() => { if (!running) lockTone.silence() }, [running, lockTone])
+  useEffect(() => {
+    const hidden = () => { if (document.hidden) lockTone.silence() }
+    document.addEventListener('visibilitychange', hidden); addEventListener('blur', lockTone.silence)
+    return () => { document.removeEventListener('visibilitychange', hidden); removeEventListener('blur', lockTone.silence) }
+  }, [lockTone])
   const mount = useMemo(() => gunMountOf(aircraftId), [aircraftId])
   // Whether aim assist moved the stick on the last command; the HUD names it.
   const assisting = useRef(false)
@@ -157,6 +171,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // The × keeps its angle through a change of lens (speed, burner, the gun zoom).
     session.input.setLens((camera as PerspectiveCamera).fov)
     const hits = runtime.drainHits(), events = runtime.drainEvents()
+    if (session.running && events.some(event => event.type === 'missile-launched' && event.entityId === state.id)) lockTone.launch()
     // Rounds removed on the last tick still fly the part of it on screen, up to where they hit.
     // Frames between ticks reuse that tick's hit points: the queue is empty on those frames.
     const lastTick = world.current?.tick ?? -1
@@ -164,6 +179,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     const ended = session.running && previousWorld.current ? { previous: previousWorld.current.projectiles, hits: endedHits.current.points } : undefined
     tracers.update(world.current?.projectiles ?? [], alpha, camera as PerspectiveCamera, size.height, viewport.dpr, ended)
     placeDrone(drone.current, droneModel.current, previousWorld.current, world.current, alpha, camera.position)
+    placeMissiles(missilePool.current, previousWorld.current, world.current, alpha, camera.position)
     // Each queue is drained once a frame and shared: a second drain would come back empty.
     // Damage is applied inside the simulation; the HUD shows the player's confirmed hits, the effects show every hit and kill.
     effects.update({ clock: ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP, events, hits, world: world.current, camera: camera as PerspectiveCamera, viewportHeight: size.height, wreckModels: wreckModels.current })
@@ -171,6 +187,9 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
       { id: state.id, targetId: state.alive ? state.targeting.targetId : null, lockOutside: state.targeting.outside, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, events, session.running && assisting.current)
     // What the radar shows: the scope at the bottom left and the carets on the heading tape.
     const radar = radarFrame(previousWorld.current, world.current, alpha, state, pose)
+    // The missile lock: the frame closing on the target, and its tones (silent unless flying).
+    const seeker = lockFrame.update(previousWorld.current, world.current, alpha, state, camera.position, session.reducedMotion)
+    lockTone.update(seeker, session.running && state.alive && !document.hidden)
     indicators.radar?.current?.(radar, ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP)
     if (cursor && aiming) {
       // Screen-locked aim assist: the × drawn toward the lead marker as this frame shows it.
@@ -200,7 +219,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // The HUD glass (ladder, nose pipper, tapes) is redrawn from the
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
-    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks, radar,
+    indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks, radar, seeker,
       // The × is a point on the chase shot; on a turned view it marks nothing, so it is hidden.
       aim: aiming ? cursor ? rig.lookingAway ? null : { screen: { x: input.stick.px, y: input.stick.py }, share: session.input.aim.share } : { direction: session.input.aim.direction, share: session.input.aim.share } : null })
     elapsed.current += dt
@@ -218,6 +237,7 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     <primitive object={tracers.mesh} />
     <primitive object={effects.mesh} />
     <FlightEffects session={session} aircraft={group} aircraftId={aircraftId} nozzles={updateRig.exhaust} />
+    <Suspense fallback={null}><MissileModels pool={missilePool} /></Suspense>
     {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} scaled={droneModel} showHitboxes={showHitboxes} /><DroneWrecks models={wreckModels} /></Suspense>}</>
 }
 const view = new Vector3(), toTarget = new Vector3(), viewRight = new Vector3(), viewUp = new Vector3()

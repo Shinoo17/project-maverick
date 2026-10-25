@@ -57,7 +57,7 @@ describe('target selection', () => {
     expect(me.targeting.outside).toBeGreaterThan(targetingRules.lockGraceSeconds - 0.1)
     other.position = { x: 1000, y: 400, z: 1000 }
     stepTargeting(me, [me, other], false, WORLD_STEP)
-    expect(me.targeting).toEqual({ targetId: 'aircraft-2', outside: 0 })
+    expect(me.targeting).toMatchObject({ targetId: 'aircraft-2', outside: 0 })
     // Past the radar's reach the lock runs out as well.
     other.position = { x: radarOf('f22').rangeM + 500, y: 400, z: 0 }
     for (let tick = 0; tick < Math.round(targetingRules.lockGraceSeconds / WORLD_STEP); tick++) stepTargeting(me, [me, other], false, WORLD_STEP)

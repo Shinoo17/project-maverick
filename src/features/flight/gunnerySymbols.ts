@@ -8,6 +8,8 @@ why), so the reticle sitting on the lead marker on screen means a hit.
   pull, because the rounds keep the aircraft's own velocity.
 - Target box: corner brackets sized to the drawn target, its designation above, its range and
   closure, an HP bar under it, and IN RNG / OUT RNG. The boxed target is the lock (targeting.ts).
+  While the missile lock frame is on it (lockSymbols.ts) the frame stands in for the brackets;
+  the text and the HP bar stay on this box, so they hold still while the frame moves.
 - Locked and off screen: a red arrow at the frame edge points to it, with its range (user request
   24 Oct 2026). Once the target is outside the radar cone the lock is on its grace time: the arrow
   blinks and counts the seconds left. Red here means "locked", as on the radar scope.
@@ -16,7 +18,8 @@ why), so the reticle sitting on the lead marker on screen means a hit.
   Before the target is in the gun's reach the same marker is drawn dashed (`farLead`), never in
   a lock colour: it shows where to point, not that rounds would get there.
 - ASSIST under the reticle while aim assist is moving the stick (or, under mouse aim, the aim).
-- Lock colour, the only colour on the glass besides phosphor green (user request 23 Oct 2026):
+- Lock colour, the only colour on the glass besides phosphor green and the missile lock's blue,
+  amber and red (lockSymbols.ts) (user request 23 Oct 2026):
   the lead marker turns amber while aim assist has captured it and red once the reticle sits
   on it with the target in range, where rounds fired now hit. The mouse-aim × takes the same
   colour (hudPainter.ts). It only tells: rounds never steer and hitboxes never grow (doc 07).
@@ -80,10 +83,12 @@ export interface Pen {
 const HIT_SECONDS = 0.25, SPLASH_SECONDS = 1.6
 const MAX_ARC_RANGE = 1000
 
-export function drawGunnery(pen: Pen, marks: GunneryMarks, camera: Camera, height: number, shooter: Vec3Like) {
+/** `framed`: the missile lock frame (lockSymbols.ts) is on the target, with marks reaching this many
+ * pixels from it; the box then leaves out its corner brackets and sets its text outside that. 0 otherwise. */
+export function drawGunnery(pen: Pen, marks: GunneryMarks, camera: Camera, height: number, shooter: Vec3Like, framed = 0) {
   const { ctx } = pen
   const focal = height / 2 / Math.tan(((camera as PerspectiveCamera).fov ?? 60) * Math.PI / 360)
-  const box = marks.target ? drawTarget(pen, marks, marks.target, focal, shooter) : null
+  const box = marks.target ? drawTarget(pen, marks, marks.target, focal, shooter, framed) : null
   if (marks.lead) drawLead(pen, marks, marks.lead, box)
   else if (marks.farLead) drawLead(pen, { ...marks, lock: 'free', inRange: false, onSolution: false }, marks.farLead, box, true)
   if (marks.reticle) drawReticle(pen, marks.reticle, marks.assist)
@@ -111,7 +116,7 @@ function drawReticle(pen: Pen, point: Vec3Like, assist: boolean) {
   if (assist) pen.text('ASSIST', at.x, at.y + r + 12, pen.font(11, 700), pen.dim, 'center')
 }
 
-function drawTarget(pen: Pen, marks: GunneryMarks, target: NonNullable<GunneryMarks['target']>, focal: number, shooter: Vec3Like) {
+function drawTarget(pen: Pen, marks: GunneryMarks, target: NonNullable<GunneryMarks['target']>, focal: number, shooter: Vec3Like, framed: number) {
   const at = pen.project(target.position)
   const off = pen.edge(shooter, target.position)
   const range = `${(target.range / 1000).toFixed(2)} KM`
@@ -132,14 +137,16 @@ function drawTarget(pen: Pen, marks: GunneryMarks, target: NonNullable<GunneryMa
     if (fading) pen.text(`LOST ${target.lockLeft!.toFixed(1)}`, labelX, labelY + 15, pen.font(11, 700), red.color, 'center')
     return null
   }
-  const half = Math.min(90, Math.max(13, target.radius / Math.max(1, target.range) * focal * 1.15))
+  const half = Math.max(framed, Math.min(90, Math.max(13, target.radius / Math.max(1, target.range) * focal * 1.15)))
   const arm = Math.max(6, half * 0.42)
   const flash = marks.hitTick !== null && (marks.now - marks.hitTick) * WORLD_STEP < HIT_SECONDS
   const color = flash ? pen.bright : pen.green
   for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
     const x = at.x + sx * half, y = at.y + sy * half
-    pen.line(x, y, x - sx * arm, y, 1.6, color)
-    pen.line(x, y, x, y - sy * arm, 1.6, color)
+    if (!framed) {
+      pen.line(x, y, x - sx * arm, y, 1.6, color)
+      pen.line(x, y, x, y - sy * arm, 1.6, color)
+    }
     // Confirmed hit: a tick flares outward from each corner.
     if (flash) pen.line(x + sx * 4, y + sy * 4, x + sx * 12, y + sy * 12, 2, pen.bright)
   }

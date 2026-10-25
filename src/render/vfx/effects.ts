@@ -24,6 +24,8 @@ const WHITE = tint(1, 1, 1), HOT = tint(1, 0.85, 0.5), SPARK = tint(1, 0.55, 0.1
 const FIRE = tint(1, 0.42, 0.06), FIRE_DEEP = tint(0.75, 0.16, 0.02), CHAR = tint(0.09, 0.08, 0.07)
 const SMOKE = tint(0.13, 0.12, 0.11), SMOKE_FADED = tint(0.32, 0.31, 0.3)
 const LIGHT_SMOKE = tint(0.42, 0.41, 0.4), LIGHT_SMOKE_FADED = tint(0.62, 0.62, 0.62)
+// A missile motor's exhaust: near white, so it shows against haze and sand alike.
+const EXHAUST = tint(0.97, 0.97, 0.96), EXHAUST_FADED = tint(0.8, 0.8, 0.8)
 const DUST = tint(0.36, 0.3, 0.22), DUST_FADED = tint(0.55, 0.5, 0.42)
 
 /** A seeded random stream, so an effect is the same each time it is replayed in a preview. */
@@ -128,4 +130,29 @@ export function createTrail(rate = { smoke: 22, fire: 30 }) {
     }
   }
   return { emit }
+}
+
+/** A missile's motor: a white smoke trail and the flame at its tail, only while the motor burns.
+ * Emitted at a rate per simulation second, like the wreck trail. */
+export function createMissileTrail(rate = { smoke: 80, flame: 60 }) {
+  let smokeDue = 0, flameDue = 0
+  function emit(layers: EffectLayers, now: number, dt: number, tail: Vec3Like, velocity: Vec3Like, random: Random) {
+    smokeDue += rate.smoke * dt; flameDue += rate.flame * dt
+    const along = (share: number) => ({ x: tail.x - velocity.x * dt * share, y: tail.y - velocity.y * dt * share, z: tail.z - velocity.z * dt * share })
+    for (; smokeDue >= 1; smokeDue--) {
+      layers.smoke.spawn({ sprite: Sprite.smoke, position: along(random.next()), velocity: random.scatter(0.5, 2.5), drag: 1.2, lift: 0.6,
+        life: random.between(2.4, 3.4), size: [2.2, random.between(10, 14)], color: [EXHAUST, EXHAUST_FADED], alpha: 0.85, fadeIn: 0.04,
+        rotation: random.between(0, 6.3), spin: random.between(-0.5, 0.5), minPx: 2 }, now)
+    }
+    for (; flameDue >= 1; flameDue--) {
+      layers.glow.spawn({ sprite: Sprite.flash, position: along(random.next() * 0.3), velocity: add(velocity, velocity, -0.15), life: 0.07,
+        size: [2.6, 1.2], color: [WHITE, HOT], alpha: 1, fadeIn: 0, rotation: random.between(0, Math.PI), minPx: 5 }, now)
+    }
+  }
+  return { emit }
+}
+
+/** A missile's warhead going off in the air: a smaller burst than an aircraft's. */
+export function missileBurst(layers: EffectLayers, now: number, point: Vec3Like, random: Random) {
+  airExplosion(layers, now, point, { x: 0, y: 0, z: 0 }, random, 0.45)
 }

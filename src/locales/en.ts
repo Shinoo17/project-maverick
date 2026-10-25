@@ -438,6 +438,6 @@ export const en = {
   bindAction_afterburner: "Afterburner", bindAction_airbrake: "Airbrake", bindAction_cameraCycle: "Cycle camera mode",
   bindAction_fireGun: "Fire gun", bindAction_nextTarget: "Next target", bindAction_lookBack: "Look back (hold)", bindAction_freeLook: "Free look (hold + mouse)", bindAction_pause: "Pause",
   bindAction_fireMissile: "Launch missile", bindAction_selectMissile1: "Select short-range missile", bindAction_selectMissile2: "Select medium-range missile",
-  weaponPanel: "Weapons", weaponLaunchPending: "Missile launch is not built yet",
+  weaponPanel: "Weapons",
 } as const
 export type Translation = { [Key in keyof typeof en]: string }

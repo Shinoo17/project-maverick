@@ -439,5 +439,5 @@ export const th: Translation = {
   bindAction_afterburner: "สันดาปท้าย", bindAction_airbrake: "เบรกอากาศ", bindAction_cameraCycle: "สลับโหมดกล้อง",
   bindAction_fireGun: "ยิงปืน", bindAction_nextTarget: "เป้าถัดไป", bindAction_lookBack: "มองหลัง (กดค้าง)", bindAction_freeLook: "มองรอบ (กดค้าง + เมาส์)", bindAction_pause: "พักเกม",
   bindAction_fireMissile: "ยิงมิสไซล์", bindAction_selectMissile1: "เลือกมิสไซล์ระยะใกล้", bindAction_selectMissile2: "เลือกมิสไซล์ระยะกลาง",
-  weaponPanel: "อาวุธ", weaponLaunchPending: "ยังยิงมิสไซล์ไม่ได้ (ระบบยังไม่เสร็จ)",
+  weaponPanel: "อาวุธ",
 }

@@ -10,6 +10,7 @@ import type { EngineState } from '../flight/engine'
 import type { FlightForces } from '../flight/flightForces'
 import type { GunState } from '../combat/gun'
 import type { Projectile } from '../combat/projectiles'
+import type { Missile } from '../combat/missiles'
 import type { DronePath } from '../playground/dronePath'
 import type { TargetingState } from '../combat/targeting'
 import type { BotState } from '../bot/botPilot'
@@ -38,6 +39,8 @@ export interface AircraftState {
   acceleration: Vec3
   /** The gun's selected target (src/game/combat/targeting.ts). */
   targeting: TargetingState
+  /** The first tick another missile may be launched on (missileRules.interval). */
+  launchReadyTick: number
   maneuver: ManeuverState
   stall: StallState
   speedDrive: number
@@ -65,7 +68,9 @@ export interface WorldState {
   aircraft: AircraftState[]
   /** Gun rounds in flight. */
   projectiles: Projectile[]
-  /** The next projectile id; only goes up, so ids are never reused. */
+  /** Missiles in flight (src/game/combat/missiles.ts). */
+  missiles: Missile[]
+  /** The next projectile or missile id; only goes up, so ids are never reused. */
   nextProjectileId: number
   /** Playground target drone shot down: the tick it comes back on. */
   droneRespawnTick?: number

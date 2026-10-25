@@ -4,7 +4,8 @@
 // ?gun (a target crossing 550 m ahead: box, HP, lead, reticle; ?gun=hit adds a hit each second,
 // ?gun=assist shows the ASSIST label, ?gun=far puts it 1,300 m out, past the gun's reach: the dashed lead). Radar: ?radar (four contacts: a lock off screen right on its
 // grace time, one painted ahead, one close behind seen by eye, one painted past the scope; ?radar=held keeps
-// the lock inside the cone). Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?deny (a refused trigger press each second), ?hp=25, ?sel=1, ?firing.
+// the lock inside the cone). Missile lock: ?lock (with the ?gun target; cycles search, tracking, acquiring, locked,
+// lock lost), ?lock=0.45 holds that progress, ?lock=locked holds the lock. Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?deny (a refused trigger press each second), ?hp=25, ?sel=1, ?firing.
 import { createRef, StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useTranslation } from 'react-i18next'
@@ -22,6 +23,8 @@ import { angleOfAttack } from '../../game/flight/stall'
 import { createGunnery } from '../../render/gunneryFrame'
 import { radarFrame } from '../../render/radarFrame'
 import { RadarScope, type RadarDriver } from './RadarScope'
+import { createLockFrame } from '../../render/lockFrame'
+import { createSeekerState, seekerRules } from '../../game/combat/seeker'
 import type { GameEvent } from '../../game/runtime/events'
 import '@fontsource/barlow-condensed/600.css'
 import '@fontsource/barlow-condensed/600-italic.css'
@@ -39,6 +42,22 @@ const frame = frameWidth && frameHeight ? { flex: 'none', width: frameWidth, hei
 const deg = Math.PI / 180, up = new Vector3(0, 1, 0)
 const aircraftId = params.get('aircraft') ?? 'f22'
 const radar = params.get('radar')
+const lock = params.get('lock')
+/** The ?lock cycle in seconds: search, the climb to the lock, the lock held, the lock lost and bleeding away. */
+const LOCK_CYCLE = { search: 1, climb: 2.4, hold: 2, lost: 1.8 }
+function previewSeeker(seconds: number) {
+  const seeker = createSeekerState()
+  seeker.targetId = 'drone-1'
+  if (lock === 'locked') return Object.assign(seeker, { progress: 1, locked: true, tracking: true })
+  if (lock && lock !== '' && Number.isFinite(Number(lock))) return Object.assign(seeker, { progress: Number(lock), tracking: true })
+  const { search, climb, hold, lost } = LOCK_CYCLE
+  const t = seconds % (search + climb + hold + lost)
+  if (t < search) return seeker
+  if (t < search + climb) return Object.assign(seeker, { progress: (t - search) / climb, tracking: true })
+  if (t < search + climb + hold) return Object.assign(seeker, { progress: 1, locked: true, tracking: true })
+  const since = t - search - climb - hold
+  return Object.assign(seeker, { progress: Math.max(0, 1 - since / 1.2), lost: since < seekerRules.lostSeconds ? since : null })
+}
 /** Radar fixtures: degrees right of the nose's track, metres out, metres above. The first is locked. */
 const radarContacts = [[radar === 'held' ? 40 : 75, 1500, 0], [-20, 3500, 600], [160, 1200, -300], [30, 7000, 0]] as const
 
@@ -90,6 +109,7 @@ function Preview() {
     let request = 0, published = 0
     // The target crosses 550 m out (1,300 m with ?gun=far), a little right of the nose, turning at about 3 g, at 70% HP.
     const marks = createGunnery('f22')
+    const lockFrame = createLockFrame()
     const previewGunnery = (seconds: number) => {
       const nose = new Vector3(1, 0, 0).applyQuaternion(new Quaternion().copy(state.orientation))
       const right = new Vector3(0, 0, 1).applyQuaternion(new Quaternion().copy(state.orientation))
@@ -98,6 +118,13 @@ function Preview() {
       target.velocity = { x: -right.x * 150, y: -right.y * 150, z: -right.z * 150 }
       target.acceleration = { x: nose.x * 30, y: nose.y * 30, z: nose.z * 30 }
       target.hp = 70
+      // The lock fixture turns the target, so the frame and outline can be seen following its attitude.
+      if (lock !== null) {
+        const q = new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), right.clone().negate())
+          .multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), 0.9 * Math.sin(seconds * 0.7)))
+          .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), 0.25 * Math.sin(seconds * 0.4)))
+        target.orientation = { x: q.x, y: q.y, z: q.z, w: q.w }
+      }
       world.tick = Math.round(seconds * 60)
       const events: GameEvent[] = params.get('gun') === 'hit' && world.tick % 60 === 0 ? [{ id: 'preview', tick: world.tick, type: 'damage-applied', targetId: 'drone-1', sourceId: state.id, amount: 2 }] : []
       return marks.update(world, world, 1, { id: state.id, targetId: 'drone-1', position: state.position, orientation: state.orientation, velocity: state.velocity }, events, params.get('gun') === 'assist')
@@ -113,7 +140,7 @@ function Preview() {
       // The drone is not one of the fixtures.
       world.aircraft.slice(radarContacts.length + 1).forEach(entity => { entity.alive = false })
       const locked = world.aircraft[1]
-      state.targeting = { targetId: locked.id, outside: radar === 'held' ? 0 : 1.2 + (seconds % 1.5) }
+      state.targeting = { ...state.targeting, targetId: locked.id, outside: radar === 'held' ? 0 : 1.2 + (seconds % 1.5) }
       world.tick = Math.round(seconds * 60)
       const gunnery = createGunnery(aircraftId).update(world, world, 1, { id: state.id, targetId: locked.id, lockOutside: state.targeting.outside, position: state.position, orientation: state.orientation, velocity: state.velocity }, [])
       return { gunnery, picture: radarFrame(world, world, 1, state, state) }
@@ -128,9 +155,11 @@ function Preview() {
       camera.lookAt(new Vector3().copy(position).addScaledVector(track, 400)); camera.updateMatrixWorld()
       const seconds = frozen ?? (now - start) / 1000
       const scope = radar !== null ? previewRadar(seconds) : null
-      const gunnery = scope?.gunnery ?? (params.has('gun') ? previewGunnery(seconds) : null)
+      const gunnery = scope?.gunnery ?? (params.has('gun') || lock !== null ? previewGunnery(seconds) : null)
+      if (lock !== null) { state.targeting = { ...state.targeting, targetId: 'drone-1', seeker: previewSeeker(seconds) } }
+      const seeker = lock !== null ? lockFrame.update(world, world, 1, state, camera.position, params.has('still')) : null
       radarDriver.current?.(scope?.picture ?? null, seconds)
-      driver.current?.({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity, gunnery, radar: scope?.picture })
+      driver.current?.({ camera, state, position: state.position, orientation: state.orientation, velocity: state.velocity, gunnery, radar: scope?.picture, seeker })
       if (now - published > 100) { published = now; setTelemetry(structuredClone(state)) }
       request = requestAnimationFrame(tick)
     }

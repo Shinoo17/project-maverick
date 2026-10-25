@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSessionSettings } from '../../app/sessionStore'
 import { getAircraft } from '../../content/aircraft'
-import { getWeapon, weaponStations, type WeaponKind } from '../../content/weapons'
+import { gunStation, missileStations, type WeaponKind, type WeaponStation } from '../../content/weapons'
 import { AIRCRAFT_HP } from '../../game/combat/damage'
 import type { InputPreset, KeyBindings } from '../../game/input/keyBindings'
 import type { AircraftState } from '../../game/state/WorldState'
@@ -44,15 +44,13 @@ function Key({ mouse, name }: { mouse?: 'left' | 'right'; name: string }) {
 }
 
 export function weaponRows(aircraftId: string, state: AircraftState | null) {
-  const stations = weaponStations[getAircraft(aircraftId).weaponStationProfileId].map(station => {
-    const weapon = getWeapon(station.weaponId)
-    const count = state ? state.stores.filter(store => store.stationId === station.id).reduce((sum, store) => sum + store.count, 0) : station.capacity
-    return { station, weapon, count }
-  })
+  const definition = getAircraft(aircraftId)
+  const count = (station: WeaponStation) => state ? state.stores.filter(store => store.stationId === station.id).reduce((sum, store) => sum + store.count, 0) : station.capacity
+  const { station, weapon } = gunStation(definition)
   return {
-    gun: stations.find(row => row.weapon.kind === 'gun')!,
-    // Short range first, so selection slot 1 is always the IR missile.
-    missiles: stations.filter(row => row.weapon.kind !== 'gun').sort((a, b) => (a.weapon.kind === 'ir' ? 0 : 1) - (b.weapon.kind === 'ir' ? 0 : 1)),
+    gun: { station, weapon, count: count(station) },
+    // In the seeker's selection order: short range first, so slot 0 is always the IR missile.
+    missiles: missileStations(definition).map(row => ({ ...row, count: count(row.station) })),
   }
 }
 
@@ -119,14 +117,12 @@ export function WeaponPanel({ aircraftId, state, selected, denied = 0, preset, b
           <span className="wpn-name">{row.weapon.name[locale]}</span>
           <strong className="wpn-value">{String(row.count).padStart(2, '0')}</strong>
           <span className="wpn-row"><span className="wpn-pips" aria-hidden="true">{Array.from({ length: row.station.capacity }, (_, i) => <i key={i} data-on={i < row.count || undefined} />)}</span>
-            {/* Dashed keys: launch is shown but not built yet (Settings lists it as pending). */}
             {active
-              ? <span className="wpn-launch" data-pending title={t('weaponLaunchPending')}><Key mouse={mouse ? 'right' : undefined} name={keys.fireMissile} />{empty ? 'EMPTY' : 'LAUNCH'}</span>
+              ? <span className="wpn-launch"><Key mouse={mouse ? 'right' : undefined} name={keys.fireMissile} />{empty ? 'EMPTY' : 'LAUNCH'}</span>
               : <kbd>{keys[index ? 'selectMissile2' : 'selectMissile1']}</kbd>}</span>
         </div>
       })}
 
-      <p className="wpn-a11y">{t('weaponLaunchPending')}</p>
     </div>
   </section>
 }

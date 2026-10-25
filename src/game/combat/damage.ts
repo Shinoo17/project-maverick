@@ -1,5 +1,7 @@
 /*
-Gun damage: one HP pool per aircraft (doc 07 MVP, no wing or engine damage).
+Gun and missile damage: one HP pool per aircraft (doc 07 MVP, no wing or engine damage). A
+missile burst comes in as one hit on the aircraft that set it off, in the same batch as the
+tick's gun hits.
 
 The runtime applies one tick's hits as a batch after every round has moved, so
 the result never depends on frame rate or render order. Every aircraft that is
@@ -29,7 +31,8 @@ export function applyHits(aircraft: readonly AircraftState[], hits: readonly Pro
     const targetId = entry.hit.entityId
     const target = aircraft.find(entity => entity.id === targetId)
     if (!target || !target.alive || target.hp <= 0) continue
-    const damage = getWeapon(entry.weaponId).gun?.damage ?? 0
+    const weapon = getWeapon(entry.weaponId)
+    const damage = weapon.gun?.damage ?? weapon.missile?.damage ?? 0
     // The event carries the HP actually removed, so one kill always adds up to the full pool.
     const amount = Math.min(damage, target.hp)
     if (amount <= 0) continue

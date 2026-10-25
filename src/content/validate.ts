@@ -1,7 +1,7 @@
 import { flightProfiles } from './flight-profiles'
 import { validateFlightProfile } from '../game/flight/validateProfile'
 import { resolveSpeedLimits } from '../game/flight/speedLimits'
-import { getWeapon, weaponStations, type GunProfile } from './weapons'
+import { getWeapon, weaponStations, type GunProfile, type MissileProfile, type SeekerProfile } from './weapons'
 import { hitboxes, validateHitboxes } from './hitboxes'
 import { getAircraft } from './aircraft'
 import { presentationIds, type AircraftDefinition, type SessionConfig } from './schemas'
@@ -33,6 +33,11 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
         const elevation = station.elevationDeg ?? 0
         if (!(Number.isFinite(elevation) && Math.abs(elevation) <= 5)) throw new Error(`${path}.stations.elevationDeg: expected -5 to 5 degrees`)
         validateGunProfile(weapon.gun, `${path}.stations.weapon(${weapon.id}).gun`)
+      } else {
+        validateSeekerProfile(weapon.seeker, `${path}.stations.weapon(${weapon.id}).seeker`)
+        validateMissileProfile(weapon.missile, `${path}.stations.weapon(${weapon.id}).missile`)
+        // An IR missile's seeker is the one that locked: it sees as far in flight as it locked from.
+        if (weapon.kind === 'ir' && weapon.missile!.activeRangeM !== weapon.seeker!.rangeM) throw new Error(`${path}.stations.weapon(${weapon.id}).missile.activeRangeM: an IR missile sees as far as its seeker.rangeM`)
       }
       for (const locale of ['th', 'en'] as const) if (!station.name[locale]?.trim()) throw new Error(`${path}.stations.name.${locale}: required`)
     }
@@ -60,6 +65,21 @@ function validateGunProfile(gun: GunProfile | undefined, path: string) {
   if (!(gun.resumeHeat > 0 && gun.resumeHeat < 1)) throw new Error(`${path}.resumeHeat: expected between 0 and 1`)
   if (!(gun.lockHeat > gun.resumeHeat && gun.lockHeat < 1)) throw new Error(`${path}.lockHeat: expected between resumeHeat and 1`)
   if (!(gun.overheatResumeHeat >= 0 && gun.overheatResumeHeat <= gun.resumeHeat)) throw new Error(`${path}.overheatResumeHeat: expected between 0 and resumeHeat`)
+}
+function validateSeekerProfile(seeker: SeekerProfile | undefined, path: string) {
+  if (!seeker) throw new Error(`${path}: required for a missile`)
+  for (const key of ['rangeM', 'lockSeconds', 'releaseSeconds'] as const) {
+    if (!(Number.isFinite(seeker[key]) && seeker[key] > 0)) throw new Error(`${path}.${key}: expected a positive number`)
+  }
+  if (seeker.coneDeg !== 'radar' && !(seeker.coneDeg > 0 && seeker.coneDeg <= 180)) throw new Error(`${path}.coneDeg: expected 0 to 180 degrees or 'radar'`)
+}
+function validateMissileProfile(missile: MissileProfile | undefined, path: string) {
+  if (!missile) throw new Error(`${path}: required for a missile`)
+  for (const key of ['burnSeconds', 'thrust', 'drag', 'maxG', 'navigation', 'gimbalDeg', 'activeRangeM', 'launchRangeM', 'fuseM', 'damage', 'lifetime', 'minSpeed'] as const) {
+    if (!(Number.isFinite(missile[key]) && missile[key] > 0)) throw new Error(`${path}.${key}: expected a positive number`)
+  }
+  if (!(missile.guideDelay >= 0 && missile.guideDelay < missile.lifetime)) throw new Error(`${path}.guideDelay: expected between 0 and lifetime`)
+  if (missile.gimbalDeg > 90) throw new Error(`${path}.gimbalDeg: expected 0 to 90 degrees`)
 }
 
 export function validateSession(config: SessionConfig) {

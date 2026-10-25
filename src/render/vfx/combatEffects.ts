@@ -10,6 +10,8 @@ latest world snapshot, and changes nothing in the simulation.
   wreck falls, trailing fire and smoke, until it hits the ground and explodes again. It
   crashing into terrain itself explodes on the ground. The player's own death has no effect
   yet.
+- A missile trails white smoke and its motor flame while the motor burns, and bursts where its
+  warhead goes off (missile-detonated); on the ground it kicks up dust instead.
 - Up to WRECK_SLOTS wrecks fall at once. Another death then blows up the oldest in the air.
 
 Everything is timed by the simulation clock passed in, so pause freezes it, and reset() clears
@@ -23,7 +25,9 @@ import type { GameEvent } from '../../game/runtime/events'
 import type { WorldState } from '../../game/state/WorldState'
 import { distanceScale } from '../targetVisibility'
 import { loadParticleAtlas, type ParticleAtlas, type SpriteSet } from './atlas'
-import { airExplosion, createTrail, groundExplosion, groundHit, hitSpark, randomStream, type EffectLayers } from './effects'
+import { airExplosion, createMissileTrail, createTrail, groundExplosion, groundHit, hitSpark, missileBurst, randomStream, type EffectLayers } from './effects'
+import { getWeapon } from '../../content/weapons'
+import { WORLD_STEP } from '../../game/runtime/clock'
 import { createParticleLayer } from './particles'
 import { advanceWreck, createWreck, type Wreck } from './wreck'
 
@@ -49,13 +53,15 @@ export interface EffectsFrame {
 
 export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   const layers: EffectLayers = {
-    smoke: createParticleLayer({ capacity: 700, additive: false, order: 5 }),
-    glow: createParticleLayer({ capacity: 400, additive: true, order: 6 }),
+    smoke: createParticleLayer({ capacity: 1600, additive: false, order: 5 }),
+    glow: createParticleLayer({ capacity: 600, additive: true, order: 6 }),
   }
   // Smoke first, then the glow over it.
   const mesh = new Group().add(layers.smoke.mesh, layers.glow.mesh)
   const random = randomStream(7)
   const slots: ({ wreck: Wreck; trail: ReturnType<typeof createTrail>; started: number } | null)[] = Array(WRECK_SLOTS).fill(null)
+  // Each missile's trail emitter, by missile id; dropped once the missile is gone.
+  const trails = new Map<number, ReturnType<typeof createMissileTrail>>()
   let lastClock: number | null = null, deaths = 0, disposed = false, wanted = sprites
   const atlases = new Map<SpriteSet, Promise<ParticleAtlas>>()
   /** Draws with `set` once it has loaded, unless another set was asked for meanwhile. */
@@ -84,6 +90,10 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   }
 
   function update(frame: EffectsFrame) {
+    // Still drawn after dispose(): React's StrictMode runs an effect's cleanup once and keeps the
+    // memoised object, so the scene goes on using it. Ask for the sprites again, or the layers stay
+    // hidden for good (every combat effect was missing in development builds).
+    if (disposed) { disposed = false; useSprites(wanted) }
     const { clock, world } = frame
     eye.copy(frame.camera.position)
     let shown = 0
@@ -105,6 +115,11 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
       shown++
     }
     for (const event of frame.events) {
+      if (event.type === 'missile-detonated') {
+        if (event.cause === 'ground') groundHit(layers, clock, event.position, random)
+        else missileBurst(layers, clock, event.position, random)
+        continue
+      }
       if (event.type !== 'aircraft-destroyed') continue
       const entity = world?.aircraft.find(candidate => candidate.id === event.entityId)
       if (!entity || entity.control === 'pilot') continue
@@ -115,6 +130,17 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
     }
     const dt = lastClock === null ? 0 : Math.max(0, clock - lastClock)
     lastClock = clock
+    const flying = new Set<number>()
+    for (const missile of world?.missiles ?? []) {
+      flying.add(missile.id)
+      if (missile.age >= getWeapon(missile.weaponId).missile!.burnSeconds) continue
+      if (!trails.has(missile.id)) trails.set(missile.id, createMissileTrail())
+      // Where the missile is drawn between ticks (the snapshot is the tick's end), less 1.6 m to its tail.
+      const speed = Math.hypot(missile.velocity.x, missile.velocity.y, missile.velocity.z) || 1
+      const back = 1.6 / speed - (clock - (world?.tick ?? 0) * WORLD_STEP)
+      trails.get(missile.id)!.emit(layers, clock, dt, { x: missile.position.x - missile.velocity.x * back, y: missile.position.y - missile.velocity.y * back, z: missile.position.z - missile.velocity.z * back }, missile.velocity, random)
+    }
+    for (const id of trails.keys()) if (!flying.has(id)) trails.delete(id)
     slots.forEach((slot, index) => {
       const model = frame.wreckModels[index]
       if (!slot) { if (model) model.visible = false; return }
@@ -143,6 +169,7 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   function reset() {
     layers.smoke.clear(); layers.glow.clear()
     slots.fill(null)
+    trails.clear()
     lastClock = null
   }
   function dispose() {

@@ -13,9 +13,12 @@ screen; aim assist and bots use the same rules. Only what the radar paints can b
 
 The radar cone stands in for "off screen": the lock lives in the simulation (replays, aim assist,
 bots), and the screen belongs to the camera, which the simulation never sees.
+
+The selected missile's seeker then locks on to the same target over time (seeker.ts).
 */
 import type { AircraftState } from '../state/WorldState'
 import { bearing, insideRadar, radarContacts, radarOf } from './radar'
+import { createSeekerState, type SeekerState } from './seeker'
 
 export { bearing } from './radar'
 
@@ -29,8 +32,10 @@ export interface TargetingState {
   targetId: string | null
   /** Seconds the locked target has spent outside the radar cone or range. */
   outside: number
+  /** The selected missile's lock-on to the same target (seeker.ts). */
+  seeker: SeekerState
 }
-export const createTargetingState = (): TargetingState => ({ targetId: null, outside: 0 })
+export const createTargetingState = (slot = 0): TargetingState => ({ targetId: null, outside: 0, seeker: createSeekerState(slot) })
 
 /** Aircraft the shooter could lock: painted by its radar, nearest the nose first. */
 export function candidates(shooter: AircraftState, aircraft: readonly AircraftState[]) {

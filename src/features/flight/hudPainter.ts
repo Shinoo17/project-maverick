@@ -15,6 +15,8 @@ nothing is recomposited when the frame changes.
 import { MathUtils, Quaternion, Vector3, type Camera } from 'three'
 import type { EnvelopeLabel } from '../../game/flight/envelope'
 import { drawGunnery, type GunneryMarks, type Pen } from './gunnerySymbols'
+import { createLockPainter } from './lockSymbols'
+import type { LockMarks } from '../../render/lockFrame'
 
 const HUD_GREEN = 'rgba(98, 255, 132, 0.98)'
 const HUD_GREEN_DIM = 'rgba(98, 255, 132, 0.66)'
@@ -128,6 +130,8 @@ export interface GlassState {
   alphaMax: number
   /** Gun reticle, target box and lead (gunnerySymbols.ts); null before the first flight frame. */
   gunnery: GunneryMarks | null
+  /** The missile lock (lockSymbols.ts); null with nothing to frame or report. */
+  seeker: LockMarks | null
   /** Mouse aim: where the instructor is flying the nose (a world direction), or in cursor mode
    * the held × as pixels from the middle of the frame; and its share (fades the world cursor). */
   aim: { direction: Vec3Like; share: number } | { screen: { x: number; y: number }; share: number } | null
@@ -279,6 +283,8 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   let width = 0, height = 0
   let layout = glassLayout(1, 1)
   let ratio = 1
+  // The missile lock keeps its springs and buffers from frame to frame.
+  const lock = createLockPainter()
 
   function resize(cssWidth: number, cssHeight: number, pixelRatio: number) {
     width = cssWidth; height = cssHeight; ratio = pixelRatio
@@ -719,7 +725,10 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       drawNosePipper(state, state.camera)
       drawVelocityMarker(state, state.camera)
       if (state.aim) drawAimCursor(state.aim, state, state.camera)
-      if (state.gunnery) drawGunnery(pen(state.camera), state.gunnery, state.camera, height, state.position)
+      const kit = pen(state.camera)
+      const framed = state.seeker ? lock.draw(kit, state.seeker, state.camera, width, height) : 0
+      if (!state.seeker) lock.reset()
+      if (state.gunnery) drawGunnery(kit, state.gunnery, state.camera, height, state.position, framed)
     }
     if (state.live) drawAoaBracket(state)
     drawTape({

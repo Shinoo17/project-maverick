@@ -94,7 +94,6 @@
 .wpn-pips i[data-on] { background: var(--wpn-ink); }
 .wpn-missile[data-selected] .wpn-pips i[data-on] { background: var(--wpn-select); }
 .wpn-launch { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; }
-.wpn-launch[data-pending] kbd { border-style: dashed; }
 .wpn-missile[data-empty] .wpn-icon * { stroke-dasharray: 2 2.5; }
 .wpn-missile[data-empty] .wpn-value { color: var(--wpn-dim); }
 .wpn-a11y { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
