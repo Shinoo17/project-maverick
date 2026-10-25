@@ -437,7 +437,7 @@ export const en = {
   bindAction_yawLeft: "Yaw left", bindAction_yawRight: "Yaw right", bindAction_speedUp: "Increase speed", bindAction_speedDown: "Decrease speed",
   bindAction_afterburner: "Afterburner", bindAction_airbrake: "Airbrake", bindAction_cameraCycle: "Cycle camera mode",
   bindAction_fireGun: "Fire gun", bindAction_nextTarget: "Next target", bindAction_lookBack: "Look back (hold)", bindAction_freeLook: "Free look (hold + mouse)", bindAction_pause: "Pause",
-  bindAction_countermeasure: "Flares and chaff", bindAction_fireMissile: "Launch missile", bindAction_selectMissile1: "Select short-range missile", bindAction_selectMissile2: "Select medium-range missile",
+  bindAction_countermeasure: "Flares and chaff", bindAction_fireMissile: "Launch missile", bindAction_selectMissile1: "Select missile 1", bindAction_selectMissile2: "Select missile 2", bindAction_selectMissile3: "Select missile 3", bindAction_selectMissile4: "Select missile 4",
   weaponPanel: "Weapons",
 } as const
 export type Translation = { [Key in keyof typeof en]: string }

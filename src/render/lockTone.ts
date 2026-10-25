@@ -8,6 +8,8 @@ The missile lock's tones (doc 07), synthesised with Web Audio: no sound files.
 - LOCK LOST: one low falling blip.
 - A launch: a short rushing noise, the motor lighting under the jet.
 - A countermeasure burst: a quick run of dull thumps, one per flare leaving the dispensers.
+- A refused press (gun locked, missile or dispensers not ready, no lock): one low dull knock;
+  on an empty missile or empty dispensers, two short flat beeps instead.
 - The warning gear (rwrFrame.ts): a short rising chirp for each new radar painting us, a
   pulsed tone while one locks us, and a fast two-note warble while a missile is launched at us
   or closing.
@@ -18,6 +20,9 @@ frame, after the click that launched the flight, so the browser lets it play.
 */
 import type { LockMarks } from './lockFrame'
 import type { RwrDisplay } from './rwrFrame'
+
+/** Why a press was refused: `wait` until something changes (heat, cooldown, lock), or `empty` for good. */
+export type RefusalTone = 'wait' | 'empty'
 
 /** Provisional values, waiting on playtest. */
 const TONE = {
@@ -32,6 +37,9 @@ const TONE = {
   chirpHz: [520, 780] as const,
   lockHz: 1000, lockEvery: 0.5,
   warbleHz: [950, 1350] as const, warbleNote: 0.09,
+  /** Refused presses: the knock (Hz falling to Hz) and the empty beeps (Hz, seconds apart). */
+  knockHz: [190, 110] as const,
+  emptyHz: 440, emptyEvery: 0.11,
 } as const
 
 export function createLockTone() {
@@ -136,6 +144,16 @@ export function createLockTone() {
     for (let index = 0; index < count; index++) blip(ctx.currentTime + index * seconds / Math.max(1, count - 1), 220, 0.07, TONE.gain * 1.3, 70, 'square')
   }
 
+  /** A press the aircraft refused (see RefusalTone). */
+  function refuse(kind: RefusalTone) {
+    const ctx = context()
+    if (!ctx || !out) return
+    const now = ctx.currentTime
+    if (kind === 'wait') { blip(now, TONE.knockHz[0], 0.08, TONE.gain * 1.5, TONE.knockHz[1], 'square'); return }
+    blip(now, TONE.emptyHz, 0.06, TONE.gain, TONE.emptyHz, 'square')
+    blip(now + TONE.emptyEvery, TONE.emptyHz, 0.06, TONE.gain, TONE.emptyHz, 'square')
+  }
+
   /** Stops every sound at once, scheduled beeps included. For pause, blur and a hidden page: the
    * render loop may not run another frame to do it. The next active `update` resumes. */
   function silence() {
@@ -146,5 +164,5 @@ export function createLockTone() {
     void audio?.close().catch(() => {})
     audio = null; out = null
   }
-  return { update, launch, dispense, warn, silence, dispose }
+  return { update, launch, dispense, warn, refuse, silence, dispose }
 }

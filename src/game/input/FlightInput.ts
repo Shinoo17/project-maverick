@@ -6,7 +6,7 @@ import { gunMountOf, type GunMount } from '../combat/gunSolution'
 import { cursorDraw } from '../combat/aimAssist'
 import { capturePush, createPushCapture } from './pushCapture'
 import type { AircraftState, Vec3 } from '../state/WorldState'
-import { actionForCode, defaultKeyboardSettings, type FlightAction, type KeyboardSettings } from './keyBindings'
+import { actionForCode, defaultKeyboardSettings, missileSelectActions, type FlightAction, type KeyboardSettings } from './keyBindings'
 export type { InputPreset } from './keyBindings'
 import type { InputPreset } from './keyBindings'
 // A held key is always full deflection and the shaped stick never is, so "strictly larger
@@ -78,7 +78,8 @@ export class FlightInput {
     this.held.add(code)
     const bound = repeat ? null : actionForCode(this.keyboard.bindings, code)
     if (bound?.action === 'nextTarget') this.nextTarget = true
-    if (bound?.action === 'selectMissile1' || bound?.action === 'selectMissile2') this.select = bound.action === 'selectMissile1' ? 0 : 1
+    const slot = bound ? (missileSelectActions as readonly string[]).indexOf(bound.action) : -1
+    if (slot >= 0) this.select = slot
     if (bound?.action === 'fireMissile') this.launch = true
     if (bound?.action === 'countermeasure') this.dispense = true
     if (bound && (bound.action === 'afterburner' || bound.action === 'airbrake') && this.keyboard[bound.action] === 'toggle') {

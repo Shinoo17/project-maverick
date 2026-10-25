@@ -438,6 +438,6 @@ export const th: Translation = {
   bindAction_yawLeft: "หันหัวซ้าย", bindAction_yawRight: "หันหัวขวา", bindAction_speedUp: "เพิ่มความเร็ว", bindAction_speedDown: "ลดความเร็ว",
   bindAction_afterburner: "สันดาปท้าย", bindAction_airbrake: "เบรกอากาศ", bindAction_cameraCycle: "สลับโหมดกล้อง",
   bindAction_fireGun: "ยิงปืน", bindAction_nextTarget: "เป้าถัดไป", bindAction_lookBack: "มองหลัง (กดค้าง)", bindAction_freeLook: "มองรอบ (กดค้าง + เมาส์)", bindAction_pause: "พักเกม",
-  bindAction_countermeasure: "ปล่อยแฟลร์และแชฟฟ์", bindAction_fireMissile: "ยิงมิสไซล์", bindAction_selectMissile1: "เลือกมิสไซล์ระยะใกล้", bindAction_selectMissile2: "เลือกมิสไซล์ระยะกลาง",
+  bindAction_countermeasure: "ปล่อยแฟลร์และแชฟฟ์", bindAction_fireMissile: "ยิงมิสไซล์", bindAction_selectMissile1: "เลือกมิสไซล์ช่อง 1", bindAction_selectMissile2: "เลือกมิสไซล์ช่อง 2", bindAction_selectMissile3: "เลือกมิสไซล์ช่อง 3", bindAction_selectMissile4: "เลือกมิสไซล์ช่อง 4",
   weaponPanel: "อาวุธ",
 }

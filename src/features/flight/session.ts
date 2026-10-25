@@ -3,6 +3,7 @@ import type { FlightInput, InputPreset } from '../../game/input/FlightInput'
 import type { CameraSettings } from '../../game/camera/cameraSettings'
 import type { GraphicsSettings } from '../../render/graphicsSettings'
 import type { TargetDroneMode } from '../../game/playground/dronePath'
+import type { RefusalTone } from '../../render/lockTone'
 export interface FlightSession {
   runtime: GameRuntime | null
   input: FlightInput
@@ -21,4 +22,6 @@ export interface FlightSession {
   reducedMotion: boolean
   /** Requests one frame while paused; set by the mounted scene. */
   invalidate?: () => void
+  /** Plays the tone for a refused press; set by the mounted scene. */
+  refused?: (kind: RefusalTone) => void
 }

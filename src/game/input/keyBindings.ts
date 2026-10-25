@@ -13,8 +13,11 @@ export const flightActions = [
   'speedUp', 'speedDown', 'afterburner', 'airbrake', 'cameraCycle', 'lookBack',
   // Newer actions go last: a saved key wins over a new action's default (parseBindings claims in this order).
   'fireGun', 'nextTarget', 'fireMissile', 'selectMissile1', 'selectMissile2', 'freeLook', 'countermeasure',
+  'selectMissile3', 'selectMissile4',
 ] as const
 export type FlightAction = typeof flightActions[number]
+/** The keys that pick missile slot 0, 1, 2 and 3 (the seeker's slot, in missileStations order). */
+export const missileSelectActions = ['selectMissile1', 'selectMissile2', 'selectMissile3', 'selectMissile4'] as const satisfies readonly FlightAction[]
 
 export type BindingSlots = [primary: string | null, secondary: string | null]
 export type KeyBindings = Record<FlightAction, BindingSlots>
@@ -38,8 +41,9 @@ export const defaultBindings: Readonly<KeyBindings> = {
   fireGun: ['KeyJ', null],
   // T steps the gun's selected target (doc 02).
   nextTarget: ['KeyT', null],
-  // Right mouse also launches in the mouse preset; 1 and 2 pick the short- and medium-range missile.
+  // Right mouse also launches in the mouse preset; 1–4 pick missile slot 1–4 (short range first).
   fireMissile: ['KeyK', null], selectMissile1: ['Digit1', null], selectMissile2: ['Digit2', null],
+  selectMissile3: ['Digit3', null], selectMissile4: ['Digit4', null],
   // C held turns the camera with the mouse; R held looks back. Both leave the jet on its course.
   cameraCycle: ['KeyV', null], lookBack: ['KeyR', null], freeLook: ['KeyC', null],
   // F drops a salvo of flares and chaff together (doc 02).

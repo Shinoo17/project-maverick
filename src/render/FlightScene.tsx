@@ -40,7 +40,7 @@ import { createRwrFrame } from './rwrFrame'
 import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; rwr?: RefObject<RwrDriver | null>; fps?: RefObject<HTMLElement | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void }
 function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
@@ -87,6 +87,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
   useEffect(() => () => lockTone.dispose(), [lockTone])
   // Paused or hidden, the loop may not draw again, so the tone is cut here rather than in a frame.
   useEffect(() => { if (!running) lockTone.silence() }, [running, lockTone])
+  useEffect(() => { session.refused = lockTone.refuse; return () => { session.refused = undefined } }, [session, lockTone])
   useEffect(() => {
     const hidden = () => { if (document.hidden) lockTone.silence() }
     document.addEventListener('visibilitychange', hidden); addEventListener('blur', lockTone.silence)
@@ -244,7 +245,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
       // The × is a point on the chase shot; on a turned view it marks nothing, so it is hidden.
       aim: aiming ? cursor ? rig.lookingAway ? null : { screen: { x: input.stick.px, y: input.stick.py }, share: session.input.aim.share } : { direction: session.input.aim.direction, share: session.input.aim.share } : null })
     elapsed.current += dt
-    if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
+    if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state, tick) }
     // Counted over wall time while flying only; the window restarts on resume.
     const now = performance.now(), counter = fps.current
     if (!session.running || resumed || counter.since < 0) { counter.frames = 0; counter.since = now }
