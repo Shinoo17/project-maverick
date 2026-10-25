@@ -1,4 +1,4 @@
-import { Box3, MathUtils, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
+import { Box3, Euler, MathUtils, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../game/state/WorldState'
 import { observeAirflow } from '../game/flight/airflow'
 import { getFlightProfile } from '../game/flight/profile'
@@ -113,6 +113,13 @@ const DRIFT_LAG = { offsetRate: 3, turnRate: 3.5, upRate: 6 }
 // The drift lag reaches full this many times faster than the handover: by ~15° incidence, where a
 // banked S-pull drift already sits. Hard turns without the airbrake stay under 8°, so never lag.
 const DRIFT_LAG_SPEEDUP = 6
+/*
+Free look and look back (FlightInput.lookTarget): the finished chase shot is swung rigidly about
+the jet by a yaw and a pitch in the view's own frame, so the jet stays where it sits on screen
+and the view turns round it. Look back is a half turn of yaw: the camera ends ahead of the nose,
+looking back over the jet. The turn eases toward its target at `rate` (1/s) both ways.
+*/
+const FREE_LOOK = { rate: 10, rest: 1e-3 }
 export type { CameraSettings }
 /** Project actual world-space subject bounds, not a velocity-look heuristic. */
 export function projectedAircraftBounds(camera: PerspectiveCamera, corners: Vector3[]) {
@@ -169,6 +176,13 @@ export class FlightCamera {
   /** Mouse aim (game/input/mouseAim.ts): the world direction the cruise view looks along instead
    * of the nose. Weighted by (1 − handover) like every cruise value, so the PSM shot ignores it. */
   aim: Vector3 | null = null
+  /** Free look and look back: how far the view should turn off the chase shot (radians, view frame). */
+  lookTurn = { yaw: 0, pitch: 0 }
+  private orbit = { yaw: 0, pitch: 0 }
+  /** The chase shot before the look turn. Mouse aim and the × steer by this view, not the turned one. */
+  readonly chase = new Quaternion()
+  /** True while the view is turned off the chase shot, including while it eases back. */
+  get lookingAway() { return this.orbit.yaw !== 0 || this.orbit.pitch !== 0 }
   private diagnosticView(camera: PerspectiveCamera, state: AircraftState, bounds: Box3) {
     const q = new Quaternion().copy(state.orientation), center = new Vector3().copy(state.position)
     const corners: Vector3[] = []
@@ -213,6 +227,7 @@ export class FlightCamera {
   private lastBodyUp = new Vector3(0, 1, 0)
   reset() {
     this.initialized = false; this.decouple = 0; this.handover = 0; this.up.set(0, 1, 0); this.levelUp.set(0, 1, 0); this.styleUp.set(0, 1, 0); this.gap = 0; this.boomUp.set(0, 1, 0); this.boomGap = 0; this.drift = 0; this.lastDriftLag = 0; this.look.set(1, 0, 0); this.noseLook.set(1, 0, 0); this.offset.set(0, 0, 0)
+    this.orbit = { yaw: 0, pitch: 0 }; this.chase.identity()
     this.rollLag = 0; this.rollLagRate = 0; this.lastBodyUp.set(0, 1, 0)
   }
   update(camera: PerspectiveCamera, state: AircraftState, view: CameraSettings, dt: number, reducedMotion = false, diagnosticBounds?: Box3) {
@@ -348,14 +363,30 @@ export class FlightCamera {
       const cruiseOffsetRate = MathUtils.lerp(style.offsetRate, DRIFT_LAG.offsetRate, lag), cruiseTurnRate = MathUtils.lerp(style.turnRate, DRIFT_LAG.turnRate, lag)
       const offsetRate = MathUtils.lerp(MathUtils.lerp(cruiseOffsetRate, OFFSET.attached, entry), OFFSET.decoupled, d)
       this.followOffset(desiredOffset, offsetRate, w, dt)
-      camera.quaternion.slerp(desiredQ, 1 - Math.exp(-MathUtils.lerp(cruiseTurnRate, PSM_TURN_RATE, entry) * dt))
+      // From last frame's chase shot: the look turn is laid over it afterwards, never carried.
+      camera.quaternion.copy(this.chase).slerp(desiredQ, 1 - Math.exp(-MathUtils.lerp(cruiseTurnRate, PSM_TURN_RATE, entry) * dt))
     }
     camera.position.copy(position).add(this.offset)
     // Reduced motion holds the FOV still, so it has no gun zoom either.
     const fov = reducedMotion ? this.baseFov + FOV.reduced - FOV.base
       : (this.baseFov + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple) * (1 - visibility.zoom * this.gunZoom)
     camera.fov += (fov - camera.fov) * (reducedMotion || this.snapFov ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
+    this.chase.copy(camera.quaternion)
+    this.turnLook(camera, position, dt, snap)
     camera.position.y = Math.max(5, camera.position.y)
+  }
+  /** Swing the finished chase shot about the jet by the eased look turn (see FREE_LOOK). */
+  private turnLook(camera: PerspectiveCamera, pivot: Vector3, dt: number, snap: boolean) {
+    const share = snap ? 1 : 1 - Math.exp(-FREE_LOOK.rate * dt)
+    this.orbit.yaw = wrapAngle(this.orbit.yaw + wrapAngle(this.lookTurn.yaw - this.orbit.yaw) * share)
+    this.orbit.pitch += (this.lookTurn.pitch - this.orbit.pitch) * share
+    // Settled back on the chase shot: exactly on it, so the aim is let go again.
+    if (this.lookTurn.yaw === 0 && this.lookTurn.pitch === 0 && Math.abs(this.orbit.yaw) < FREE_LOOK.rest && Math.abs(this.orbit.pitch) < FREE_LOOK.rest) this.orbit = { yaw: 0, pitch: 0 }
+    if (!this.lookingAway) return
+    const turned = this.chase.clone().multiply(new Quaternion().setFromEuler(new Euler(this.orbit.pitch, this.orbit.yaw, 0, 'YXZ')))
+    const swing = turned.clone().multiply(this.chase.clone().invert())
+    camera.position.sub(pivot).applyQuaternion(swing).add(pivot)
+    camera.quaternion.copy(turned)
   }
   /*
   The roll angle, from the cruise up, that the chosen camera asks for.

@@ -70,7 +70,7 @@ export const en = {
   arcadeUnit: "ARCADE km/h",
   metres: "m",
   heading: "Heading",
-  controlsHint: "{{speedUp}} / {{speedDown}}: speed · {{pitchUp}} / {{pitchDown}}: pitch · {{rollLeft}} / {{rollRight}}: roll · {{yawLeft}} / {{yawRight}}: yaw · {{airbrake}}: airbrake · {{airbrake}} + pull: high AoA · {{afterburner}}: boost · {{cameraCycle}}: camera · {{fireGun}}: gun · {{nextTarget}}: next target · P / Esc: pause",
+  controlsHint: "{{speedUp}} / {{speedDown}}: speed · {{pitchUp}} / {{pitchDown}}: pitch · {{rollLeft}} / {{rollRight}}: roll · {{yawLeft}} / {{yawRight}}: yaw · {{airbrake}}: airbrake · {{airbrake}} + pull: high AoA · {{afterburner}}: boost · {{cameraCycle}}: camera · {{freeLook}} + mouse: free look · {{lookBack}}: look back · {{fireGun}}: gun · {{nextTarget}}: next target · P / Esc: pause",
   mouseHint: "The pointer is the stick: where it sits inside the dashed circle is where the stick sits, and it stays there until you move it. The middle is neutral, with a small dead zone so you can put it back; the edge of the circle is full stick. Small offsets are fine corrections and the pull grows quickly toward the edge. Higher sensitivity makes the circle smaller. Point right and the aircraft banks right and holds that bank; point up and to the right to bank and pull. Hold it straight up or down and the aircraft loops all the way round. To level out, bring the pointer back to the middle. Under the Aircraft locked camera the screen rolls with the aircraft, so a pointer held to one side keeps rolling. The winged circle marks the nose; the winged diamond marks the flight path. Any held key outranks the stick on its own axis.",
   mouseMode: "Mouse mode",
   mouseModeRelative: "Gamepad-style (springs back to centre)",
@@ -436,7 +436,7 @@ export const en = {
   bindAction_pitchUp: "Pitch up", bindAction_pitchDown: "Pitch down", bindAction_rollLeft: "Roll left", bindAction_rollRight: "Roll right",
   bindAction_yawLeft: "Yaw left", bindAction_yawRight: "Yaw right", bindAction_speedUp: "Increase speed", bindAction_speedDown: "Decrease speed",
   bindAction_afterburner: "Afterburner", bindAction_airbrake: "Airbrake", bindAction_cameraCycle: "Cycle camera mode",
-  bindAction_fireGun: "Fire gun", bindAction_nextTarget: "Next target", bindAction_lookBack: "Look back", bindAction_pause: "Pause",
+  bindAction_fireGun: "Fire gun", bindAction_nextTarget: "Next target", bindAction_lookBack: "Look back (hold)", bindAction_freeLook: "Free look (hold + mouse)", bindAction_pause: "Pause",
   bindAction_fireMissile: "Launch missile", bindAction_selectMissile1: "Select short-range missile", bindAction_selectMissile2: "Select medium-range missile",
   weaponPanel: "Weapons", weaponLaunchPending: "Missile launch is not built yet",
 } as const

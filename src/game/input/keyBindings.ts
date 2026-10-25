@@ -12,7 +12,7 @@ export const flightActions = [
   'pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight',
   'speedUp', 'speedDown', 'afterburner', 'airbrake', 'cameraCycle', 'lookBack',
   // Newer actions go last: a saved key wins over a new action's default (parseBindings claims in this order).
-  'fireGun', 'nextTarget', 'fireMissile', 'selectMissile1', 'selectMissile2',
+  'fireGun', 'nextTarget', 'fireMissile', 'selectMissile1', 'selectMissile2', 'freeLook',
 ] as const
 export type FlightAction = typeof flightActions[number]
 
@@ -40,7 +40,8 @@ export const defaultBindings: Readonly<KeyBindings> = {
   nextTarget: ['KeyT', null],
   // Right mouse also launches in the mouse preset; 2 and 3 pick the short- and medium-range missile.
   fireMissile: ['KeyK', null], selectMissile1: ['Digit2', null], selectMissile2: ['Digit3', null],
-  cameraCycle: ['KeyV', null], lookBack: ['KeyR', null],
+  // C held turns the camera with the mouse; R held looks back. Both leave the jet on its course.
+  cameraCycle: ['KeyV', null], lookBack: ['KeyR', null], freeLook: ['KeyC', null],
 }
 
 export const defaultKeyboardSettings: Readonly<KeyboardSettings> = {
@@ -48,7 +49,7 @@ export const defaultKeyboardSettings: Readonly<KeyboardSettings> = {
 }
 
 /** Actions whose key does nothing yet. The Settings page lists them as pending. */
-export const pendingActions: readonly FlightAction[] = ['lookBack', 'fireMissile']
+export const pendingActions: readonly FlightAction[] = ['fireMissile']
 
 /** Keys a binding may never take: Esc and P always pause. */
 export const reservedCodes: readonly string[] = ['Escape', 'KeyP']

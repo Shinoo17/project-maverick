@@ -97,11 +97,11 @@ export function FlightPage() {
       if (bound.action === 'cameraCycle') { if (!e.repeat) { selectCamera(nextCameraSettings(session.camera)); setCameraChanged(true) }; return }
       if (bound.action === 'selectMissile1' || bound.action === 'selectMissile2') { setMissile(bound.action === 'selectMissile1' ? 0 : 1); return }
       if (bound.action === 'fireGun' && !e.repeat) denyIfLocked()
-      // Look back is bound but has no camera behind it yet (Settings lists it as pending).
-      if (bound.action !== 'lookBack') session.input.press(e.code, e.repeat)
+      session.input.press(e.code, e.repeat)
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
-    const move = (e: MouseEvent) => { if (session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') session.input.move(e.movementX, e.movementY) }
+    // The keyboard preset has no pointer lock, but free look still turns the camera with the mouse.
+    const move = (e: MouseEvent) => { if (session.running && (document.pointerLockElement === surface.current && session.preset === 'mouse' || session.preset === 'keyboard' && session.input.holds('freeLook'))) session.input.move(e.movementX, e.movementY) }
     // Only a press made while already locked fires: the click that takes the lock never does (doc 02).
     const mousedown = (e: MouseEvent) => { if (e.button === 0 && session.running && document.pointerLockElement === surface.current && session.preset === 'mouse') { session.input.mouseGun = true; denyIfLocked() } }
     const mouseup = (e: MouseEvent) => { if (e.button === 0) session.input.mouseGun = false }

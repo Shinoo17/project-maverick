@@ -23,6 +23,8 @@ function slewToward(current: number, target: number, rate: { engage: number; rel
   const travel = (returning ? rate.release : rate.engage) * step
   return Math.abs(target - current) <= travel ? target : current + Math.sign(target - current) * travel
 }
+/** Free look: view turn per pixel of mouse motion at sensitivity 1, and how far it may tilt up or down. */
+const FREE_LOOK = { radPerPixel: 0.25 * Math.PI / 180, maxPitch: 80 * Math.PI / 180 }
 /** Seconds for Q/E pedal travel from centre to full deflection. */
 export const PEDAL_RAMP_SECONDS = 0.2
 export class FlightInput {
@@ -75,6 +77,18 @@ export class FlightInput {
   }
   /** True while any key bound to the action is held. */
   holds(action: FlightAction) { return this.keyboard.bindings[action].some(code => code !== null && this.held.has(code)) }
+  // Free look: the view's turn off the chase shot from mouse motion while the key is held (radians).
+  private look = { yaw: 0, pitch: 0 }
+  /** Set by the flight scene each frame: the camera is still turned off the chase shot (easing back after a release). */
+  viewAway = false
+  /** While the view is turned away the mouse moves the camera, not the aim, and the aim holds still,
+   * so the jet keeps flying where it was going. */
+  get lookingAway() { return this.viewAway || this.holds('freeLook') || this.holds('lookBack') }
+  /** Where the camera looks off the chase shot: the free look while its key is held, plus a half turn for look back. */
+  lookTarget() {
+    if (!this.holds('freeLook')) this.look = { yaw: 0, pitch: 0 }
+    return { yaw: wrapPi(this.look.yaw + (this.holds('lookBack') ? Math.PI : 0)), pitch: this.look.pitch }
+  }
   readonly stick = createMouseStick()
   /** Mouse aim (mouseAim.ts): the direction the instructor flies the nose to. */
   readonly aim = createMouseAim()
@@ -112,7 +126,7 @@ export class FlightInput {
   /** Cursor mode's frame: the true horizon under a horizon-locked camera (Balanced's small
    * cosmetic tilt left out, or a held turn would sink), the airframe under Aircraft locked. */
   cursorFrame: ScreenFrame = LEVEL_FRAME
-  clear() { this.cursorMoved = false; this.handPixels = 0; this.lensFov = 0; this.target = null; this.mouseGun = false; this.nextTarget = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.capture.armed = false; this.capture.hold = null; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); unsyncAim(this.aim); this.pose = null; this.screen = LEVEL_FRAME; this.cursorFrame = LEVEL_FRAME; this.cursorRay = null }
+  clear() { this.cursorMoved = false; this.handPixels = 0; this.lensFov = 0; this.target = null; this.mouseGun = false; this.nextTarget = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.capture.armed = false; this.capture.hold = null; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); unsyncAim(this.aim); this.pose = null; this.screen = LEVEL_FRAME; this.cursorFrame = LEVEL_FRAME; this.cursorRay = null; this.look = { yaw: 0, pitch: 0 }; this.viewAway = false }
   // The surface has taken the pointer: neutral and live from the first frame.
   engage() { engageStick(this.stick); unsyncAim(this.aim); this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.since = { x: 0, y: 0 }; this.handPixels = 0; this.lensFov = 0 }
   setViewport(width: number, height: number) {
@@ -123,6 +137,14 @@ export class FlightInput {
   }
   move(x: number, y: number) {
     const k = this.mouse.sensitivity
+    // Free look and look back take the mouse whole: the stick, the × and the aim stay where they
+    // were. Only free look turns the view with it, so C with R pans the view behind.
+    if (this.holds('freeLook') || this.holds('lookBack')) {
+      if (!this.holds('freeLook')) return
+      this.look.yaw = wrapPi(this.look.yaw - x * k * FREE_LOOK.radPerPixel)
+      this.look.pitch = Math.max(-FREE_LOOK.maxPitch, Math.min(FREE_LOOK.maxPitch, this.look.pitch - (this.mouse.invertPitch ? -y : y) * k * FREE_LOOK.radPerPixel))
+      return
+    }
     // Mouse aim turns the aim, and drives the relative stick the instructor hands over to in post-stall.
     if (this.mouse.mode === 'aim' && this.stick.live && this.aim.synced) turnAim(this.aim, x * k, (this.mouse.invertPitch ? -y : y) * k, this.view.right, this.view.up)
     // Cursor mode: the × is a held position anywhere in the window, like the positional stick.
@@ -166,7 +188,7 @@ export class FlightInput {
   drawCursor(lead: { x: number; y: number } | null, leadDeg: number, targetDeg: number, dt: number, range: number) {
     const hand = this.handPixels
     this.handPixels = 0
-    if (this.mouse.mode !== 'cursor' || !lead || !this.stick.live || !this.aim.synced || this.aim.share <= 0 || this.aim.recovering) return false
+    if (this.mouse.mode !== 'cursor' || !lead || !this.stick.live || !this.aim.synced || this.aim.share <= 0 || this.aim.recovering || this.lookingAway) return false
     if ((['pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight'] as const).some(action => this.holds(action))) return false
     const share = cursorDraw(this.mouse.aimAssist, leadDeg, targetDeg, dt, this.triggerHeld, hand, range)
     if (share <= 0) return false
@@ -219,6 +241,8 @@ export class FlightInput {
     // A wreck has no nose to aim; the respawned jet starts with the aim on its own.
     if (!this.pose?.alive) { unsyncAim(this.aim); return }
     const keyHeld = (['pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight'] as const).some(has)
+    // Looking away, the aim is neither read off the × nor turned with a target: the jet holds its course.
+    const away = this.lookingAway
     // Post-stall's stick: the sprung one, or in cursor mode the held × as the positional stick.
     const stick = readStickAxes(this.stick, LEVEL_FRAME, 0, cursor ? MOUSE_STICK : MOUSE_RELATIVE) ?? { pitch: 0, roll: 0 }
     // The hand is on the mouse while the stick is out of the middle (or the × just moved).
@@ -226,17 +250,17 @@ export class FlightInput {
     this.cursorMoved = false
     // Cursor mode: the nose that puts the gun reticle under the ×, read afresh every tick (a
     // recovery flies its own). Through the rendered camera once there is one.
-    if (cursor && this.aim.synced && !this.aim.recovering && !keyHeld) {
+    if (cursor && this.aim.synced && !this.aim.recovering && !keyHeld && !away) {
       const target = this.target?.alive ? this.target : null
       if (this.cursorRay) aimAtRay(this.aim, this.pose, this.cursorRay, this.gunOf(this.pose.aircraftId), target)
       else aimAtCursor(this.aim, this.pose, this.stick.px, this.stick.py, this.height, this.fov, this.cursorFrame.angle * this.cursorFrame.blend)
     }
     stepAim(this.aim, this.pose, tick, keyHeld, handsOn)
     // Cursor mode on a moving target: the lead's own turn is fed forward while the × is on it.
-    if (cursor && !this.aim.recovering && !keyHeld) trackLead(this.aim, this.pose, this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
+    if (cursor && !this.aim.recovering && !keyHeld && !away) trackLead(this.aim, this.pose, this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
     else this.aim.tracking = 0
     // Close behind the locked target: the instructor turns with it.
-    followTarget(this.aim, this.pose, !this.aim.recovering && !keyHeld && this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
+    followTarget(this.aim, this.pose, !this.aim.recovering && !keyHeld && !away && this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
     const share = this.aim.share, pilot = this.mouse.invertPitch && !cursor ? -stick.pitch : stick.pitch
     const flown = share > 0 ? instruct(this.aim, this.pose) : { pitch: 0, roll: 0, yaw: 0 }
     c.pitch = strongest(c.pitch, share * flown.pitch + (1 - share) * pilot)

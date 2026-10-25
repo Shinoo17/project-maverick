@@ -118,10 +118,13 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
         // × itself, once per frame below.
         const aiming = session.preset === 'mouse' && session.input.aiming
         const worldAim = aiming && session.input.mouse.mode === 'aim'
-        const drawn = worldAim && session.input.aim.synced && aimMagnet(session.input.mouse.aimAssist, live, target, mount, session.input.aim.direction, WORLD_STEP, session.input.triggerHeld)
+        // Looking away (free look, look back) the jet holds its course, so no assist pulls it either.
+        const away = session.input.lookingAway
+        const drawn = worldAim && !away && session.input.aim.synced && aimMagnet(session.input.mouse.aimAssist, live, target, mount, session.input.aim.direction, WORLD_STEP, session.input.triggerHeld)
         // Aim assist joins the command here, so the simulation and a replay see the assisted stick.
         const command = session.input.command(tick, id, session.preset)
         if (aiming) { if (worldAim) assisting.current = drawn && session.input.aim.share > 0; firing.current = command.gunHeld; return command }
+        if (away) { assisting.current = false; firing.current = command.gunHeld; return command }
         const assist = aimAssist(session.input.mouse.aimAssist, live, target, mount, command)
         assisting.current = assist.active
         firing.current = command.gunHeld
@@ -144,10 +147,13 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // World aim looks along the aim; the screen-locked cursor keeps the ordinary nose camera.
     const cursor = session.input.mouse.mode === 'cursor'
     rig.aim = aiming && !cursor ? session.input.aim.direction : null
+    rig.lookTurn = session.input.lookTarget()
     rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
+    session.input.viewAway = rig.lookingAway
     // Mouse motion turns the aim about the view as drawn: right is right and up is up on screen.
-    session.input.setView(viewRight.set(1, 0, 0).applyQuaternion(camera.quaternion), viewUp.set(0, 1, 0).applyQuaternion(camera.quaternion))
+    // The chase shot's view, so a view still easing back from a free look cannot skew it.
+    session.input.setView(viewRight.set(1, 0, 0).applyQuaternion(rig.chase), viewUp.set(0, 1, 0).applyQuaternion(rig.chase))
     // The × keeps its angle through a change of lens (speed, burner, the gun zoom).
     session.input.setLens((camera as PerspectiveCamera).fov)
     const hits = runtime.drainHits(), events = runtime.drainEvents()
@@ -195,7 +201,8 @@ function FlightWorld({ aircraftId, session, targetDrone, onReady, onTelemetry, i
     // rendered, interpolated pose through the same camera every frame; React only
     // receives the 10 Hz telemetry below for text status.
     indicators.hud.current?.({ camera, state, position: pose.position, orientation: pose.orientation, velocity: pose.velocity, gunnery: marks, radar,
-      aim: aiming ? cursor ? { screen: { x: input.stick.px, y: input.stick.py }, share: session.input.aim.share } : { direction: session.input.aim.direction, share: session.input.aim.share } : null })
+      // The × is a point on the chase shot; on a turned view it marks nothing, so it is hidden.
+      aim: aiming ? cursor ? rig.lookingAway ? null : { screen: { x: input.stick.px, y: input.stick.py }, share: session.input.aim.share } : { direction: session.input.aim.direction, share: session.input.aim.share } : null })
     elapsed.current += dt
     if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
     // Counted over wall time while flying only; the window restarts on resume.

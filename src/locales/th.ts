@@ -71,7 +71,7 @@ export const th: Translation = {
   arcadeUnit: "อาร์เคด กม./ชม.",
   metres: "ม.",
   heading: "ทิศทาง",
-  controlsHint: "{{speedUp}} / {{speedDown}} ความเร็ว · {{pitchUp}} / {{pitchDown}} เชิด/กดหัว · {{rollLeft}} / {{rollRight}} เอียง · {{yawLeft}} / {{yawRight}} หันหัว · {{airbrake}} เบรกอากาศ · {{airbrake}} + ดึง มุมปะทะสูง · {{afterburner}} เร่ง · {{cameraCycle}} กล้อง · {{fireGun}} ยิงปืน · {{nextTarget}} เป้าถัดไป · P / Esc พัก",
+  controlsHint: "{{speedUp}} / {{speedDown}} ความเร็ว · {{pitchUp}} / {{pitchDown}} เชิด/กดหัว · {{rollLeft}} / {{rollRight}} เอียง · {{yawLeft}} / {{yawRight}} หันหัว · {{airbrake}} เบรกอากาศ · {{airbrake}} + ดึง มุมปะทะสูง · {{afterburner}} เร่ง · {{cameraCycle}} กล้อง · {{freeLook}} + เมาส์ มองรอบ · {{lookBack}} มองหลัง · {{fireGun}} ยิงปืน · {{nextTarget}} เป้าถัดไป · P / Esc พัก",
   mouseHint: "ตัวชี้เมาส์คือคันบังคับ ตำแหน่งในวงประคือตำแหน่งของคันบังคับ และค้างอยู่ตรงนั้นจนกว่าจะขยับ กลางวงคือ neutral มี dead zone เล็กน้อยให้วางกลับได้ง่าย ขอบวงคือสุดพิกัด ขยับออกจากกลางนิดหน่อยใช้เล็งละเอียด ยิ่งใกล้ขอบยิ่งดึงแรงขึ้นเร็ว ความไวสูงขึ้นวงจะเล็กลง ชี้ไปขวา เครื่องจะเอียงขวาแล้วค้างมุมนั้นไว้ ชี้ขวาเฉียงขึ้นคือเอียงพร้อมดึง ชี้ขึ้นหรือลงตรงๆ ค้างไว้ เครื่องจะตีลังกาครบรอบ จะบินตรงให้พาตัวชี้กลับกลางวง ถ้าใช้กล้อง Aircraft locked จอจะหมุนตามเครื่อง การชี้ค้างไว้ด้านข้างจึงทำให้เครื่องหมุนต่อไปเรื่อยๆ · วงกลมมีปีกคือหัวเครื่อง · สี่เหลี่ยมข้าวหลามตัดมีปีกคือทิศทางบิน ปุ่มที่กดค้างมีสิทธิ์เหนือคันบังคับในแกนของมัน",
   mouseMode: "โหมดเมาส์",
   mouseModeRelative: "แบบ Gamepad (คืนกลางเอง)",
@@ -437,7 +437,7 @@ export const th: Translation = {
   bindAction_pitchUp: "เชิดหัวขึ้น", bindAction_pitchDown: "กดหัวลง", bindAction_rollLeft: "เอียงซ้าย", bindAction_rollRight: "เอียงขวา",
   bindAction_yawLeft: "หันหัวซ้าย", bindAction_yawRight: "หันหัวขวา", bindAction_speedUp: "เพิ่มความเร็ว", bindAction_speedDown: "ลดความเร็ว",
   bindAction_afterburner: "สันดาปท้าย", bindAction_airbrake: "เบรกอากาศ", bindAction_cameraCycle: "สลับโหมดกล้อง",
-  bindAction_fireGun: "ยิงปืน", bindAction_nextTarget: "เป้าถัดไป", bindAction_lookBack: "มองหลัง", bindAction_pause: "พักเกม",
+  bindAction_fireGun: "ยิงปืน", bindAction_nextTarget: "เป้าถัดไป", bindAction_lookBack: "มองหลัง (กดค้าง)", bindAction_freeLook: "มองรอบ (กดค้าง + เมาส์)", bindAction_pause: "พักเกม",
   bindAction_fireMissile: "ยิงมิสไซล์", bindAction_selectMissile1: "เลือกมิสไซล์ระยะใกล้", bindAction_selectMissile2: "เลือกมิสไซล์ระยะกลาง",
   weaponPanel: "อาวุธ", weaponLaunchPending: "ยังยิงมิสไซล์ไม่ได้ (ระบบยังไม่เสร็จ)",
 }
