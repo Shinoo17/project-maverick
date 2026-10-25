@@ -18,7 +18,8 @@ import { boundingRadius } from '../combat/collision'
 import { AIRCRAFT_HP, applyHits } from '../combat/damage'
 import { createTargetingState, stepTargeting } from '../combat/targeting'
 import { selectedMissile, stepSeeker } from '../combat/seeker'
-import { launchMissile, missileRules, stepMissile } from '../combat/missiles'
+import { hardpointOf, launchMissile, missileRules, stepMissile } from '../combat/missiles'
+import { createCountermeasureState, releaseDecoys, startBurst, stepDecoy } from '../combat/countermeasures'
 import type { GameEvent } from './events'
 import { botCommand, createBotState, createBotSteering } from '../bot/botPilot'
 import type { MouseAim } from '../input/mouseAim'
@@ -80,7 +81,7 @@ export class GameRuntime {
       const { position, heading, orientation } = botSpawnPose(aircraft[0])
       aircraft.push(this.createDrone(position, heading, orientation, 0))
     } else if (this.config.targetDrone) aircraft.push(this.createDrone({ x: targetDrone.ahead, y: spawn.altitude + targetDrone.above, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 }, 0))
-    return { tick: 0, practice: createPracticeState(), aircraft, projectiles: [], missiles: [], nextProjectileId: 1 }
+    return { tick: 0, practice: createPracticeState(), aircraft, projectiles: [], missiles: [], decoys: [], nextProjectileId: 1 }
   }
   /** A still drone keeps `orientation`; a moving one starts its path at `position`, heading `heading`, on `tick`. */
   private createDrone(position: Vec3, heading: Vec3, orientation: AircraftState['orientation'], tick: number) {
@@ -118,7 +119,7 @@ export class GameRuntime {
       stores: fullArmament(getAircraft(aircraftId)), gun: createGunState(gunOf(aircraftId).weapon.id),
       position,
       orientation: { x: 0, y: 0, z: 0, w: 1 },
-      velocity: { x: speed, y: 0, z: 0 }, acceleration: { x: 0, y: 0, z: 0 }, targeting: createTargetingState(), launchReadyTick: 0, hp: AIRCRAFT_HP, alive: true,
+      velocity: { x: speed, y: 0, z: 0 }, acceleration: { x: 0, y: 0, z: 0 }, targeting: createTargetingState(), launchReadyTick: 0, countermeasures: createCountermeasureState(aircraftId), hp: AIRCRAFT_HP, alive: true,
       maneuver: createManeuverState(), stall: createStallState(), thrustVectoring: createThrustVectoringState(),
       speedDrive: 0, intent: createPilotIntent(), limiterOpen: 0, pathAssistWeight: 1,
       engine: { requestedPower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * speed ** 2 },
@@ -142,11 +143,12 @@ export class GameRuntime {
       // The missile slot each pilot picked this tick (the last pick wins), and who pressed launch.
       const selects = new Map<string, number>()
       const launches = new Set<string>()
+      const dispenses = new Set<string>()
       // Every bot decides from the world as the tick began, before anything moves, so the order
       // aircraft are stepped in never changes what a bot does.
       const botCommands = new Map<string, PilotCommand>()
       this.world.aircraft.forEach((entity, index) => {
-        if (entity.control === 'bot' && entity.bot) botCommands.set(entity.id, botCommand(entity.bot, this.steering.get(entity.id)!, entity, this.world.aircraft, this.world.tick, index))
+        if (entity.control === 'bot' && entity.bot) botCommands.set(entity.id, botCommand(entity.bot, this.steering.get(entity.id)!, entity, this.world.aircraft, this.world.tick, index, this.world.missiles))
       })
       for (const entity of this.world.aircraft) {
         // The drone has no pilot: it is never asked for a command, so player input is read once per tick.
@@ -160,11 +162,12 @@ export class GameRuntime {
         for (const key of ['pitch', 'roll', 'yaw', 'speedAdjust'] as const) safe[key] = Number.isFinite(command[key]) ? Math.max(-1, Math.min(1, command[key])) : 0
         safe.gunHeld = command.gunHeld === true
         triggers.set(entity.id, safe.gunHeld)
-        safe.actions = Array.isArray(command.actions) ? command.actions.filter(action => action?.type === 'next-target' || action?.type === 'fire-missile' || action?.type === 'select-secondary' && Number.isInteger(action.slot)) : []
+        safe.actions = Array.isArray(command.actions) ? command.actions.filter(action => action?.type === 'next-target' || action?.type === 'fire-missile' || action?.type === 'countermeasure' || action?.type === 'select-secondary' && Number.isInteger(action.slot)) : []
         for (const action of safe.actions) {
           if (action.type === 'next-target') nextTarget.add(entity.id)
           else if (action.type === 'select-secondary') selects.set(entity.id, action.slot)
           else if (action.type === 'fire-missile') launches.add(entity.id)
+          else if (action.type === 'countermeasure') dispenses.add(entity.id)
         }
         if (entity.id === 'aircraft-1' && this.track.length < 3600) this.track.push(structuredClone(safe))
         for (let substep = 0; substep < 2; substep++) {
@@ -174,6 +177,8 @@ export class GameRuntime {
           if (entity.id === 'aircraft-1') stepPractice(this.world.practice, entity, safe, previousX, FLIGHT_STEP)
         }
       }
+      // After every aircraft has moved, and before missiles fly, so seekers see this tick's decoys.
+      this.stepDecoys(dispenses)
       // After every aircraft has moved, so rounds see each one at the start and end of the same tick.
       const killers = this.stepGuns(before, triggers, launches)
       this.reportDeaths(wasAlive, killers)
@@ -181,7 +186,8 @@ export class GameRuntime {
       this.world.aircraft.forEach((entity, index) => {
         const v = entity.velocity, w = before[index].velocity
         entity.acceleration = { x: (v.x - w.x) / WORLD_STEP, y: (v.y - w.y) / WORLD_STEP, z: (v.z - w.z) / WORLD_STEP }
-        if (entity.control !== 'pilot') return
+        // Bots lock and launch through the same radar target and seeker as the player.
+        if (!flown(entity)) return
         if (entity.alive) {
           stepTargeting(entity, this.world.aircraft, nextTarget.has(entity.id), WORLD_STEP)
           stepSeeker(entity, this.world.aircraft, selects.get(entity.id) ?? null, WORLD_STEP)
@@ -189,6 +195,16 @@ export class GameRuntime {
       })
       this.world.tick++
     })
+  }
+  /** Moves flares and chaff in the air, starts the bursts asked for this tick, and releases the decoys due. */
+  private stepDecoys(dispenses: Set<string>) {
+    const world = this.world
+    world.decoys = world.decoys.filter(decoy => stepDecoy(decoy, WORLD_STEP))
+    for (const entity of world.aircraft) {
+      if (dispenses.has(entity.id) && entity.alive && flown(entity) && startBurst(entity.countermeasures, world.tick, WORLD_STEP))
+        this.emit({ type: 'countermeasure-dispensed', entityId: entity.id, bursts: entity.countermeasures.bursts })
+      world.decoys.push(...releaseDecoys(entity, world.tick, WORLD_STEP, () => world.nextProjectileId++))
+    }
   }
   /** Moves rounds and missiles in flight, then fires this tick's new rounds and launches its missiles. */
   private stepGuns(before: CombatBody['from'][], triggers: Map<string, boolean>, launches: Set<string>): Map<string, string> {
@@ -235,10 +251,14 @@ export class GameRuntime {
     const hits: ProjectileHit[] = []
     world.missiles = world.missiles.filter(missile => {
       const weapon = getWeapon(missile.weaponId)
-      const burst = stepMissile(missile, weapon.missile!, weapon.kind === 'radar', world.aircraft, live, WORLD_STEP)
+      const followed = missile.seeker.decoyId
+      const burst = stepMissile(missile, weapon.missile!, weapon.kind === 'radar', world.aircraft, live, WORLD_STEP, world.decoys)
+      // A seeker that lost its track entirely is not decoyed back onto its target.
+      if (missile.seeker.decoyId !== followed && (missile.seeker.decoyId !== null || missile.seeker.tracking)) this.emit({ type: 'missile-decoyed', missileId: missile.id, ownerId: missile.ownerId, targetId: missile.targetId, decoyId: missile.seeker.decoyId })
       if (!burst) return true
       this.emit({ type: 'missile-detonated', missileId: missile.id, ownerId: missile.ownerId, weaponId: missile.weaponId, position: burst.point, cause: burst.cause, targetId: burst.entityId })
-      if (burst.entityId) hits.push({ tick: world.tick, projectileId: missile.id, ownerId: missile.ownerId, weaponId: missile.weaponId, hit: { kind: 'aircraft', entityId: burst.entityId, t: 0, point: burst.point } })
+      // A dud breaks up on the airframe it struck and does no damage.
+      if (burst.entityId && burst.cause !== 'dud') hits.push({ tick: world.tick, projectileId: missile.id, ownerId: missile.ownerId, weaponId: missile.weaponId, hit: { kind: 'aircraft', entityId: burst.entityId, t: 0, point: burst.point } })
       return false
     })
     // Fire immediately if locked: one missile per press from the selected station, never faster than the interval.
@@ -249,11 +269,13 @@ export class GameRuntime {
       const missile = selectedMissile(entity.aircraftId, seeker.slot)
       const store = missile && entity.stores.find(entry => entry.stationId === missile.station.id && entry.count > 0)
       if (!seeker.locked || !target || !missile || !store) continue
+      const point = hardpointOf(missile.station, store.count)
       store.count--
       entity.launchReadyTick = world.tick + Math.round(missileRules.interval / WORLD_STEP)
-      const fired = launchMissile(world.nextProjectileId++, world.tick, entity, missile.weapon.id, target)
+      const fired = launchMissile(world.nextProjectileId++, world.tick, entity, missile.weapon.id, target,
+        { stationId: missile.station.id, mount: missile.station.launch!.kind, point }, missile.weapon.kind === 'radar')
       world.missiles.push(fired)
-      this.emit({ type: 'missile-launched', entityId: entity.id, weaponId: missile.weapon.id, missileId: fired.id, targetId: target.id })
+      this.emit({ type: 'missile-launched', entityId: entity.id, weaponId: missile.weapon.id, missileId: fired.id, targetId: target.id, stationId: missile.station.id, hardpoint: fired.hardpoint })
     }
     return hits
   }

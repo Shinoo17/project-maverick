@@ -20,6 +20,9 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
     validateHitboxes(hitboxes[entry.hitboxProfileId], `${path}.hitboxes`)
     if (!(entry.radar?.coneDeg > 0 && entry.radar.coneDeg <= 180)) throw new Error(`${path}.radar.coneDeg: expected 0 to 180 degrees`)
     if (!(entry.radar.rangeM > 0)) throw new Error(`${path}.radar.rangeM: expected positive metres`)
+    if (!(Number.isInteger(entry.countermeasures?.bursts) && entry.countermeasures.bursts >= 0)) throw new Error(`${path}.countermeasures.bursts: expected a whole number, 0 or more`)
+    if (!(entry.countermeasures.points?.length > 0) || entry.countermeasures.points.some(point => point.length !== 3 || !point.every(Number.isFinite)))
+      throw new Error(`${path}.countermeasures.points: expected at least one finite point`)
     const stations = weaponStations[entry.weaponStationProfileId]
     const stationIds = new Set<string>()
     for (const station of stations) {
@@ -36,6 +39,15 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
       } else {
         validateSeekerProfile(weapon.seeker, `${path}.stations.weapon(${weapon.id}).seeker`)
         validateMissileProfile(weapon.missile, `${path}.stations.weapon(${weapon.id}).missile`)
+        // Each seeker resists its own decoy: flares for IR, chaff for radar.
+        for (const [key, kind] of [['flareResist', 'ir'], ['chaffResist', 'radar']] as const) {
+          const resist = weapon.missile![key]
+          if (weapon.kind === kind ? !(resist !== undefined && resist >= 0 && resist < 1) : resist !== undefined)
+            throw new Error(`${path}.stations.weapon(${weapon.id}).missile.${key}: ${weapon.kind === kind ? `expected 0 to under 1 for a ${kind} missile` : `${kind} missiles only`}`)
+        }
+        const launch = station.launch
+        if (!launch || !['bay', 'pylon'].includes(launch.kind)) throw new Error(`${path}.stations.launch: missile station needs kind bay or pylon`)
+        if (!launch.points.length || !launch.points.every(point => point.length === 3 && point.every(Number.isFinite))) throw new Error(`${path}.stations.launch.points: expected at least one point of three finite numbers`)
         // An IR missile's seeker is the one that locked: it sees as far in flight as it locked from.
         if (weapon.kind === 'ir' && weapon.missile!.activeRangeM !== weapon.seeker!.rangeM) throw new Error(`${path}.stations.weapon(${weapon.id}).missile.activeRangeM: an IR missile sees as far as its seeker.rangeM`)
       }
@@ -75,10 +87,11 @@ function validateSeekerProfile(seeker: SeekerProfile | undefined, path: string) 
 }
 function validateMissileProfile(missile: MissileProfile | undefined, path: string) {
   if (!missile) throw new Error(`${path}: required for a missile`)
-  for (const key of ['burnSeconds', 'thrust', 'drag', 'maxG', 'navigation', 'gimbalDeg', 'activeRangeM', 'launchRangeM', 'fuseM', 'damage', 'lifetime', 'minSpeed'] as const) {
+  for (const key of ['burnSeconds', 'thrust', 'drag', 'maxG', 'turnRateDeg', 'rampSeconds', 'navigation', 'gimbalDeg', 'activeRangeM', 'searchDeg', 'acquireSeconds', 'searchSeconds', 'launchRangeM', 'fuseM', 'damage', 'lifetime', 'minSpeed'] as const) {
     if (!(Number.isFinite(missile[key]) && missile[key] > 0)) throw new Error(`${path}.${key}: expected a positive number`)
   }
-  if (!(missile.guideDelay >= 0 && missile.guideDelay < missile.lifetime)) throw new Error(`${path}.guideDelay: expected between 0 and lifetime`)
+  if (!(Number.isFinite(missile.turnDrag) && missile.turnDrag >= 0)) throw new Error(`${path}.turnDrag: expected zero or more`)
+  if (!(missile.arm?.seconds >= 0 && missile.arm.seconds < missile.lifetime && missile.arm.metres >= 0)) throw new Error(`${path}.arm: expected seconds under lifetime and metres of zero or more`)
   if (missile.gimbalDeg > 90) throw new Error(`${path}.gimbalDeg: expected 0 to 90 degrees`)
 }
 

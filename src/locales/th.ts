@@ -187,7 +187,7 @@ export const th: Translation = {
   drone_racetrack: "บินตรงแล้ววนกลับ",
   drone_circle: "วนรอบสนาม",
   drone_bot: "บอทต่อสู้",
-  combatBotHint: "Su-57 ฝ่ายศัตรูบินสวนเข้ามาจาก 3 กม. และสู้ด้วยปืน ไล่ยิงคุณ และเลี้ยวหนีเมื่อคุณเข้าท้าย ยิงตกแล้วลำใหม่จะบินเข้ามาใน 3 วินาที",
+  combatBotHint: "Su-57 ฝ่ายศัตรูบินสวนเข้ามาจาก 3 กม. และสู้ด้วยปืนและมิสไซล์ ไล่ยิงคุณ เลี้ยวหนีเมื่อคุณเข้าท้าย และหลบมิสไซล์ของคุณพร้อมปล่อยแฟลร์และแชฟฟ์ เมื่อมีมิสไซล์ไล่ให้ปล่อยของคุณ (F) แล้วเลี้ยวหักออก ยิงตกแล้วลำใหม่จะบินเข้ามาใน 3 วินาที",
   briefPractice: "ตั้งค่าการฝึก",
   briefControls: "การควบคุม",
   lessonPrevious: "บทฝึกก่อนหน้า",
@@ -438,6 +438,6 @@ export const th: Translation = {
   bindAction_yawLeft: "หันหัวซ้าย", bindAction_yawRight: "หันหัวขวา", bindAction_speedUp: "เพิ่มความเร็ว", bindAction_speedDown: "ลดความเร็ว",
   bindAction_afterburner: "สันดาปท้าย", bindAction_airbrake: "เบรกอากาศ", bindAction_cameraCycle: "สลับโหมดกล้อง",
   bindAction_fireGun: "ยิงปืน", bindAction_nextTarget: "เป้าถัดไป", bindAction_lookBack: "มองหลัง (กดค้าง)", bindAction_freeLook: "มองรอบ (กดค้าง + เมาส์)", bindAction_pause: "พักเกม",
-  bindAction_fireMissile: "ยิงมิสไซล์", bindAction_selectMissile1: "เลือกมิสไซล์ระยะใกล้", bindAction_selectMissile2: "เลือกมิสไซล์ระยะกลาง",
+  bindAction_countermeasure: "ปล่อยแฟลร์และแชฟฟ์", bindAction_fireMissile: "ยิงมิสไซล์", bindAction_selectMissile1: "เลือกมิสไซล์ระยะใกล้", bindAction_selectMissile2: "เลือกมิสไซล์ระยะกลาง",
   weaponPanel: "อาวุธ",
 }

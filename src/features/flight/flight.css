@@ -63,6 +63,8 @@
 /* Radar scope (radarPainter.ts): bottom left, mirroring the weapon column. */
 .radar-scope { position: absolute; left: 24px; bottom: 26px; width: 220px; aspect-ratio: 1; }
 .flight-hud:has(.radar-scope) .flight-controls { left: 264px; }
+/* RWR scope (rwrPainter.ts): above the radar scope. */
+.rwr-scope { position: absolute; left: 24px; bottom: 252px; width: 132px; aspect-ratio: 1; }
 .flight-timescale { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); margin: 0; padding: 3px 10px; border: 1px solid var(--hud-green-soft); border-radius: 2px; background: var(--hud-plate); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
 @media (max-height: 760px) {
   .flight-controls { display: none; }
@@ -83,6 +85,7 @@
   .flight-lesson { top: calc(var(--hud-status-top, 72%) + 24px); left: 12px; right: auto; width: 46%; padding: 8px 10px; font-size: 10px; }
   .flight-lesson strong { font-size: 11px; }
   .radar-scope { left: 12px; bottom: 14px; width: 160px; }
+  .rwr-scope { left: 12px; bottom: 180px; width: 104px; }
   .flight-lab { left: 50%; right: auto; bottom: auto; top: 110px; transform: translateX(-50%); width: calc(100% - 60px); max-height: calc(100% - 140px); }
   .flight-warning { font-size: 11px; padding: 5px 10px; }
 }

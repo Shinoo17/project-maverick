@@ -119,7 +119,7 @@ describe('missile seeker', () => {
     const runtime = new GameRuntime({ mode: 'playground', aircraftIds: ['f22'], targetDrone: 'still' })
     runtime.start()
     const input = new FlightInput()
-    input.press('Digit3')
+    input.press('Digit2')
     runtime.advance(WORLD_STEP, (tick, id) => ({ ...neutralCommand(tick, id), actions: input.command(tick, id, 'keyboard').actions }))
     expect(runtime.snapshot().aircraft[0].targeting.seeker.slot).toBe(1)
     runtime.advance(WORLD_STEP * 3, (tick, id) => neutralCommand(tick, id))

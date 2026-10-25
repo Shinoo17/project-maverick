@@ -31,11 +31,15 @@ import { cursorRay, markOnScreen } from '../game/input/mouseAim'
 import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
+import { createBayDoors, type BayDoors } from './aircraft/bayDoors'
+import { countermeasureRules } from '../game/combat/countermeasures'
 import type { HudDriver } from '../features/flight/FlightInstruments'
 import type { RadarDriver } from '../features/flight/RadarScope'
+import type { RwrDriver } from '../features/flight/RwrScope'
+import { createRwrFrame } from './rwrFrame'
 import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 
-export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; fps?: RefObject<HTMLElement | null> }
+export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; rwr?: RefObject<RwrDriver | null>; fps?: RefObject<HTMLElement | null> }
 interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
 function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
@@ -66,12 +70,20 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
   useEffect(() => () => skinned.forEach(material => material.dispose()), [skinned])
   const diagnosticBounds = useMemo(() => new Box3().setFromObject(model), [model])
   const updateRig = useMemo(() => createFlightRig(model, aircraftId), [model, aircraftId])
+  // Built in the effect, not memoised: StrictMode's extra cleanup would leave a memoised mixer disposed.
+  const bayDoors = useRef<BayDoors | null>(null)
+  useEffect(() => {
+    const doors = createBayDoors(model, asset.animations, aircraftId)
+    bayDoors.current = doors
+    return () => { doors?.dispose(); bayDoors.current = null }
+  }, [model, asset, aircraftId])
   const tracers = useMemo(createTracers, [])
   const effects = useMemo(createCombatEffects, [])
   const wreckModels = useRef<(Group | null)[]>([])
   const gunnery = useMemo(() => createGunnery(aircraftId), [aircraftId])
   const lockFrame = useMemo(createLockFrame, [])
   const lockTone = useMemo(createLockTone, [])
+  const rwrFrame = useMemo(createRwrFrame, [])
   useEffect(() => () => lockTone.dispose(), [lockTone])
   // Paused or hidden, the loop may not draw again, so the tone is cut here rather than in a frame.
   useEffect(() => { if (!running) lockTone.silence() }, [running, lockTone])
@@ -104,7 +116,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
-      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); session.input.resyncAim(); assisting.current = false; firing.current = false
+      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); rwrFrame.reset(); bayDoors.current?.reset(); session.input.resyncAim(); assisting.current = false; firing.current = false
       previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
@@ -172,6 +184,11 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
     session.input.setLens((camera as PerspectiveCamera).fov)
     const hits = runtime.drainHits(), events = runtime.drainEvents()
     if (session.running && events.some(event => event.type === 'missile-launched' && event.entityId === state.id)) lockTone.launch()
+    if (session.running && events.some(event => event.type === 'countermeasure-dispensed' && event.entityId === state.id)) lockTone.dispense(countermeasureRules.burst.flares, countermeasureRules.burst.duration)
+    // The player's bay doors open for each missile leaving them.
+    const simClock = ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP
+    for (const event of events) if (event.type === 'missile-launched' && event.entityId === state.id) bayDoors.current?.open(event.stationId, event.hardpoint.z, simClock)
+    bayDoors.current?.update(simClock)
     // Rounds removed on the last tick still fly the part of it on screen, up to where they hit.
     // Frames between ticks reuse that tick's hit points: the queue is empty on those frames.
     const lastTick = world.current?.tick ?? -1
@@ -191,6 +208,10 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
     const seeker = lockFrame.update(previousWorld.current, world.current, alpha, state, camera.position, session.reducedMotion)
     lockTone.update(seeker, session.running && state.alive && !document.hidden)
     indicators.radar?.current?.(radar, ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP)
+    // The warning gear: the RWR scope above the radar, and its tones.
+    const warning = rwrFrame.update(world.current, state, simClock)
+    indicators.rwr?.current?.(state.alive ? warning : null, simClock)
+    lockTone.warn(warning, session.running && state.alive && !document.hidden)
     if (cursor && aiming) {
       // Screen-locked aim assist: the × drawn toward the lead marker as this frame shows it.
       const lead = session.running && marks.lead ? markOnScreen(camera, marks.lead, session.input.stick, size.width, size.height) : null

@@ -2,12 +2,15 @@
 The radar scope at the bottom left (doc 12): a map of what the player's sensors show.
 THESIS: A heading-up scope beside the glass, in the weapon column's off-white line art.
 OWN-WORLD: Off-white rings and the radar cone on a dark disc; enemies are red diamonds, the one
-locked is boxed and named; nothing glows and nothing fills but the faint cone.
+locked is boxed and named; nothing glows and nothing fills but the faint cone. Missiles are dots
+with a short stick along their course: ours a hollow off-white dot, another's a solid red one,
+ringed and blinking while it chases the player.
 STORY: The jet sits in the middle pointing up. The wedge is what the radar paints: anything inside
 it can be locked. Outside it only the lock (for its grace time) and aircraft within visual range
 show, dashed. Contacts beyond the scope ride its rim. The dashed arc is the range boundary.
 MOTION: Redrawn every frame from the render loop, never through React state. Only the lock's
-"LOST IN" countdown blinks, timed in simulation seconds so pause freezes it.
+"LOST IN" countdown and a missile chasing the player blink, timed in simulation seconds so pause
+freezes them.
 
 Framework-free like hudPainter: one canvas, one draw call.
 */
@@ -83,6 +86,18 @@ export function createRadarPainter(canvas: HTMLCanvasElement) {
     stroke(INK, 1.6, [])
     ctx.beginPath(); ctx.moveTo(cx - 6, cy + 6); ctx.lineTo(cx, cy - 7); ctx.lineTo(cx + 6, cy + 6); ctx.lineTo(cx, cy + 3); ctx.closePath(); ctx.stroke()
 
+    // Missiles under the contacts, so a lock stays readable.
+    for (const missile of picture.missiles) {
+      const flat = Math.min(SCOPE_RANGE, Math.hypot(missile.position.x - picture.position.x, missile.position.z - picture.position.z))
+      const at = toScope(missile.bearing, flat), course = (missile.course - picture.heading) * radians
+      const color = missile.own ? INK : HOSTILE
+      if (missile.threat && Math.floor(seconds * 4) % 2 === 1) continue
+      // A stick ahead of the dot along the missile's course, heading-up like the contacts.
+      stroke(color, 1.4, []); ctx.beginPath(); ctx.moveTo(at.x, at.y); ctx.lineTo(at.x + Math.sin(course) * 9, at.y - Math.cos(course) * 9); ctx.stroke()
+      ctx.beginPath(); ctx.arc(at.x, at.y, 2.6, 0, Math.PI * 2)
+      if (missile.own) { stroke(color, 1.4, []); ctx.stroke() } else { ctx.fillStyle = color; ctx.fill() }
+      if (missile.threat) { stroke(HOSTILE, 1.2, []); ctx.beginPath(); ctx.arc(at.x, at.y, 6.5, 0, Math.PI * 2); ctx.stroke() }
+    }
     const ordered = [...picture.contacts].sort((a, b) => Number(a.locked) - Number(b.locked))
     for (const contact of ordered) {
       const flat = Math.hypot(contact.position.x - picture.position.x, contact.position.z - picture.position.z)

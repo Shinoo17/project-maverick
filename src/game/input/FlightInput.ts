@@ -42,10 +42,12 @@ export class FlightInput {
   // A next-target press waiting for the next command tick. One press is one action, however
   // many ticks one frame runs, so it is taken by the first command and never repeated.
   private nextTarget = false
-  // The missile slot picked since the last command (keys 2 and 3), or null.
+  // The missile slot picked since the last command (keys 1 and 2), or null.
   private select: number | null = null
   // A missile launch pressed since the last command (K, or the right mouse button under mouse aim).
   private launch = false
+  // A countermeasure salvo pressed since the last command (F).
+  private dispense = false
   private actionId = 1
   // Afterburner/airbrake switched on by a toggle-mode key press.
   private readonly latched = new Set<FlightAction>()
@@ -78,6 +80,7 @@ export class FlightInput {
     if (bound?.action === 'nextTarget') this.nextTarget = true
     if (bound?.action === 'selectMissile1' || bound?.action === 'selectMissile2') this.select = bound.action === 'selectMissile1' ? 0 : 1
     if (bound?.action === 'fireMissile') this.launch = true
+    if (bound?.action === 'countermeasure') this.dispense = true
     if (bound && (bound.action === 'afterburner' || bound.action === 'airbrake') && this.keyboard[bound.action] === 'toggle') {
       if (this.latched.has(bound.action)) this.latched.delete(bound.action)
       else this.latched.add(bound.action)
@@ -134,7 +137,7 @@ export class FlightInput {
   /** Cursor mode's frame: the true horizon under a horizon-locked camera (Balanced's small
    * cosmetic tilt left out, or a held turn would sink), the airframe under Aircraft locked. */
   cursorFrame: ScreenFrame = LEVEL_FRAME
-  clear() { this.cursorMoved = false; this.handPixels = 0; this.lensFov = 0; this.target = null; this.mouseGun = false; this.nextTarget = false; this.select = null; this.launch = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.capture.armed = false; this.capture.hold = null; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); unsyncAim(this.aim); this.pose = null; this.screen = LEVEL_FRAME; this.cursorFrame = LEVEL_FRAME; this.cursorRay = null; this.look = { yaw: 0, pitch: 0 }; this.viewAway = false }
+  clear() { this.cursorMoved = false; this.handPixels = 0; this.lensFov = 0; this.target = null; this.mouseGun = false; this.nextTarget = false; this.select = null; this.launch = false; this.dispense = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.capture.armed = false; this.capture.hold = null; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); unsyncAim(this.aim); this.pose = null; this.screen = LEVEL_FRAME; this.cursorFrame = LEVEL_FRAME; this.cursorRay = null; this.look = { yaw: 0, pitch: 0 }; this.viewAway = false }
   // The surface has taken the pointer: neutral and live from the first frame.
   engage() { engageStick(this.stick); unsyncAim(this.aim); this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.since = { x: 0, y: 0 }; this.handPixels = 0; this.lensFov = 0 }
   setViewport(width: number, height: number) {
@@ -236,6 +239,7 @@ export class FlightInput {
     if (this.nextTarget) { this.nextTarget = false; c.actions.push({ id: this.actionId++, type: 'next-target' }) }
     if (this.select !== null) { c.actions.push({ id: this.actionId++, type: 'select-secondary', slot: this.select }); this.select = null }
     if (this.launch) { this.launch = false; c.actions.push({ id: this.actionId++, type: 'fire-missile' }) }
+    if (this.dispense) { this.dispense = false; c.actions.push({ id: this.actionId++, type: 'countermeasure' }) }
     return c
   }
   /*

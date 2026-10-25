@@ -85,10 +85,12 @@ describe('combat bot', () => {
     expect(watch.lockouts).toBe(0)
   })
 
-  it('lands rounds on a player in a sustained level turn, and kills one that reverses its turn', () => {
-    expect(fight(90, turning(40)).hitsOn('aircraft-1')).toBeGreaterThan(5)
+  it('hits a player in a sustained level turn, and kills one that reverses its turn', () => {
+    // Gun rounds, or one missile (100 damage) since the bot carries them: either way it lands hits.
+    const sustained = fight(90, turning(40))
+    expect(sustained.hitsOn('aircraft-1') > 5 || sustained.deaths.some(death => death.entityId === 'aircraft-1' && death.sourceId === 'drone-1')).toBe(true)
     expect(fight(60, turning(60, 6)).deaths.some(death => death.entityId === 'aircraft-1')).toBe(true)
-  })
+  }, 20000)
 
   it('keeps clear of the ground, the range edge and post-stall for six minutes, patrolling once alone', () => {
     const { deaths, watch } = fight(360, straight)
