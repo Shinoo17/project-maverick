@@ -1,5 +1,6 @@
 import { pressureCloudShader } from './cloudShader'
 import { exhaustShader } from '../exhaust/shaders'
+import { vortexShader } from './vortexShader'
 
 export const vaporVertex = /* glsl */ `
 varying vec2 vUv;
@@ -9,6 +10,9 @@ void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
 export const vaporFragment = /* glsl */ `
 precision highp sampler3D;
 uniform sampler2D sceneColor, sceneDepth;
+// JetExhaust heat haze: signed UV offsets at half resolution (exhaust/heatHaze.ts).
+uniform sampler2D heatDistort;
+uniform bool heatOn;
 uniform sampler3D noiseTex;
 uniform mat4 inverseProjection, cameraWorld, worldToAircraft;
 uniform vec3 cameraLocal, airflowDirection, wingtipLeft, wingtipRight;
@@ -24,6 +28,8 @@ float noise3(vec3 p) { return texture(noiseTex, p / 32.0).r; }
 ${exhaustShader}
 
 ${pressureCloudShader}
+
+${vortexShader}
 
 // March only each thin oriented core. Uniform sampling across a large aircraft
 // box skips narrow vortices at oblique views and turns them into dotted beads.
@@ -83,6 +89,13 @@ float opticalDepth(vec3 ray, vec3 origin, float surfaceDistance, float side) {
 void main() {
   vec4 base = texture2D(sceneColor, vUv);
   float depth = texture2D(sceneDepth, vUv).r;
+  if (heatOn) {
+    // Refract the scene behind the plume; tiny dispersion keeps the shimmer glassy but colourless.
+    vec2 offset = clamp(texture2D(heatDistort, vUv).rg, vec2(-.025), vec2(.025));
+    base.r = texture2D(sceneColor, vUv + offset * 1.05).r;
+    base.g = texture2D(sceneColor, vUv + offset).g;
+    base.b = texture2D(sceneColor, vUv + offset * .95).b;
+  }
   // With no exhaust or vapor, the pass is only the resolve of the antialiased scene.
   vec3 color = base.rgb;
   float transmission = 1.0;
@@ -96,15 +109,19 @@ void main() {
     float surfaceDistance = length(viewSurface.xyz / viewSurface.w) * length(localRay);
     vec3 illuminatedScene = exhaustComposite(base.rgb, ray, surfaceDistance);
     float optical = opticalDepth(ray, wingtipLeft, surfaceDistance, -1.0)
-                  + opticalDepth(ray, wingtipRight, surfaceDistance, 1.0);
+                  + opticalDepth(ray, wingtipRight, surfaceDistance, 1.0)
+                  + lexOpticalDepth(ray, surfaceDistance);
+    float cone = coneOpticalDepth(ray, surfaceDistance);
     // Neutral white daylight scattering. Optical depth composes overlapping
     // volumes without additive glow or a flat, opaque ribbon.
     float forwardLight = pow(max(0.0, dot(worldRay, normalize(vec3(100.0, 600.0, 300.0)))), 6.0);
     vec3 vaporLight = vec3(2.35, 2.40, 2.45) + forwardLight * .35;
     vec4 pressure = cloudOpticalDepth(ray, surfaceDistance, forwardLight);
-    float totalOptical = optical + pressure.a;
+    // The cone is a wide haze, lit a little dimmer and cooler than the tight vortices.
+    vec3 coneLight = vec3(1.75, 1.85, 1.98) + forwardLight * .3;
+    float totalOptical = optical + cone + pressure.a;
     transmission = exp(-min(totalOptical, 12.0));
-    vec3 combinedLight = (vaporLight * optical + pressure.rgb) / max(.00001, totalOptical);
+    vec3 combinedLight = (vaporLight * optical + coneLight * cone + pressure.rgb) / max(.00001, totalOptical);
     color = illuminatedScene * transmission + combinedLight * (1.0 - transmission);
   }
   gl_FragColor = vec4(color, base.a);

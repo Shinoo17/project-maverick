@@ -12,14 +12,49 @@ One phosphor-green family. Brightness, opacity and shape carry hierarchy; a wide
 green pass under every mark keeps it legible over sky and ground without a CSS filter, so
 nothing is recomposited when the frame changes.
 */
-import { MathUtils, Vector3, type Camera } from 'three'
+import { MathUtils, Quaternion, Vector3, type Camera } from 'three'
 import type { EnvelopeLabel } from '../../game/flight/envelope'
+import { drawGunnery, type GunneryMarks, type Pen } from './gunnerySymbols'
+import { createLockPainter } from './lockSymbols'
+import type { LockMarks } from '../../render/lockFrame'
 
 const HUD_GREEN = 'rgba(98, 255, 132, 0.98)'
 const HUD_GREEN_DIM = 'rgba(98, 255, 132, 0.66)'
 const HUD_GREEN_CAUTION = 'rgba(98, 255, 132, 0.84)'
 const HUD_GREEN_ALERT = 'rgba(122, 255, 151, 1)'
-const HUD_BLOOM = 'rgba(48, 255, 104, 0.24)'
+const HUD_BLOOM = 'rgba(48, 255, 104, 0.2)'
+// The mouse aim cursor is the pilot's hand, not flight data: a green-tinted white sets it apart from
+// the symbology while keeping it in the same family.
+const HUD_CURSOR = { color: 'rgba(230, 255, 236, 0.98)', bloom: 'rgba(180, 255, 200, 0.2)' } as const
+/** Gun lock (gunnerySymbols.ts): amber while aim assist has the lead, red when rounds fired now hit. */
+const HUD_LOCK = {
+  captured: { color: 'rgba(255, 200, 72, 0.98)', bloom: 'rgba(255, 176, 40, 0.24)' },
+  locked: { color: 'rgba(255, 76, 64, 1)', bloom: 'rgba(255, 48, 40, 0.28)' },
+} as const
+// Lines carry no dark edge. Text casts a soft dark glow that follows each glyph, so digits read
+// over bright sky or sand without a hard outline. Blur is in device pixels, hence the ratio.
+const HUD_TEXT_SHADOW = 'rgba(0, 10, 4, 0.75)'
+const HUD_TEXT_SHADOW_BLUR = 3
+// The display face is narrow and light; a hairline of the fill colour thickens every glyph.
+const HUD_TEXT_EMBOLDEN = 0.7
+// Like a real HUD's saturated phosphor, each line's centre runs near white: it reads by brightness
+// against sky and sand, where a pure green competes on hue alone.
+const HUD_CORE_WHITE = 0.6
+const HUD_TEXT_WHITE = 0.2
+const coreCache = new Map<string, string>()
+function towardWhite(color: string, amount: number) {
+  const key = `${color}|${amount}`
+  const cached = coreCache.get(key)
+  if (cached) return cached
+  const rgba = color.match(/^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)$/)
+  const mixed = rgba
+    ? `rgba(${[1, 2, 3].map(i => Math.round(Number(rgba[i]) + (255 - Number(rgba[i])) * amount)).join(', ')}, ${rgba[4] ?? 1})`
+    : color
+  coreCache.set(key, mixed)
+  return mixed
+}
+// Line pitch of the readouts hanging beneath a tape's value box.
+const SUBREADOUT_LINE = 15
 const DISPLAY = '"DIN Alternate", "Arial Narrow", "Aptos Narrow", sans-serif'
 
 type Tape = { minor: number; major: number; span: number }
@@ -42,6 +77,7 @@ const VERTICAL_SPEED_FULL_SCALE = 60
 const CLEARANCE_FULL_SCALE = 600
 const EDGE_CAUTION = 620
 const RESERVE_CAUTION = 0.25
+// Gun heat past this reads as caution: most of the burst is spent.
 // The heading readout sits above its own tape; this keeps it under the identity and pause plates.
 const TOP_CLEARANCE = 100
 // The ladder is clipped to ±this share of the half-frame.
@@ -57,9 +93,13 @@ export interface GlassState {
   camera: Camera | null
   position: Vec3Like
   forward: Vec3Like
+  /** Aircraft wing axis (body +Z) in world space; tilts the -W- so its wings follow the aircraft's. */
+  right: Vec3Like
   velocity: Vec3Like
   /** ARCADE km/h */
   speed: number
+  /** Mach from the arcade speed, so it agrees with the tape and with the vapor cone. */
+  mach: number
   /** Metres above the flat range. */
   altitude: number
   heading: number | null
@@ -88,6 +128,15 @@ export interface GlassState {
   /** The limiter's current permitted alpha: rises from alphaNormal as the envelope opens. */
   alphaLimit: number
   alphaMax: number
+  /** Gun reticle, target box and lead (gunnerySymbols.ts); null before the first flight frame. */
+  gunnery: GunneryMarks | null
+  /** The missile lock (lockSymbols.ts); null with nothing to frame or report. */
+  seeker: LockMarks | null
+  /** Mouse aim: where the instructor is flying the nose (a world direction), or in cursor mode
+   * the held × as pixels from the middle of the frame; and its share (fades the world cursor). */
+  aim: { direction: Vec3Like; share: number } | { screen: { x: number; y: number }; share: number } | null
+  /** Radar contacts by world bearing (degrees, the heading's convention), for the heading tape. */
+  contacts: { bearing: number; painted: boolean; locked: boolean }[]
 }
 
 /*
@@ -169,6 +218,17 @@ export function projectPoint(camera: Camera, point: Vec3Like, width: number, hei
  * Angle is returned in both cases; the painter only uses it for an edge chevron.
  * A directly aft vector has no unique edge direction, so it uses the bottom edge.
  */
+const wingInView = new Vector3(), viewRotation = new Quaternion()
+/**
+ * How far the aircraft's wings lean on screen, in radians for ctx.rotate (clockwise positive).
+ * Zero when the camera banks with the aircraft; follows the bank when the camera holds the horizon.
+ * Looking along the wing (the axis nearly end-on) gives no reliable lean, so it reads level.
+ */
+export function wingTilt(camera: Camera, right: Vec3Like) {
+  wingInView.set(right.x, right.y, right.z).applyQuaternion(camera.getWorldQuaternion(viewRotation).invert())
+  return Math.hypot(wingInView.x, wingInView.y) < 0.2 ? 0 : Math.atan2(-wingInView.y, wingInView.x)
+}
+
 export function projectVelocityMarker(camera: Camera, position: Vec3Like, velocity: Vec3Like, width: number, height: number, inset: number) {
   const path = new Vector3().copy(velocity)
   if (path.length() < 1) return null
@@ -203,7 +263,7 @@ export function projectRung(camera: Camera, position: Vec3Like, forward: Vec3Lik
   return left && right ? { left, right } : null
 }
 
-const display = (size: number, weight = 600) => `${weight} ${size}px ${DISPLAY}`
+const display = (size: number, weight = 700) => `${weight} ${size + 1}px ${DISPLAY}`
 const pad = (value: number, width: number) => String(Math.max(0, Math.round(value))).padStart(width, '0')
 const signed = (value: number) => {
   const rounded = Math.round(value)
@@ -222,9 +282,12 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d')!
   let width = 0, height = 0
   let layout = glassLayout(1, 1)
+  let ratio = 1
+  // The missile lock keeps its springs and buffers from frame to frame.
+  const lock = createLockPainter()
 
   function resize(cssWidth: number, cssHeight: number, pixelRatio: number) {
-    width = cssWidth; height = cssHeight
+    width = cssWidth; height = cssHeight; ratio = pixelRatio
     canvas.width = Math.max(1, Math.floor(cssWidth * pixelRatio))
     canvas.height = Math.max(1, Math.floor(cssHeight * pixelRatio))
     ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
@@ -232,26 +295,28 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     return layout
   }
 
-  // Every stroke goes down twice: a broad translucent phosphor pass, then the crisp mark.
-  function luminous(paint: () => void, lineWidth: number, color: string) {
-    ctx.lineWidth = lineWidth + 2.4
-    ctx.strokeStyle = HUD_BLOOM
+  // Every stroke goes down three times: a narrow translucent phosphor pass, the coloured mark,
+  // then a thin near-white core.
+  function luminous(paint: () => void, lineWidth: number, color: string, bloom = HUD_BLOOM) {
+    ctx.lineWidth = lineWidth + 1.2
+    ctx.strokeStyle = bloom
     paint()
     ctx.lineWidth = lineWidth
     ctx.strokeStyle = color
     paint()
+    ctx.lineWidth = lineWidth * 0.5
+    ctx.strokeStyle = towardWhite(color, HUD_CORE_WHITE)
+    paint()
+  }
+  // The same three passes over the path already built on ctx.
+  function strokeLuminous(lineWidth: number, color: string) {
+    luminous(() => ctx.stroke(), lineWidth, color)
   }
   function line(x1: number, y1: number, x2: number, y2: number, lineWidth = 1.4, color = HUD_GREEN) {
     luminous(() => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }, lineWidth, color)
   }
   function pitchLine(x1: number, y1: number, x2: number, y2: number, lineWidth: number, color: string) {
-    const paint = () => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }
-    ctx.lineWidth = lineWidth + 3
-    ctx.strokeStyle = HUD_BLOOM
-    paint()
-    ctx.lineWidth = lineWidth
-    ctx.strokeStyle = color
-    paint()
+    luminous(() => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke() }, lineWidth, color)
   }
   function box(x: number, y: number, w: number, h: number, lineWidth = 1.5, color = HUD_GREEN) {
     luminous(() => { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.stroke() }, lineWidth, color)
@@ -260,23 +325,47 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     ctx.font = font
     ctx.textAlign = align
     ctx.textBaseline = baseline
-    ctx.lineWidth = 3.2
     ctx.lineJoin = 'round'
+    glyphs(value, x, y, color, true)
+  }
+  function glyphs(value: string, x: number, y: number, color: string, shadow = false) {
+    ctx.lineWidth = 1.6
     ctx.strokeStyle = HUD_BLOOM
     ctx.strokeText(value, x, y)
-    ctx.fillStyle = color
+    const fill = towardWhite(color, HUD_TEXT_WHITE)
+    // The shadow goes with the emboldening stroke, the glyph's outer edge, so nothing drawn after
+    // it gets darkened.
+    if (shadow) {
+      ctx.shadowColor = HUD_TEXT_SHADOW
+      ctx.shadowBlur = HUD_TEXT_SHADOW_BLUR * ratio
+    }
+    ctx.lineWidth = HUD_TEXT_EMBOLDEN
+    ctx.strokeStyle = fill
+    ctx.strokeText(value, x, y)
+    ctx.shadowColor = 'transparent'
+    ctx.fillStyle = fill
     ctx.fillText(value, x, y)
   }
   function pitchText(value: string, x: number, y: number, align: CanvasTextAlign) {
     ctx.font = display(12)
     ctx.textAlign = align
     ctx.textBaseline = 'middle'
-    ctx.lineWidth = 2.4
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = HUD_BLOOM
-    ctx.strokeText(value, x, y)
-    ctx.fillStyle = HUD_GREEN_DIM
-    ctx.fillText(value, x, y)
+    // No shadow: the ladder stays clean across the view.
+    glyphs(value, x, y, HUD_GREEN_DIM)
+  }
+
+  // The drawing kit gunnerySymbols.ts borrows, bound to this frame's camera.
+  function pen(camera: Camera): Pen {
+    return {
+      ctx, line, luminous, text, font: display,
+      project: point => projectPoint(camera, point, width, height),
+      edge: (from, toward) => {
+        const mark = projectVelocityMarker(camera, from, { x: toward.x - from.x, y: toward.y - from.y, z: toward.z - from.z }, width, height, 40)
+        return mark && !mark.onScreen ? mark : null
+      },
+      green: HUD_GREEN, dim: HUD_GREEN_DIM, bright: HUD_GREEN_ALERT, ...HUD_LOCK,
+    }
   }
 
   // --- Sightline --------------------------------------------------------------
@@ -330,8 +419,6 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     if (!point) return
     const { x: cx, y: cy, onScreen, angle } = point
     const r = Math.max(layout.half * 0.018, 6)
-    ctx.lineWidth = 1.6
-    ctx.strokeStyle = HUD_GREEN
     ctx.beginPath()
     if (!onScreen) {
       ctx.save()
@@ -339,15 +426,23 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.rotate(angle)
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)
       ctx.moveTo(-17, -6); ctx.lineTo(-7, 0); ctx.lineTo(-17, 6)
-      ctx.stroke()
+      strokeLuminous(1.6, HUD_GREEN)
       ctx.restore()
       return
     }
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.moveTo(cx - r, cy); ctx.lineTo(cx - r * 2.6, cy)
-    ctx.moveTo(cx + r, cy); ctx.lineTo(cx + r * 2.6, cy)
-    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy - r * 2.2)
-    ctx.stroke()
+    // The gun reticle sits on the gun line, 0.5° above the nose, and stands in for the ring.
+    // The edge chevron above stays: the reticle has none.
+    if (state.gunnery?.reticle) return
+    // Tilted with the wings like the -W-, so the top tick points to the canopy: where a pull takes the nose.
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.rotate(wingTilt(camera, state.right))
+    ctx.arc(0, 0, r, 0, Math.PI * 2)
+    ctx.moveTo(-r, 0); ctx.lineTo(-r * 2.6, 0)
+    ctx.moveTo(r, 0); ctx.lineTo(r * 2.6, 0)
+    ctx.moveTo(0, -r); ctx.lineTo(0, -r * 2.2)
+    strokeLuminous(1.6, HUD_GREEN)
+    ctx.restore()
   }
 
   function drawVelocityMarker(state: GlassState, camera: Camera) {
@@ -358,19 +453,43 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     const separated = state.regime === 'POST_STALL' || state.regime === 'DEPARTED'
     ctx.save()
     ctx.translate(x, y)
-    ctx.lineWidth = separated ? 2 : 1.6
-    ctx.strokeStyle = separated ? HUD_GREEN_ALERT : HUD_GREEN
     ctx.beginPath()
     if (onScreen) {
-      ctx.moveTo(0, -r); ctx.lineTo(r, 0)
-      ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.closePath()
-      ctx.moveTo(-r, 0); ctx.lineTo(-r * 1.8, 0)
-      ctx.moveTo(r, 0); ctx.lineTo(r * 1.8, 0)
+      // -W-: wings, then a W whose middle peak is the path point (the Ace Combat look).
+      // Like HUD symbology on the real glass, its wings stay parallel to the aircraft's.
+      ctx.rotate(wingTilt(camera, state.right))
+      ctx.moveTo(-r * 2.6, 0); ctx.lineTo(-r * 1.2, 0)
+      ctx.lineTo(-r * 0.6, r * 0.8); ctx.lineTo(0, 0)
+      ctx.lineTo(r * 0.6, r * 0.8); ctx.lineTo(r * 1.2, 0)
+      ctx.lineTo(r * 2.6, 0)
     } else {
       ctx.rotate(angle)
       ctx.moveTo(-10, -6); ctx.lineTo(0, 0); ctx.lineTo(-10, 6)
     }
-    ctx.stroke()
+    strokeLuminous(separated ? 2 : 1.6, separated ? HUD_GREEN_ALERT : HUD_GREEN)
+    ctx.restore()
+  }
+
+  // Mouse aim cursor: a gapped ×, unlike the nose pipper's winged ring and the reticle's gapped
+  // circle, small enough to sit inside the reticle's gaps when the nose arrives. It fades as the
+  // instructor hands over to the stick in post-stall, where it no longer flies the nose.
+  function drawAimCursor(aim: NonNullable<GlassState['aim']>, state: GlassState, camera: Camera) {
+    // The screen-locked × is the hand on the stick: always drawn, dimmer once it is a plain stick.
+    const held = 'screen' in aim
+    if (!held && aim.share <= 0.02) return
+    const point = held ? { x: layout.cx + aim.screen.x, y: layout.cy + aim.screen.y } : projectVelocityMarker(camera, state.position, aim.direction, width, height, 24)
+    if (!point || ('onScreen' in point && !point.onScreen)) return
+    // The same lock colour as the lead marker, so the hand knows the gun has it.
+    const lock = state.gunnery && state.gunnery.lock !== 'free' ? HUD_LOCK[state.gunnery.lock] : null
+    ctx.save()
+    ctx.globalAlpha = held ? 0.55 + 0.45 * aim.share : aim.share
+    luminous(() => {
+      ctx.beginPath()
+      for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const) {
+        ctx.moveTo(point.x + sx * 4, point.y + sy * 4); ctx.lineTo(point.x + sx * 10, point.y + sy * 10)
+      }
+      ctx.stroke()
+    }, lock ? 2.2 : 1.8, (lock ?? HUD_CURSOR).color, (lock ?? HUD_CURSOR).bloom)
     ctx.restore()
   }
 
@@ -404,8 +523,8 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   }
 
   // --- Tapes ------------------------------------------------------------------
-  function drawTape({ x, value, side, tape, label, subreadout, live, digits }: {
-    x: number; value: number; side: 'left' | 'right'; tape: Tape; label: string; subreadout?: string; live: boolean; digits: number
+  function drawTape({ x, value, side, tape, label, subreadouts = [], live, digits }: {
+    x: number; value: number; side: 'left' | 'right'; tape: Tape; label: string; subreadouts?: readonly string[]; live: boolean; digits: number
   }) {
     const top = layout.cy - layout.tapeHeight / 2
     const bottom = layout.cy + layout.tapeHeight / 2
@@ -429,7 +548,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
         const length = isMajor ? 13 : 7
         line(x, y, x + dir * length, y, isMajor ? 1.4 : 1.2, isMajor ? HUD_GREEN : HUD_GREEN_DIM)
         // Nor under the sub-readout hanging beneath the box.
-        const underSubreadout = !!subreadout && y > layout.cy && y - layout.cy < 46
+        const underSubreadout = subreadouts.length > 0 && y > layout.cy && y - layout.cy < 31 + SUBREADOUT_LINE * subreadouts.length
         if (isMajor && Math.abs(y - layout.cy) > 26 && !underSubreadout) {
           text(String(Math.round(v)), x + dir * (length + 6), y, display(12), HUD_GREEN_DIM, side === 'left' ? 'right' : 'left')
         }
@@ -452,7 +571,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     }, 1.5, HUD_GREEN)
     text(live ? pad(value, digits) : '–'.repeat(digits), boxX + boxW / 2, layout.cy + 1, display(16, 700), HUD_GREEN, 'center')
     text(label, side === 'left' ? boxX : boxX + boxW, layout.cy - boxH / 2 - 11, display(10), HUD_GREEN_DIM, side === 'left' ? 'left' : 'right')
-    if (subreadout) text(subreadout, boxX + boxW / 2, layout.cy + boxH / 2 + 10, display(11, 700), HUD_GREEN_DIM, 'center', 'top')
+    subreadouts.forEach((readout, i) => text(readout, boxX + boxW / 2, layout.cy + boxH / 2 + 10 + i * SUBREADOUT_LINE, display(11, 700), HUD_GREEN_DIM, 'center', 'top'))
   }
 
   function drawHeadingTape(state: GlassState) {
@@ -475,6 +594,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
         if (isMajor) text(headingLabel(deg), x, y + 6, display(11), HUD_GREEN_DIM, 'center', 'top')
       }
       ctx.restore()
+      drawContacts(state.contacts, heading, y, halfW, pixelsPerDegree)
     }
     luminous(() => {
       ctx.beginPath()
@@ -484,6 +604,31 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       ctx.stroke()
     }, 1.6, HUD_GREEN)
     text(state.live && heading !== null ? `${pad(heading, 3)}°` : '–––', layout.cx, y - 21, display(15, 700), HUD_GREEN, 'center', 'bottom')
+  }
+
+  /*
+  Radar contacts on the heading tape (user request 24 Oct 2026): a caret under the tape at each
+  contact's bearing, so the pilot knows which way to turn. Off the tape's span the caret rides
+  its end as an arrow pointing on round. The locked one is red with a box around its caret (shape
+  as well as colour); one seen only by eye is dim.
+  */
+  function drawContacts(contacts: GlassState['contacts'], heading: number, y: number, halfW: number, pixelsPerDegree: number) {
+    const ordered = [...contacts].sort((a, b) => Number(a.locked) - Number(b.locked))
+    for (const contact of ordered) {
+      const off = MathUtils.euclideanModulo(contact.bearing - heading + 180, 360) - 180
+      const color = contact.locked ? HUD_LOCK.locked : null
+      const tone = color?.color ?? (contact.painted ? HUD_GREEN : HUD_GREEN_DIM)
+      const top = y + 22
+      if (Math.abs(off) <= HEADING_HALF_SPAN) {
+        const x = layout.cx + off * pixelsPerDegree
+        luminous(() => { ctx.beginPath(); ctx.moveTo(x - 5, top + 8); ctx.lineTo(x, top); ctx.lineTo(x + 5, top + 8); ctx.closePath(); ctx.stroke() }, 1.6, tone, color?.bloom)
+        if (contact.locked) box(x - 8, top - 3, 16, 14, 1.2, tone)
+      } else {
+        const side = Math.sign(off), x = layout.cx + side * (halfW + 10)
+        luminous(() => { ctx.beginPath(); ctx.moveTo(x - side * 4, top - 1); ctx.lineTo(x + side * 4, top + 4); ctx.lineTo(x - side * 4, top + 9); ctx.stroke() }, 1.6, tone, color?.bloom)
+        if (contact.locked) box(x - 8, top - 4, 16, 16, 1.2, tone)
+      }
+    }
   }
 
   // --- Status block -------------------------------------------------------------
@@ -579,11 +724,17 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       drawLadder(state, state.camera)
       drawNosePipper(state, state.camera)
       drawVelocityMarker(state, state.camera)
+      if (state.aim) drawAimCursor(state.aim, state, state.camera)
+      const kit = pen(state.camera)
+      const framed = state.seeker ? lock.draw(kit, state.seeker, state.camera, width, height) : 0
+      if (!state.seeker) lock.reset()
+      if (state.gunnery) drawGunnery(kit, state.gunnery, state.camera, height, state.position, framed)
     }
     if (state.live) drawAoaBracket(state)
     drawTape({
       x: layout.cx - layout.half * layout.tapeOffset, value: state.speed, side: 'left', tape: SPEED_TAPE,
-      label: 'KM/H', subreadout: state.live ? `PWR ${Math.round(state.power * 100)}%` : 'PWR –––', digits: 4, live: state.live,
+      label: 'KM/H', digits: 4, live: state.live,
+      subreadouts: state.live ? [`PWR ${Math.round(state.power * 100)}%`, `M ${state.mach.toFixed(2)}`] : ['PWR –––', 'M –.––'],
     })
     drawTape({
       x: layout.cx + layout.half * layout.tapeOffset, value: Math.max(0, state.altitude), side: 'right', tape: ALTITUDE_TAPE,

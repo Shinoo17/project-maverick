@@ -5,8 +5,9 @@ import { balancedTilt, driftShareOf, psmShareOf } from '../camera/cameraRoll'
 import { WORLD_STEP } from '../runtime/clock'
 
 /*
-Two mouse sticks share this file (MR1). The relative stick, the default, is below at
-MOUSE_RELATIVE. The positional stick is the one this header describes.
+The mouse sticks share this file. The relative stick is below at MOUSE_RELATIVE, and
+positional stick mode's F22 disc at MOUSE_POSITIONAL. The window-sized stick this header
+describes is cursor mode's ×.
 
 The mouse is a position on the glass, not an accumulation of travel.
 
@@ -22,9 +23,10 @@ Ported from the F-22 reference implementation in example/F22, whose numbers this
  * reads as full deflection; `deadZone` and `curve` act on the travel inside it. */
 export interface StickShaping { deadZone: number; curve: number; reach: number }
 
-// Positional stick, reshaped in MR1 (docs/psm-maneuver-control-plan.md §4.2): half of the
+// Window-sized stick, reshaped in MR1 (docs/psm-maneuver-control-plan.md §4.2): half of the
 // reach reads about a third of the deflection instead of a fifth, and full deflection sits at
 // 35% of the shorter side of the window (0.7 of the gate radius) so a flick reaches the edge.
+// Cursor mode's × uses it; positional stick mode has its own F22 disc (MOUSE_POSITIONAL).
 export const MOUSE_STICK: StickShaping = {
   // A fraction of the reach, but sized as hand travel: the dead zone is what makes the
   // middle a place the pointer can be put back into rather than a point to balance on.
@@ -53,10 +55,79 @@ export const MOUSE_RELATIVE: StickShaping & { returnSeconds: number } = {
   returnSeconds: 0.2,
 }
 
-export type MouseMode = 'relative' | 'stick'
-/** 'body': mouse up is always nose up. 'horizon': the pre-MR1 polar mapping, read in the
+/*
+Positional stick mode ('stick'), re-ported from example/F22 one for one (owner request, 23 Oct
+2026). It no longer shares MOUSE_STICK, which stays as cursor mode's window-sized stick.
+
+The gate is a disc of 0.34 of the shorter side of the window, divided by the sensitivity:
+turning sensitivity up shrinks the disc rather than scaling the hand's motion. The held
+position is clamped to the disc by length, so a diagonal reaches full stick as soon as a
+straight pull does and a hand shoved past the edge owes no travel back. Inside it a wide dead
+zone makes the middle a place the pointer can be put back into, and the squared curve keeps
+the middle third for small corrections.
+
+The axes then pass a rate limiter (DIRECT_RESPONSE in F22, per second): enough to take the
+edge off a frame-to-frame jump, and no more.
+*/
+export const MOUSE_POSITIONAL = {
+  radius: 0.34,
+  deadZone: 0.12,
+  curve: 2,
+  slew: { pitch: { engage: 16, release: 18 }, roll: { engage: 18, release: 20 }, yaw: { engage: 14, release: 16 } },
+  // F22's ROLL_CORRECTION_RATE, radians per second: how fast the screen turn may change.
+  turnRate: 200 * Math.PI / 180,
+} as const
+
+/** The positional disc's radius in pixels: 0.34 of the shorter side over the sensitivity. */
+export const positionalRadius = (gate: StickGate, sensitivity: number) =>
+  MOUSE_POSITIONAL.radius * 2 * gate.radius / Math.min(2, Math.max(0.5, sensitivity || 1))
+
+/** Walk the positional stick by raw pointer motion, clamped to the disc by length so the
+ * direction the hand pointed survives. `x`/`y` are in disc radii. */
+export function moveDiscStick(stick: MouseStick, deltaX: number, deltaY: number, radius: number) {
+  if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY) || !(radius > 0)) return stick
+  const px = stick.px + deltaX, py = stick.py + deltaY, length = Math.hypot(px, py)
+  const scale = length > radius ? radius / length : 1
+  stick.px = px * scale; stick.py = py * scale
+  return shape(stick, radius)
+}
+
+/*
+The positional stick's pitch/roll, F22's readMouseStickAxes. Pitch inversion is applied to the
+drawn vector before it is turned, as F22 does. The screen correction is a plain rotation by
+how far the airframe appears rotated inside the frame, faded in by `screen.blend`, with no
+antipodal roll. `highAoa` hands the reading back to body axes, F22's zero correction while
+its post-stall shot is held.
+*/
+export function readPositionalAxes(stick: MouseStick, screen: ScreenFrame = LEVEL_FRAME, invertPitch = false, highAoa = 0): StickAxes | null {
+  if (!stick.live) return null
+  const magnitude = Math.hypot(stick.x, stick.y)
+  if (magnitude < 1e-6) return { pitch: 0, roll: 0 }
+  const travel = Math.min(magnitude, 1)
+  if (travel <= MOUSE_POSITIONAL.deadZone) return { pitch: 0, roll: 0 }
+  let x = stick.x, y = invertPitch ? -stick.y : stick.y
+  if (screen.angle && screen.blend) {
+    const cos = Math.cos(screen.angle), sin = Math.sin(screen.angle)
+    const turnedX = x * cos - y * sin, turnedY = x * sin + y * cos
+    x += (turnedX - x) * screen.blend * (1 - highAoa)
+    y += (turnedY - y) * screen.blend * (1 - highAoa)
+  }
+  const live = (travel - MOUSE_POSITIONAL.deadZone) / (1 - MOUSE_POSITIONAL.deadZone)
+  const scale = live ** MOUSE_POSITIONAL.curve / magnitude
+  const clamp = (value: number) => Math.max(-1, Math.min(1, value))
+  return { pitch: clamp(y * scale), roll: clamp(x * scale) }
+}
+
+/** 'aim': the mouse turns an aim direction and an instructor flies the nose to it (mouseAim.ts).
+ * 'cursor': the same instructor, with the × held on the screen; its offset is a turn rate. */
+export type MouseMode = 'aim' | 'cursor' | 'relative' | 'stick'
+export const mouseModes: readonly MouseMode[] = ['aim', 'cursor', 'relative', 'stick']
+/** The locale key that explains a mode, for Settings and the briefing. */
+export const mouseHintKey = (mode: MouseMode) => mode === 'aim' ? 'mouseHintAim' : mode === 'cursor' ? 'mouseHintCursor' : mode === 'relative' ? 'mouseHintRelative' : 'mouseHint'
+/** Stick modes only. 'body': mouse up is always nose up. 'horizon': the pre-MR1 polar mapping, read in the
  * frame the camera holds (it is the body frame whenever the camera rides the bank). */
 export type ControlFrame = 'body' | 'horizon'
+import { aimAssistLevels, type AimAssistLevel } from '../combat/aimAssist'
 export interface MouseSettings {
   mode: MouseMode
   frame: ControlFrame
@@ -65,18 +136,22 @@ export interface MouseSettings {
   invertPitch: boolean
   /** Which axis mouse X flies. 'yaw' is for fine aiming with A/D on roll. */
   xAxis: 'roll' | 'yaw'
+  /** Gun aim assist (src/game/combat/aimAssist.ts). Saved with the controls; applies to both presets. */
+  aimAssist: AimAssistLevel
 }
-export const defaultMouseSettings: Readonly<MouseSettings> = { mode: 'relative', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll' }
+// Mouse aim is the default since 21 Oct 2026 (owner decision; D5 made the relative stick the default before it).
+export const defaultMouseSettings: Readonly<MouseSettings> = { mode: 'aim', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll', aimAssist: 'standard' }
 /** Anything unreadable falls back to the default, field by field. */
 export function parseMouseSettings(value: unknown): MouseSettings {
   const data = value && typeof value === 'object' ? value as Record<string, unknown> : {}
   const sensitivity = typeof data.sensitivity === 'number' && Number.isFinite(data.sensitivity) ? Math.min(2, Math.max(0.5, data.sensitivity)) : defaultMouseSettings.sensitivity
   return {
-    mode: data.mode === 'stick' ? 'stick' : 'relative',
+    mode: mouseModes.includes(data.mode as MouseMode) ? data.mode as MouseMode : defaultMouseSettings.mode,
     frame: data.frame === 'horizon' ? 'horizon' : 'body',
     sensitivity,
     invertPitch: data.invertPitch === true,
     xAxis: data.xAxis === 'yaw' ? 'yaw' : 'roll',
+    aimAssist: aimAssistLevels.includes(data.aimAssist as AimAssistLevel) ? data.aimAssist as AimAssistLevel : defaultMouseSettings.aimAssist,
   }
 }
 
@@ -252,6 +327,7 @@ the level correction is blended in through `blend`.
 */
 export interface ScreenFrame { angle: number; blend: number }
 export const LEVEL_FRAME: ScreenFrame = { angle: 0, blend: 1 }
+const POLE_FRAME: ScreenFrame = { angle: 0, blend: 0 }
 const FORWARD = new Vector3(), BODY_UP = new Vector3(), LEVEL_UP = new Vector3(), LEVEL_RIGHT = new Vector3()
 const ORIENTATION = new Quaternion()
 /*
@@ -294,7 +370,8 @@ export function screenFrame(state: AircraftState, camera: CameraSettings): Scree
   BODY_UP.set(0, 1, 0).applyQuaternion(ORIENTATION)
   const horizon = Math.hypot(FORWARD.x, FORWARD.z)
   const t = Math.min(Math.max((horizon - VERTICAL_CONE.start) / (VERTICAL_CONE.end - VERTICAL_CONE.start), 0), 1)
-  if (t === 0) return LEVEL_FRAME
+  // No level frame inside the cone. Blend 0 says so; the positional stick holds its last turn there.
+  if (t === 0) return POLE_FRAME
   LEVEL_UP.set(0, 1, 0).addScaledVector(FORWARD, -FORWARD.y).normalize()
   LEVEL_RIGHT.crossVectors(FORWARD, LEVEL_UP)
   const bank = Math.atan2(BODY_UP.dot(LEVEL_RIGHT), BODY_UP.dot(LEVEL_UP)), cone = t * t * (3 - 2 * t)

@@ -65,6 +65,7 @@ Master นี้เป็นเจ้าของขอบเขต ลำดั
 | [19 Sources & Decisions](docs/game-design/19-sources-and-decisions.md) | แหล่งข้อมูล, ข้อเสนอที่ต่างจากเอกสารเก่า, decision log |
 | [20 Game Shell](docs/game-design/20-game-shell.md) | Home, Select Mode, PVE Setup, Settings, การนำทาง, menu scene ร่วม |
 | [21 Campaign](docs/game-design/21-campaign.md) | operation, missions, requires DAG, objectives, progress |
+| [22 Environment & Maps](docs/game-design/22-environment-and-maps.md) | แสงเงา, lens flare, weather, terrain/น้ำ, maps หลายแบบ (Track E) |
 
 เมื่อแก้ปุ่มให้แก้ 02; เมื่อแก้ความเร็วให้แก้ 03 และ profile ในโค้ด ไม่คัดลอกตารางซ้ำทุกโหมด ถ้าเอกสารเก่าขัดกัน ให้ใช้ชุดนี้สำหรับงานใหม่และบันทึกเหตุผลใน 19 ค่าตัวเลขทั้งหมดที่ระบุว่า “ทดลอง” เป็น gameplay tuning ไม่ใช่ข้อเท็จจริงทางการบิน
 
@@ -108,6 +109,8 @@ flowchart TD
 
 สถานะ implementation 27 ก.ย. 2026 (P3b ส่วนแรก): Home, Select Mode, Hangar (overlay บน menu scene ร่วม), Campaign Map แบบ mock (operation แรก M01–M06, สถานะคำนวณจาก progress) และ PVE Setup (ห้าโหมด, สาม maps: Flat Training Range พร้อม/Mountains/Coastal PLANNED) อยู่ใน `src/features/{menu,home,mode,hangar,campaign,pve}` 28 ก.ย. เพิ่ม: คอลัมน์ ARMAMENT ใน Hangar และหน้า Armament (`#/hangar/armament`: รายละเอียดอาวุธ, โมเดล 3D หรือ `NO MODEL`, คอลัมน์ขวาใช้ ARMAMENT แทน STATIONS) และ orbit 360° ใน Hangar 28 ก.ย. เพิ่มหน้า Settings (`#/settings` และใน pause dialog: หก tab, ตั้งปุ่มได้, Controller/Audio เป็น pending; สเปกใน 20) ยังไม่มี: ghost airframe/bay ใน Armament, mission runtime; START/PLAY เปิดได้เฉพาะ free flight บน Flat Training Range โรงเก็บเดิมย้ายไป `#/studio` (ไม่มีลิงก์จากเมนู)
 
+สถานะ 20 ต.ค. 2026: เพิ่มแผน Track E (E0–E9) ระบบแสงเงา lens flare สภาพอากาศ และ maps แบบ terrain ปกติ/ทะเล/ภูเขา ใน [22](docs/game-design/22-environment-and-maps.md) ยังไม่มีโค้ด ตำแหน่งเทียบกับ P4 รอผู้ใช้ตัดสิน (D18)
+
 ไม่กำหนดวันที่เสร็จจากการเดา ก่อนเริ่มแต่ละ phase ให้แตกงานใน 18 และประเมินจากความเร็วทำงานจริง จบ phase เมื่อผ่าน gate ไม่ใช่เมื่อมี UI ให้เห็นเท่านั้น
 
 | Phase | ผลงานที่เล่น/ตรวจได้ | Dependencies | Exit gate |
@@ -121,6 +124,7 @@ flowchart TD
 | P5 Offline combat | missile IR, lock, flares, bot tactics, results, TDM แบบทีมพร้อม ally bots | P4 | ยิง/หลบ/แพ้/ชนะ/เริ่มใหม่ได้ครบใน TDM 2v2; ไม่ต้องเรียก backend |
 | P5b PVE objective modes | Control Point, ชิงธง, Priority Target, Flyover, objective HUD, bot roles, map PVE ที่มีฐาน/จุดยึด | P5 + P3b | ทั้งห้าโหมด PVE เล่นจบและ rematch ได้; บอทฝ่ายเราทำ objective ได้ |
 | P5c Campaign | mission runtime, objectives, เป้าภาคพื้น/tanker, maps ของ operation | P5 + P3b; destroy-ground รอ D16 | operation แรกเล่นครบตาม requires DAG; progress คงอยู่หลัง reload |
+| Track E Environment & Maps | E0 seam → E1 lens flare → E2 world core/collision → E3 เงา → E4 Mountains → E5 Coastal → E6 Countryside + เลือก map/weather → E7 weather sky → E8 ฝน/พายุ (E9 gameplay รอ D18) | P1; ขนานกับ P4/P5 ได้; E2+E4/E5 ต้องเสร็จก่อน P5b ใช้ map ที่มีภูมิประเทศ | flight goldens ไม่ขยับจาก E0/E2; แสงเงาและ weather ใช้ได้ทุก map; ผ่าน budget ใน 17 กรณีหนักสุด |
 | P6 Offline release | สามลำ, PVE ห้าโหมด, Campaign operation แรก, settings สองภาษา, polish/performance | P3b + P5b + P5c | checklist ใน 17 ผ่าน; aircraft แต่ละลำมี counterplay |
 | P7 Multiplayer | server 1v1 → rooms → 2v2 หาก benchmark ผ่าน | **P6 เท่านั้น** | server ตัดสิน hit/score, latency tests ผ่าน, version mismatch จัดการได้ |
 

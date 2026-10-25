@@ -48,7 +48,7 @@
 | D02 | W/S | target speed จริง; ลบ semantics throttle/power และ W+S extreme chord เดิม | 02/03 |
 | D03 | ปล่อย W/S | target หยุดปรับทันที; actual ยังมี inertia เพื่อลด overshoot ของคำสั่ง | 03 |
 | D04 | Speed | world m/s ถูกบีบ; HUD multiplier เดียวพร้อม label Arcade | 03 |
-| D05 | Mouse | virtual stick baseline ต่อจากของเดิม; instructor aim-point รอ playtest | 02 |
+| D05 | Mouse | 2026-10-21: Mouse aim (instructor บินพาหัวเครื่องไปที่จุดเล็ง) เป็น default ตามที่เจ้าของเลือก; relative/positional stick ยังเลือกได้ใน Settings ภาพ PSM ต้องเป็น Phase 7 shot เดิมทุกเฟรม | 02 |
 | D06 | Maneuver | High-G กับ PSM แยก intent; PSM release/recovery/budget ชัดเจน | 04 |
 | D07 | กล้อง | view และ roll mode แยก; Horizon default สำหรับมือใหม่ | 11 |
 | D08 | Aircraft identity | F/A-18E ระบุรุ่นชัด; ข้อได้เปรียบ gameplay ไม่อ้างเป็นอันดับจริง | 05 |
@@ -120,3 +120,43 @@ Decision ID / วันที่ / ผู้แก้
   - แต้มคิดจากเวลาถือรวมของทีม เศษวินาทีไม่หาย
   - Flyover: จุดที่เพิ่งถูกยึดล็อก 5 s, ถือครบ 3 จุดได้ 2 แต้มต่อวินาที, เข้าจุดพร้อมกันเจ้าของไม่เปลี่ยน
   - ค่าเริ่มต้น: Priority Target 8 นาที/100 แต้ม, Flyover 10 นาที/300 แต้ม, รัศมีเก็บมงกุฎ 200 m, รัศมีจุด Flyover 300 m
+
+## D18 / 20 ตุลาคม 2026 / Environment & Maps (Track E)
+
+ผู้ใช้ขอแผนสามระบบ: สภาพอากาศ, แสงที่เกิด lens flare แบบ ghost และ halo เมื่อเงยมองพระอาทิตย์, และแผนที่หลายแบบ (terrain ปกติ, ทะเล, ภูเขา) ผู้ใช้กำหนดเพิ่มว่าแสงเงาและสภาพอากาศต้องใช้ได้กับทุกแผนที่ แผนเต็มอยู่ใน [22](22-environment-and-maps.md)
+
+- กฎเดิม: ท้องฟ้า ทิศพระอาทิตย์ หมอก และเมฆเป็นค่าคงที่ของสนามฝึก (`TrainingRange.tsx`, `range/shaders.ts`); พื้นราบ `y <= 3` อยู่ใน `stepFlight`; 14 เลื่อน weather ไว้หลัง MVP
+- ข้อเสนอใหม่: แยก Map ("ที่ไหน") กับ Environment ("เมื่อไหร่และอย่างไร") รวมกันที่ `resolveEnvironment` จุดเดียว; ทุก renderer อ่าน uniform ชุดเดียว; collision ย้ายไป `src/game/world`; เพิ่ม track E0–E9 แยกเลขจาก Master P และ PSM Phase
+- Weather ใน E1–E8 เป็น visual อย่างเดียว ไม่เปลี่ยน LOS หรือ flight forces ตามกฎของ 14; E9 (ผลต่อ gameplay) ทำเมื่อผู้ใช้อนุมัติเท่านั้น
+- **รอผู้ใช้ตัดสิน:**
+  1. Track E แทรกตรงไหนเทียบกับ P4 damage/death ที่ค้างอยู่
+  2. เวลาของวันมีแค่ dawn/noon/dusk หรือไม่ (กลางคืนแยก phase)
+  3. Weather มีผลต่อ gameplay หรือไม่ (E9)
+  4. สไตล์ flare: subtle สมจริง หรือ cinematic แบบ Ace Combat 7
+  5. Terrain data: procedural seeded ตอนโหลด (ข้อเสนอ) หรือ bake binary ผ่าน LFS
+  6. แดดบังตามีผลต่อบอทหรือไม่
+  7. หยดน้ำบนเลนส์ตอนฝนตก
+
+## D19 / 21 ตุลาคม 2026 / Vapor ขับด้วยแบบจำลองฟิสิกส์ (vapor overhaul)
+
+ผู้ใช้ขอปรับ vapor ตาม [แผน vapor overhaul](../vapor-overhaul-plan.md) ทำ Phase 0–2 และ vapor cone (Phase 5) แล้ว รายละเอียดและผล audit อยู่ในแผนนั้น
+
+- กฎเดิม: `vaporActivation` เปิด effect เดียวจาก speed × (AoA, G) × ความชื้น; `ambientHumidity(altitude)` ลดความชื้นตามความสูง; release fade 0.45 s
+- ข้อเสนอใหม่: แยก 4 effect (LEX vortex, wing fog, wingtip core, vapor cone) แต่ละตัวมีความเข้มของตัวเองจาก ΔT เทียบ dew-point depression D (`src/render/vapor/atmosphere.ts`, `vaporModel.ts`); ความเร็วใช้แค่ตัดตอนอากาศเกือบนิ่ง; release fade 0.12 s
+- **Refactor ไม่ rewrite:** effect ใหม่เป็น density field ใน ray march ของ `CondensationVolume` เดิม ไม่ใช่ tube mesh + `NormalBlending` ตามที่แผนเขียน เพราะ pass เดิมเป็นเจ้าของ MSAA resolve, depth และ exhaust อยู่แล้ว (doc 22 วางแผนต่อยอดจาก pass นี้)
+- **Mach อ่านจากความเร็ว HUD (arcade):** ความเร็ว simulation สูงสุดราว 259 m/s (M 0.76) ไม่ถึงช่วง vapor cone; ใช้ scale เดียวกับ HUD afterburner top 1,400 km/h ≈ M 1.1
+- **ต่างจากตัวเลขในแผน:** RH ลดลงครึ่งหนึ่งจากพื้นถึง 7 km แทน `Td(h) = Td0 − 2·h_km` (สูตรในแผนทำให้อากาศอิ่มตัวที่ราว 700 m); W ใช้ราก √(e_sat(Td)/e_sat(25 °C)) แทน clamp ขั้นต่ำ 0.15 (ขั้นต่ำทำให้ยังเห็น vapor ที่ 10 km); `K_wing` 1.5 แทน 2.5 (2.5 ทำให้เห็นหมอกที่ 1 G); local Mach gain 0.12 แทน 0.2 (0.2 ทำให้เกิด cone ทุกครั้งที่บินเต็ม cruise top speed M 0.87)
+- **AoA ของ LEX มาจากแรงยก:** flight model ดึง 12 G ที่ α จริงราว 4° จึงใช้ α ที่ `q·CL = n·W/S` ต้องการ (หรือ α จริงถ้ามากกว่า) ไม่งั้น LEX ไม่ขึ้นในเกมเลย
+- อากาศของ flat-range: 26 °C, RH 82% (D ≈ 3.3 K) เป็นค่าเดียวจนกว่า Environment ของ doc 22 จะมี; Environment ควรเพิ่มอุณหภูมิผิวพื้น (`temperatureC`) ข้าง `humidity`
+- ยังไม่ทำ: vapor ของบอท/ลำอื่น (`CondensationVolume` วาดได้ลำเดียว), lighting แบบ Henyey-Greenstein, LOD, วัด GPU time (Phase 6) และจูนเทียบภาพอ้างอิง (Phase 7)
+
+## D20 / 23 ตุลาคม 2026 / ไอพ่นสไตล์ GAME · SIM FX และ heat haze
+
+ผู้ใช้เลือก Exhaust Style **GAME** + palette **SIM FX** จาก `example/su57-exhaust-demo.html` เป็น profile พื้นฐานของทุกเครื่อง และขอ component ที่ปรับค่าได้ภายหลัง พร้อม heat haze
+
+- **Mesh ไม่ใช่ ray march (ต่างจาก D19):** เปลวเป็น shell หลายชั้น (glow, cone, core, sheath) + shock cells + ภายในท่อ (`interior`) + halo/hotspot ตาม demo ใน `src/render/exhaust/JetExhaust.ts` เพราะ (1) ได้หน้าตาตรงกับที่ผู้ใช้เลือกใน demo (2) ติดกับลำใดก็ได้ ไม่จำกัดลำเดียวแบบ `CondensationVolume` (3) ตาม nozzle/TVC เองเพราะอยู่ใน frame ของ nozzle
+- **ค่าทั้งหมดเป็น data:** `ExhaustStyle` ใน `src/render/exhaust/style.ts`; `SIM_FX` คือค่าเริ่มต้น, `exhaustStyleOverrides` สำหรับจูนรายลำ, `resolveExhaustStyle(id, override)` merge + clamp; geometry ของ nozzle ยังอยู่ใน `profile.ts`
+- **Ray march เดิมเหลือแค่โพรง nozzle ร้อน:** plume เดิมปิดด้วย `exhaustPlume` (เปิดคืนได้ด้วย `volumePlume: true`); โพรงคุมด้วย `volumeCavity` ค่าเริ่มต้น 0 มีแค่ Su-57 ที่เปิด (วงแหวน throat สีฟ้า) เพราะบน F-22 มันเป็นก้อนวงรีส้มซ้อนกับแสงในท่อ
+- **แสงในท่อ = interior mapping (แก้อาการ "หลอดไฟหลัง flap" ของ F-22):** เดิมมีแสง 3 ชั้นซ้อนในช่องเดียว (โพรง ray march + disc วงกลม + ปลายเปลวมองตรง) เป็นสาเหตุหลักของก้อนส้มอิ่ม ตอนนี้เหลือแหล่งเดียว: plane ที่ปากท่อซึ่ง shader ยิง view ray เข้าไปในท่อเสมือน (กล่องหรือทรงกระบอก ลึก `interior.depth` แคบลงเหลือ `taper`; ท่อเสมือนใหญ่กว่าปากท่อ `oversize` 1.3 ให้ขอบและมุมของมันตกนอกช่อง ส่วน plane เองต้องเท่าปากท่อเพราะพื้นและผนังท่อของโมเดล F-22 อยู่หลังระนาบปากท่อ ถ้า plane ใหญ่กว่าจะทับมัน; ผนังกับก้นท่อใช้ shading ชุดเดียวกันจึงไม่มีเส้นมุมกล่อง) เห็นผนังไล่จากมืดที่ปากเป็นส้มด้านใน และ flameholder + แกนร้อนที่ก้นท่อ ขยับตามมุมกล้อง ความลึกเป็นแค่ภาพใน shader การบังยังมาจากผนังและ flap ของโมเดล; ส่วนของเปลวที่อยู่ในท่อลดแสงมองตรงตาม `insideAxial` แล้วไล่กลับเต็มที่ก่อนถึงปากท่อ; halo/hotspot อยู่ในปากท่อ (`halo.depth`) ให้โมเดลตัดขอบ และขนาดตามพื้นที่ปากท่อแทนด้านที่กว้างสุด
+- **Heat haze:** volume ของแต่ละ nozzle อยู่ใน scene แยกของ component, `HeatHazePass` วาดเป็น UV offset ครึ่งความละเอียด (half float) หลัง opaque pass แล้ว composite ของ `CondensationVolume` หักเหภาพด้วย offset นั้น; เปิดเฉพาะ Exhaust = High; ไม่มี `EXT_color_buffer_float` = ปิด
+- **ต่างจาก demo:** ไม่มี bloom pass (demo ใช้ UnrealBloom 0.6) จึงจางกว่าเล็กน้อย; ไม่ทำ CPU spark particles และ point light; ขนาดทั้งหมดสเกลจากรัศมี nozzle ของ demo 0.585 m (F-22 รากเปลวแบน แล้วกลมขึ้นท้าย)

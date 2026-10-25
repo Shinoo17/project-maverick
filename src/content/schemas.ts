@@ -1,3 +1,4 @@
+import type { TargetDroneMode } from '../game/playground/dronePath'
 import type { FlightProfileId } from './flight-profiles'
 import type { FlightSpeedOverride } from '../game/flight/profileTypes'
 export type AircraftId = string
@@ -12,6 +13,11 @@ export interface AircraftDefinition {
   flightProfileId: FlightProfileId
   presentationId: typeof presentationIds[number]
   weaponStationProfileId: string
+  /** Key into `hitboxes` (src/content/hitboxes.ts). */
+  hitboxProfileId: string
+  /** The search radar as the game models it (src/game/combat/radar.ts). Gameplay tuning, not the
+   * real set's performance, which is not public (doc 05): never shown as a fact in the Hangar. */
+  radar: RadarSpec
   designation: string
   name: string
   /* Role / signature trait shown under the airframe name on the stage. */
@@ -22,6 +28,13 @@ export interface AircraftDefinition {
   description: LocalizedText
   /** Copy for the Hangar screen. */
   hangar: AircraftHangarInfo
+}
+
+export interface RadarSpec {
+  /** Half-angle off the nose, in degrees, the radar sees and holds a lock in. */
+  coneDeg: number
+  /** Metres it sees out to. */
+  rangeM: number
 }
 
 export interface AircraftHangarInfo {
@@ -39,6 +52,9 @@ export interface SessionConfig {
   mode: 'playground' | 'offline'
   mapId?: 'flat-range'
   aircraftIds: AircraftId[]
+  /** Playground only: adds a target drone ahead of the spawn that holds still or flies a path
+   * (src/game/playground/dronePath.ts). Absent or false = no drone; true = 'still' (older sessions). */
+  targetDrone?: boolean | TargetDroneMode
   /** Per aircraft type, in the same ARCADE km/h units as its profile. */
   flightOverrides?: Record<AircraftId, FlightSpeedOverride>
 }

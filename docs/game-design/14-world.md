@@ -1,6 +1,6 @@
 # 14 — World, Terrain และ Collision
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P1/P4/P5b/P5c · simulation ใช้เมตรตาม 03
+[กลับ Master Plan](../../MASTER_PLAN.md) · P1/P4/P5b/P5c · Track E ใน [22](22-environment-and-maps.md) · simulation ใช้เมตรตาม 03
 
 ## ขนาดสนามทดลอง
 
@@ -61,6 +61,8 @@ Playground เปลี่ยนเป็น reset-safe ได้โดยปร
 ## สิ่งที่เลื่อนออกไป
 
 ยังไม่ทำ weather ที่เปลี่ยน flight forces, terrain destruction, takeoff/landing, ground vehicles หรือ world streaming ใน MVP เวลา/ท้องฟ้าเริ่มเป็น visual preset ที่ไม่เปลี่ยน LOS gameplay โดยไม่บอกผู้เล่น
+
+แผน terrain renderer, น้ำ, แสงเงา, lens flare และ weather แบบ visual ที่ใช้ได้ทุก map อยู่ใน [22](22-environment-and-maps.md) (Track E, D18) collision API ข้างบนอยู่ใน `src/game/world/` ตามแผนนั้น
 
 ## งานและเกณฑ์ผ่าน
 

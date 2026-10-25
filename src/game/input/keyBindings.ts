@@ -11,6 +11,8 @@ Ids are stable save-file values. Labels come from the locale files (`bindAction_
 export const flightActions = [
   'pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight',
   'speedUp', 'speedDown', 'afterburner', 'airbrake', 'cameraCycle', 'lookBack',
+  // Newer actions go last: a saved key wins over a new action's default (parseBindings claims in this order).
+  'fireGun', 'nextTarget', 'fireMissile', 'selectMissile1', 'selectMissile2', 'freeLook',
 ] as const
 export type FlightAction = typeof flightActions[number]
 
@@ -32,7 +34,14 @@ export const defaultBindings: Readonly<KeyBindings> = {
   yawLeft: ['KeyQ', null], yawRight: ['KeyE', null],
   speedUp: ['KeyW', null], speedDown: ['KeyS', null],
   afterburner: ['ShiftLeft', 'ShiftRight'], airbrake: ['Space', null],
-  cameraCycle: ['KeyV', null], lookBack: ['KeyR', null],
+  // Left mouse also fires in the mouse preset (FlightInput.mouseGun); J is the keyboard gun key (doc 02).
+  fireGun: ['KeyJ', null],
+  // T steps the gun's selected target (doc 02).
+  nextTarget: ['KeyT', null],
+  // Right mouse also launches in the mouse preset; 2 and 3 pick the short- and medium-range missile.
+  fireMissile: ['KeyK', null], selectMissile1: ['Digit2', null], selectMissile2: ['Digit3', null],
+  // C held turns the camera with the mouse; R held looks back. Both leave the jet on its course.
+  cameraCycle: ['KeyV', null], lookBack: ['KeyR', null], freeLook: ['KeyC', null],
 }
 
 export const defaultKeyboardSettings: Readonly<KeyboardSettings> = {
@@ -40,7 +49,7 @@ export const defaultKeyboardSettings: Readonly<KeyboardSettings> = {
 }
 
 /** Actions whose key does nothing yet. The Settings page lists them as pending. */
-export const pendingActions: readonly FlightAction[] = ['lookBack']
+export const pendingActions: readonly FlightAction[] = []
 
 /** Keys a binding may never take: Esc and P always pause. */
 export const reservedCodes: readonly string[] = ['Escape', 'KeyP']

@@ -95,61 +95,62 @@ void main() {
 export const groundVertexPars = /* glsl */ `varying vec3 vRangeWorld;\n`
 export const groundVertex = /* glsl */ `#include <project_vertex>\nvRangeWorld = (modelMatrix * vec4(transformed, 1.)).xyz;\n`
 
-// Patchwork farmland, forest, a river and roads around the runway, with the survey grid kept
-// as the distance cue. Fine detail fades by metres-per-pixel so the far field does not crawl.
+// Desert test range around a dry lakebed: a pale playa under the airfield, sand and gravel flats
+// with scrub, dark rock outcrops, dry washes and dirt tracks, with the survey grid kept as the
+// distance cue. Warm, low-saturation ground keeps the green HUD readable against it.
+// Fine detail fades by metres-per-pixel so the far field does not crawl.
 export const groundFragmentPars = /* glsl */ `
 varying vec3 vRangeWorld;
 uniform float rangeRadius;
 ${noise}
 float rangeFill(float d, float fw) { return 1. - smoothstep(-fw, fw, d); }
 float rangeBox(vec2 p, vec2 c, vec2 h) { vec2 d = abs(p - c) - h; return max(d.x, d.y); }
-vec3 rangeField(vec2 p, float fw) {
-  const float angle = .21;
-  vec2 q = mat2(cos(angle), sin(angle), -sin(angle), cos(angle)) * p;
-  vec2 size = vec2(430., 270.);
-  float row = floor(q.y / size.y);
-  q.x += rangeHash(vec2(row, 7.)) * size.x;
-  vec2 cell = floor(q / size), local = (fract(q / size) - .5) * size;
-  // Some plots are split along their long side, so field sizes do not read as a checkerboard.
-  if (rangeHash(cell + 41.) > .55) {
-    float side = sign(local.x + 1e-3);
-    cell += vec2(side * .25, 0.); local.x -= side * size.x * .25; size.x *= .5;
-  }
-  float h = rangeHash(cell);
-  vec3 color = h < .26 ? vec3(.45, .53, .30) : h < .44 ? vec3(.37, .46, .27) : h < .58 ? vec3(.51, .54, .34)
-    : h < .67 ? vec3(.63, .59, .43) : h < .78 ? vec3(.49, .43, .33) : h < .92 ? vec3(.54, .59, .38) : vec3(.42, .50, .31);
-  color = rangeSrgb(color) * .92;
-  float detail = 1. - smoothstep(2., 9., fw);
-  // Crop rows run along each field's long side.
-  float rows = sin((h > .5 ? local.x : local.y) * 1.6) * .5 + .5;
-  color *= 1. + (rows - .5) * .08 * detail;
-  color *= .9 + .2 * rangeFbm(p / 70., 3);
-  // Hedgerows between fields.
-  vec2 edge = size * .5 - abs(local);
-  float hedge = rangeFill(min(edge.x, edge.y) - 3.5, fw) * (1. - smoothstep(6., 22., fw));
-  return mix(color, rangeSrgb(vec3(.33, .40, .24)), hedge * .75);
+vec3 rangeDesert(vec2 p, float fw) {
+  // Broad soil zones (sand, ochre, grey gravel, pinkish clay) blended softly, never tiled.
+  float zone = rangeFbm(p / 3200. + 5., 4), tint = rangeFbm(p / 900. - 11., 4);
+  vec3 warm = mix(vec3(.70, .62, .48), vec3(.66, .53, .38), smoothstep(.35, .65, tint));
+  vec3 cool = mix(vec3(.56, .53, .48), vec3(.69, .57, .50), smoothstep(.4, .6, tint));
+  vec3 color = rangeSrgb(mix(warm, cool, smoothstep(.42, .62, zone))) * .52;
+  // Wind-streaked surface texture.
+  color *= .9 + .2 * rangeFbm(p * vec2(1. / 260., 1. / 70.), 3);
+  // Scattered creosote scrub: dark dots up close, a faint darkening once they are sub-pixel.
+  vec2 cell = floor(p / 9.), local = fract(p / 9.) - .5;
+  vec2 offset = (vec2(rangeHash(cell + 3.), rangeHash(cell + 7.)) - .5) * .5;
+  float bush = step(.62, rangeHash(cell)) * rangeFill(length(local - offset) * 9. - 1.6, fw);
+  float scrub = mix(.06, bush, 1. - smoothstep(1., 4., fw)) * smoothstep(.3, .55, rangeFbm(p / 600. + 2., 3));
+  return mix(color, rangeSrgb(vec3(.40, .39, .31)), scrub * .7);
 }
 vec3 rangeGround(vec2 p) {
   float fw = max(length(fwidth(p)), .001);
-  vec3 color = rangeField(p, fw);
-  // Broad tonal drift keeps the patchwork from reading as a repeated tile.
+  float detail = 1. - smoothstep(2., 9., fw);
+  vec3 color = rangeDesert(p, fw);
+  // Broad tonal drift keeps the ground from reading as a repeated tile.
   float drift = rangeFbm(p / 2600., 3);
-  color *= mix(vec3(.92, .95, .9), vec3(1.07, 1.02, .95), drift);
+  color *= mix(vec3(.93, .93, .92), vec3(1.05, 1.02, .97), drift);
   vec2 runway = vec2(600., 0.);
   float nearBase = rangeBox(p, runway, vec2(900., 320.));
-  float forest = smoothstep(.6, .66, rangeFbm(p / 1500. + 17., 4)) * smoothstep(80., 400., nearBase);
-  vec3 trees = rangeSrgb(vec3(.24, .33, .20)) * (.8 + .35 * rangeFbm(p / 18., 3) * (1. - smoothstep(1., 6., fw)) + .1 * rangeNoise(p / 90.));
-  color = mix(color, trees, forest);
+  // Dry lakebed: a pale, faintly cracked playa that holds the airfield, with an uneven shoreline.
+  float shore = length((p - vec2(1400., -900.)) / vec2(5200., 3400.)) + .35 * (rangeFbm(p / 1800. + 23., 4) - .5);
+  float playa = 1. - smoothstep(.82, 1., shore);
+  vec3 lakebed = rangeSrgb(vec3(.70, .66, .59)) * .56 * (.95 + .08 * rangeNoise(p / 300.));
+  float cracks = (1. - smoothstep(0., .06, abs(rangeNoise(p / 11.) - .5))) * detail;
+  lakebed *= 1. - .1 * cracks;
+  color = mix(color, lakebed, playa);
+  float rock = smoothstep(.6, .68, rangeFbm(p / 1400. + 17., 4)) * smoothstep(80., 400., nearBase) * (1. - playa);
+  vec3 stone = rangeSrgb(vec3(.43, .37, .32)) * (.75 + .4 * rangeFbm(p / 25., 3) * (1. - smoothstep(1., 6., fw)) + .12 * rangeNoise(p / 120.));
+  color = mix(color, stone, rock);
   float roadA = abs(p.x - (720. + 260. * sin(p.y / 1900.))) - 4.;
   float roadB = abs(p.y - (2600. + 180. * sin(p.x / 2300.))) - 4.;
   float road = rangeFill(min(roadA, roadB), fw) * step(150., p.y) * (1. - smoothstep(10., 30., fw));
-  color = mix(color, rangeSrgb(vec3(.62, .61, .56)), road * .85);
+  color = mix(color, rangeSrgb(vec3(.62, .56, .46)), road * .7);
+  // A dry wash that runs out onto the playa: scrubby banks, then a bed of pale sand and gravel.
   float riverZ = -2300. + 850. * sin(p.x / 2600. + .7) + 840. * (rangeNoise(vec2(p.x / 3200., 3.)) - .5);
   float river = abs(p.y - riverZ) * .82, width = 36. + 16. * rangeNoise(vec2(p.x / 900., 9.));
+  float wash = 1. - playa;
   float banks = 1. - smoothstep(width, width + 70. + 60. * rangeNoise(p / 60.), river);
-  color = mix(color, rangeSrgb(vec3(.27, .37, .22)), banks * .8);
-  color = mix(color, rangeSrgb(vec3(.64, .60, .46)), rangeFill(river - width - 7., fw));
-  color = mix(color, mix(rangeSrgb(vec3(.24, .37, .43)), rangeSrgb(vec3(.36, .50, .55)), rangeNoise(p / 40.)), rangeFill(river - width, fw));
+  color = mix(color, rangeSrgb(vec3(.50, .47, .38)), banks * .55 * wash);
+  vec3 bed = mix(rangeSrgb(vec3(.62, .58, .49)), rangeSrgb(vec3(.52, .49, .43)), rangeNoise(p / 30.));
+  color = mix(color, bed, rangeFill(river - width, fw) * wash);
   // Airfield: apron, taxiways, shoulder, runway and markings.
   float concrete = min(min(rangeBox(p, vec2(550., 112.), vec2(320., 45.)), rangeBox(p, vec2(350., 55.), vec2(10., 25.))), rangeBox(p, vec2(750., 55.), vec2(10., 25.)));
   concrete = min(concrete, rangeBox(p, runway, vec2(760., 46.)));
@@ -171,13 +172,14 @@ vec3 rangeGround(vec2 p) {
   vec2 minor = abs(fract(p / 100. - .5) - .5) * 100. / max(fwidth(p), vec2(.001));
   vec2 major = abs(fract(p / 1000. - .5) - .5) * 1000. / max(fwidth(p), vec2(.001));
   float inside = 1. - step(rangeRadius, radius);
-  float grid = (1. - min(min(minor.x, minor.y), 1.)) * .06 * (1. - smoothstep(3., 16., fw));
-  grid = max(grid, (1. - min(min(major.x, major.y) * .7, 1.)) * .15 * (1. - smoothstep(12., 60., fw)));
-  color = mix(color, rangeSrgb(vec3(.93, .93, .86)), grid * inside);
-  // Range edge: a warm boundary line, with the country beyond it slightly muted.
+  float grid = (1. - min(min(minor.x, minor.y), 1.)) * .08 * (1. - smoothstep(3., 16., fw));
+  grid = max(grid, (1. - min(min(major.x, major.y) * .7, 1.)) * .18 * (1. - smoothstep(12., 60., fw)));
+  // Dark lines: the pale desert would swallow white ones.
+  color = mix(color, rangeSrgb(vec3(.34, .30, .26)), grid * inside);
+  // Range edge: a red boundary line, with the country beyond it slightly muted.
   color = mix(color, color * vec3(.86, .85, .88), smoothstep(rangeRadius, rangeRadius + 200., radius));
   float boundary = rangeFill(abs(radius - rangeRadius) - 12., fw) * step(.35, fract(atan(p.y, p.x) * 180. / 3.14159265));
-  color = mix(color, rangeSrgb(vec3(.78, .42, .26)), boundary * .7);
+  color = mix(color, rangeSrgb(vec3(.70, .24, .18)), boundary * .7);
   return color;
 }
 `

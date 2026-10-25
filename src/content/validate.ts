@@ -1,7 +1,8 @@
 import { flightProfiles } from './flight-profiles'
 import { validateFlightProfile } from '../game/flight/validateProfile'
 import { resolveSpeedLimits } from '../game/flight/speedLimits'
-import { getWeapon, weaponStations } from './weapons'
+import { getWeapon, weaponStations, type GunProfile, type MissileProfile, type SeekerProfile } from './weapons'
+import { hitboxes, validateHitboxes } from './hitboxes'
 import { getAircraft } from './aircraft'
 import { presentationIds, type AircraftDefinition, type SessionConfig } from './schemas'
 
@@ -15,15 +16,32 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
     validateFlightProfile(flightProfiles[entry.flightProfileId], `${path}.flightProfile(${entry.flightProfileId})`)
     if (!presentationIds.includes(entry.presentationId)) throw new Error(`${path}.presentationId: unknown profile`)
     if (!Object.hasOwn(weaponStations, entry.weaponStationProfileId)) throw new Error(`${path}.weaponStationProfileId: unknown profile`)
+    if (!Object.hasOwn(hitboxes, entry.hitboxProfileId)) throw new Error(`${path}.hitboxProfileId: unknown profile`)
+    validateHitboxes(hitboxes[entry.hitboxProfileId], `${path}.hitboxes`)
+    if (!(entry.radar?.coneDeg > 0 && entry.radar.coneDeg <= 180)) throw new Error(`${path}.radar.coneDeg: expected 0 to 180 degrees`)
+    if (!(entry.radar.rangeM > 0)) throw new Error(`${path}.radar.rangeM: expected positive metres`)
     const stations = weaponStations[entry.weaponStationProfileId]
     const stationIds = new Set<string>()
     for (const station of stations) {
       if (!station.id || stationIds.has(station.id)) throw new Error(`${path}.stations.id: missing or duplicate`)
       stationIds.add(station.id)
       if (!Number.isInteger(station.capacity) || station.capacity < 1) throw new Error(`${path}.stations.capacity: expected positive integer`)
-      getWeapon(station.weaponId)
+      const weapon = getWeapon(station.weaponId)
+      if (weapon.kind === 'gun') {
+        const muzzle = station.muzzle
+        if (!muzzle || muzzle.length !== 3 || !muzzle.every(Number.isFinite)) throw new Error(`${path}.stations.muzzle: gun station needs three finite numbers`)
+        const elevation = station.elevationDeg ?? 0
+        if (!(Number.isFinite(elevation) && Math.abs(elevation) <= 5)) throw new Error(`${path}.stations.elevationDeg: expected -5 to 5 degrees`)
+        validateGunProfile(weapon.gun, `${path}.stations.weapon(${weapon.id}).gun`)
+      } else {
+        validateSeekerProfile(weapon.seeker, `${path}.stations.weapon(${weapon.id}).seeker`)
+        validateMissileProfile(weapon.missile, `${path}.stations.weapon(${weapon.id}).missile`)
+        // An IR missile's seeker is the one that locked: it sees as far in flight as it locked from.
+        if (weapon.kind === 'ir' && weapon.missile!.activeRangeM !== weapon.seeker!.rangeM) throw new Error(`${path}.stations.weapon(${weapon.id}).missile.activeRangeM: an IR missile sees as far as its seeker.rangeM`)
+      }
       for (const locale of ['th', 'en'] as const) if (!station.name[locale]?.trim()) throw new Error(`${path}.stations.name.${locale}: required`)
     }
+    if (stations.filter(station => getWeapon(station.weaponId).kind === 'gun').length !== 1) throw new Error(`${path}.stations: expected exactly one gun station`)
     if (!/^[\w-]+\.glb$/.test(entry.modelFile)) throw new Error(`${path}.modelFile: expected local GLB filename`)
     if (entry.rotation.length !== 3 || entry.rotation.some((value) => !Number.isFinite(value))) {
       throw new Error(`${path}.rotation: expected three finite numbers`)
@@ -38,10 +56,38 @@ export function validateAircraft(entries: readonly AircraftDefinition[]) {
   })
 }
 
+function validateGunProfile(gun: GunProfile | undefined, path: string) {
+  if (!gun) throw new Error(`${path}: required for a gun`)
+  for (const key of ['rate', 'muzzleSpeed', 'damage', 'lifetime', 'maxDistance', 'heatSeconds', 'coolRate'] as const) {
+    if (!(Number.isFinite(gun[key]) && gun[key] > 0)) throw new Error(`${path}.${key}: expected a positive number`)
+  }
+  for (const key of ['spreadDeg', 'hotSpread'] as const) if (!(Number.isFinite(gun[key]) && gun[key] >= 0)) throw new Error(`${path}.${key}: expected zero or more`)
+  if (!(gun.resumeHeat > 0 && gun.resumeHeat < 1)) throw new Error(`${path}.resumeHeat: expected between 0 and 1`)
+  if (!(gun.lockHeat > gun.resumeHeat && gun.lockHeat < 1)) throw new Error(`${path}.lockHeat: expected between resumeHeat and 1`)
+  if (!(gun.overheatResumeHeat >= 0 && gun.overheatResumeHeat <= gun.resumeHeat)) throw new Error(`${path}.overheatResumeHeat: expected between 0 and resumeHeat`)
+}
+function validateSeekerProfile(seeker: SeekerProfile | undefined, path: string) {
+  if (!seeker) throw new Error(`${path}: required for a missile`)
+  for (const key of ['rangeM', 'lockSeconds', 'releaseSeconds'] as const) {
+    if (!(Number.isFinite(seeker[key]) && seeker[key] > 0)) throw new Error(`${path}.${key}: expected a positive number`)
+  }
+  if (seeker.coneDeg !== 'radar' && !(seeker.coneDeg > 0 && seeker.coneDeg <= 180)) throw new Error(`${path}.coneDeg: expected 0 to 180 degrees or 'radar'`)
+}
+function validateMissileProfile(missile: MissileProfile | undefined, path: string) {
+  if (!missile) throw new Error(`${path}: required for a missile`)
+  for (const key of ['burnSeconds', 'thrust', 'drag', 'maxG', 'navigation', 'gimbalDeg', 'activeRangeM', 'launchRangeM', 'fuseM', 'damage', 'lifetime', 'minSpeed'] as const) {
+    if (!(Number.isFinite(missile[key]) && missile[key] > 0)) throw new Error(`${path}.${key}: expected a positive number`)
+  }
+  if (!(missile.guideDelay >= 0 && missile.guideDelay < missile.lifetime)) throw new Error(`${path}.guideDelay: expected between 0 and lifetime`)
+  if (missile.gimbalDeg > 90) throw new Error(`${path}.gimbalDeg: expected 0 to 90 degrees`)
+}
+
 export function validateSession(config: SessionConfig) {
   if (!['playground', 'offline'].includes(config.mode)) throw new Error('session.mode: unsupported mode')
   if (config.mapId !== undefined && config.mapId !== 'flat-range') throw new Error('session.mapId: unsupported map')
   if (!config.aircraftIds.length) throw new Error('session.aircraftIds: expected at least one aircraft')
+  if (config.targetDrone !== undefined && typeof config.targetDrone !== 'boolean' && !['still', 'racetrack', 'circle', 'bot'].includes(config.targetDrone)) throw new Error('session.targetDrone: expected true, false, still, racetrack, circle or bot')
+  if (config.targetDrone && config.mode !== 'playground') throw new Error('session.targetDrone: Playground only')
   config.aircraftIds.forEach((id, index) => {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }
     if (getAircraft(id).playgroundOnly && config.mode !== 'playground') throw new Error(`session.aircraftIds: ${id} is a Playground validation variant`)

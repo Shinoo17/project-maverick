@@ -10,14 +10,16 @@ import { positionalHorizon, runAtFps } from './invariants/helpers'
 /* MR1 (docs/psm-maneuver-control-plan.md §4, §5 MR1): relative spring stick, body control
    frame, shaping settings. Input only: no PilotCommand field, schema or physics change. */
 const relative = (patch: Partial<MouseSettings> = {}) => {
-  const input = new FlightInput({ ...defaultMouseSettings, ...patch }); input.setViewport(1000, 1000); input.engage()
+  const input = new FlightInput({ ...defaultMouseSettings, mode: 'relative', ...patch }); input.setViewport(1000, 1000); input.engage()
   return input
 }
 const full = 1000 / 2 * MOUSE_RELATIVE.reach
 
 describe('MR1 mouse modes', () => {
-  it('defaults to the relative stick in the body frame (owner decision D5)', () => {
-    expect(defaultMouseSettings).toEqual({ mode: 'relative', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll' })
+  // D5 made the relative stick the default; mouse aim replaced it on 21 Oct 2026. The stick tests
+  // below opt into the relative stick explicitly.
+  it('defaults to mouse aim, keeping the body frame for the stick modes', () => {
+    expect(defaultMouseSettings).toEqual({ mode: 'aim', frame: 'body', sensitivity: 1, invertPitch: false, xAxis: 'roll', aimAssist: 'standard' })
     expect(new FlightInput().mouse).toEqual(defaultMouseSettings)
   })
 
@@ -83,7 +85,8 @@ describe('MR1 mouse modes', () => {
   })
 
   it('reads the body frame at every bank and incidence: mouse up is nose up', () => {
-    for (const mode of ['relative', 'stick'] as const) {
+    // The positional stick has no body frame: it always reads the screen (flight.test.ts).
+    for (const mode of ['relative'] as const) {
       const input = relative({ mode })
       input.move(0.3 * full, -0.6 * full)
       const reference = input.command(0, 'a', 'mouse')
@@ -137,7 +140,7 @@ describe('MR1 mouse modes', () => {
   it('persists settings field by field and falls back on anything unreadable', () => {
     expect(parseMouseSettings(undefined)).toEqual(defaultMouseSettings)
     expect(parseMouseSettings({ mode: 'stick', frame: 'horizon', sensitivity: 9, invertPitch: true, xAxis: 'yaw' }))
-      .toEqual({ mode: 'stick', frame: 'horizon', sensitivity: 2, invertPitch: true, xAxis: 'yaw' })
+      .toEqual({ mode: 'stick', frame: 'horizon', sensitivity: 2, invertPitch: true, xAxis: 'yaw', aimAssist: 'standard' })
     expect(parseMouseSettings({ mode: 'spin', frame: 3, sensitivity: NaN, invertPitch: 'yes', xAxis: null })).toEqual(defaultMouseSettings)
     const stored = parseSettings(JSON.stringify({ version: 1, aircraftId: 'su57', locale: 'en', controls: { mode: 'stick', sensitivity: 0.1 } }))
     expect(stored.controls).toEqual({ ...defaultMouseSettings, mode: 'stick', sensitivity: 0.5 })

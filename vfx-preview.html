@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="th">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maverick · Combat effects</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;color:#edf0ed;background:#c4d4de}canvas{display:block;width:100%;height:100%}#view{position:fixed;inset:0}header{position:fixed;left:24px;top:20px;pointer-events:none;color:#1c2227}h1{font-size:22px;font-weight:500;margin:0 0 4px}header p{margin:0;opacity:.75}aside{position:fixed;right:16px;top:16px;background:#1c2227;width:240px;padding:16px;border:1px solid #3b474e;border-radius:3px}button{display:block;width:100%;min-height:40px;margin-top:8px;background:#293239;color:#edf0ed;border:1px solid #3b474e;border-radius:3px;font:inherit;cursor:pointer}button:hover{background:#3b474e}button[aria-pressed=true]{border-color:#cfb88a}:focus-visible{outline:2px solid #cfb88a;outline-offset:3px}label{display:block;margin-top:12px;color:#adb8be}input{width:100%}small{display:block;color:#adb8be;margin-top:12px;line-height:1.5}
+</style></head>
+<body><div id="view"></div><header><h1>Combat effects</h1><p>ประกายโดนกระสุน · ระเบิดกลางอากาศ · ซากตกแล้วระเบิดที่พื้น</p></header>
+<aside aria-label="Effect controls">
+<button id="sprites"></button>
+<button id="hits">ยิงโดน (ประกาย)</button>
+<button id="burst">ระเบิดกลางอากาศ</button>
+<button id="down">ยิงตก (ระเบิด + ซากตก)</button>
+<button id="loop" aria-pressed="true">เล่นวนอัตโนมัติ</button>
+<button id="pause" aria-pressed="false">หยุดเวลา</button>
+<label for="distance">ระยะกล้อง <output id="distanceValue"></output></label><input id="distance" type="range" min="150" max="2000" value="600" step="10">
+<small>เป้าบินผ่านที่ 400 m ด้วย 150 m/s · ฉากหลังสีฟ้าและหมอกเดียวกับสนามฝึก · ซากเป็นกล่องแทนโมเดล</small>
+</aside>
+<script type="module" src="/src/render/vfx/preview.ts"></script></body></html>

@@ -8,12 +8,16 @@ import { aircraft as roster, getAircraft, modelUrl } from '../../content/aircraf
 import type { AircraftId } from '../../content/schemas'
 import { prepareAnimations } from '../aircraft/animationStages'
 import { CondensationVolume } from '../vapor/CondensationVolume'
+import { vaporConditions } from '../vapor/conditions'
 import { createFlightRig } from '../aircraft/flightRig'
 import { GameRuntime } from '../../game/runtime/GameRuntime'
 import { stepThrustVectoring, tvcTargets } from '../../game/flight/thrustVectoring'
 import { FLIGHT_STEP } from '../../game/runtime/clock'
 import { getFlightProfile } from '../../game/flight/profile'
 import { flightExhaustConditions } from './profile'
+import { JetExhaust } from './JetExhaust'
+import { resolveExhaustStyle } from './style'
+import { applyEnvironment, createSkyEnvironment } from '../aircraft/skyEnvironment'
 
 const element = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
 const renderer = new WebGLRenderer({ antialias: true })
@@ -32,10 +36,14 @@ controls.target.set(0, .4, 0); controls.minDistance = 2; controls.maxDistance = 
 const jet = new Group(); scene.add(jet)
 const volume = new CondensationVolume(renderer)
 const params = new URLSearchParams(location.search)
+// Same sky reflections as the flight scene, so metallic nozzles are not black here either.
+const sky = createSkyEnvironment(renderer), envIntensity = Number(params.get('env') ?? 1)
 const scenario = params.get('scenario')
 let paused = false, modelReady = false, aircraft: AircraftId = roster.find(entry => entry.id === params.get('aircraft'))?.id ?? roster[0].id, loadId = 0
 let power = Number(params.get('power') ?? 1), burner = params.get('burner') !== 'off', vector = Number(params.get('pitch') ?? 0), clouds = false, dark = false
 let actuatorTime = 0
+let exhaust = new JetExhaust(resolveExhaustStyle(aircraft))
+jet.add(exhaust.group)
 let updateRig: ReturnType<typeof createFlightRig> | undefined
 let state = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraft] }).snapshot().aircraft[0]
 element<HTMLSelectElement>('aircraft').replaceChildren(...roster.map(entry => new Option(entry.designation, entry.id)))
@@ -48,19 +56,21 @@ element('burner').textContent = `Afterburner: ${burner ? 'ON' : 'OFF'}`
 element('burner').setAttribute('aria-pressed', String(burner))
 const ktx2 = new KTX2Loader().setTranscoderPath('/basis/').detectSupport(renderer)
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setKTX2Loader(ktx2)
-function disposeModel(root: Group) { root.traverse(object => { if (object instanceof Mesh) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(m => { for (const value of Object.values(m)) if (value instanceof Texture) value.dispose(); m.dispose() }); if ('skeleton' in object) (object.skeleton as { dispose(): void }).dispose() } }) }
+function disposeModel(root: Group) { root.traverse(object => { if (object instanceof Mesh) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(m => { for (const value of Object.values(m)) if (value instanceof Texture && value !== sky) value.dispose(); m.dispose() }); if ('skeleton' in object) (object.skeleton as { dispose(): void }).dispose() } }) }
 async function loadModel() {
   const id = ++loadId; modelReady = false; element('status').textContent = 'กำลังโหลดโมเดล…'
   try {
     const definition = getAircraft(aircraft), asset = await loader.loadAsync(modelUrl(definition))
     if (id !== loadId) { disposeModel(asset.scene); return }
-    for (const child of [...jet.children]) { jet.remove(child); disposeModel(child as Group) }
+    for (const child of [...jet.children]) if (child !== exhaust.group) { jet.remove(child); disposeModel(child as Group) }
+    exhaust.dispose(); exhaust = new JetExhaust(resolveExhaustStyle(aircraft)); jet.add(exhaust.group)
     for (const name of definition.removeNodes) asset.scene.getObjectByName(name)?.removeFromParent()
     prepareAnimations(asset.scene, asset.animations)
     const orientation = new Group(); orientation.rotation.set(...definition.rotation); orientation.add(asset.scene)
     const bounds = new Box3().setFromObject(orientation), size = bounds.getSize(new Vector3())
     orientation.position.copy(bounds.getCenter(new Vector3())).negate()
     const root = new Group(); root.add(orientation); root.scale.setScalar(18.9 / Math.max(size.x, size.y, size.z)); jet.add(root)
+    applyEnvironment(root, sky, envIntensity)
     modelReady = true; actuatorTime = 0; volume.reset(); updateRig = createFlightRig(root, aircraft)
     state = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraft] }).snapshot().aircraft[0]
     element('error').textContent = ''; document.querySelector('h1')!.textContent = `${definition.designation} / Exhaust`
@@ -69,7 +79,7 @@ async function loadModel() {
 const views = { quarter: [-19, 3.2, 12], rear: [-17, -.45, 0], side: [-9, 1.2, 19], front: [22, 3, 12] } as const
 function view(id: keyof typeof views) { camera.position.fromArray(views[id]); controls.target.set(-6.5, -.45, 0); controls.update() }
 for (const id of Object.keys(views) as (keyof typeof views)[]) element(id).onclick = () => view(id)
-view('quarter')
+view((Object.keys(views) as (keyof typeof views)[]).find(id => id === params.get('view')) ?? 'quarter')
 element('power').oninput = () => { power = Number(element<HTMLInputElement>('power').value); element('powerValue').textContent = `${Math.round(power * 100)}%` }
 element('vector').oninput = () => { vector = Number(element<HTMLInputElement>('vector').value); element('vectorValue').textContent = `${vector}°` }
 element('burner').onclick = () => { burner = !burner; element('burner').textContent = `Afterburner: ${burner ? 'ON' : 'OFF'}`; element('burner').setAttribute('aria-pressed', String(burner)) }
@@ -102,12 +112,18 @@ function frame(now: number) {
     actuatorTime -= FLIGHT_STEP
   }
   updateRig?.(state, dt); jet.updateMatrixWorld(true)
-  volume.update({ speed: 180, aoa: clouds ? 21 : 3, g: clouds ? 6.8 : 1, sideslip: 0, humidity: .78 }, dt, false, aircraft)
-  volume.updateExhaust({ ...flightExhaustConditions(state), nozzles: updateRig?.exhaust }, dt)
-  if (modelReady) volume.render(renderer, scene, camera, jet.matrixWorld)
+  volume.update(vaporConditions({ speed: 180, aoa: clouds ? 21 : 3, g: clouds ? 6.8 : 1, sideslip: 0 }, 400), dt, false, aircraft)
+  const conditions = { ...flightExhaustConditions(state), nozzles: updateRig?.exhaust }
+  volume.exhaustPlume = exhaust.activeStyle.volumePlume
+  volume.exhaustCavity = exhaust.activeStyle.volumeCavity
+  volume.updateExhaust(conditions, dt)
+  exhaust.update(conditions, dt, camera, jet.matrixWorld)
+  if (modelReady) volume.render(renderer, scene, camera, jet.matrixWorld, [exhaust])
   else renderer.render(scene, camera)
   frames++; duration += rawDelta
   if (duration > 1 && modelReady) { element('status').textContent = `${Math.round(frames / duration)} FPS · ${paused ? 'หยุดการไหล' : 'ไอพ่นไหลต่อเนื่อง'}${profile.thrustVectoring ? ` · L ${state.thrustVectoring.left.toFixed(1)}° / R ${state.thrustVectoring.right.toFixed(1)}°` : ''}`; frames = 0; duration = 0 }
 }
 requestAnimationFrame(frame)
-addEventListener('pagehide', event => { if (event.persisted) return; volume.dispose(); controls.dispose(); ktx2.dispose(); disposeModel(jet); renderer.dispose() }, { once: true })
+// Handle for scripted screenshots: camera placement and per-source toggles.
+Object.assign(window, { exhaustPreview: { camera, controls, volume, get exhaust() { return exhaust } } })
+addEventListener('pagehide', event => { if (event.persisted) return; volume.dispose(); exhaust.dispose(); controls.dispose(); ktx2.dispose(); disposeModel(jet); sky.dispose(); renderer.dispose() }, { once: true })

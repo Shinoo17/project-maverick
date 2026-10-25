@@ -15,28 +15,29 @@ import { stepFlight } from '../src/game/flight/stepFlight'
 import { stepSpeed } from '../src/game/flight/speed'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { FLIGHT_STEP as dt, WORLD_STEP } from '../src/game/runtime/clock'
-import { runAtFps, positionalHorizon } from './invariants/helpers'
+import { runAtFps, positionalHorizon, settleStick } from './invariants/helpers'
 import { runFlightReplay } from '../src/game/playground/replay'
 
 it('real cardinal/diagonal mouse paths reach entry without changing fine aim or body-axis meaning', () => {
   for (const [x, y] of [[0, -240], [240, -240], [-240, -240]]) {
+    // The positional stick is rate limited (F22), so the reading is read once it has arrived.
     const input = new FlightInput(positionalHorizon); input.engage(); input.move(x, y); input.press('Space')
-    const command = input.command(0, 'a', 'mouse')
+    const command = settleStick(input, 0)
     expect(readIntent(command, createPilotIntent(), dt, 0).demand).toBe(1)
     expect(command.yaw).toBe(0)
-    expect(input.command(1, 'a', 'mouse').pitch).toBe(command.pitch) // Stopping movement is held input.
+    expect(input.command(8, 'a', 'mouse').pitch).toBe(command.pitch) // Stopping movement is held input.
     centreStick(input.stick)
-    expect(readIntent(input.command(2, 'a', 'mouse'), createPilotIntent(), dt, 0).activity).toBe(0)
+    expect(readIntent(settleStick(input, 9), createPilotIntent(), dt, 0).activity).toBe(0)
   }
   const input = new FlightInput(positionalHorizon); input.engage(); input.move(0, -30)
-  expect(readIntent(input.command(0, 'a', 'mouse'), createPilotIntent(), dt, 0).demand).toBe(0)
+  expect(readIntent(settleStick(input, 0), createPilotIntent(), dt, 0).demand).toBe(0)
   // Q/E ramp on the command timeline (Phase 6) and reverse through exact centre.
   const pedalStep = WORLD_STEP / PEDAL_RAMP_SECONDS
   input.press('ArrowDown'); input.press('KeyE')
-  expect(input.command(1, 'a', 'mouse')).toMatchObject({ pitch: -1, yaw: pedalStep })
+  expect(input.command(8, 'a', 'mouse')).toMatchObject({ pitch: -1, yaw: pedalStep })
   input.held.delete('KeyE'); input.press('KeyQ')
-  expect(input.command(2, 'a', 'mouse').yaw).toBe(0)
-  expect(input.command(3, 'a', 'mouse').yaw).toBe(-pedalStep)
+  expect(input.command(9, 'a', 'mouse').yaw).toBe(0)
+  expect(input.command(10, 'a', 'mouse').yaw).toBe(-pedalStep)
 })
 
 it.each([0.15, 0.22, 0.3])('all-axis continuation bridges handoff but reaches genuine release (%s s)', seconds => {

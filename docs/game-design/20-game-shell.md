@@ -139,7 +139,7 @@ TDM ที่ขนาด 1v1 คือ duel ของ P4 จึงไม่ต�
 | Frame rate | 60 | 60 | Unlimited |
 
 - ทุก preset ลดงาน GPU ได้จริง:
-  - Low ลดจำนวน ray sample ของ vortex (24 → 12) และ exhaust (ครึ่งหนึ่ง)
+  - Low ลดจำนวน ray sample ของ vortex (24 → 12) และโพรง nozzle (ครึ่งหนึ่ง); exhaust แบบ mesh ใช้ geometry หยาบลงและปิด heat haze (D20)
   - Off ข้าม effect นั้น ถ้าปิดทั้งสองอย่าง pass จะเหลือแค่ resolve ภาพ
   - Anti-aliasing คือ MSAA 4× ของ render target ใน volume pass เปลี่ยนได้ทันที
 - ขอบเขตของแต่ละค่า:

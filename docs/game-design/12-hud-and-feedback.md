@@ -10,8 +10,9 @@
 
 | ส่วน | ข้อมูล |
 |---|---|
-| กลางจอ | gun boresight, flight-path marker, lead cue เฉพาะเป้าที่มี solution |
-| รอบเป้า | selected target, ระยะ, team shape, acquiring/locked; เป้าหลังสิ่งกีดขวางไม่แสดงข้อมูลเกิน sensor rules |
+| กลางจอ | nose pipper, flight-path marker (-W-), computed gun reticle (วงแตกสี่ส่วนมีจุดกลาง ใหญ่กว่า pipper), lead marker (ข้าวหลามตัด + ส่วนโค้งระยะ, เส้นประโยงไปกรอบเป้า, สองชั้นเมื่อ reticle ทับ) เฉพาะเป้าที่มี solution, ASSIST ใต้ reticle ขณะ aim assist ทำงาน; สี lock (สีเดียวนอกจากเขียว, 23 ต.ค. 2026; ตั้งแต่ 24 ต.ค. สีแดงยังหมายถึงเป้าที่ lock บนแถบองศาและลูกศรขอบจอด้วย): lead marker และ × ของ mouse aim เป็นสีอำพันเมื่อ assist จับ lead และสีแดงเมื่อ reticle ทับ lead ในระยะ IN RNG (ยิงตอนนี้โดน) |
+| รอบเป้า | กรอบมุมสี่มุมขนาดตามโมเดลที่วาด (รวม distance scale), รุ่นเครื่องเหนือกรอบ (`DRONE · SU-57`; ยังไม่มีชื่อผู้เล่น), ระยะ (KM), closure (M/S), IN RNG/OUT RNG, แถบ HP ใต้กรอบ, ลูกศรสีแดงที่ขอบจอเมื่อเป้าที่ lock อยู่นอกจอ พร้อมระยะ เมื่อเป้าออกนอก radar cone ลูกศรกะพริบและนับ LOST x.x วินาทีจนหลุด (ผู้ใช้ขอ 24 ต.ค. 2026); ภายหลัง team shape, acquiring/locked; เป้าหลังสิ่งกีดขวางไม่แสดงข้อมูลเกิน sensor rules |
+| Radar (24 ต.ค. 2026) | Radar scope มุมซ้ายล่าง (`src/features/flight/radarPainter.ts`): heading-up เครื่องเราอยู่กลางชี้ขึ้น รัศมี 5 km วงแหวน 2.5 km, wedge คือ radar cone, ขอบสนามเป็นเส้นประแดงจาง, N บนขอบ ศัตรูเป็นข้าวหลามตัดแดง (radar จับ = เส้นทึบ, เห็นด้วยตาในระยะ 2 km = เส้นประ, เกิน 5 km เป็นลูกศรที่ขอบ), สูง/ต่ำกว่าเกิน 150 m มีขีด ▲/▼, เป้า lock มีกรอบสี่เหลี่ยมและระยะ บรรทัดล่าง LOCK · รุ่น หรือ LOST IN x.x กะพริบ; แถบองศาด้านบนมีหัวลูกศรใต้แถบตามทิศของแต่ละ contact (นอกช่วงแถบเป็นลูกศรที่ปลายแถบ) เป้า lock เป็นสีแดงมีกรอบ ค่าทั้งหมด provisional |
 | ความเร็ว | actual + target tick, turn-band hint, label หน่วย Arcade/World ตาม 03 |
 | Flight awareness | altitude/AGL warning, bank/horizon cue, low energy และ recovery prompt |
 | Combat resources | HP, gun heat, secondary type/count, flare bursts, burner reserve |
@@ -29,7 +30,7 @@ G indicator เป็นค่าจาก simplified sim จึงไม่ใ�
 
 `UiNotice` เก็บ localization key + params เช่น `{ key: 'flight.psm.speedTooHigh', params: { max: formattedSpeed } }` ไม่ฝังภาษาไทย/อังกฤษใน physics และไม่เอา event ยิงทุกนัดไปสร้าง toast ทุกครั้ง
 
-เฉพาะ confirmed damage event เท่านั้นทำ hit marker; การยิง animation/เสียงออกไม่ได้แปลว่าโดน เป้าถูกทำลายหรือหลุด sensor ต้องล้าง lead/lock cues ใน tick ที่ข้อมูลเปลี่ยน
+เฉพาะ confirmed damage event เท่านั้นทำ hit marker (ขีดสว่างออกจากมุมกรอบ 0.25 s, SPLASH 1.6 s ตรงจุดที่เป้าตก, เฉพาะกระสุนของผู้เล่น นับเวลาเป็น tick จึงหยุดตอน pause); การยิง animation/เสียงออกไม่ได้แปลว่าโดน เป้าถูกทำลายหรือหลุด sensor ต้องล้าง lead/lock cues ใน tick ที่ข้อมูลเปลี่ยน
 
 ## เมนูและ error flow
 

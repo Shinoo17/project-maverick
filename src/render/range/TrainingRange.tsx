@@ -59,7 +59,7 @@ export function TrainingRange() {
   return <>
     <color attach="background" args={[HAZE]} />
     <fogExp2 attach="fog" args={[HAZE, FOG_DENSITY]} />
-    <hemisphereLight args={['#dce9f7', '#6b7552', 1.5]} />
+    <hemisphereLight args={['#dce9f7', '#857761', 1.5]} />
     <directionalLight position={SUN_POSITION} color="#fff3e0" intensity={3.1} />
     <Sky /><Ground /><Airfield />
     {trainingRings.map(x => <mesh key={x} rotation={[0, Math.PI / 2, 0]} position={[x, 400, 0]}>

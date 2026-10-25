@@ -75,6 +75,8 @@ Basic steering คำนวณ desired direction ใน body frame ใช้ ban
 
 ## ลำดับพัฒนาและเกณฑ์ผ่าน
 
+สถานะ 24 ต.ค. 2026: ขั้น 1–3 มีโค้ดแล้วใน `src/game/bot/botPilot.ts` (Normal ระดับเดียว) ขั้น steer ไม่ได้เขียนใหม่ แต่ใช้ instructor ของ mouse aim (`src/game/input/mouseAim.ts`) ที่บิน bank-to-turn ใน body frame อยู่แล้ว instructor memory ของบอทอยู่ใน runtime ข้าง world (สร้างใหม่ทุกชีวิตและทุก reset) Perception ยังเห็นรอบตัวใน 8 km เพราะ flat range ไม่มีที่บัง ยังไม่มี dev overlay แสดงเหตุผลของบอท รายละเอียดและผล test ดู 18 สถานะ P4
+
 1. บิน waypoint บน flat map โดยไม่ชนพื้น 5 นาที
 2. ไล่ moving target โดยยังไม่ยิง แล้วตรวจว่ารักษาระยะ/ไม่วนติดวงเดียว
 3. เพิ่ม gun bursts, extend และ recover ให้ได้ match P4

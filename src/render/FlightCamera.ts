@@ -1,9 +1,10 @@
-import { Box3, MathUtils, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
+import { Box3, Euler, MathUtils, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../game/state/WorldState'
 import { observeAirflow } from '../game/flight/airflow'
 import { getFlightProfile } from '../game/flight/profile'
 import { balancedTilt, bankAbout, driftShare, psmShare } from '../game/camera/cameraRoll'
 import type { CameraSettings } from '../game/camera/cameraSettings'
+import { visibility } from './targetVisibility'
 /*
 The chase camera. Two shots, blended by incidence:
 
@@ -62,6 +63,8 @@ makes cruise feel quick, but carried into a PSM entry it lets the nose leave the
 Hard turns without the airbrake stay under 8° incidence, so they keep the full cruise lag.
 */
 const ENTRY_SPEEDUP = 5
+// Mouse aim's look hands back to the nose over this band of the handover (see the look section).
+const AIM_HANDOVER = { start: 0.15, end: 0.85 }
 /*
 The three cruise cameras. Ported in spirit from example/F22 (chase-camera/roll.js and
 chaseCamera.js), at this project's own framing: the jet is 18.9 units long here, not 7.
@@ -110,6 +113,13 @@ const DRIFT_LAG = { offsetRate: 3, turnRate: 3.5, upRate: 6 }
 // The drift lag reaches full this many times faster than the handover: by ~15° incidence, where a
 // banked S-pull drift already sits. Hard turns without the airbrake stay under 8°, so never lag.
 const DRIFT_LAG_SPEEDUP = 6
+/*
+Free look and look back (FlightInput.lookTarget): the finished chase shot is swung rigidly about
+the jet by a yaw and a pitch in the view's own frame, so the jet stays where it sits on screen
+and the view turns round it. Look back is a half turn of yaw: the camera ends ahead of the nose,
+looking back over the jet. The turn eases toward its target at `rate` (1/s) both ways.
+*/
+const FREE_LOOK = { rate: 10, rest: 1e-3 }
 export type { CameraSettings }
 /** Project actual world-space subject bounds, not a velocity-look heuristic. */
 export function projectedAircraftBounds(camera: PerspectiveCamera, corners: Vector3[]) {
@@ -124,6 +134,14 @@ function carry(held: Vector3, forward: Vector3, bodyUp: Vector3, wing: Vector3) 
   if (across.lengthSq() < 1e-6) across.copy(bodyUp).addScaledVector(forward, -bodyUp.dot(forward))
   if (across.lengthSq() < 1e-6) across.copy(wing).cross(forward)
   return across.normalize()
+}
+/** Turn `look` toward `target`, no faster than LOOK.maxRate (in place). */
+function stepLook(look: Vector3, target: Vector3, wing: Vector3, dt: number, snap: boolean) {
+  if (snap) { look.copy(target); return }
+  const turn = look.angleTo(target), step = Math.min(turn, LOOK.maxRate * dt)
+  const axis = new Vector3().crossVectors(look, target)
+  if (axis.lengthSq() < 1e-10) axis.copy(wing).addScaledVector(look, -wing.dot(look))
+  if (turn > 1e-9 && axis.lengthSq() > 1e-10) look.applyAxisAngle(axis.normalize(), step).normalize()
 }
 /** `angle` wrapped into (−π, π]. */
 function wrapAngle(angle: number) {
@@ -153,6 +171,18 @@ export class FlightCamera {
   baseFov = FOV.base
   /** Jump straight to the target FOV (set while paused, so a Settings change shows at once). */
   snapFov = false
+  /** 0–1: how much of the gun zoom applies this frame (targetVisibility.ts). It eases in and out with the FOV. */
+  gunZoom = 0
+  /** Mouse aim (game/input/mouseAim.ts): the world direction the cruise view looks along instead
+   * of the nose. Weighted by (1 − handover) like every cruise value, so the PSM shot ignores it. */
+  aim: Vector3 | null = null
+  /** Free look and look back: how far the view should turn off the chase shot (radians, view frame). */
+  lookTurn = { yaw: 0, pitch: 0 }
+  private orbit = { yaw: 0, pitch: 0 }
+  /** The chase shot before the look turn. Mouse aim and the × steer by this view, not the turned one. */
+  readonly chase = new Quaternion()
+  /** True while the view is turned off the chase shot, including while it eases back. */
+  get lookingAway() { return this.orbit.yaw !== 0 || this.orbit.pitch !== 0 }
   private diagnosticView(camera: PerspectiveCamera, state: AircraftState, bounds: Box3) {
     const q = new Quaternion().copy(state.orientation), center = new Vector3().copy(state.position)
     const corners: Vector3[] = []
@@ -185,6 +215,8 @@ export class FlightCamera {
   get driftLag() { return this.lastDriftLag }
   private set driftLag(value: number) { this.lastDriftLag = value }
   private look = new Vector3(1, 0, 0)
+  // The look as it would be without mouse aim; the level horizon is carried on it.
+  private noseLook = new Vector3(1, 0, 0)
   private initialized = false
   private decouple = 0
   private handover = 0
@@ -194,7 +226,8 @@ export class FlightCamera {
   private rollLagRate = 0
   private lastBodyUp = new Vector3(0, 1, 0)
   reset() {
-    this.initialized = false; this.decouple = 0; this.handover = 0; this.up.set(0, 1, 0); this.levelUp.set(0, 1, 0); this.styleUp.set(0, 1, 0); this.gap = 0; this.boomUp.set(0, 1, 0); this.boomGap = 0; this.drift = 0; this.lastDriftLag = 0; this.look.set(1, 0, 0); this.offset.set(0, 0, 0)
+    this.initialized = false; this.decouple = 0; this.handover = 0; this.up.set(0, 1, 0); this.levelUp.set(0, 1, 0); this.styleUp.set(0, 1, 0); this.gap = 0; this.boomUp.set(0, 1, 0); this.boomGap = 0; this.drift = 0; this.lastDriftLag = 0; this.look.set(1, 0, 0); this.noseLook.set(1, 0, 0); this.offset.set(0, 0, 0)
+    this.orbit = { yaw: 0, pitch: 0 }; this.chase.identity()
     this.rollLag = 0; this.rollLagRate = 0; this.lastBodyUp.set(0, 1, 0)
   }
   update(camera: PerspectiveCamera, state: AircraftState, view: CameraSettings, dt: number, reducedMotion = false, diagnosticBounds?: Box3) {
@@ -237,13 +270,16 @@ export class FlightCamera {
     // the PSM look. (The example camera leans the cruise view onto the path; here that pushed the
     // nose out of frame during PSM entries, and cruise incidence is too small for it to show.)
     const lookTarget = turnToward(nose, psmLook, d, wing.clone().negate())
-    if (snap) this.look.copy(lookTarget)
-    else {
-      const turn = this.look.angleTo(lookTarget), step = Math.min(turn, LOOK.maxRate * dt)
-      const axis = new Vector3().crossVectors(this.look, lookTarget)
-      if (axis.lengthSq() < 1e-10) axis.copy(wing).addScaledVector(this.look, -wing.dot(this.look))
-      if (turn > 1e-9 && axis.lengthSq() > 1e-10) this.look.applyAxisAngle(axis.normalize(), step).normalize()
-    }
+    // Mouse aim looks along the aim in cruise and hands back to the nose with the handover, gone
+    // entirely by AIM_HANDOVER. The look without it is still carried (`noseLook`): the level
+    // horizon below is run on that one, so its history is the Phase 7 one bit for bit. Run on the
+    // aimed look it would differ by a hair, and over the top of a Kulbit or a reversal, where the
+    // level up rolls back from inverted, a hair decides which way it rolls.
+    const aimShare = this.aim ? 1 - MathUtils.smoothstep(w, AIM_HANDOVER.start, AIM_HANDOVER.end) : 0
+    const aimTarget = aimShare > 0 ? turnToward(turnToward(nose, this.aim!.clone().normalize(), aimShare, wing.clone().negate()), psmLook, d, wing.clone().negate()) : lookTarget
+    stepLook(this.noseLook, lookTarget, wing, dt, snap)
+    if (this.aim) stepLook(this.look, aimTarget, wing, dt, snap)
+    else this.look.copy(this.noseLook)
     const forward = this.look.clone()
 
     // --- Camera roll (the up vector) --------------------------------------------------------
@@ -257,10 +293,18 @@ export class FlightCamera {
     const hasLevel = level.lengthSq() >= 1e-8
     if (hasLevel) level.normalize()
     const bodyRate = Math.hypot(state.rates.pitch, state.rates.yaw, state.rates.roll)
-    const levelHeld = carry(this.levelUp, forward, bodyUp, wing)
+    // The level up runs on the look without the aim (the same vector as `forward` when there is none).
+    const levelView = this.aim ? this.noseLook.clone() : forward
+    const viewLevelShare = this.aim ? MathUtils.smoothstep(Math.hypot(levelView.x, levelView.z), UP.cone.start, UP.cone.end) : levelShare
+    const viewLevel = this.aim ? new Vector3(0, 1, 0).addScaledVector(levelView, -levelView.y) : level
+    const viewHasLevel = this.aim ? viewLevel.lengthSq() >= 1e-8 : hasLevel
+    if (this.aim && viewHasLevel) viewLevel.normalize()
+    const levelHeld = carry(this.levelUp, levelView, bodyUp, wing)
     // Level: world up about the view, faded to "hold" inside the vertical cone where it vanishes.
-    const toLevel = hasLevel ? angleAbout(levelHeld, level, forward) * levelShare : 0
-    this.levelUp.copy(levelHeld).applyAxisAngle(forward, rollStep(toLevel, UP.horizon / (1 + bodyRate / UP.rateSlowdown), UP.horizonMaxRate, dt, snap))
+    const toLevel = viewHasLevel ? angleAbout(levelHeld, viewLevel, levelView) * viewLevelShare : 0
+    this.levelUp.copy(levelHeld).applyAxisAngle(levelView, rollStep(toLevel, UP.horizon / (1 + bodyRate / UP.rateSlowdown), UP.horizonMaxRate, dt, snap))
+    // Taken across the aimed look for the blend; with no aim it already lies across it.
+    const levelUp = this.aim ? carry(this.levelUp, forward, bodyUp, wing) : this.levelUp
 
     const styleHeld = carry(this.styleUp, forward, bodyUp, wing)
     // The airframe's up across the view. Degenerate only when the view runs along the airframe's up.
@@ -275,7 +319,7 @@ export class FlightCamera {
     // Blend. The gap between the two ups is followed continuously rather than taken the short
     // way each frame: near inverted the short way flips from side to side, and a blend of it
     // would jump. At either end of the handover a whole turn is invisible, so it is unwound there.
-    const gap = angleAbout(this.styleUp, this.levelUp, forward)
+    const gap = angleAbout(this.styleUp, levelUp, forward)
     const ends = snap || w <= 1e-3 || w >= 1 - 1e-3
     this.gap = ends ? gap : this.gap + wrapAngle(gap - this.gap)
     this.up.copy(this.styleUp).applyAxisAngle(forward, this.gap * w).normalize()
@@ -319,12 +363,30 @@ export class FlightCamera {
       const cruiseOffsetRate = MathUtils.lerp(style.offsetRate, DRIFT_LAG.offsetRate, lag), cruiseTurnRate = MathUtils.lerp(style.turnRate, DRIFT_LAG.turnRate, lag)
       const offsetRate = MathUtils.lerp(MathUtils.lerp(cruiseOffsetRate, OFFSET.attached, entry), OFFSET.decoupled, d)
       this.followOffset(desiredOffset, offsetRate, w, dt)
-      camera.quaternion.slerp(desiredQ, 1 - Math.exp(-MathUtils.lerp(cruiseTurnRate, PSM_TURN_RATE, entry) * dt))
+      // From last frame's chase shot: the look turn is laid over it afterwards, never carried.
+      camera.quaternion.copy(this.chase).slerp(desiredQ, 1 - Math.exp(-MathUtils.lerp(cruiseTurnRate, PSM_TURN_RATE, entry) * dt))
     }
     camera.position.copy(position).add(this.offset)
-    const fov = reducedMotion ? this.baseFov + FOV.reduced - FOV.base : this.baseFov + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple
+    // Reduced motion holds the FOV still, so it has no gun zoom either.
+    const fov = reducedMotion ? this.baseFov + FOV.reduced - FOV.base
+      : (this.baseFov + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple) * (1 - visibility.zoom * this.gunZoom)
     camera.fov += (fov - camera.fov) * (reducedMotion || this.snapFov ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
+    this.chase.copy(camera.quaternion)
+    this.turnLook(camera, position, dt, snap)
     camera.position.y = Math.max(5, camera.position.y)
+  }
+  /** Swing the finished chase shot about the jet by the eased look turn (see FREE_LOOK). */
+  private turnLook(camera: PerspectiveCamera, pivot: Vector3, dt: number, snap: boolean) {
+    const share = snap ? 1 : 1 - Math.exp(-FREE_LOOK.rate * dt)
+    this.orbit.yaw = wrapAngle(this.orbit.yaw + wrapAngle(this.lookTurn.yaw - this.orbit.yaw) * share)
+    this.orbit.pitch += (this.lookTurn.pitch - this.orbit.pitch) * share
+    // Settled back on the chase shot: exactly on it, so the aim is let go again.
+    if (this.lookTurn.yaw === 0 && this.lookTurn.pitch === 0 && Math.abs(this.orbit.yaw) < FREE_LOOK.rest && Math.abs(this.orbit.pitch) < FREE_LOOK.rest) this.orbit = { yaw: 0, pitch: 0 }
+    if (!this.lookingAway) return
+    const turned = this.chase.clone().multiply(new Quaternion().setFromEuler(new Euler(this.orbit.pitch, this.orbit.yaw, 0, 'YXZ')))
+    const swing = turned.clone().multiply(this.chase.clone().invert())
+    camera.position.sub(pivot).applyQuaternion(swing).add(pivot)
+    camera.quaternion.copy(turned)
   }
   /*
   The roll angle, from the cruise up, that the chosen camera asks for.

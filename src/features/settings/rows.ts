@@ -13,7 +13,8 @@ import {
 } from '../../app/sessionStore'
 import { cameraFovRange, cameraRollOptions, defaultCameraSettings, horizonStyleDisabled, horizonStyleOptions } from '../../game/camera/cameraSettings'
 import { defaultKeyboardSettings, sameBindings, type KeyboardSettings } from '../../game/input/keyBindings'
-import { defaultMouseSettings } from '../../game/input/mouseStick'
+import { defaultMouseSettings, mouseHintKey } from '../../game/input/mouseStick'
+import { aimAssistLevels, type AimAssistLevel } from '../../game/combat/aimAssist'
 import type { Translation } from '../../locales/en'
 import { defaultDisplaySettings, uiScaleRange, type Settings } from '../../platform/storage'
 import {
@@ -71,6 +72,8 @@ const noReason = null
 export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
   const mouseOff = s.keyboard.preset === 'keyboard' ? t('settingsNeedsMouse') : noReason
   const m = s.controls, dm = defaultMouseSettings
+  // Mouse aim has no stick to frame or to put on another axis.
+  const stickOff = mouseOff ?? (m.mode === 'aim' || m.mode === 'cursor' ? t('settingsNeedsStickMode') : noReason)
   const g = s.graphics, dg = defaultGraphicsSettings
   const preset = graphicsPreset(g)
   const pending = (id: string, label: TextKey, reason: TextKey): PendingRow =>
@@ -86,14 +89,20 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
             value: s.keyboard.preset, modified: s.keyboard.preset !== defaultKeyboardSettings.preset,
             set: preset => selectKeyboard({ preset: preset as 'mouse' | 'keyboard' }), reset: () => selectKeyboard({ preset: defaultKeyboardSettings.preset }) }),
         ] },
+        { title: t('settingsSectionAim'), rows: [
+          choice({ id: 'aimAssist', label: t('aimAssist'), detail: t('settingsAimAssistDetail'), disabled: noReason,
+            options: aimAssistLevels.map(level => ({ value: level, label: t(`aimAssist_${level}` as const) })),
+            value: m.aimAssist, modified: m.aimAssist !== dm.aimAssist, set: level => selectControls({ aimAssist: level as AimAssistLevel }), reset: () => selectControls({ aimAssist: dm.aimAssist }) }),
+        ] },
         { title: t('settingsSectionMouse'), rows: [
-          choice({ id: 'mouseMode', label: t('mouseMode'), detail: t(m.mode === 'relative' ? 'mouseHintRelative' : 'mouseHint'), disabled: mouseOff,
-            options: [{ value: 'relative', label: t('mouseModeRelative') }, { value: 'stick', label: t('mouseModeStick') }],
+          choice({ id: 'mouseMode', label: t('mouseMode'), detail: t(mouseHintKey(m.mode)), disabled: mouseOff,
+            options: [{ value: 'aim', label: t('mouseModeAim') }, { value: 'cursor', label: t('mouseModeCursor') }, { value: 'relative', label: t('mouseModeRelative') }, { value: 'stick', label: t('mouseModeStick') }],
             value: m.mode, modified: m.mode !== dm.mode, set: mode => selectControls({ mode: mode as typeof m.mode }), reset: () => selectControls({ mode: dm.mode }) }),
-          choice({ id: 'frame', label: t('controlFrame'), detail: t('settingsFrameDetail'), disabled: mouseOff,
+          // Positional stick always reads the screen (example/F22), so only the relative stick has a frame to pick.
+          choice({ id: 'frame', label: t('controlFrame'), detail: t('settingsFrameDetail'), disabled: stickOff ?? (m.mode === 'stick' ? t('settingsFrameScreenStick') : noReason),
             options: [{ value: 'body', label: t('controlFrameBody') }, { value: 'horizon', label: t('controlFrameHorizon') }],
             value: m.frame, modified: m.frame !== dm.frame, set: frame => selectControls({ frame: frame as typeof m.frame }), reset: () => selectControls({ frame: dm.frame }) }),
-          choice({ id: 'xAxis', label: t('mouseXAxis'), detail: t('settingsXAxisDetail'), disabled: mouseOff,
+          choice({ id: 'xAxis', label: t('mouseXAxis'), detail: t('settingsXAxisDetail'), disabled: stickOff,
             options: [{ value: 'roll', label: t('mouseXRoll') }, { value: 'yaw', label: t('mouseXYaw') }],
             value: m.xAxis, modified: m.xAxis !== dm.xAxis, set: xAxis => selectControls({ xAxis: xAxis as typeof m.xAxis }), reset: () => selectControls({ xAxis: dm.xAxis }) }),
           { kind: 'slider', id: 'sensitivity', label: t('mouseSensitivity'), detail: t('settingsSensitivityDetail'), disabled: mouseOff,

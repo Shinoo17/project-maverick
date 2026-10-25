@@ -13,6 +13,8 @@ import { prepareAnimations } from './aircraft/animationStages'
 import { createFlightRig } from './aircraft/flightRig'
 import { CondensationVolume } from './vapor/CondensationVolume'
 import { flightExhaustConditions } from './exhaust/profile'
+import { JetExhaust } from './exhaust/JetExhaust'
+import { resolveExhaustStyle } from './exhaust/style'
 
 // Match the flight renderer's 18.9 m frame before scaling the entire preview,
 // including its exhaust coordinate system, down to the hangar's 10-unit span.
@@ -23,6 +25,7 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
   const { gl, invalidate } = useThree()
   const frame = useRef<Group>(null), reset = useRef(-1)
   const volume = useRef<CondensationVolume | null>(null)
+  const exhaust = useRef<JetExhaust | null>(null)
   const data = useMemo(() => {
     const copy = clone(asset.scene)
     aircraft.removeNodes.forEach(name => copy.getObjectByName(name)?.removeFromParent())
@@ -40,6 +43,11 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
     volume.current = new CondensationVolume(gl)
     return () => { volume.current?.dispose(); volume.current = null }
   }, [gl])
+  useEffect(() => {
+    const flame = new JetExhaust(resolveExhaustStyle(aircraft.id))
+    exhaust.current = flame
+    return () => { exhaust.current = null; flame.dispose() }
+  }, [aircraft])
   useEffect(() => () => data.root.traverse(object => {
     if ('isSkinnedMesh' in object && object.isSkinnedMesh && 'skeleton' in object) (object.skeleton as { dispose(): void }).dispose()
   }), [data])
@@ -57,13 +65,15 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
     return () => cancelAnimationFrame(request)
   }, [playing, invalidate])
   useFrame(({ scene, camera }, delta) => {
-    if (!frame.current || !volume.current) { gl.render(scene, camera); return }
+    const flame = exhaust.current
+    if (!frame.current || !volume.current || !flame) { gl.render(scene, camera); return }
+    if (flame.group.parent !== frame.current) frame.current.add(flame.group)
     const dt = playing ? Math.min(delta, .05) : 0
     const { state, rig, axis, turn } = data
     const profile = getFlightProfile(aircraft.id)
     if (reset.current !== input.resetId) {
       frame.current.quaternion.identity(); reset.current = input.resetId
-      volume.current.reset()
+      volume.current.reset(); flame.reset()
     }
     state.enginePower = input.throttle; state.maneuver.burnerActive = input.afterburner
     state.rates.pitch = input.pitch * profile.flight.pitchRate
@@ -75,8 +85,12 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
     axis.set(input.roll, -input.yaw, input.pitch)
     if (axis.lengthSq()) frame.current.quaternion.multiply(turn.setFromAxisAngle(axis.normalize(), dt * .65))
     frame.current.updateWorldMatrix(true, true)
-    volume.current.updateExhaust({ ...flightExhaustConditions(state), nozzles: rig.exhaust }, dt, reducedMotion)
-    volume.current.render(gl, scene, camera, frame.current.matrixWorld)
+    const conditions = { ...flightExhaustConditions(state), nozzles: rig.exhaust }
+    volume.current.exhaustPlume = flame.activeStyle.volumePlume
+    volume.current.exhaustCavity = flame.activeStyle.volumeCavity
+    volume.current.updateExhaust(conditions, dt, reducedMotion)
+    flame.update(conditions, dt, camera, frame.current.matrixWorld, reducedMotion)
+    volume.current.render(gl, scene, camera, frame.current.matrixWorld, [flame])
   }, 1)
   return <group ref={frame} position={[0, .35, 0]} scale={10 / 18.9}><primitive object={data.root} dispose={null} /></group>
 }

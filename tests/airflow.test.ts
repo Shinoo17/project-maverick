@@ -8,7 +8,9 @@ import { flightInstrumentation } from '../src/game/flight/instrumentation'
 import { stepFlight } from '../src/game/flight/stepFlight'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { FLIGHT_STEP } from '../src/game/runtime/clock'
-import { flightVaporConditions, vaporActivation } from '../src/render/vapor/conditions'
+import { flightVaporConditions } from '../src/render/vapor/conditions'
+import { vaporRigs } from '../src/render/vapor/profile'
+import { vaporTargets } from '../src/render/vapor/vaporModel'
 
 function freeze(value: object) {
   Object.freeze(value)
@@ -91,7 +93,8 @@ describe('shared airflow observation', () => {
     state.velocity = { x: 0, y: -1e-16, z: 0 }
     const vapor = flightVaporConditions(state)
     expect(vapor.aoa).toBe(0)
-    expect(vaporActivation(vapor)).toBe(0)
+    const targets = vaporTargets(vapor, vaporRigs.f22, vapor)
+    for (const effect of ['lex', 'fog', 'tip', 'cone'] as const) expect(targets[effect]).toBe(0)
   })
 
   it('keeps physics start-of-step alpha distinct from end-of-step telemetry and FX', () => {

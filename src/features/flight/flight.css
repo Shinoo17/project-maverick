@@ -3,32 +3,12 @@
 .flight-scene { position: absolute; inset: 0; outline: none; }
 /* Clipped: the gate is the window, so the stick marker sits on the edge at full deflection. */
 .flight-hud { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: #fff; padding: 24px; }
-.flight-menu { width: min(500px, calc((100vw - 32px) / var(--ui-scale, 1))); max-height: calc((100dvh - 40px) / var(--ui-scale, 1)); overflow: auto; padding: 28px; border: 1px solid #596970; background: #19232b; color: #edf0ed; }
-.flight-menu::backdrop { background: #10182085; }
-.flight-menu-kicker { font-size: 13px; color: #cbb88f; margin-bottom: 12px; }
-.flight-menu h1 { font-size: 26px; margin-bottom: 12px; }
-.flight-menu p { line-height: 1.7; font-size: 14px; }
-.flight-menu .flight-baseline { font-size: 12px; color: #b4c3cd; margin-top: 6px; }
-.flight-menu .flight-camera-detail { font-size: 12px; color: #b4c3cd; margin: 4px 0 0; }
-.flight-menu label { display: block; font-size: 13px; margin-top: 18px; }
-.flight-menu select { display: block; width: 100%; min-height: 44px; padding: 8px 12px; margin-top: 6px; background: #293943; border: 1px solid #596970; }
-.flight-menu .flight-instructions { font-size: 13px; color: #c9d2d8; margin: 20px 0; }
-.flight-menu button, .flight-menu a { display: block; text-align: center; text-decoration: none; color: #edf0ed; width: 100%; min-height: 44px; padding: 12px; margin-top: 8px; background: #293943; }
-.flight-menu .flight-primary { background: #ffcd60; color: #1a201e; font-weight: 700; }
-.flight-menu button:hover, .flight-menu a:hover { filter: brightness(1.1); }
-/* P2 extends the existing instruments; the aircraft keeps the centre of the view. */
-.flight-lab-settings { margin-top: 22px; border-top: 1px solid #596970; padding-top: 16px; }
-.flight-lab-settings summary { cursor: pointer; min-height: 32px; font-size: 14px; }
-.flight-lab-settings input { margin-right: 6px; accent-color: #cfb88a; }
-.flight-menu button:disabled { opacity: 0.5; cursor: not-allowed; }
-.flight-mouse-help { margin: 12px 0; font-size: 13px; }
-.flight-mouse-help summary { cursor: pointer; min-height: 36px; display: list-item; padding: 8px 0; }
 /* The flight HUD follows example/F22: one canvas of phosphor symbology (hudPainter.ts), and
    quiet dark plates for the few readouts that stay HTML. Menu and hangar keep their palette. */
 /* --hud-advisory-* and --hud-status-top are set by FlightInstruments from the glass layout. */
 .flight-hud {
   --hud-ice: #62ff84; --hud-green-dim: rgba(98, 255, 132, 0.68); --hud-green-soft: rgba(98, 255, 132, 0.24);
-  --hud-glyph: 0 0 7px rgba(48, 255, 104, 0.34); --hud-plate: rgba(3, 9, 12, 0.72); --hud-panel: rgba(7, 12, 15, 0.86); --hud-panel-line: rgba(98, 255, 132, 0.22);
+  --hud-glyph: 0 0 3px rgba(0, 10, 4, 0.75), 0 0 6px rgba(48, 255, 104, 0.2); --hud-plate: rgba(3, 9, 12, 0.72); --hud-panel: rgba(7, 12, 15, 0.86); --hud-panel-line: rgba(98, 255, 132, 0.22);
   color: var(--hud-ice); padding: 0; font-family: 'DIN Alternate', 'Arial Narrow', 'Aptos Narrow', sans-serif; font-variant-numeric: tabular-nums; text-shadow: var(--hud-glyph);
 }
 .hud-glass { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
@@ -79,6 +59,10 @@
 .flight-lab div { display: flex; justify-content: space-between; gap: 10px; margin: 4px 0; }
 .flight-lab dd { margin: 0; color: var(--hud-ice); font-weight: 700; text-align: right; }
 .flight-controls { position: absolute; bottom: 8px; left: 20px; right: 20px; margin: 0; text-align: center; color: var(--hud-green-dim); font-size: 10px; line-height: 1.5; letter-spacing: 0.04em; }
+.flight-hud:has(.wpn) .flight-controls { right: 340px; }
+/* Radar scope (radarPainter.ts): bottom left, mirroring the weapon column. */
+.radar-scope { position: absolute; left: 24px; bottom: 26px; width: 220px; aspect-ratio: 1; }
+.flight-hud:has(.radar-scope) .flight-controls { left: 264px; }
 .flight-timescale { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); margin: 0; padding: 3px 10px; border: 1px solid var(--hud-green-soft); border-radius: 2px; background: var(--hud-plate); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
 @media (max-height: 760px) {
   .flight-controls { display: none; }
@@ -98,6 +82,7 @@
   /* Under the GND row, left of the right-aligned status column and above the advisory. */
   .flight-lesson { top: calc(var(--hud-status-top, 72%) + 24px); left: 12px; right: auto; width: 46%; padding: 8px 10px; font-size: 10px; }
   .flight-lesson strong { font-size: 11px; }
+  .radar-scope { left: 12px; bottom: 14px; width: 160px; }
   .flight-lab { left: 50%; right: auto; bottom: auto; top: 110px; transform: translateX(-50%); width: calc(100% - 60px); max-height: calc(100% - 140px); }
   .flight-warning { font-size: 11px; padding: 5px 10px; }
 }
@@ -111,7 +96,6 @@
 
 /* Settings inside the pause dialog: the panel on the left, the paused flight visible on the right,
    the HUD hidden so its green does not fight the text. Tokens come from .settings-scope (menu.css). */
-.flight-menu { zoom: var(--ui-scale, 1); }
 .flight-root[data-settings] .flight-hud { visibility: hidden; }
 .flight-settings { position: fixed; inset: 0 auto 0 0; width: calc(100vw / var(--ui-scale, 1)); height: calc(100dvh / var(--ui-scale, 1)); max-width: none; max-height: none; margin: 0; padding: 28px 48px 24px 56px; border: 0; zoom: var(--ui-scale, 1); color: #dae2e6;
   /* The scrim stays solid under the whole panel, then fades out over the next ~30% of the window. */
@@ -125,3 +109,132 @@
 .flight-settings::backdrop { background: transparent; }
 .flight-settings .settings-scope { height: 100%; }
 @media (max-width: 900px) { .flight-settings { padding: 16px; background: rgba(3, 5, 7, 0.94); } }
+
+/* ---------- Briefing / pause menu ----------
+   A text column at the left over an even grey veil with a light blur across the whole
+   frame. Type on hairlines, cyan for the selection, amber only for the one launch button
+   (DESIGN.md). Tokens come from .settings-scope (menu.css). */
+.flight-menu { position: fixed; inset: 0 auto 0 0; width: calc(100vw / var(--ui-scale, 1)); height: calc(100dvh / var(--ui-scale, 1)); max-width: none; max-height: none; margin: 0; padding: 0; border: 0; zoom: var(--ui-scale, 1); color: #dae2e6; overflow: hidden;
+  --brief-width: min(600px, 100% - 104px);
+  background: transparent; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+/* The veil is mid grey, not near-black, so the menu's quiet greys move up to stay readable. */
+.flight-brief { --menu-text: #f2f5f6; --menu-text-soft: #e4e9eb; --menu-secondary: #dde3e6; --menu-muted: #d2d9dc; --menu-locked: #aeb8bd;
+  --menu-line: rgba(235, 242, 245, 0.34); --menu-line-soft: rgba(235, 242, 245, 0.2); --menu-outline: rgba(240, 246, 248, 0.55); }
+/* One even grey veil over the whole frame, with a light blur so the paused flight reads as
+   background and the HUD green stops competing with the text (the user's choice, 2026-10-20). */
+.flight-menu::backdrop { background: rgba(42, 49, 56, 0.6); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(6px); }
+.flight-menu ::selection { background: rgba(154, 215, 232, 0.32); color: #fff; }
+
+.flight-brief { display: flex; flex-direction: column; width: calc(var(--brief-width) + 56px); height: 100%; padding: 30px 0 28px 56px; box-sizing: border-box; font-family: var(--font-body); animation: brief-in 420ms var(--ease-out) both; }
+@keyframes brief-in { from { opacity: 0; transform: translateX(-14px); } }
+
+.flight-brief-top { display: flex; align-items: center; gap: 16px; min-height: 44px; }
+.flight-brief-top strong { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: var(--track); }
+.flight-brief-top > span { width: 1px; height: 20px; background: rgba(174, 201, 211, 0.3); }
+.flight-brief-top p { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: 15px; letter-spacing: var(--track); color: var(--menu-secondary); text-transform: uppercase; }
+
+.flight-brief-body { flex: 1; min-height: 0; overflow-y: auto; margin-top: clamp(20px, 7vh, 88px); padding-right: 24px; scrollbar-width: thin; scrollbar-color: var(--menu-line) transparent; }
+.flight-brief h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(44px, 4.6vw, 64px); line-height: var(--display-leading); letter-spacing: var(--track-tight); text-transform: uppercase; text-wrap: balance; }
+.flight-brief[data-state='stopped'] h1 { color: var(--menu-hostile); }
+.flight-brief-lede { max-width: 46ch; margin: 16px 0 0; font-size: 16px; line-height: 1.55; color: var(--menu-text-soft); }
+.flight-brief-note { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--menu-muted); }
+
+.flight-brief-section { margin-top: 40px; }
+.flight-brief-section h2 { margin: 0; padding-bottom: 10px; border-bottom: 1px solid var(--menu-line); font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
+
+.briefing-field { min-width: 0; margin: 0; padding: 16px 0 18px; border: 0; border-bottom: 1px solid var(--menu-line-soft); }
+.briefing-field:disabled { opacity: 0.55; }
+.briefing-field > legend { float: left; width: 100%; padding: 0; }
+.briefing-label { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 12px; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
+.briefing-label small { font-family: var(--font-mono); font-weight: 400; font-size: 12px; letter-spacing: 0; color: var(--menu-muted); text-transform: none; }
+
+.briefing-choice { clear: both; display: grid; grid-template-columns: repeat(var(--choices), minmax(0, 1fr)); border: 1px solid var(--menu-line); }
+.briefing-option { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 56px; padding: 9px 12px 11px; cursor: pointer; transition: background-color 140ms ease-out, box-shadow 140ms ease-out; }
+.briefing-option + .briefing-option { border-left: 1px solid var(--menu-line); }
+.briefing-option input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
+.briefing-option-name { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.15; letter-spacing: var(--track-tight); color: var(--menu-secondary); text-transform: uppercase; }
+.briefing-option-detail { font-family: var(--font-mono); font-size: 12px; line-height: 1.3; color: var(--menu-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.briefing-option:hover { background: rgba(154, 215, 232, 0.06); }
+.briefing-option:hover .briefing-option-name { color: var(--menu-text); }
+/* Selected: a cyan rule along the bottom, a square marker and full-strength text. */
+.briefing-option:has(input:checked) { background: rgba(154, 215, 232, 0.1); box-shadow: inset 0 -2px 0 var(--menu-accent); }
+.briefing-option:has(input:checked) .briefing-option-name { color: var(--menu-text); }
+.briefing-option:has(input:checked) .briefing-option-name::before { content: ''; width: 6px; height: 6px; flex-shrink: 0; background: var(--menu-accent); }
+.briefing-option:has(input:checked) .briefing-option-detail { color: var(--menu-secondary); }
+.briefing-option:has(input:focus-visible) { outline: 2px solid var(--menu-accent); outline-offset: -2px; }
+.briefing-field:disabled .briefing-option { cursor: not-allowed; }
+.briefing-hint { margin: 10px 0 0; font-size: 14px; line-height: 1.5; color: var(--menu-text-soft); }
+
+.briefing-stepper { display: flex; align-items: center; height: 50px; border: 1px solid var(--menu-line); }
+.briefing-stepper button { display: flex; align-items: center; justify-content: center; width: 50px; height: 100%; color: var(--menu-text); transition: color 140ms ease-out, background-color 140ms ease-out; }
+.briefing-stepper button:hover:not(:disabled) { color: var(--menu-accent); background: rgba(154, 215, 232, 0.06); }
+.briefing-stepper button:disabled { color: var(--menu-locked); cursor: not-allowed; }
+.briefing-stepper output { flex: 1; align-self: stretch; display: flex; align-items: center; justify-content: center; border-inline: 1px solid var(--menu-line-soft); font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track-tight); text-transform: uppercase; text-align: center; }
+
+.flight-brief-keys { margin: 14px 0 10px; font-family: var(--font-mono); font-size: 12px; line-height: 1.85; color: var(--menu-secondary); }
+.flight-brief-more { border-bottom: 1px solid var(--menu-line-soft); }
+.flight-brief-more summary { display: flex; align-items: center; justify-content: space-between; min-height: 46px; cursor: pointer; list-style: none; font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: var(--track); color: var(--menu-secondary); text-transform: uppercase; }
+.flight-brief-more summary::-webkit-details-marker { display: none; }
+.flight-brief-more summary::after { content: ''; width: 7px; height: 7px; margin-right: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 180ms var(--ease-out); }
+.flight-brief-more[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+.flight-brief-more summary:hover { color: var(--menu-text); }
+.flight-brief-more p { max-width: 62ch; margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--menu-text-soft); }
+
+.flight-lab-grid { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 10px 16px; margin-bottom: 8px; font-size: 14px; color: var(--menu-text-soft); }
+.flight-lab-settings select { height: 40px; padding: 0 10px; border: 1px solid var(--menu-line); background: rgba(5, 7, 9, 0.6); color: var(--menu-text); font: 14px var(--font-body); }
+.flight-lab-check { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; color: var(--menu-text-soft); }
+.flight-lab-check input { width: 16px; height: 16px; accent-color: var(--menu-accent); }
+.flight-lab-actions { display: flex; gap: 10px; margin: 6px 0 10px; }
+
+.flight-brief-actions { display: flex; flex-direction: column; gap: 12px; margin-right: 24px; padding-top: 20px; border-top: 1px solid var(--menu-line); }
+.flight-brief .menu-launch { width: 100%; height: 68px; font-size: 26px; text-shadow: none; transition: background-color 140ms ease-out; }
+.flight-brief .menu-launch span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flight-brief-secondary { display: flex; gap: 10px; }
+.flight-brief-secondary > *, .flight-lab-actions button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--menu-outline); color: var(--menu-text); text-decoration: none; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: var(--track); text-transform: uppercase; white-space: nowrap; transition: background-color 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out; }
+.flight-brief-secondary > :hover, .flight-lab-actions button:hover:not(:disabled) { border-color: var(--menu-accent); background: rgba(154, 215, 232, 0.08); }
+.flight-lab-actions button:disabled { border-style: dashed; color: var(--menu-locked); cursor: not-allowed; }
+.flight-brief-alert { margin: 0; font-size: 14px; line-height: 1.5; color: var(--menu-hostile); }
+.flight-brief :is(a, button, select, summary):focus-visible { outline: 2px solid var(--menu-accent); outline-offset: 3px; }
+
+/* The body scrolls when it has to; a focused scroll area gets a hairline, not the cyan ring. */
+.flight-brief-body:focus-visible { outline: 1px solid var(--menu-line); outline-offset: 4px; }
+/* Laptop heights: tighter rhythm so the practice rows fit without scrolling. */
+@media (max-height: 860px) {
+  .flight-brief { padding-top: 20px; padding-bottom: 20px; }
+  .flight-brief-body { margin-top: 14px; }
+  .flight-brief h1 { font-size: clamp(40px, 3.8vw, 52px); }
+  .flight-brief-lede { margin-top: 10px; font-size: 15px; }
+  .flight-brief-section { margin-top: 24px; }
+  .briefing-field { padding: 12px 0 14px; }
+  .briefing-label { margin-bottom: 9px; }
+  .briefing-option { min-height: 50px; padding: 7px 12px 9px; }
+  .briefing-stepper { height: 46px; }
+  .flight-brief-actions { padding-top: 16px; gap: 10px; }
+  .flight-brief .menu-launch { height: 58px; }
+}
+/* Short or narrow windows: the whole menu scrolls and the actions stay pinned to the bottom,
+   fading the rows that pass under them. */
+@media (max-height: 700px), (max-width: 900px) {
+  .flight-menu { overflow-y: auto; }
+  .flight-brief { height: auto; min-height: 100%; padding-bottom: 0; }
+  .flight-brief-body { flex: 1 0 auto; overflow: visible; }
+  .flight-brief-actions { position: sticky; bottom: 0; padding-bottom: 18px; background: linear-gradient(to top, rgba(40, 47, 54, 0.97) 82%, rgba(40, 47, 54, 0)); border-top-color: transparent; }
+}
+@media (max-width: 900px) {
+  .flight-brief { width: auto; padding: 16px 16px 0; }
+  .flight-brief-body { padding-right: 0; }
+  .flight-brief-actions { margin-right: 0; }
+  .flight-brief h1 { font-size: 40px; }
+  .flight-brief .menu-launch { height: 58px; font-size: 21px; padding: 0 20px; }
+}
+@media (max-width: 560px) {
+  .briefing-choice { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .briefing-option + .briefing-option { border-left: 0; }
+  .briefing-option:nth-child(even) { border-left: 1px solid var(--menu-line); }
+  .briefing-option:nth-child(n + 3) { border-top: 1px solid var(--menu-line); }
+  .flight-brief-secondary { flex-wrap: wrap; }
+  .flight-lab-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flight-brief { animation: none; }
+}
