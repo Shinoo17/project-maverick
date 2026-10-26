@@ -6,6 +6,7 @@ import { defaultMouseSettings, parseMouseSettings, type MouseSettings } from '..
 import { cameraFovRange, defaultCameraSettings, parseCameraFov, parseCameraSettings, type CameraSettings } from '../game/camera/cameraSettings'
 import { defaultKeyboardSettings, parseKeyboardSettings, type KeyboardSettings } from '../game/input/keyBindings'
 import { defaultGraphicsSettings, parseGraphicsSettings, type GraphicsSettings } from '../render/graphicsSettings'
+import { defaultAudioSettings, parseAudioSettings, type AudioSettings } from '../render/audio/audioSettings'
 
 export type SelectedMode = 'campaign' | 'pve' | 'training'
 export type ReducedMotionPreference = 'auto' | 'on' | 'off'
@@ -58,8 +59,8 @@ export interface PveSetup {
 /**
  * Fields added after v1 (`controls` in MR1; `callsign`, `selectedMode` and
  * `pveSetup` in P3b; `camera` with the camera styles; `cameraFov`, `keyboard`,
- * `graphics` and `display` with the Settings page) read as their defaults from an
- * older blob, so no bump.
+ * `graphics` and `display` with the Settings page; `audio` with the flight sounds) read as their
+ * defaults from an older blob, so no bump.
  */
 export interface Settings {
   version: 1
@@ -72,6 +73,7 @@ export interface Settings {
   keyboard: KeyboardSettings
   graphics: GraphicsSettings
   display: DisplaySettings
+  audio: AudioSettings
   callsign: string
   selectedMode: SelectedMode
   pveSetup: PveSetup
@@ -84,7 +86,7 @@ export const defaultPveSetup: PveSetup = {
 export const defaultSettings: Settings = {
   version: 1, aircraftId: 'f22', locale: 'th', controls: { ...defaultMouseSettings }, camera: { ...defaultCameraSettings },
   cameraFov: cameraFovRange.default, keyboard: defaultKeyboardSettings, graphics: defaultGraphicsSettings, display: defaultDisplaySettings,
-  callsign: 'VIPER 1-1', selectedMode: 'pve', pveSetup: defaultPveSetup,
+  audio: defaultAudioSettings, callsign: 'VIPER 1-1', selectedMode: 'pve', pveSetup: defaultPveSetup,
 }
 const STORAGE_KEY = 'maverick.settings'
 const maxCallsignLength = 16
@@ -131,7 +133,7 @@ export function parseSettings(raw: string | null): Settings {
     return {
       version: 1, aircraftId, locale: value.locale === 'en' ? 'en' : 'th', controls: parseMouseSettings(value.controls), camera: parseCameraSettings(value.camera),
       cameraFov: parseCameraFov(value.cameraFov), keyboard: parseKeyboardSettings(value.keyboard),
-      graphics: parseGraphicsSettings(value.graphics), display: parseDisplaySettings(value.display),
+      graphics: parseGraphicsSettings(value.graphics), display: parseDisplaySettings(value.display), audio: parseAudioSettings(value.audio),
       callsign: parseCallsign(value.callsign), selectedMode, pveSetup: parsePveSetup(value.pveSetup),
     }
   } catch { return defaultSettings }

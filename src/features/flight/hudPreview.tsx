@@ -7,7 +7,10 @@
 // at the lock, the painted one's missile coming at us, and one behind out of sight; ?radar=held keeps
 // the lock inside the cone). RWR: ?rwr (the radar fixtures turned on the player: the lock off the right locks
 // it with a radar missile, the painted one's missile has gone active, the close one behind searches). Missile lock: ?lock (with the ?gun target; cycles search, tracking, acquiring, locked,
-// lock lost), ?lock=0.45 holds that progress, ?lock=locked holds the lock. Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?deny (a refused trigger press each second), ?hp=25, ?sel=1, ?firing.
+// lock lost), ?lock=0.45 holds that progress, ?lock=locked holds the lock. Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?hp=25, ?sel=1, ?firing,
+// ?missiles=4 (1–4 missile slots, extra ones copied from the aircraft's), ?empty, ?wait (the dispensers' wait cycling),
+// ?deny=empty|wait|nolock (a refused press each second on the gun, the selected missile and the dispensers;
+// with ?flip the selection steps to the next missile 0.3 s after each refusal, which must stay on the card refused).
 import { createRef, StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useTranslation } from 'react-i18next'
@@ -17,7 +20,8 @@ import { GameRuntime } from '../../game/runtime/GameRuntime'
 import type { AircraftState } from '../../game/state/WorldState'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import { PlaygroundHud } from './PlaygroundHud'
-import { WeaponPanel } from './WeaponPanel'
+import { WeaponPanel, type SlotRefusal } from './WeaponPanel'
+import type { MissileRow, Refusal } from './weaponSlots'
 import { flightWarning } from './telemetry'
 import { defaultBindings } from '../../game/input/keyBindings'
 import { bindingNames } from '../settings/KeyPrompt'
@@ -27,7 +31,7 @@ import { radarFrame } from '../../render/radarFrame'
 import { RadarScope, type RadarDriver } from './RadarScope'
 import { RwrScope, type RwrDriver } from './RwrScope'
 import { createRwrFrame } from '../../render/rwrFrame'
-import { missileStations } from '../../content/weapons'
+import { gunStation, missileStations } from '../../content/weapons'
 import { getAircraft } from '../../content/aircraft'
 import { createLockFrame } from '../../render/lockFrame'
 import { createSeekerState, seekerRules } from '../../game/combat/seeker'
@@ -51,10 +55,32 @@ const aircraftId = params.get('aircraft') ?? 'f22'
 const rwr = params.has('rwr')
 const radar = params.get('radar') ?? (rwr ? '' : null)
 const lock = params.get('lock')
+const ownMissiles = missileStations(getAircraft(aircraftId))
+const previewMissiles: MissileRow[] = Array.from({ length: Number(params.get('missiles') ?? ownMissiles.length) }, (_, index) => {
+  const row = ownMissiles[index % ownMissiles.length]
+  return index < ownMissiles.length ? row : { station: { ...row.station, id: `${row.station.id}-${index}` }, weapon: row.weapon }
+})
+const ownGun = gunStation(getAircraft(aircraftId)).station.id
+const deny = params.has('deny') ? (params.get('deny') || 'empty') as Refusal : null
+/** The missile slot selected at `seconds` of page time: ?sel, or with ?flip the next one 0.3 s past each whole second. */
+const previewSlot = (seconds: number) => params.has('flip') ? (Math.floor(seconds - 0.3) % previewMissiles.length + previewMissiles.length) % previewMissiles.length : Number(params.get('sel') ?? 0)
+/** ?deny: each slot's refusals by page time. A refusal lands each whole second on the missile selected then, and on the gun and dispensers unless ?flip. */
+function previewRefusals(seconds: number): Record<string, SlotRefusal> {
+  if (!deny) return {}
+  const beat = Math.floor(seconds), n = previewMissiles.length, out: Record<string, SlotRefusal> = {}
+  previewMissiles.forEach((row, slot) => {
+    // The last whole second on which this slot was selected.
+    const last = beat - ((beat - 1 - slot) % n + n) % n
+    if (params.has('flip')) out[row.station.id] = { count: last, reason: deny }
+    else if (slot === previewSlot(seconds)) out[row.station.id] = { count: beat, reason: deny }
+  })
+  if (!params.has('flip')) Object.assign(out, { [ownGun]: { count: beat, reason: 'wait' }, countermeasures: { count: beat, reason: deny === 'empty' ? 'empty' : 'wait' } })
+  return out
+}
 /** The ?lock cycle in seconds: search, the climb to the lock, the lock held, the lock lost and bleeding away. */
 const LOCK_CYCLE = { search: 1, climb: 2.4, hold: 2, lost: 1.8 }
 function previewSeeker(seconds: number) {
-  const seeker = createSeekerState()
+  const seeker = createSeekerState(previewSlot(performance.now() / 1000))
   seeker.targetId = 'drone-1'
   if (lock === 'locked') return Object.assign(seeker, { progress: 1, locked: true, tracking: true })
   if (lock && lock !== '' && Number.isFinite(Number(lock))) return Object.assign(seeker, { progress: Number(lock), tracking: true })
@@ -103,6 +129,12 @@ function fly(state: AircraftState, t: number) {
   if (params.has('cooling')) { state.gun.heat = 0.6; state.gun.cooling = true }
   if (params.has('firing')) state.gun.shots = Math.floor(t * 50)
   if (params.has('hp')) state.hp = Number(params.get('hp'))
+  // Stores for the copied missile stations, and the selected slot.
+  for (const row of previewMissiles) if (!state.stores.some(store => store.stationId === row.station.id)) state.stores.push({ stationId: row.station.id, weaponId: row.weapon.id, count: Math.max(1, row.station.capacity - 1) })
+  state.targeting.seeker.slot = previewSlot(performance.now() / 1000)
+  // Empty stores (the gun card shows heat, not rounds) and dispensers; the dispensers' wait between bursts, cycling every 2.2 s (preview tick 0).
+  if (params.has('empty')) { state.stores = state.stores.map(store => ({ ...store, count: 0 })); state.countermeasures.bursts = 0 }
+  if (params.has('wait')) state.countermeasures.readyTick = Math.round((1 - (t % 2.2) / 2.2) * 132)
 }
 
 function Preview() {
@@ -205,7 +237,7 @@ function Preview() {
     <div className="flight-identity"><strong>F-22</strong><span>{t('training')} / {t('flatRange')}</span></div>
     <div className="flight-actions"><span>{t('cameraRollHorizon')}</span><button>{t('pauseFlight')} · Esc</button></div>
     <FlightSystemStatus state={telemetry} />
-    {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} selected={Number(params.get('sel') ?? 0)} denied={params.has('deny') ? Math.floor(performance.now() / 1000) : 0} preset="mouse" bindings={defaultBindings} reducedMotion={false} />}
+    {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} tick={params.has('wait') ? 0 : undefined} refusals={previewRefusals(performance.now() / 1000)} missiles={previewMissiles} preset="mouse" bindings={defaultBindings} reducedMotion={false} />}
     <PlaygroundHud state={telemetry} lesson={lesson} cameraChanged={false} lab={lab} />
     <p className="flight-warning" role="status">{warning ? t(warning) : ''}</p>
     <p className="flight-controls">{t('controlsHint', bindingNames(defaultBindings))}</p>

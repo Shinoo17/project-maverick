@@ -1,23 +1,28 @@
 /*
-The missile lock's tones (doc 07), synthesised with Web Audio: no sound files.
+The missile lock's tones (doc 07), synthesised with Web Audio: no sound files. They play on the
+flight's shared context (audio/mixer.ts); the recorded sounds are audio/flightSound.ts.
 
 - While the seeker tracks, short beeps come faster and a little higher as the progress climbs.
   Acquiring raises the pitch again.
 - On the lock: one rising two-note confirmation, then silence while it holds (user request
   25 Oct 2026: no steady lock tone).
 - LOCK LOST: one low falling blip.
-- A launch: a short rushing noise, the motor lighting under the jet.
 - A countermeasure burst: a quick run of dull thumps, one per flare leaving the dispensers.
-- The warning gear (rwrFrame.ts): a short rising chirp for each new radar painting us, a
-  pulsed tone while one locks us, and a fast two-note warble while a missile is launched at us
-  or closing.
+- A refused press (gun locked, missile or dispensers not ready, no lock): one low dull knock;
+  on an empty missile or empty dispensers, two short flat beeps instead.
+- The warning gear (rwrFrame.ts): a short rising chirp for each new radar painting us, and a fast
+  two-note warble while a missile is launched at us or closing. While one only locks us, the
+  recorded lock warning plays instead (flightSound.ts; user's Pixabay set, 2026-10-26).
 
 Driven from the render loop with the frame's lock picture (lockFrame.ts). Silent while the flight
-is paused, the jet is down or the page is hidden. The AudioContext is made on the first flying
-frame, after the click that launched the flight, so the browser lets it play.
+is paused, the jet is down or the page is hidden.
 */
 import type { LockMarks } from './lockFrame'
 import type { RwrDisplay } from './rwrFrame'
+import type { AudioMixer } from './audio/mixer'
+
+/** Why a press was refused: `wait` until something changes (heat, cooldown, lock), or `empty` for good. */
+export type RefusalTone = 'wait' | 'empty'
 
 /** Provisional values, waiting on playtest. */
 const TONE = {
@@ -28,25 +33,21 @@ const TONE = {
   trackingHz: 880, acquiringHz: 1180,
   confirmHz: [1320, 1760] as const,
   lostHz: [620, 360] as const,
-  /** Warnings: the new-emitter chirp, the lock pulse (Hz, seconds between), the missile warble (two notes, seconds per note). */
+  /** Warnings: the new-emitter chirp, the missile warble (two notes, seconds per note). */
   chirpHz: [520, 780] as const,
-  lockHz: 1000, lockEvery: 0.5,
   warbleHz: [950, 1350] as const, warbleNote: 0.09,
+  /** Refused presses: the knock (Hz falling to Hz) and the empty beeps (Hz, seconds apart). */
+  knockHz: [190, 110] as const,
+  emptyHz: 440, emptyEvery: 0.11,
 } as const
 
-export function createLockTone() {
+export function createLockTone(mixer: AudioMixer) {
   let audio: AudioContext | null = null, out: GainNode | null = null
   let nextBeep = 0, wasLocked = false, wasLost = false
   let nextWarning = 0, warbleNote = 0, lastChirp = -Infinity
 
   function context() {
-    if (!audio) {
-      const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (!Context) return null
-      audio = new Context()
-      out = audio.createGain(); out.gain.value = 1; out.connect(audio.destination)
-    }
-    if (audio.state === 'suspended') void audio.resume().catch(() => {})
+    audio = mixer.context(); out = mixer.bus('warning')
     return audio
   }
 
@@ -87,24 +88,6 @@ export function createLockTone() {
     }
   }
 
-  /** The player's own missile leaving: filtered noise swelling and dying away over about a second. */
-  function launch() {
-    const ctx = context()
-    if (!ctx || !out) return
-    const seconds = 1.1, now = ctx.currentTime
-    const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * seconds), ctx.sampleRate), data = buffer.getChannelData(0)
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
-    const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain()
-    source.buffer = buffer
-    filter.type = 'bandpass'; filter.Q.value = 0.7
-    filter.frequency.setValueAtTime(1800, now); filter.frequency.exponentialRampToValueAtTime(500, now + seconds)
-    gain.gain.setValueAtTime(0, now)
-    gain.gain.linearRampToValueAtTime(TONE.gain * 2.4, now + 0.05)
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds)
-    source.connect(filter).connect(gain).connect(out)
-    source.start(now); source.stop(now + seconds)
-  }
-
   /** One rendered frame of the warning gear. Silent while paused, down or hidden. */
   function warn(display: RwrDisplay, active: boolean) {
     if (!active) return
@@ -117,16 +100,11 @@ export function createLockTone() {
       blip(now, TONE.chirpHz[0], 0.05, TONE.gain * 0.8, TONE.chirpHz[1], 'square')
     }
     const level = display.top
-    if (level !== 'lock' && level !== 'launch' && level !== 'missile') { nextWarning = now; return }
+    if (level !== 'launch' && level !== 'missile') { nextWarning = now; return }
     if (now < nextWarning) return
-    if (level === 'lock') {
-      blip(now, TONE.lockHz, 0.12, TONE.gain * 0.9, TONE.lockHz, 'square')
-      nextWarning = now + TONE.lockEvery
-    } else {
-      warbleNote = 1 - warbleNote
-      blip(now, TONE.warbleHz[warbleNote], TONE.warbleNote, TONE.gain * 1.1, TONE.warbleHz[warbleNote], 'square')
-      nextWarning = now + TONE.warbleNote
-    }
+    warbleNote = 1 - warbleNote
+    blip(now, TONE.warbleHz[warbleNote], TONE.warbleNote, TONE.gain * 1.1, TONE.warbleHz[warbleNote], 'square')
+    nextWarning = now + TONE.warbleNote
   }
 
   /** The player's own countermeasure burst: `count` thumps spread evenly over `seconds`. */
@@ -136,15 +114,15 @@ export function createLockTone() {
     for (let index = 0; index < count; index++) blip(ctx.currentTime + index * seconds / Math.max(1, count - 1), 220, 0.07, TONE.gain * 1.3, 70, 'square')
   }
 
-  /** Stops every sound at once, scheduled beeps included. For pause, blur and a hidden page: the
-   * render loop may not run another frame to do it. The next active `update` resumes. */
-  function silence() {
-    if (audio?.state === 'running') void audio.suspend().catch(() => {})
+  /** A press the aircraft refused (see RefusalTone). */
+  function refuse(kind: RefusalTone) {
+    const ctx = context()
+    if (!ctx || !out) return
+    const now = ctx.currentTime
+    if (kind === 'wait') { blip(now, TONE.knockHz[0], 0.08, TONE.gain * 1.5, TONE.knockHz[1], 'square'); return }
+    blip(now, TONE.emptyHz, 0.06, TONE.gain, TONE.emptyHz, 'square')
+    blip(now + TONE.emptyEvery, TONE.emptyHz, 0.06, TONE.gain, TONE.emptyHz, 'square')
   }
 
-  function dispose() {
-    void audio?.close().catch(() => {})
-    audio = null; out = null
-  }
-  return { update, launch, dispense, warn, silence, dispose }
+  return { update, dispense, warn, refuse }
 }

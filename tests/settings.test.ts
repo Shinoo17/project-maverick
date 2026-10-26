@@ -9,6 +9,7 @@ import {
 import { stepChoice, stepSlider, type ChoiceRow, type SliderRow } from '../src/features/settings/rows'
 import { effectiveUiScale, parseDisplaySettings, parseSettings, resolveReducedMotion } from '../src/platform/storage'
 import { defaultGraphicsSettings, graphicsPreset, parseGraphicsSettings, presetValues } from '../src/render/graphicsSettings'
+import { defaultAudioSettings, parseAudioSettings, volumeGain } from '../src/render/audio/audioSettings'
 
 describe('saved settings', () => {
   it('reads a save from before the Settings page with every new group at its default', () => {
@@ -17,7 +18,16 @@ describe('saved settings', () => {
     expect(settings.keyboard).toEqual(defaultKeyboardSettings)
     expect(settings.graphics).toEqual(defaultGraphicsSettings)
     expect(settings.display).toEqual({ uiScale: 100, reducedMotion: 'auto' })
+    expect(settings.audio).toEqual(defaultAudioSettings)
     expect(settings.cameraFov).toBe(56)
+  })
+
+  it('keeps each volume a percent on the 5 % grid, and a missing channel at its default', () => {
+    const audio = parseAudioSettings({ master: 137, engine: -4, gun: 42, missile: 'loud', music: 0 })
+    expect(audio).toEqual({ ...defaultAudioSettings, master: 100, engine: 0, gun: 40, music: 0 })
+    expect(volumeGain(100)).toBe(1)
+    expect(volumeGain(50)).toBe(0.25)
+    expect(volumeGain(0)).toBe(0)
   })
 
   it('clamps and snaps out-of-range numbers', () => {

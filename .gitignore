@@ -10,3 +10,6 @@
 node_modules
 
 /benchmarks/flight/out/
+
+# Raw sound libraries (7.5 GB). Chosen originals live in sound-source/select_sound (Git LFS).
+/sound-source/unselect_sound/

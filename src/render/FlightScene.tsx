@@ -15,6 +15,8 @@ import { between, createGunnery, lockOf } from './gunneryFrame'
 import { radarFrame } from './radarFrame'
 import { createLockFrame } from './lockFrame'
 import { createLockTone } from './lockTone'
+import { createAudioMixer } from './audio/mixer'
+import { createFlightSound } from './audio/flightSound'
 import { MissileModels, placeMissiles, type MissilePool } from './MissileModels'
 import { distanceScale, zoomShare } from './targetVisibility'
 import { aimAssist, aimMagnet, withAimAssist } from '../game/combat/aimAssist'
@@ -38,10 +40,11 @@ import type { RadarDriver } from '../features/flight/RadarScope'
 import type { RwrDriver } from '../features/flight/RwrScope'
 import { createRwrFrame } from './rwrFrame'
 import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
+import type { AudioSettings } from './audio/audioSettings'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; rwr?: RefObject<RwrDriver | null>; fps?: RefObject<HTMLElement | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; onReady: () => void; onTelemetry: (state: AircraftState) => void }
-function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTelemetry, indicators }: Props) {
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void }
+function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady, onTelemetry, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
   const rig = useMemo(() => new FlightCamera(new URLSearchParams(window.location.search).has('driftCamera')), [])
@@ -82,16 +85,23 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
   const wreckModels = useRef<(Group | null)[]>([])
   const gunnery = useMemo(() => createGunnery(aircraftId), [aircraftId])
   const lockFrame = useMemo(createLockFrame, [])
-  const lockTone = useMemo(createLockTone, [])
+  // One audio context for the synthesised tones and the recorded sounds.
+  const mixer = useMemo(createAudioMixer, [])
+  const lockTone = useMemo(() => createLockTone(mixer), [mixer])
+  const flightSound = useMemo(() => createFlightSound(mixer), [mixer])
   const rwrFrame = useMemo(createRwrFrame, [])
-  useEffect(() => () => lockTone.dispose(), [lockTone])
-  // Paused or hidden, the loop may not draw again, so the tone is cut here rather than in a frame.
-  useEffect(() => { if (!running) lockTone.silence() }, [running, lockTone])
+  useEffect(() => () => { flightSound.reset(); mixer.dispose() }, [mixer, flightSound])
+  // Volumes apply at once, even paused: the mixer keeps them for a context it makes later.
+  useEffect(() => { mixer.setVolumes(audio) }, [mixer, audio])
+  // Paused or hidden, the loop may not draw again, so sound is cut here rather than in a frame.
+  // Shot down, the flight stops at once; the explosion and the engine's fade play out first.
+  useEffect(() => { if (!running) mixer.silence(current.current && !current.current.alive ? 3 : 0) }, [running, mixer])
+  useEffect(() => { session.refused = lockTone.refuse; return () => { session.refused = undefined } }, [session, lockTone])
   useEffect(() => {
-    const hidden = () => { if (document.hidden) lockTone.silence() }
-    document.addEventListener('visibilitychange', hidden); addEventListener('blur', lockTone.silence)
-    return () => { document.removeEventListener('visibilitychange', hidden); removeEventListener('blur', lockTone.silence) }
-  }, [lockTone])
+    const hidden = () => { if (document.hidden) mixer.silence() }, blur = () => mixer.silence()
+    document.addEventListener('visibilitychange', hidden); addEventListener('blur', blur)
+    return () => { document.removeEventListener('visibilitychange', hidden); removeEventListener('blur', blur) }
+  }, [mixer])
   const mount = useMemo(() => gunMountOf(aircraftId), [aircraftId])
   // Whether aim assist moved the stick on the last command; the HUD names it.
   const assisting = useRef(false)
@@ -116,7 +126,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
-      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); rwrFrame.reset(); bayDoors.current?.reset(); session.input.resyncAim(); assisting.current = false; firing.current = false
+      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); rwrFrame.reset(); flightSound.reset(); bayDoors.current?.reset(); session.input.resyncAim(); assisting.current = false; firing.current = false
       previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
@@ -183,7 +193,6 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
     // The × keeps its angle through a change of lens (speed, burner, the gun zoom).
     session.input.setLens((camera as PerspectiveCamera).fov)
     const hits = runtime.drainHits(), events = runtime.drainEvents()
-    if (session.running && events.some(event => event.type === 'missile-launched' && event.entityId === state.id)) lockTone.launch()
     if (session.running && events.some(event => event.type === 'countermeasure-dispensed' && event.entityId === state.id)) lockTone.dispense(countermeasureRules.burst.flares, countermeasureRules.burst.duration)
     // The player's bay doors open for each missile leaving them.
     const simClock = ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP
@@ -212,6 +221,8 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
     const warning = rwrFrame.update(world.current, state, simClock)
     indicators.rwr?.current?.(state.alive ? warning : null, simClock)
     lockTone.warn(warning, session.running && state.alive && !document.hidden)
+    // The recorded sounds: engines, guns, missiles, explosions and the lock warning.
+    flightSound.update({ active: session.running && !document.hidden, world: world.current, player: state, velocity: pose.velocity, camera, events, hits, warning: warning.top })
     if (cursor && aiming) {
       // Screen-locked aim assist: the × drawn toward the lead marker as this frame shows it.
       const lead = session.running && marks.lead ? markOnScreen(camera, marks.lead, session.input.stick, size.width, size.height) : null
@@ -244,7 +255,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, onReady, onTel
       // The × is a point on the chase shot; on a turned view it marks nothing, so it is hidden.
       aim: aiming ? cursor ? rig.lookingAway ? null : { screen: { x: input.stick.px, y: input.stick.py }, share: session.input.aim.share } : { direction: session.input.aim.direction, share: session.input.aim.share } : null })
     elapsed.current += dt
-    if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state) }
+    if (elapsed.current >= 0.1) { elapsed.current = 0; onTelemetry(state, tick) }
     // Counted over wall time while flying only; the window restarts on resume.
     const now = performance.now(), counter = fps.current
     if (!session.running || resumed || counter.since < 0) { counter.frames = 0; counter.since = now }

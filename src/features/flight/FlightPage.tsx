@@ -7,7 +7,7 @@ import { createRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, use
 import { useTranslation } from 'react-i18next'
 import { selectCamera, useSessionSettings } from '../../app/sessionStore'
 import { cameraRollOption, horizonStyleOption, nextCameraSettings } from '../../game/camera/cameraSettings'
-import { actionForCode } from '../../game/input/keyBindings'
+import { actionForCode, type FlightAction } from '../../game/input/keyBindings'
 import { mouseHintKey } from '../../game/input/mouseStick'
 import { useReducedMotion, useUiScale } from '../menu/hooks'
 import { SettingsPanel } from '../settings/SettingsPanel'
@@ -24,7 +24,8 @@ import type { FlightSession } from './session'
 import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
 import { RadarScope, type RadarDriver } from './RadarScope'
 import { RwrScope, type RwrDriver } from './RwrScope'
-import { WeaponPanel } from './WeaponPanel'
+import { WeaponPanel, type SlotRefusal } from './WeaponPanel'
+import { pressedSlot, weaponSlots } from './weaponSlots'
 import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
 import { practiceSpawns, targetDrone as droneSpawn, type PracticePreset } from '../../game/playground/practice'
 import { dronePaths, type TargetDroneMode } from '../../game/playground/dronePath'
@@ -38,7 +39,7 @@ const stopTitle = { weapon: 'shotDown', terrain: 'crashed', boundary: 'boundaryR
 const droneDetail = (mode: TargetDroneMode | 'off') => mode === 'still' ? '0 m/s' : mode === 'racetrack' ? `${dronePaths.speed} m/s` : mode === 'circle' ? `${dronePaths.speed} m/s · r ${dronePaths.circleRadius / 1000} km` : mode === 'bot' ? 'GUN · MSL' : undefined
 export function FlightPage() {
   const { t } = useTranslation()
-  const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics } = useSessionSettings()
+  const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics, audio } = useSessionSettings()
   const reducedMotion = useReducedMotion(), uiScale = useUiScale()
   const [aircraftId, setAircraftId] = useState(selectedAircraftId)
   const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, resetId: 0, timeScale: 1, reducedMotion }), [])
@@ -46,10 +47,20 @@ export function FlightPage() {
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
   const [timeScale, setTimeScale] = useState(1), [targetDrone, setTargetDrone] = useState<TargetDroneMode | null>(null)
   const [view, setView] = useState<'pause' | 'settings'>('pause')
-  // Trigger presses refused by a locked gun (cooling or overheated); each one shakes the gun card.
-  const [gunDenied, setGunDenied] = useState(0)
-  const latest = useRef<AircraftState | null>(null)
-  const denyIfLocked = useCallback(() => { const gun = latest.current?.gun; if (gun && (gun.overheated || gun.cooling)) setGunDenied(count => count + 1) }, [])
+  // Presses the aircraft refuses, by weapon slot (weaponSlots.ts): each plays on the card it was
+  // made on, whatever is selected after, with a tone: a wait or no lock (the card shakes, a low
+  // knock) or empty (EMPTY flashes red, two flat beeps). Read from the live world, not the 10 Hz
+  // telemetry, so a press just as a wait ends is never refused on screen while the shot goes out.
+  const [refusals, setRefusals] = useState<Record<string, SlotRefusal>>({})
+  const refuseIfBlocked = useCallback((action: FlightAction) => {
+    const world = session.runtime?.snapshot(), state = world?.aircraft[0]
+    if (!world || !state?.alive) return
+    const slot = pressedSlot(weaponSlots(state.aircraftId, state, world.tick), action), reason = slot?.blocked
+    if (!slot || !reason) return
+    setRefusals(last => ({ ...last, [slot.id]: { count: (last[slot.id]?.count ?? 0) + 1, reason } }))
+    session.refused?.(reason === 'empty' ? 'empty' : 'wait')
+  }, [session])
+  const [telemetryTick, setTelemetryTick] = useState<number | undefined>(undefined)
   const [hasStarted, setHasStarted] = useState(false)
   const [ready, setReady] = useState(false), [running, setRunning] = useState(false), [failed, setFailed] = useState(false)
   const [retry, setRetry] = useState(0), [pointerError, setPointerError] = useState(false)
@@ -77,7 +88,7 @@ export function FlightPage() {
   }, [session])
   const onReady = useCallback(() => setReady(true), [])
   const onError = useCallback(() => { setFailed(true); pause() }, [pause])
-  const onTelemetry = useCallback((state: AircraftState) => { latest.current = state; setTelemetry(state); if (!state.alive) pause() }, [pause])
+  const onTelemetry = useCallback((state: AircraftState, tick: number) => { setTelemetry(state); setTelemetryTick(tick); if (!state.alive) pause() }, [pause])
   useEffect(() => {
     if (!running) { if (!dialog.current?.open) dialog.current?.showModal() }
     else { closeDialog(); setView('pause') }
@@ -94,7 +105,7 @@ export function FlightPage() {
       if (!bound) return
       e.preventDefault()
       if (bound.action === 'cameraCycle') { if (!e.repeat) { selectCamera(nextCameraSettings(session.camera)); setCameraChanged(true) }; return }
-      if (bound.action === 'fireGun' && !e.repeat) denyIfLocked()
+      if ((bound.action === 'fireGun' || bound.action === 'fireMissile' || bound.action === 'countermeasure') && !e.repeat) refuseIfBlocked(bound.action)
       session.input.press(e.code, e.repeat)
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
@@ -103,9 +114,9 @@ export function FlightPage() {
     // Only a press made while already locked fires: the click that takes the lock never does (doc 02).
     const mousedown = (e: MouseEvent) => {
       if (!session.running || document.pointerLockElement !== surface.current || session.preset !== 'mouse') return
-      if (e.button === 0) { session.input.mouseGun = true; denyIfLocked() }
+      if (e.button === 0) { session.input.mouseGun = true; refuseIfBlocked('fireGun') }
       // Right button: launch the selected missile (weapon panel rules).
-      if (e.button === 2) session.input.pressLaunch()
+      if (e.button === 2) { session.input.pressLaunch(); refuseIfBlocked('fireMissile') }
     }
     // The right button launches; it never opens the browser menu over the flight.
     const menu = (e: MouseEvent) => { if (session.running) e.preventDefault() }
@@ -121,7 +132,7 @@ export function FlightPage() {
       document.removeEventListener('pointerlockchange', lock); document.removeEventListener('visibilitychange', hidden)
       session.running = false; session.input.clear(); if (document.pointerLockElement === surface.current) document.exitPointerLock()
     }
-  }, [pause, session, denyIfLocked])
+  }, [pause, session, refuseIfBlocked])
   async function begin() {
     session.input.clear(); setPointerError(false)
     // Close the top-layer dialog before asking the browser to lock the scene.
@@ -167,7 +178,7 @@ export function FlightPage() {
   return <main className="flight-root" data-settings={inSettings || undefined} style={{ '--ui-scale': uiScale } as CSSProperties}>
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
       {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
-        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} onReady={onReady} onTelemetry={onTelemetry} />
+        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} />
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
@@ -178,7 +189,7 @@ export function FlightPage() {
       <div className="flight-actions">{graphics.showFps && <span ref={indicators.fps} className="flight-fps" aria-hidden="true" />}<span>{t(cameraRollOption(camera.roll).labelKey)}{camera.roll === 'horizon' ? ` · ${t(horizonStyleOption(camera.horizonStyle).labelKey)}` : ''}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />
       {/* The Flight Lab readout takes the same corner, so the column steps aside while it is open. */}
-      {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} selected={telemetry?.targeting.seeker.slot ?? 0} denied={gunDenied} preset={preset} bindings={keyboard.bindings} reducedMotion={reducedMotion} />}
+      {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} tick={telemetryTick} refusals={refusals} preset={preset} bindings={keyboard.bindings} reducedMotion={reducedMotion} />}
       <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
       {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
       {running && preset === 'mouse' && controls.mode !== 'aim' && controls.mode !== 'cursor' && <div ref={indicators.gate} className="flight-stick-gate" aria-hidden="true" />}

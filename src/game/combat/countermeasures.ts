@@ -95,6 +95,12 @@ export function startBurst(state: CountermeasureState, tick: number, step: numbe
   return true
 }
 
+/** The share of the wait from one burst's start to the next still to run on `tick`: near 1 as a burst starts, 0 once another may start. */
+export function burstCooldown(state: CountermeasureState, tick: number, step: number) {
+  const cycle = flareTick(countermeasureRules.burst.flares - 1, step) + Math.round(countermeasureRules.cooldown / step)
+  return Math.max(0, Math.min(1, (state.readyTick - tick) / cycle))
+}
+
 /**
  * The decoys `entity` (its pose as the tick ends) releases on `tick`, taking ids from `nextId`.
  * A dead aircraft drops what is left of its burst.
