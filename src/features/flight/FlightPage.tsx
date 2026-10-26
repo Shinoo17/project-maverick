@@ -39,7 +39,7 @@ const stopTitle = { weapon: 'shotDown', terrain: 'crashed', boundary: 'boundaryR
 const droneDetail = (mode: TargetDroneMode | 'off') => mode === 'still' ? '0 m/s' : mode === 'racetrack' ? `${dronePaths.speed} m/s` : mode === 'circle' ? `${dronePaths.speed} m/s · r ${dronePaths.circleRadius / 1000} km` : mode === 'bot' ? 'GUN · MSL' : undefined
 export function FlightPage() {
   const { t } = useTranslation()
-  const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics } = useSessionSettings()
+  const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics, audio } = useSessionSettings()
   const reducedMotion = useReducedMotion(), uiScale = useUiScale()
   const [aircraftId, setAircraftId] = useState(selectedAircraftId)
   const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, resetId: 0, timeScale: 1, reducedMotion }), [])
@@ -178,7 +178,7 @@ export function FlightPage() {
   return <main className="flight-root" data-settings={inSettings || undefined} style={{ '--ui-scale': uiScale } as CSSProperties}>
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
       {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
-        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} onReady={onReady} onTelemetry={onTelemetry} />
+        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} />
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">

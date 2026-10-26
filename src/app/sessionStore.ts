@@ -11,6 +11,7 @@ import { parseMouseSettings, type MouseSettings } from '../game/input/mouseStick
 import { parseCameraFov, parseCameraSettings, type CameraSettings } from '../game/camera/cameraSettings'
 import { parseKeyboardSettings, type KeyboardSettings } from '../game/input/keyBindings'
 import { parseGraphicsSettings, type GraphicsSettings } from '../render/graphicsSettings'
+import { parseAudioSettings, type AudioSettings } from '../render/audio/audioSettings'
 
 import i18n from '../locales'
 
@@ -30,6 +31,7 @@ export function selectCameraFov(fov: number) { update({ cameraFov: parseCameraFo
 export function selectKeyboard(patch: Partial<KeyboardSettings>) { update({ keyboard: parseKeyboardSettings({ ...settings.keyboard, ...patch }) }) }
 export function selectGraphics(patch: Partial<GraphicsSettings>) { update({ graphics: parseGraphicsSettings({ ...settings.graphics, ...patch }) }) }
 export function selectDisplay(patch: Partial<DisplaySettings>) { update({ display: parseDisplaySettings({ ...settings.display, ...patch }) }) }
+export function selectAudio(patch: Partial<AudioSettings>) { update({ audio: parseAudioSettings({ ...settings.audio, ...patch }) }) }
 export function selectCallsign(callsign: string) { update({ callsign: parseCallsign(callsign) }) }
 export function selectMode(mode: SelectedMode) { update({ selectedMode: mode }) }
 export function updatePveSetup(patch: Partial<PveSetup>) { update({ pveSetup: parsePveSetup({ ...settings.pveSetup, ...patch }) }) }

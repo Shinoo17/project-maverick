@@ -9,8 +9,9 @@ being hidden (docs 20).
 */
 import type { TFunction } from 'i18next'
 import {
-  selectCallsign, selectCamera, selectCameraFov, selectControls, selectDisplay, selectGraphics, selectKeyboard, selectLocale,
+  selectAudio, selectCallsign, selectCamera, selectCameraFov, selectControls, selectDisplay, selectGraphics, selectKeyboard, selectLocale,
 } from '../../app/sessionStore'
+import { defaultAudioSettings, volumeRange, type VolumeChannel } from '../../render/audio/audioSettings'
 import { cameraFovRange, cameraRollOptions, defaultCameraSettings, horizonStyleDisabled, horizonStyleOptions } from '../../game/camera/cameraSettings'
 import { defaultKeyboardSettings, sameBindings, type KeyboardSettings } from '../../game/input/keyBindings'
 import { defaultMouseSettings, mouseHintKey } from '../../game/input/mouseStick'
@@ -79,6 +80,11 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
   const pending = (id: string, label: TextKey, reason: TextKey): PendingRow =>
     ({ kind: 'pending', id, label: t(label), detail: t(reason), disabled: t(reason), modified: false })
   const effectOptions = effectQualities.map(value => ({ value, label: t(`settingsQuality_${value}` as const) }))
+  const volume = (channel: VolumeChannel, label: TextKey, detail: TextKey): SliderRow => ({
+    kind: 'slider', id: `volume-${channel}`, label: t(label), detail: t(detail), disabled: noReason,
+    value: s.audio[channel], min: volumeRange.min, max: volumeRange.max, step: volumeRange.step, format: value => `${value}%`,
+    modified: s.audio[channel] !== defaultAudioSettings[channel],
+    set: value => selectAudio({ [channel]: value }), reset: () => selectAudio({ [channel]: defaultAudioSettings[channel] }) })
 
   return [
     {
@@ -187,11 +193,21 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
       ],
     },
     {
-      id: 'audio', label: t('settingsTabAudio'), pending: t('settingsAudioPending'), sections: [
-        { title: t('settingsSectionVolume'), rows: [
-          pending('master', 'settingsVolumeMaster', 'settingsAudioPending'),
-          pending('engine', 'settingsVolumeEngine', 'settingsAudioPending'),
-          pending('ui', 'settingsVolumeUi', 'settingsAudioPending'),
+      id: 'audio', label: t('settingsTabAudio'), pending: null, sections: [
+        { title: t('settingsSectionVolume'), rows: [volume('master', 'settingsVolumeMaster', 'settingsVolumeMasterDetail')] },
+        { title: t('settingsSectionAircraftSound'), rows: [
+          volume('engine', 'settingsVolumeEngine', 'settingsVolumeEngineDetail'),
+          volume('air', 'settingsVolumeAir', 'settingsVolumeAirDetail'),
+        ] },
+        { title: t('settingsSectionWeaponSound'), rows: [
+          volume('gun', 'settingsVolumeGun', 'settingsVolumeGunDetail'),
+          volume('missile', 'settingsVolumeMissile', 'settingsVolumeMissileDetail'),
+          volume('impacts', 'settingsVolumeImpacts', 'settingsVolumeImpactsDetail'),
+        ] },
+        { title: t('settingsSectionCockpitSound'), rows: [volume('warning', 'settingsVolumeWarning', 'settingsVolumeWarningDetail')] },
+        { title: t('settingsSectionMusicMenu'), rows: [
+          volume('music', 'settingsVolumeMusic', 'settingsVolumeMusicDetail'),
+          volume('ui', 'settingsVolumeUi', 'settingsVolumeUiDetail'),
         ] },
       ],
     },

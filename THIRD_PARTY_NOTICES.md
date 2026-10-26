@@ -31,3 +31,10 @@ Barlow, Barlow Condensed (Copyright 2017 The Barlow Project Authors), IBM Plex M
 # Input prompt icons
 
 Keyboard and mouse prompt icons in `public/assets/input_prompts/Keyboard_and_Mouse/` are from Kenney's Input Prompts pack (https://kenney.nl/assets/input-prompts), released under Creative Commons Zero (CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/). Attribution is not required; it is given here as thanks.
+
+# Sound effects
+
+Game sounds in `public/assets/audio/` are trimmed, looped and levelled by `scripts/build-audio.mjs` from originals kept in `sound-source/select_sound/`; `public/assets/audio/manifest.json` lists the source and licence of each file.
+
+- Pixabay (https://pixabay.com): jet, afterburner, wind, sonic boom, fly-by, gun, missile and lock-warning sounds, under the Pixabay Content License (https://pixabay.com/service/license-summary/). Attribution is not required.
+- Sonniss GDC 2026 Game Audio Bundle (https://sonniss.com/gameaudiogdc): explosions and the metal hit, by Epic Stock Media, Federico Soler and The Noisery, under the bundle's royalty-free licence (`sound-source/select_sound/License - GDC Game Audio.pdf`). Attribution is not required.
