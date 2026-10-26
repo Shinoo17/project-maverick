@@ -34,7 +34,6 @@ import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import { createBayDoors, type BayDoors } from './aircraft/bayDoors'
-import { countermeasureRules } from '../game/combat/countermeasures'
 import type { HudDriver } from '../features/flight/FlightInstruments'
 import type { RadarDriver } from '../features/flight/RadarScope'
 import type { RwrDriver } from '../features/flight/RwrScope'
@@ -193,7 +192,6 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     // The × keeps its angle through a change of lens (speed, burner, the gun zoom).
     session.input.setLens((camera as PerspectiveCamera).fov)
     const hits = runtime.drainHits(), events = runtime.drainEvents()
-    if (session.running && events.some(event => event.type === 'countermeasure-dispensed' && event.entityId === state.id)) lockTone.dispense(countermeasureRules.burst.flares, countermeasureRules.burst.duration)
     // The player's bay doors open for each missile leaving them.
     const simClock = ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP
     for (const event of events) if (event.type === 'missile-launched' && event.entityId === state.id) bayDoors.current?.open(event.stationId, event.hardpoint.z, simClock)

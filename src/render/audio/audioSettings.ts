@@ -6,7 +6,7 @@ Each channel is a percent, 0–100 in steps of 5. The mixer (mixer.ts) gives eac
 under the master, so a channel's slider changes only its own sounds:
 - engine: jet engines and afterburner, the player's and everyone else's
 - air: wind, buffet, sonic boom and fly-bys
-- gun, missile (launch rush and motor), impacts (explosions and hits)
+- gun, missile (launch rush, motor and the player's flares), impacts (explosions and hits)
 - warning: the lock tones and the RWR (lockTone.ts and the lock warning loop)
 - music and ui: no sounds yet; kept so the choice is ready when they arrive
 */

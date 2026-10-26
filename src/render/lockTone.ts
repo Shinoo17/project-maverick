@@ -7,7 +7,6 @@ flight's shared context (audio/mixer.ts); the recorded sounds are audio/flightSo
 - On the lock: one rising two-note confirmation, then silence while it holds (user request
   25 Oct 2026: no steady lock tone).
 - LOCK LOST: one low falling blip.
-- A countermeasure burst: a quick run of dull thumps, one per flare leaving the dispensers.
 - A refused press (gun locked, missile or dispensers not ready, no lock): one low dull knock;
   on an empty missile or empty dispensers, two short flat beeps instead.
 - The warning gear (rwrFrame.ts): a short rising chirp for each new radar painting us, and a fast
@@ -107,13 +106,6 @@ export function createLockTone(mixer: AudioMixer) {
     nextWarning = now + TONE.warbleNote
   }
 
-  /** The player's own countermeasure burst: `count` thumps spread evenly over `seconds`. */
-  function dispense(count: number, seconds: number) {
-    const ctx = context()
-    if (!ctx || !out) return
-    for (let index = 0; index < count; index++) blip(ctx.currentTime + index * seconds / Math.max(1, count - 1), 220, 0.07, TONE.gain * 1.3, 70, 'square')
-  }
-
   /** A press the aircraft refused (see RefusalTone). */
   function refuse(kind: RefusalTone) {
     const ctx = context()
@@ -124,5 +116,5 @@ export function createLockTone(mixer: AudioMixer) {
     blip(now + TONE.emptyEvery, TONE.emptyHz, 0.06, TONE.gain, TONE.emptyHz, 'square')
   }
 
-  return { update, dispense, warn, refuse }
+  return { update, warn, refuse }
 }

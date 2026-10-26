@@ -30,6 +30,7 @@ Recipes. Times in seconds of the source. `loop`: `start` + `length` is the loop,
 past the end for the crossfade. One-shots: `start` + `length`, with `fadeIn` / `fadeOut`.
 `rms` / `peak` are dBFS targets. `search: [from, to]` moves a loop's start to where its head best
 matches the run past its end (spectral bands); `flatten` divides out slow level drift over that many seconds.
+`filter` is an ffmpeg audio filter run on the source as it is read.
 */
 const recipes = [
   // Engine: a steady jet bed throughout. Source peaks +2 dBFS, so it is levelled down.
@@ -56,6 +57,12 @@ const recipes = [
   // Explosions and hits (none in the Pixabay set).
   { out: 'impacts/explosion-small.mp3', src: 'sonniss/EXPLDsgn_Explosion Small Blast Enemy Death Crunchy Boom Cartoon Noisy Crash Impact Delay 03_ESM_AG.wav', licence: SONNISS, start: 0, length: 1.5, fadeIn: 0.002, fadeOut: 0.5, channels: 2, rate: 48000, peak: -1 },
   { out: 'impacts/explosion-large.mp3', src: 'sonniss/EffectiveTrailer_Booms_Vol2_075.wav', licence: SONNISS, start: 0.25, length: 6.5, fadeIn: 0.002, fadeOut: 2.5, channels: 2, rate: 48000, peak: -1, trimSilence: -45 },
+  // Flares: four firework bangs (1 s apart, each gone in 0.1–0.3 s) low-passed to a dull thunk, as heard
+  // through the airframe; flightSound.ts plays them a quarter slower, so 1.2 kHz there is 900 Hz heard.
+  ...[10.12, 11.13, 14.13, 15.15].map((start, index) => (
+    { out: `weapons/flare-thunk-${index + 1}.mp3`, src: 'sonniss/13 Fireworks_powerful explosions_multiples in a row_near.wav', licence: SONNISS, start, length: 0.32, fadeIn: 0.004, fadeOut: 0.13, channels: 1, rate: 24000, peak: -1, filter: 'lowpass=f=1200,lowpass=f=1200' })),
+  // The flares' burning hiss: the top of the missile launch rush, under the thunks.
+  { out: 'weapons/flare-hiss.mp3', src: 'pixabay/missile-launch.mp3', licence: PIXABAY, start: 0.05, length: 1.2, fadeIn: 0.004, fadeOut: 0.48, channels: 1, rate: 24000, peak: -1, filter: 'highpass=f=2500,lowpass=f=9000' },
   { out: 'impacts/hit-metal.mp3', src: 'sonniss/DSGNImpt_Metal Hit Thud Thump Low Ring Geofon 1_The Noisery_Moaning Metal.wav', licence: SONNISS, start: 0, length: 0.7, fadeIn: 0.002, fadeOut: 0.4, channels: 1, rate: 48000, peak: -1, trimSilence: -45 },
 ]
 
@@ -63,8 +70,8 @@ const db = gain => 20 * Math.log10(Math.max(gain, 1e-12))
 const fromDb = dB => 10 ** (dB / 20)
 
 /** Decodes `seconds` from `start` as interleaved float samples. */
-function decode(file, start, seconds, channels, rate) {
-  const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', file, '-ss', String(start), '-t', String(seconds), '-ac', String(channels), '-ar', String(rate), '-f', 'f32le', '-'], { maxBuffer: 1 << 30 })
+function decode(file, start, seconds, channels, rate, filter) {
+  const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', file, '-ss', String(start), '-t', String(seconds), ...(filter ? ['-af', filter] : []), '-ac', String(channels), '-ar', String(rate), '-f', 'f32le', '-'], { maxBuffer: 1 << 30 })
   return new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4)
 }
 
@@ -180,7 +187,7 @@ try {
       start = best.start; match = `start ${start.toFixed(2)} s (join ${best.score.toFixed(1)} dB)  `
     }
     const xfade = recipe.loop ? recipe.xfade : 0
-    let read = decode(file, start, recipe.length + xfade, channels, rate)
+    let read = decode(file, start, recipe.length + xfade, channels, rate, recipe.filter)
     if (recipe.flatten) read = flatten(read, channels, rate, recipe.flatten)
     const fadeFrames = Math.round(xfade * rate)
     // A one-shot may run to the end of its source; a loop needs every frame it asks for.
@@ -231,7 +238,7 @@ try {
     }
     console.log(`${recipe.out.padEnd(32)} ${(frames / rate).toFixed(2)} s  gain ${db(gain).toFixed(1)} dB  rms ${db(after.rms).toFixed(1)}  peak ${db(after.peak).toFixed(1)} dBFS  ${match}${check}`)
     manifest.push({ file: recipe.out, source: `sound-source/select_sound/used/${recipe.src}`, licence: recipe.licence, start: +start.toFixed(4), length: +(frames / rate).toFixed(4),
-      ...(recipe.loop ? { loop: true, crossfade: xfade } : { fadeIn: recipe.fadeIn ?? 0, fadeOut: recipe.fadeOut ?? 0 }), channels, rate, gainDb: +db(gain).toFixed(2) })
+      ...(recipe.loop ? { loop: true, crossfade: xfade } : { fadeIn: recipe.fadeIn ?? 0, fadeOut: recipe.fadeOut ?? 0 }), ...(recipe.filter ? { filter: recipe.filter } : {}), channels, rate, gainDb: +db(gain).toFixed(2) })
   }
 } finally {
   rmSync(temp, { recursive: true, force: true })

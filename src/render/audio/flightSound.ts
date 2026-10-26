@@ -11,12 +11,14 @@ The flight's recorded sounds (soundBank.ts), one set for every aircraft for now 
   through a heat lockout fires nothing, so it is silent.
 - Missiles: the launch rush when the motor lights (a bay missile lights after separating), then the
   motor placed on the missile until burnout.
+- The player's flares: a dull thunk per flare, left and right in turn as they leave, over one burning
+  hiss (a firework bang and the launch rush's top end, 2026-10-27; it was a synthesised blip).
 - Explosions at missile bursts and kills, placed; gun hits on the player, and the player's own hits as
   a quiet knock.
 - The RWR lock warning, looped while a radar holds us locked. The launch and missile warble stays
   synthesised (lockTone.ts).
 
-Each sound plays into its volume channel (audioSettings.ts): engine, air, gun, missile, impacts or
+Each sound plays into its volume channel (audioSettings.ts): engine, air, gun, missile (flares too), impacts or
 warning. Silent while paused or hidden: the mixer suspends the context. Levels in MIX are provisional, set by
 measurement, waiting on playtest by ear.
 */
@@ -26,6 +28,7 @@ import type { GameEvent } from '../../game/runtime/events'
 import type { ProjectileHit } from '../../game/combat/projectiles'
 import type { ThreatLevel } from '../../game/combat/rwr'
 import { motorBurning } from '../../game/combat/missiles'
+import { countermeasureRules } from '../../game/combat/countermeasures'
 import { getWeapon } from '../../content/weapons'
 import { arcadeSpeed } from '../../game/flight/speedLimits'
 import { machNumber } from '../vapor/atmosphere'
@@ -36,7 +39,7 @@ import { loadSounds, sound, type SoundId } from './soundBank'
  * The synthesised tones peak near 0.06, so the beds sit under them. Provisional. */
 const MIX = {
   engine: 0.32, burner: 0.42, wind: 0.5, buffet: 0.45, boom: 0.6,
-  gun: 0.5, launch: 0.45, motor: 0.9, otherEngine: 1.4, flyby: 0.75,
+  gun: 0.5, launch: 0.45, motor: 0.9, otherEngine: 1.4, flyby: 0.75, flare: 0.45, flareHiss: 0.1,
   explosionSmall: 0.9, explosionLarge: 1, explosionOwn: 0.7, hitTaken: 0.35, hitDealt: 0.12, lockWarning: 0.09,
 } as const
 const SPEED_OF_SOUND = 343
@@ -47,6 +50,9 @@ const FLYBY = { range: 150, minClosing: 80, every: 6 } as const
 const GUN_GAP = 0.1
 /** Seconds between two hit knocks of one kind; more hits in between are one knock. */
 const HIT_GAP = 0.06
+/** Flare thunks: played a quarter slower (scripts/build-audio.mjs), with a little spread in pitch and
+ * level so a burst does not sound like one sample repeated; panned to the side each flare leaves. */
+const FLARE = { sounds: ['flare1', 'flare2', 'flare3', 'flare4'], rate: 0.75, spread: 0.05, quieter: 2.5, pan: 0.35 } as const
 
 export interface SoundFrame {
   /** False while paused or hidden. */
@@ -128,6 +134,23 @@ export function createFlightSound(mixer: AudioMixer) {
     source.connect(gain).connect(to)
     source.onended = () => { gain.disconnect(); after?.() }
     source.start(ctx.currentTime, offset)
+  }
+
+  /** The player's countermeasure burst: one thunk per flare, spread as the flares leave, over the hiss. */
+  function dispense(ctx: AudioContext, to: AudioNode) {
+    const { flares, duration } = countermeasureRules.burst, now = ctx.currentTime
+    play(ctx, 'flareHiss', to, MIX.flareHiss)
+    for (let index = 0; index < flares; index++) {
+      const buffer = sound(FLARE.sounds[index % FLARE.sounds.length])
+      if (!buffer) continue
+      const source = ctx.createBufferSource(), gain = ctx.createGain(), side = ctx.createStereoPanner()
+      source.buffer = buffer; source.playbackRate.value = FLARE.rate * (1 + (Math.random() * 2 - 1) * FLARE.spread)
+      gain.gain.value = MIX.flare * 10 ** (-Math.random() * FLARE.quieter / 20)
+      side.pan.value = index % 2 === 0 ? -FLARE.pan : FLARE.pan
+      source.connect(gain).connect(side).connect(to)
+      source.onended = () => { gain.disconnect(); side.disconnect() }
+      source.start(now + index * duration / Math.max(1, flares - 1))
+    }
   }
 
   /** A placed output: distance, direction, and the treble air takes off far away. */
@@ -291,8 +314,9 @@ export function createFlightSound(mixer: AudioMixer) {
       rockets.delete(id)
     }
 
-    // Explosions.
+    // Explosions, and the player's flares.
     for (const event of frame.events) {
+      if (event.type === 'countermeasure-dispensed' && event.entityId === self.id) dispense(ctx, rocketry)
       if (event.type === 'missile-detonated' && event.cause !== 'dud') burst(ctx, impacts, 'explosionSmall', event.position, camera, MIX.explosionSmall)
       if (event.type === 'aircraft-destroyed' && event.cause !== 'boundary') {
         const lost = world?.aircraft.find(entity => entity.id === event.entityId)
