@@ -10,11 +10,18 @@ The flight's recorded sounds (soundBank.ts), one set for every aircraft for now 
 - Guns: a loop while rounds leave (`gun.shots` climbing), the spin-down when they stop. A trigger held
   through a heat lockout fires nothing, so it is silent.
 - Missiles: the launch rush when the motor lights (a bay missile lights after separating), then the
-  motor placed on the missile until burnout.
-- The player's flares: a dull thunk per flare, left and right in turn as they leave, over one burning
-  hiss (a firework bang and the launch rush's top end, 2026-10-27; it was a synthesised blip).
-- Explosions at missile bursts and kills, placed; gun hits on the player, and the player's own hits as
-  a quiet knock.
+  motor placed on the missile until burnout. Someone else's missile passing the player close but outside
+  its fuse: a rush timed so its loudest moment lands on the pass, panned to the side it passes.
+- The player's flares, in one of two styles (FLARE_STYLE). Recorded (2026-10-30): the recorded burst
+  whole when a run of flares starts, started again only if flares are still leaving once its pops are
+  over; its six pops over 1.35 s do not line up with the dispenser's eight over 0.7 s. Pops (2026-10-28):
+  a pop as flares leave, so a faster dispenser sounds faster with no change here, but never closer than
+  the recording's pace (2026-10-30, one for every other flare at 0.1 s): one of six recorded pops at
+  random, never the same twice running, a little off in pitch and level, panned to the side the flares
+  leave; under them one burn, started again while flares keep coming and left to die out after the last. Before that a firework thunk per
+  flare, and before that a synthesised blip.
+- Explosions at missile bursts, placed, from three recordings near to far picked by distance; kills add
+  the large boom. Gun hits on the player, and the player's own hits as a quiet knock.
 - The RWR lock warning, looped while a radar holds us locked. The launch and missile warble stays
   synthesised (lockTone.ts).
 
@@ -28,7 +35,6 @@ import type { GameEvent } from '../../game/runtime/events'
 import type { ProjectileHit } from '../../game/combat/projectiles'
 import type { ThreatLevel } from '../../game/combat/rwr'
 import { motorBurning } from '../../game/combat/missiles'
-import { countermeasureRules } from '../../game/combat/countermeasures'
 import { getWeapon } from '../../content/weapons'
 import { arcadeSpeed } from '../../game/flight/speedLimits'
 import { machNumber } from '../vapor/atmosphere'
@@ -38,9 +44,9 @@ import { loadSounds, sound, type SoundId } from './soundBank'
 /** Linear gains on files levelled to about -20 dBFS RMS (loops) or -1 dBFS peak (one-shots).
  * The synthesised tones peak near 0.06, so the beds sit under them. Provisional. */
 const MIX = {
-  engine: 0.32, burner: 0.42, wind: 0.5, buffet: 0.45, boom: 0.6,
-  gun: 0.5, launch: 0.45, motor: 0.9, otherEngine: 1.4, flyby: 0.75, flare: 0.45, flareHiss: 0.1,
-  explosionSmall: 0.9, explosionLarge: 1, explosionOwn: 0.7, hitTaken: 0.35, hitDealt: 0.12, lockWarning: 0.09,
+  engine: 0.32, burner: 0.67, wind: 0.5, buffet: 0.45, boom: 0.25,
+  gun: 0.5, launch: 0.22, motor: 0.9, otherEngine: 1.4, flyby: 0.75, missileMiss: 0.5, flare: 0.19,
+  explosion: 0.7, explosionLarge: 1, explosionOwn: 0.7, hitTaken: 0.35, hitDealt: 0.12, lockWarning: 0.09,
 } as const
 const SPEED_OF_SOUND = 343
 /** Seconds into air/flyby.mp3 where it is loudest (scripts/build-audio.mjs). */
@@ -50,9 +56,22 @@ const FLYBY = { range: 150, minClosing: 80, every: 6 } as const
 const GUN_GAP = 0.1
 /** Seconds between two hit knocks of one kind; more hits in between are one knock. */
 const HIT_GAP = 0.06
-/** Flare thunks: played a quarter slower (scripts/build-audio.mjs), with a little spread in pitch and
- * level so a burst does not sound like one sample repeated; panned to the side each flare leaves. */
-const FLARE = { sounds: ['flare1', 'flare2', 'flare3', 'flare4'], rate: 0.75, spread: 0.05, quieter: 2.5, pan: 0.35 } as const
+/** Seconds into weapons/missile-miss.mp3 where it is loudest (scripts/build-audio.mjs). */
+export const MISS_PEAK = 0.56
+/** A missile passing the player: nearer than `range` m but `margin` m outside its fuse, closing faster
+ * than `minClosing` m/s. Heard no earlier than `lead` s before the pass, too late for it to turn in. */
+const MISS = { range: 150, margin: 3, minClosing: 100, lead: 0.15, pan: 0.6 } as const
+/** How the player's flares sound: 'recorded' plays the recorded burst per run, 'pops' a pop per flare. */
+const FLARE_STYLE: 'recorded' | 'pops' = 'pops'
+/** Flare pops: pitch and level spread (share, dB) so a run never sounds like one sample repeated, the pan
+ * to the side each flare leaves, and how long the burn plays before a newer flare starts it again (s).
+ * Pops come no closer than `gap` s, near the recorded burst's 0.265 s: flares faster than that share a pop
+ * (the dispenser's 0.1 s gets one for every other flare), panned to the mean side of the flares it stands for.
+ * The recorded burst's pops are over `burstPops` s in (its last pop plus one gap, scripts/build-audio.mjs). */
+const FLARE = { pops: ['flarePop1', 'flarePop2', 'flarePop3', 'flarePop4', 'flarePop5', 'flarePop6'], spread: 0.06, quieter: 2.5, pan: 0.35, gap: 0.16, burnEvery: 0.4, burstPops: 1.35 } as const
+/** Missile bursts: the recording for each distance from the camera (m), near to far (scripts/build-audio.mjs).
+ * Each already sounds its distance, so the level falls off gently with no treble taken off. Provisional. */
+const EXPLOSION = { tiers: [{ id: 'explosionNear', within: 600 }, { id: 'explosionMid', within: 2000 }, { id: 'explosionFar', within: Infinity }], reference: 150, rolloff: 0.35 } as const
 
 export interface SoundFrame {
   /** False while paused or hidden. */
@@ -72,7 +91,7 @@ type Loop = { source: AudioBufferSourceNode; gain: GainNode }
 type Placed = { panner: PannerNode; air: BiquadFilterNode }
 type GunVoice = { shots: number; last: number; loop: Loop | null }
 type Craft = { out: Placed; near: Placed; guns: Placed; engine: Loop | null; gun: GunVoice; flyby: number }
-type Rocket = { out: Placed; motor: Loop | null; lit: boolean }
+type Rocket = { out: Placed; motor: Loop | null; lit: boolean; passed: boolean }
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value))
 const dot = (a: Vec3, b: Vec3) => a.x * b.x + a.y * b.y + a.z * b.z
@@ -84,6 +103,17 @@ export function dopplerRate(source: Vec3, sourceVelocity: Vec3, listener: Vec3, 
   const toListener = { x: d.x / length, y: d.y / length, z: d.z / length }
   const rate = (SPEED_OF_SOUND - dot(listenerVelocity, toListener)) / Math.max(SPEED_OF_SOUND * 0.2, SPEED_OF_SOUND - dot(sourceVelocity, toListener))
   return clamp(rate, 0.5, 2)
+}
+
+/** The next flare pop: any of `count` but the one just played; `random` in [0, 1). */
+export function nextPop(last: number, count: number, random: number) {
+  if (last < 0 || count < 2) return Math.floor(random * count)
+  return (last + 1 + Math.floor(random * (count - 1))) % count
+}
+
+/** The missile burst recording for a burst `distance` m from the camera. */
+export function explosionSound(distance: number): SoundId {
+  return EXPLOSION.tiers.find(tier => distance < tier.within)!.id
 }
 
 /** When (seconds from now) and how near (m) something at `offset` closing at `velocity` passes. */
@@ -101,7 +131,12 @@ export function createFlightSound(mixer: AudioMixer) {
   let crafts = new Map<string, Craft>(), rockets = new Map<number, Rocket>()
   let lockLoop: Loop | null = null
   let supersonic: boolean | null = null, lastTaken = -Infinity, lastDealt = -Infinity
-  const forward = new Vector3(), up = new Vector3()
+  /** The newest of the player's flares heard (null: none seen yet, so those already out stay silent),
+   * the pop played last and when, the sides of flares since that share the next pop, the burn under them,
+   * and when the recorded burst last started. */
+  let lastFlare: number | null = null, lastPop = -1, popAt = -Infinity, sharing: number[] = []
+  let burn: { voice: Loop; started: number } | null = null, burstAt = -Infinity
+  const forward = new Vector3(), up = new Vector3(), right = new Vector3()
 
   function startLoop(ctx: AudioContext, id: SoundId, to: AudioNode, offset?: number): Loop | null {
     const buffer = sound(id)
@@ -136,28 +171,46 @@ export function createFlightSound(mixer: AudioMixer) {
     source.start(ctx.currentTime, offset)
   }
 
-  /** The player's countermeasure burst: one thunk per flare, spread as the flares leave, over the hiss. */
-  function dispense(ctx: AudioContext, to: AudioNode) {
-    const { flares, duration } = countermeasureRules.burst, now = ctx.currentTime
-    play(ctx, 'flareHiss', to, MIX.flareHiss)
-    for (let index = 0; index < flares; index++) {
-      const buffer = sound(FLARE.sounds[index % FLARE.sounds.length])
-      if (!buffer) continue
-      const source = ctx.createBufferSource(), gain = ctx.createGain(), side = ctx.createStereoPanner()
-      source.buffer = buffer; source.playbackRate.value = FLARE.rate * (1 + (Math.random() * 2 - 1) * FLARE.spread)
+  /** One of the player's flares leaving, `delay` s from now on `side` (-1 left, 1 right of the camera). */
+  function flarePop(ctx: AudioContext, to: AudioNode, side: number, delay: number) {
+    const at = ctx.currentTime + delay
+    sharing.push(side)
+    if (at - popAt < FLARE.gap) return
+    const mean = sharing.reduce((sum, each) => sum + each, 0) / sharing.length
+    popAt = at; sharing = []
+    lastPop = nextPop(lastPop, FLARE.pops.length, Math.random())
+    const buffer = sound(FLARE.pops[lastPop])
+    if (buffer) {
+      const source = ctx.createBufferSource(), gain = ctx.createGain(), pan = ctx.createStereoPanner()
+      source.buffer = buffer; source.playbackRate.value = 1 + (Math.random() * 2 - 1) * FLARE.spread
       gain.gain.value = MIX.flare * 10 ** (-Math.random() * FLARE.quieter / 20)
-      side.pan.value = index % 2 === 0 ? -FLARE.pan : FLARE.pan
-      source.connect(gain).connect(side).connect(to)
-      source.onended = () => { gain.disconnect(); side.disconnect() }
-      source.start(now + index * duration / Math.max(1, flares - 1))
+      pan.pan.value = mean * FLARE.pan
+      source.connect(gain).connect(pan).connect(to)
+      source.onended = () => { gain.disconnect(); pan.disconnect() }
+      source.start(at)
     }
+    // The burn: once per run, started again only once it is past its swell, the old one faded out under it.
+    if (burn && at - burn.started < FLARE.burnEvery) return
+    const next = sound('flareBurn')
+    if (!next) return
+    const source = ctx.createBufferSource(), gain = ctx.createGain()
+    source.buffer = next; gain.gain.value = MIX.flare
+    source.connect(gain).connect(to)
+    source.onended = () => gain.disconnect()
+    source.start(at)
+    if (burn) {
+      const old = burn.voice
+      old.gain.gain.setTargetAtTime(0, at, 0.04)
+      old.source.stop(at + 0.2)
+    }
+    burn = { voice: { source, gain }, started: at }
   }
 
   /** A placed output: distance, direction, and the treble air takes off far away. */
-  function placed(ctx: AudioContext, to: AudioNode, reference: number): Placed {
+  function placed(ctx: AudioContext, to: AudioNode, reference: number, rolloff = 1): Placed {
     const panner = ctx.createPanner(), air = ctx.createBiquadFilter()
     panner.panningModel = 'HRTF'; panner.distanceModel = 'inverse'
-    panner.refDistance = reference; panner.rolloffFactor = 1; panner.maxDistance = 1e5
+    panner.refDistance = reference; panner.rolloffFactor = rolloff; panner.maxDistance = 1e5
     air.type = 'lowpass'; air.frequency.value = 20000
     panner.connect(air).connect(to)
     return { panner, air }
@@ -180,6 +233,27 @@ export function createFlightSound(mixer: AudioMixer) {
     play(ctx, id, out.panner, level, 1, 0, () => release(out))
   }
 
+  /** A missile burst: the recording for its distance, falling off gently, with no air filter. */
+  function detonation(ctx: AudioContext, to: AudioNode, position: Vec3, listener: Vec3) {
+    const out = placed(ctx, to, EXPLOSION.reference, EXPLOSION.rolloff)
+    place(out, position, listener)
+    out.air.frequency.value = 20000
+    const distance = Math.hypot(position.x - listener.x, position.y - listener.y, position.z - listener.z)
+    play(ctx, explosionSound(distance), out.panner, MIX.explosion, 1, 0, () => release(out))
+  }
+
+  /** A missile passing the player: started early by however far its loudest moment is into the recording,
+   * panned to the side of the camera it passes. */
+  function whoosh(ctx: AudioContext, to: AudioNode, side: number, distance: number, ahead: number) {
+    const pan = ctx.createStereoPanner()
+    pan.pan.value = clamp(side, -1, 1) * MISS.pan
+    // It starts on a loud stretch, so the gain rises over 15 ms rather than stepping.
+    const rise = ctx.createGain()
+    rise.gain.setValueAtTime(0, ctx.currentTime); rise.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.015)
+    rise.connect(pan).connect(to)
+    play(ctx, 'missileMiss', rise, MIX.missileMiss * (1 - 0.5 * distance / MISS.range), 1, Math.max(0, MISS_PEAK - ahead), () => { rise.disconnect(); pan.disconnect() })
+  }
+
   function stepGun(ctx: AudioContext, voice: GunVoice, shots: number, alive: boolean, to: AudioNode) {
     const now = ctx.currentTime
     if (voice.shots >= 0 && shots > voice.shots) voice.last = now
@@ -200,11 +274,13 @@ export function createFlightSound(mixer: AudioMixer) {
       for (const loop of [player.jet, player.burner, player.wind, player.buffet, playerGun.loop, lockLoop]) stopLoop(ctx, loop)
       for (const craft of crafts.values()) { stopLoop(ctx, craft.engine); stopLoop(ctx, craft.gun.loop); release(craft.out); release(craft.near); release(craft.guns) }
       for (const rocket of rockets.values()) { stopLoop(ctx, rocket.motor); release(rocket.out) }
+      if (burn) stopLoop(ctx, burn.voice)
     }
     player = { jet: null, burner: null, wind: null, buffet: null }
     playerGun = { shots: -1, last: -Infinity, loop: null }
     crafts = new Map(); rockets = new Map(); lockLoop = null
     supersonic = null; lastTaken = -Infinity; lastDealt = -Infinity
+    lastFlare = null; lastPop = -1; popAt = -Infinity; sharing = []; burn = null; burstAt = -Infinity
   }
 
   /** One rendered frame. */
@@ -225,6 +301,7 @@ export function createFlightSound(mixer: AudioMixer) {
       listener.forwardX.value = forward.x; listener.forwardY.value = forward.y; listener.forwardZ.value = forward.z
       listener.upX.value = up.x; listener.upY.value = up.y; listener.upZ.value = up.z
     } else { listener.setPosition(camera.x, camera.y, camera.z); listener.setOrientation(forward.x, forward.y, forward.z, up.x, up.y, up.z) }
+    right.crossVectors(forward, up)
 
     // The player's jet.
     player.jet ??= startLoop(ctx, 'jet', engine)
@@ -293,9 +370,10 @@ export function createFlightSound(mixer: AudioMixer) {
     for (const missile of world?.missiles ?? []) {
       flying.add(missile.id)
       let rocket = rockets.get(missile.id)
-      if (!rocket) { rocket = { out: placed(ctx, rocketry, 40), motor: null, lit: false }; rockets.set(missile.id, rocket) }
+      if (!rocket) { rocket = { out: placed(ctx, rocketry, 40), motor: null, lit: false, passed: false }; rockets.set(missile.id, rocket) }
       place(rocket.out, missile.position, camera)
-      const lit = motorBurning(missile, getWeapon(missile.weaponId).missile!), own = missile.ownerId === self.id
+      const profile = getWeapon(missile.weaponId).missile!
+      const lit = motorBurning(missile, profile), own = missile.ownerId === self.id
       if (lit && !rocket.lit) {
         rocket.lit = true
         if (own) play(ctx, 'launch', rocketry, MIX.launch)
@@ -306,6 +384,16 @@ export function createFlightSound(mixer: AudioMixer) {
       }
       if (!lit && rocket.motor) { stopLoop(ctx, rocket.motor, 0.2); rocket.motor = null }
       rocket.motor?.source.playbackRate.setTargetAtTime(dopplerRate(missile.position, missile.velocity, camera, frame.velocity), now, 0.05)
+      if (!own && alive && !rocket.passed) {
+        const offset = { x: missile.position.x - self.position.x, y: missile.position.y - self.position.y, z: missile.position.z - self.position.z }
+        const closing = { x: missile.velocity.x - frame.velocity.x, y: missile.velocity.y - frame.velocity.y, z: missile.velocity.z - frame.velocity.z }
+        const pass = closestApproach(offset, closing)
+        if (pass.time > 0 && pass.time <= MISS.lead && pass.distance > profile.fuseM + MISS.margin && pass.distance < MISS.range && Math.hypot(closing.x, closing.y, closing.z) > MISS.minClosing) {
+          rocket.passed = true
+          const across = { x: offset.x + closing.x * pass.time, y: offset.y + closing.y * pass.time, z: offset.z + closing.z * pass.time }
+          whoosh(ctx, rocketry, dot(across, right) / Math.max(pass.distance, 1), pass.distance, pass.time)
+        }
+      }
     }
     for (const [id, rocket] of rockets) if (!flying.has(id)) {
       stopLoop(ctx, rocket.motor, 0.06)
@@ -314,10 +402,21 @@ export function createFlightSound(mixer: AudioMixer) {
       rockets.delete(id)
     }
 
-    // Explosions, and the player's flares.
+    // The player's flares, each as it appears; ids only go up. Several new in one frame are spread a little.
+    const released = (world?.decoys ?? []).filter(decoy => decoy.kind === 'flare' && decoy.ownerId === self.id && decoy.id > (lastFlare ?? -1)).sort((a, b) => a.id - b.id)
+    if (released.length) {
+      if (lastFlare !== null && FLARE_STYLE === 'recorded') {
+        if (now - burstAt >= FLARE.burstPops) { burstAt = now; play(ctx, 'flareBurst', rocketry, MIX.flare) }
+      } else if (lastFlare !== null) released.forEach((flare, index) => {
+        const offset = { x: flare.position.x - camera.x, y: flare.position.y - camera.y, z: flare.position.z - camera.z }
+        flarePop(ctx, rocketry, Math.sign(dot(offset, right)), index * 0.012)
+      })
+      lastFlare = released[released.length - 1].id
+    } else lastFlare ??= -1
+
+    // Explosions.
     for (const event of frame.events) {
-      if (event.type === 'countermeasure-dispensed' && event.entityId === self.id) dispense(ctx, rocketry)
-      if (event.type === 'missile-detonated' && event.cause !== 'dud') burst(ctx, impacts, 'explosionSmall', event.position, camera, MIX.explosionSmall)
+      if (event.type === 'missile-detonated' && event.cause !== 'dud') detonation(ctx, impacts, event.position, camera)
       if (event.type === 'aircraft-destroyed' && event.cause !== 'boundary') {
         const lost = world?.aircraft.find(entity => entity.id === event.entityId)
         if (event.entityId === self.id) play(ctx, 'explosionLarge', impacts, MIX.explosionOwn)

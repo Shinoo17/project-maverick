@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { closestApproach, dopplerRate } from '../src/render/audio/flightSound'
+import { closestApproach, dopplerRate, explosionSound, nextPop } from '../src/render/audio/flightSound'
 
 const at = (x: number, y = 0, z = 0) => ({ x, y, z })
 const still = at(0)
@@ -26,5 +26,25 @@ describe('flight sound placement', () => {
     // Already past: the time is negative, so no fly-by is due.
     expect(closestApproach(at(600, 100, 0), at(300)).time).toBeLessThan(0)
     expect(closestApproach(at(0, 50, 0), still).time).toBe(Infinity)
+  })
+
+  it('picks the missile burst recording by distance, near to far', () => {
+    expect(explosionSound(0)).toBe('explosionNear')
+    expect(explosionSound(599)).toBe('explosionNear')
+    expect(explosionSound(600)).toBe('explosionMid')
+    expect(explosionSound(1999)).toBe('explosionMid')
+    expect(explosionSound(2000)).toBe('explosionFar')
+    expect(explosionSound(20000)).toBe('explosionFar')
+  })
+  it('never plays the same flare pop twice running', () => {
+    for (let last = 0; last < 6; last++) for (let r = 0; r < 1; r += 0.01) {
+      const pop = nextPop(last, 6, r)
+      expect(pop).not.toBe(last)
+      expect(pop).toBeGreaterThanOrEqual(0)
+      expect(pop).toBeLessThan(6)
+    }
+    // Every other pop can come next.
+    expect(new Set(Array.from({ length: 100 }, (_, i) => nextPop(2, 6, i / 100))).size).toBe(5)
+    expect(nextPop(-1, 6, 0.99)).toBe(5)
   })
 })
