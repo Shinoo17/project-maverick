@@ -30,7 +30,6 @@ const FILES = {
   explosionNear: 'impacts/explosion-near.mp3',
   explosionMid: 'impacts/explosion-mid.mp3',
   explosionFar: 'impacts/explosion-far.mp3',
-  explosionLarge: 'impacts/explosion-large.mp3',
   hit: 'impacts/hit-metal.mp3',
 } as const
 export type SoundId = keyof typeof FILES

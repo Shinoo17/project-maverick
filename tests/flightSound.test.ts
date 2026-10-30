@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { closestApproach, dopplerRate, explosionSound, nextPop } from '../src/render/audio/flightSound'
+import { approachGain, closestApproach, dopplerRate, explosionSound, nextPop, softenRate } from '../src/render/audio/flightSound'
 
 const at = (x: number, y = 0, z = 0) => ({ x, y, z })
 const still = at(0)
@@ -17,6 +17,22 @@ describe('flight sound placement', () => {
     expect(dopplerRate(at(-500), at(1000), still, still)).toBe(2)
     expect(dopplerRate(at(500), at(1000), still, still)).toBe(0.5)
     expect(dopplerRate(still, at(200), still, still)).toBe(1)
+  })
+
+  it('softens a shift towards no shift by the share given', () => {
+    expect(softenRate(2, 0.3)).toBeCloseTo(1.3, 6)
+    expect(softenRate(0.5, 0.3)).toBeCloseTo(0.85, 6)
+    expect(softenRate(1, 0.3)).toBe(1)
+    expect(softenRate(2, 1)).toBe(2)
+  })
+
+  it('swells a passing missile from faint to full on the pass', () => {
+    expect(approachGain(2.5)).toBeCloseTo(0.04, 6)
+    expect(approachGain(0.5)).toBeCloseTo(0.3, 6)
+    expect(approachGain(0)).toBeCloseTo(1, 6)
+    // Further ahead than the lead stays faint; every step nearer is louder.
+    expect(approachGain(5)).toBeCloseTo(0.04, 6)
+    for (let ahead = 2.5; ahead > 0.05; ahead -= 0.05) expect(approachGain(ahead - 0.05)).toBeGreaterThan(approachGain(ahead))
   })
 
   it('finds when and how near a crossing passes', () => {
