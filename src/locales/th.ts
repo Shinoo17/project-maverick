@@ -47,6 +47,7 @@ export const th: Translation = {
   flightTitle: "ฝึกบิน",
   beginFlight: "เริ่มบิน",
   resumeFlight: "กลับไปบิน",
+  respawn: "เกิดใหม่",
   pauseFlight: "พักการบิน",
   pausedFlight: "พักการบินอยู่",
   resetFlight: "เริ่มบินใหม่",

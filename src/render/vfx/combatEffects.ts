@@ -8,8 +8,11 @@ latest world snapshot, and changes nothing in the simulation.
   MAX_HITS_PER_FRAME are shown per frame: the gun fires ~100 rounds a second.
 - An aircraft without a pilot (the target drone) shot down explodes where it died and its
   wreck falls, trailing fire and smoke, until it hits the ground and explodes again. It
-  crashing into terrain itself explodes on the ground. The player's own death has no effect
-  yet.
+  crashing into terrain itself explodes on the ground.
+- The player shot down explodes the same way and its wreck falls the same way, but it is the
+  player's own model that is drawn on it (ownWreck(), called before the camera is placed so the
+  camera follows the fall). On the ground it explodes again and stays there, hidden. The player
+  crashing into terrain explodes on the ground.
 - A missile trails its motor's plume (a short yellow-orange tongue of fire) and white smoke while the motor burns (none while it drops
   out of a bay), and bursts in a yellow-orange fireball where its warhead goes off
   (missile-detonated), grown with distance like the aircraft; on the ground it
@@ -22,7 +25,7 @@ Everything is timed by the simulation clock passed in, so pause freezes it, and 
 it when the flight is reset. useSprites() swaps the sprite set (atlas.ts) under live effects;
 each set is loaded once, on first use.
 */
-import { Group, Vector3, type PerspectiveCamera } from 'three'
+import { Group, Quaternion, Vector3, type PerspectiveCamera } from 'three'
 import type { ProjectileHit } from '../../game/combat/projectiles'
 import { GROUND_Y } from '../../game/combat/projectiles'
 import type { GameEvent } from '../../game/runtime/events'
@@ -43,6 +46,16 @@ const MAX_HITS_PER_FRAME = 6
 const HIT_LIFT = 2.5
 /** Metres behind the wreck's centre that its fire and smoke stream from. */
 const TAIL = 7
+
+/** Where the player's wreck is drawn this frame. */
+export interface OwnWreck {
+  position: Vector3
+  orientation: Quaternion
+  velocity: Vector3
+  landed: boolean
+  /** True on the one frame it reaches the ground. */
+  landedNow: boolean
+}
 
 export interface EffectsFrame {
   /** Simulation seconds now, between ticks. */
@@ -67,6 +80,8 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   const mesh = new Group().add(layers.smoke.mesh, layers.glow.mesh)
   const random = randomStream(7)
   const slots: ({ wreck: Wreck; trail: ReturnType<typeof createTrail>; started: number } | null)[] = Array(WRECK_SLOTS).fill(null)
+  // The player's own wreck, apart from the slots: it never blows up early to make room.
+  let own: { wreck: Wreck; trail: ReturnType<typeof createTrail>; view: OwnWreck } | null = null
   // Each missile's trail emitter, by missile id; dropped once the missile is gone.
   const trails = new Map<number, ReturnType<typeof createMissileTrail>>()
   // Each flare's emitter, and the chaff already burst, by decoy id; dropped once the decoy is gone.
@@ -97,6 +112,18 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
       airExplosion(layers, clock, old.position, old.velocity, random, scaleAt(old.position))
     }
     slots[index] = { wreck: createWreck(entity, clock, deaths++), trail: createTrail(), started: clock }
+  }
+
+  /** Steps the player's wreck to `clock` and returns where to draw it, or null while there is none. */
+  function ownWreck(clock: number): OwnWreck | null {
+    if (!own) return null
+    const { wreck, view } = own
+    view.landedNow = !wreck.landed && advanceWreck(wreck, clock)
+    if (view.landedNow) groundExplosion(layers, clock, { x: wreck.position.x, y: GROUND_Y + 2, z: wreck.position.z }, random)
+    // Drawn ahead of its last fixed step by the time since, so it moves smoothly between steps.
+    view.position.copy(wreck.position).addScaledVector(wreck.velocity, wreck.landed ? 0 : clock - wreck.time)
+    view.orientation.copy(wreck.orientation); view.velocity.copy(wreck.velocity); view.landed = wreck.landed
+    return view
   }
 
   function update(frame: EffectsFrame) {
@@ -133,7 +160,15 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
       }
       if (event.type !== 'aircraft-destroyed') continue
       const entity = world?.aircraft.find(candidate => candidate.id === event.entityId)
-      if (!entity || entity.control === 'pilot') continue
+      if (!entity) continue
+      if (entity.control === 'pilot') {
+        if (event.cause === 'weapon') {
+          airExplosion(layers, clock, entity.position, entity.velocity, random, scaleAt(entity.position))
+          const wreck = createWreck(entity, clock, deaths++)
+          own = { wreck, trail: createTrail(), view: { position: wreck.position.clone(), orientation: wreck.orientation.clone(), velocity: wreck.velocity.clone(), landed: false, landedNow: false } }
+        } else if (event.cause === 'terrain') groundExplosion(layers, clock, { ...entity.position, y: GROUND_Y + 2 }, random)
+        continue
+      }
       if (event.cause === 'weapon') {
         airExplosion(layers, clock, entity.position, entity.velocity, random, scaleAt(entity.position))
         startWreck(entity, clock)
@@ -191,13 +226,18 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
         model.scale.setScalar(distanceScale(eye.distanceTo(at)))
       }
     })
+    if (own && !own.wreck.landed) {
+      const { view } = own
+      nose.set(1, 0, 0).applyQuaternion(view.orientation)
+      own.trail.emit(layers, clock, dt, { x: view.position.x - nose.x * TAIL, y: view.position.y - nose.y * TAIL, z: view.position.z - nose.z * TAIL }, view.velocity, random)
+    }
     layers.smoke.update(clock, frame.camera, frame.viewportHeight)
     layers.glow.update(clock, frame.camera, frame.viewportHeight)
   }
 
   function reset() {
     layers.smoke.clear(); layers.glow.clear()
-    slots.fill(null)
+    slots.fill(null); own = null
     trails.clear(); flares.clear(); bloomed.clear()
     lastClock = null
   }
@@ -206,5 +246,5 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
     layers.smoke.dispose(); layers.glow.dispose()
     for (const atlas of atlases.values()) atlas.then(loaded => loaded.texture.dispose()).catch(() => {})
   }
-  return { mesh, update, reset, dispose, useSprites, get sprites() { return wanted } }
+  return { mesh, update, ownWreck, reset, dispose, useSprites, get sprites() { return wanted } }
 }

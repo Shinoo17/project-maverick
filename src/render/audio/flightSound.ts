@@ -94,6 +94,10 @@ export interface SoundFrame {
   hits: readonly ProjectileHit[]
   /** The RWR's highest level shown (rwrFrame.ts). */
   warning: ThreatLevel | null
+  /** Where the player's wreck struck the ground, on that one frame. */
+  crash?: Vec3 | null
+  /** The player's wreck is still falling: its engine runs on at idle. */
+  falling?: boolean
 }
 
 type Loop = { source: AudioBufferSourceNode; gain: GainNode }
@@ -362,13 +366,15 @@ export function createFlightSound(mixer: AudioMixer) {
     player.burner ??= startLoop(ctx, 'burner', engine)
     player.wind ??= startLoop(ctx, 'wind', air)
     player.buffet ??= startLoop(ctx, 'buffet', air)
-    const power = clamp(self.enginePower, 0, 1), burner = alive && m.burnerActive
+    // Shot down, the engine winds back to idle and runs on there while the wreck falls.
+    const running = alive || !!frame.falling
+    const power = alive ? clamp(self.enginePower, 0, 1) : 0, burner = alive && m.burnerActive
     const speed = Math.hypot(frame.velocity.x, frame.velocity.y, frame.velocity.z)
     const mach = machNumber(arcadeSpeed(speed) / 3.6, self.position.y)
     const flow = clamp((mach - 0.2) / 0.9, 0, 1)
     const buffet = alive ? Math.max(clamp((m.g - 4) / 5, 0, 1), clamp((m.alpha - 15) / 25, 0, 1)) * clamp(mach / 0.4, 0, 1) : 0
     if (player.jet) {
-      player.jet.gain.gain.setTargetAtTime(alive ? MIX.engine * (0.55 + 0.45 * power) : 0, now, alive ? 0.12 : 0.4)
+      player.jet.gain.gain.setTargetAtTime(running ? MIX.engine * (0.55 + 0.45 * power) : 0, now, alive ? 0.12 : 0.4)
       player.jet.source.playbackRate.setTargetAtTime(0.85 + 0.3 * power + (burner ? 0.04 : 0), now, 0.25)
     }
     player.burner?.gain.gain.setTargetAtTime(burner ? MIX.burner : 0, now, burner ? 0.12 : 0.35)
@@ -478,6 +484,7 @@ export function createFlightSound(mixer: AudioMixer) {
     } else lastFlare ??= -1
 
     // Explosions.
+    if (frame.crash) detonation(ctx, impacts, frame.crash, camera)
     for (const event of frame.events) {
       if (event.type === 'missile-detonated' && event.cause !== 'dud') detonation(ctx, impacts, event.position, camera)
       // Only the player's own loss has a sound of its own; another jet's is heard through the missile burst.
