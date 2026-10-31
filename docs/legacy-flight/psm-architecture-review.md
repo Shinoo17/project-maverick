@@ -2,7 +2,7 @@
 
 > **Rev. 2 baseline อยู่ที่ [psm-implementation-plan.md](psm-implementation-plan.md) — ส่วน C/D/E/F/H ด้านล่างถูกแทนที่แล้ว**
 > สถานะ: วิเคราะห์ก่อน implement · 17 ก.ย. 2026 · อ้างอิง code ที่ commit `2341da8`
-> ทุกข้อในเอกสารนี้อ้างจาก code จริง ไม่ใช่จาก docs เดิม (`docs/game-design/04-maneuvers.md` ล้าสมัยแล้ว — ยังพูดถึง budget 3 s / cooldown / timeout ที่ code ไม่มีแล้ว)
+> ทุกข้อในเอกสารนี้อ้างจาก code จริง ไม่ใช่จาก docs เดิม (`docs/legacy-flight/game-design/04-maneuvers.md` ล้าสมัยแล้ว — ยังพูดถึง budget 3 s / cooldown / timeout ที่ code ไม่มีแล้ว)
 
 ## สรุปสั้น
 
@@ -432,7 +432,7 @@ F-14 อาจต้อง param เพิ่มภายหลัง (`adverseY
 3. ลบ `psmArm`, `highG` จาก `PilotCommand` (replay format change); ลบ phase machine / entry band
 4. Input: Space = airbrake, ลบ C, Q/E ramp
 5. ตรวจ tail slide / reverse flow ใน energy guard
-- **ไฟล์:** `commands.ts`, `FlightInput.ts`, `maneuvers.ts` (ลดเหลือ burner/airbrake หรือย้ายไป engine), `stepFlight.ts`, `practice.ts`, `tests/maneuvers.test.ts`, `tests/poweredPsm.test.ts`, locales, `docs/game-design/02-controls.md`
+- **ไฟล์:** `commands.ts`, `FlightInput.ts`, `maneuvers.ts` (ลดเหลือ burner/airbrake หรือย้ายไป engine), `stepFlight.ts`, `practice.ts`, `tests/maneuvers.test.ts`, `tests/poweredPsm.test.ts`, locales, `docs/legacy-flight/game-design/02-controls.md`
 
 ### Phase 4 — Recovery assist
 1. `recovery.ts` (F) + anti-spin
@@ -451,7 +451,7 @@ F-14 อาจต้อง param เพิ่มภายหลัง (`adverseY
 1. F-22 vs Su-57 ให้ต่างชัดตาม G2
 2. เพิ่ม profile ลำอื่นเมื่อมี model/rig (`content/aircraft/index.ts` ต้องมี `modelFile` + `presentationId` rig)
 3. Playtest matrix: beginner combo, reversal จาก 400/600/900 arcade km/h, gun solution time
-- **ไฟล์:** `content/flight-profiles/*`, `docs/flight-profiles.md`
+- **ไฟล์:** `content/flight-profiles/*`, `docs/legacy-flight/flight-profiles.md`
 
 ### Phase 7 (ภายหลัง) — Maneuver detection
 `maneuverDetector.ts` อ่าน history (incidence peak, pitch rotation, velocity heading change, recovery) → label COBRA/KULBIT/… สำหรับ UI/score/tutorial เท่านั้น

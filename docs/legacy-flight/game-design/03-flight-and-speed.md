@@ -1,6 +1,6 @@
 # 03 — Arcade Flight, Speed และ Energy
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P1–P2 · เจ้าของหน่วยและ baseline ความเร็ว
+[กลับ Master Plan](../../../MASTER_PLAN.md) · P1–P2 · เจ้าของหน่วยและ baseline ความเร็ว
 
 ## คำตัดสินหลัก
 

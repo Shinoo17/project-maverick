@@ -7,10 +7,10 @@
 > archived `*C` track becomes its automatic twin via `liveScenario()` (held C maps to
 > Airbrake + Afterburner). `FLIGHT_GOLDEN=update` writes goldens under the live names and never
 > overwrites the `*C` archives. B17 and the manual High-G fixture are retired; see
-> [the Phase 6 report](../../docs/psm-phase6-implementation.md).
+> [the Phase 6 report](../../docs/legacy-flight/psm-phase6-implementation.md).
 
 Current physics: `p3-flow-effectiveness-4`. Phase 0 archives (`p3-powered-psm-1`)
-remain unchanged. See [the Phase 3 report](../../docs/psm-phase3-implementation.md)
+remain unchanged. See [the Phase 3 report](../../docs/legacy-flight/psm-phase3-implementation.md)
 for ownership contracts, signed capacity, gain calibration, regressions and discrepancies.
 Automatic breakout/recovery migration remains deferred. Phase 2 B9/playtest acceptance
 is still pending; this implementation does not approve its provisional tuning.
@@ -41,16 +41,16 @@ loss cannot show whether a broadside aircraft still commands attached-flow autho
 
 `pedal-energy.json`/`.md` report trim power by speed, a vertical climb → bleed → Airbrake +
 yaw → W + Shift flow, and a level 150 km/h input matrix. They are Phase 8 input; see
-[the pedal energy findings](../../docs/psm-phase8-pedal-energy-findings.md).
+[the pedal energy findings](../../docs/legacy-flight/psm-phase8-pedal-energy-findings.md).
 Report only; target ranges wait for the Phase 8 playtest.
 
 `phase8.json`/`.md` report B11 (Phase 8 pedal turn: body yaw travel, time to 360° and
 speed band for Space + full yaw from level 150 km/h and from the vertical climb), B22
 personality ordering against the plan's G2 table, and a yaw control-power weight sweep.
 Report only; targets are `phase8Targets` in `targets.ts`. See
-[the Phase 8 report](../../docs/psm-phase8-implementation.md).
+[the Phase 8 report](../../docs/legacy-flight/psm-phase8-implementation.md).
 
-`maneuvers.json`/`.md` (MR0, [plan](../../docs/psm-maneuver-control-plan.md)) report the
+`maneuvers.json`/`.md` (MR0, [plan](../../docs/legacy-flight/psm-maneuver-control-plan.md)) report the
 maneuver catalogue M1–M7 plus Kulbit as closed-loop recipes (`maneuvers.ts`): roll rate by
 speed, Cobra entry and exit, pedal turn, Herbst, loops and the vertical power loop, Bell,
 Immelmann and Kulbit. They add per-axis smoothness (latency, overshoot, request step at the
@@ -199,7 +199,7 @@ physical moment bounds; Phase 3 implements that resolution at scalar gain 2.
    the runtime contract includes the authored gain and directional signs explicitly.
 
 Both issues are recorded in the source-of-truth plan's **Errata — Rev. 3.1 candidates**
-([plan](../../docs/psm-implementation-plan.md)), along with the F-22 yaw/budget issue:
+([plan](../../docs/legacy-flight/psm-implementation-plan.md)), along with the F-22 yaw/budget issue:
 zero yaw holds only for equal-magnitude nozzle angles. The full-grid I9 test calls
 `thrustForces` directly and bounds asymmetric yaw at 1% of nose-up pitch; a separate
 mixer sweep covers reachable deflections. See the erratum for the Phase 3 owner decisions.
@@ -220,4 +220,4 @@ PSM rate expectations. See the implementation report for every migrated assertio
 
 Run `npm run flight:bench -- benchmarks/flight/jetDrift.report.ts` for the no-C entry grid, partial holds, mirrored handoffs, release/reapply, matched-state exit treatments, normal flight, reserve and ablation diagnostics. Runs use the existing 120 Hz harness. Targets in `targets.ts` are report-only.
 
-Immutable Phase 4 starting measurements live in `jet-drift-baseline/`; reviewed implementation measurements live in `jet-drift-results/`. Compressed traces are JSON (`gzip -dc <trace.json.gz>`), including exact initial states/commands and sampled force records. Fresh output goes to ignored `out/jet-drift-current/`. `DRIFT_STAGE=baseline` refuses to overwrite the archive. See `docs/phase45-implementation-report.md` for units, version policy and limitations.
+Immutable Phase 4 starting measurements live in `jet-drift-baseline/`; reviewed implementation measurements live in `jet-drift-results/`. Compressed traces are JSON (`gzip -dc <trace.json.gz>`), including exact initial states/commands and sampled force records. Fresh output goes to ignored `out/jet-drift-current/`. `DRIFT_STAGE=baseline` refuses to overwrite the archive. See `docs/legacy-flight/phase45-implementation-report.md` for units, version policy and limitations.

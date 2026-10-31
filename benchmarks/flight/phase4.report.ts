@@ -15,7 +15,7 @@ import { FLIGHT_STEP as dt } from '../../src/game/runtime/clock'
 import baseline from './phase3-metrics.json'
 
 // Phase 6 retired the manual High-G fixture (Space) and the C comparisons (B17,
-// allocationBound.cVsAuto) with their inputs; see docs/psm-phase6-implementation.md.
+// allocationBound.cVsAuto) with their inputs; see docs/legacy-flight/psm-phase6-implementation.md.
 it('reports Phase 4 entries and limiter sweep without feel assertions', () => {
   const results = [...aircraftIds, 'f22-notvc'].map(aircraftId => {
     const profile = getFlightProfile(aircraftId), probe = createAircraft(aircraftId)
@@ -67,7 +67,7 @@ it('reports Phase 4 entries and limiter sweep without feel assertions', () => {
     for (const m of r.metrics) md.push(`| ${r.aircraftId} | comparison | ${m.id} | ${m.value?.toFixed(4) ?? '—'} ${m.unit} | ${m.status} |`)
   }
   md.push('', 'Existing B1–B5/B10/B11/B13/B15/B18/B19/B20 and B23–B25 remain in report.md, phase3.md and crossflow.md, all generated with the current physics version.',
-    'The manual High-G fixture retired in Phase 6 with the Space High-G command; its last values are in docs/psm-phase6-implementation.md.')
+    'The manual High-G fixture retired in Phase 6 with the Space High-G command; its last values are in docs/legacy-flight/psm-phase6-implementation.md.')
   writeFileSync(new URL('phase4.md', directory), md.join('\n') + '\n')
   console.info('Phase 4 report: benchmarks/flight/out/phase4.md (full sweep samples: phase4.json)')
 })

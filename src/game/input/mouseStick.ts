@@ -23,7 +23,7 @@ Ported from the F-22 reference implementation in example/F22, whose numbers this
  * reads as full deflection; `deadZone` and `curve` act on the travel inside it. */
 export interface StickShaping { deadZone: number; curve: number; reach: number }
 
-// Window-sized stick, reshaped in MR1 (docs/psm-maneuver-control-plan.md §4.2): half of the
+// Window-sized stick, reshaped in MR1 (docs/legacy-flight/psm-maneuver-control-plan.md §4.2): half of the
 // reach reads about a third of the deflection instead of a fifth, and full deflection sits at
 // 35% of the shorter side of the window (0.7 of the gate radius) so a flick reaches the edge.
 // Cursor mode's × uses it; positional stick mode has its own F22 disc (MOUSE_POSITIONAL).

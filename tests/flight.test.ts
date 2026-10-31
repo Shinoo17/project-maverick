@@ -282,7 +282,7 @@ describe('positional mouse stick', () => {
     input.move(0, 1000)
     expect(input.command(10, 'a', 'mouse').pitch).toBeCloseTo(1 - 18 / 60)
   })
-  // MR1 (docs/psm-maneuver-control-plan.md §4.2.3) reshaped the positional stick: curve 2 → 1.5,
+  // MR1 (docs/legacy-flight/psm-maneuver-control-plan.md §4.2.3) reshaped the positional stick: curve 2 → 1.5,
   // dead zone 0.08 → 0.04, and full deflection at 0.7 of the gate radius (35% of the shorter
   // side). The assertions are the same ones, read from the shaping constants.
   it('has a soft middle and a shaped curve, and only reads while live', () => {

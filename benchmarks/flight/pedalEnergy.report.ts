@@ -9,7 +9,7 @@ import { arcadeSpeed, simulationSpeed } from '../../src/game/flight/speedLimits'
 import type { PilotCommand } from '../../src/game/runtime/commands'
 import type { AircraftState } from '../../src/game/state/WorldState'
 
-/** Phase 8 input: energy during a pedal turn. See docs/psm-phase8-pedal-energy-findings.md.
+/** Phase 8 input: energy during a pedal turn. See docs/legacy-flight/psm-phase8-pedal-energy-findings.md.
  * Intended flow: ~550 km/h → pitch 90° → bleed to ~150 km/h → Space + full yaw at roughly constant
  * speed → W + Shift to recover. Report only: no targets, no CI gate. All speeds are arcade km/h. */
 const ids = ['f22', 'su57'] as const

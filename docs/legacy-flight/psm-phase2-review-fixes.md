@@ -109,8 +109,8 @@ Full current closed-loop and archived-input tables: `benchmarks/flight/out/phase
 | `tests/stall.test.ts` | Restore pure-beta non-stall expectation |
 | `tests/phase1Profile.test.ts` | Robust nonzero-rate pre-step controller/damping fixture |
 | `benchmarks/flight/README.md` | Current semantics, guard, report policy and acceptance status |
-| `docs/psm-phase2-review.md` | Mark prior report historical and withdraw completion claim |
-| `docs/psm-phase2-review-fixes.md` | Current review response and pending playtest checklist |
+| `docs/legacy-flight/psm-phase2-review.md` | Mark prior report historical and withdraw completion claim |
+| `docs/legacy-flight/psm-phase2-review-fixes.md` | Current review response and pending playtest checklist |
 
 **Owner playtest still required**
 

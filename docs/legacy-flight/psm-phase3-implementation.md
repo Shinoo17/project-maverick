@@ -18,14 +18,14 @@ statements as stronger guarantees. No browser handling/visual sign-off is claime
 
 ## 1. Files changed
 
-The pre-existing untracked `docs/psm-architecture-review.md` was not modified.
+The pre-existing untracked `docs/legacy-flight/psm-architecture-review.md` was not modified.
 All 18 Phase 0 golden files remain unchanged. Added/modified files in this work:
 
 | File | Responsibility |
 |---|---|
 | [package.json](../package.json) | Run the hard test suite before production build; a failing invariant blocks the build. |
-| [README.md](../README.md) | Current Phase 3 runtime, controls, debug ownership and report entry point. |
-| [benchmarks/flight/README.md](../benchmarks/flight/README.md) | Run instructions, ledger semantics, retained archives, baseline and migrated expectations. |
+| [README.md](../../README.md) | Current Phase 3 runtime, controls, debug ownership and report entry point. |
+| [benchmarks/flight/README.md](../../benchmarks/flight/README.md) | Run instructions, ledger semantics, retained archives, baseline and migrated expectations. |
 | [benchmarks/flight/goldenPolicy.ts](../benchmarks/flight/goldenPolicy.ts) | Explicit version-scoped I4 retirement for intentional Phase 3 physics changes. |
 | [benchmarks/flight/harness.ts](../benchmarks/flight/harness.ts) | Shared hydration of archived initial states so new engine/intent fields survive replay. |
 | [benchmarks/flight/legacyManeuvers.report.ts](../benchmarks/flight/legacyManeuvers.report.ts) | Preserve old yaw-completion target as feel; keep detector gate/lifecycle checks hard. |
@@ -34,9 +34,9 @@ All 18 Phase 0 golden files remain unchanged. Added/modified files in this work:
 | [benchmarks/flight/phase2-metrics.json](../benchmarks/flight/phase2-metrics.json) | Clean pre-change HEAD benchmark values plus source commit/version. |
 | [benchmarks/flight/phase2.report.ts](../benchmarks/flight/phase2.report.ts) | Update ledger description; retain existing archived-input and natural-aero reports. |
 | [benchmarks/flight/phase3.report.ts](../benchmarks/flight/phase3.report.ts) | Capacities, pedal shares, no-TVC, brake/burner, governor, low-speed work/cap, handoff, gain sweep and regression tables. |
-| [docs/psm-implementation-plan.md](../docs/psm-implementation-plan.md) | Record owner-approved E1/E3 resolution and explicit scope qualifications. |
-| [docs/psm-phase3-implementation.md](../docs/psm-phase3-implementation.md) | All twelve requested deliverables and remaining review/playtest risks. |
-| [docs/psm-phase3-progress.md](../docs/psm-phase3-progress.md) | Replace the interim blocked status with a link to this final report. |
+| [docs/legacy-flight/psm-implementation-plan.md](psm-implementation-plan.md) | Record owner-approved E1/E3 resolution and explicit scope qualifications. |
+| [docs/legacy-flight/psm-phase3-implementation.md](psm-phase3-implementation.md) | All twelve requested deliverables and remaining review/playtest risks. |
+| [docs/legacy-flight/psm-phase3-progress.md](psm-phase3-progress.md) | Replace the interim blocked status with a link to this final report. |
 | [src/content/aircraft/index.ts](../src/content/aircraft/index.ts) | Playground-only no-TVC registry entry with reused F-22 assets. |
 | [src/content/flight-profiles/defaults.ts](../src/content/flight-profiles/defaults.ts) | Remove generic maneuver rate/fullControlThrust defaults. |
 | [src/content/flight-profiles/f22.ts](../src/content/flight-profiles/f22.ts) | Spool, physical aero acceleration, floor, path denominator, incidence permission and scalar TVC gain. |

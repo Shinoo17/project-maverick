@@ -44,7 +44,7 @@ export const jetDriftTargets = {
   entry30Speed650to700: { min: 350 },
 } satisfies Record<string, Target>
 
-/** Maneuver catalogue targets (docs/psm-maneuver-control-plan.md §3), proposed 26 Sep 2026.
+/** Maneuver catalogue targets (docs/legacy-flight/psm-maneuver-control-plan.md §3), proposed 26 Sep 2026.
  * Report only until MR7 promotes the stable ones. D4: roll ~220–240°/s, 90° ≈ 0.55 s.
  * D8: B1 peak incidence resets to 90–120°. B29 follows the D3 follow-up. */
 export const maneuverTargets = {

@@ -3,7 +3,7 @@
 Source of truth: [Final Baseline Rev. 3](psm-implementation-plan.md), Phase 1 only.
 Baseline commit: `081790b` (Phase 0 review fixes), following `276508e` (Phase 0 instrumentation).
 `flightProfileVersion` remains `p3-powered-psm-1`. No golden files or tolerances changed.
-The pre-existing untracked `docs/psm-architecture-review.md` was left untouched.
+The pre-existing untracked `docs/legacy-flight/psm-architecture-review.md` was left untouched.
 
 ## Implementation
 

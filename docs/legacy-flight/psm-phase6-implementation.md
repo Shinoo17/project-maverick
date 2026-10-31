@@ -142,4 +142,4 @@ Legacy feel reports (`legacyManeuvers`, `legacyPoweredPsm`, `legacyStall`) were 
 
 - The camera phase fallback was removed in Phase 6 instead of Phase 7, because the field it read is gone.
 - `maneuvers.ts` was kept (airbrake smoothing) rather than merged into `engine.ts`. The plan allows either.
-- `docs/flight-profiles.md` was out of date before this phase (it still described `fullControlThrust` and per-profile PSM rates). Only its PSM, C and X sections were rewritten here. The rest waits for Phase 8.
+- `docs/legacy-flight/flight-profiles.md` was out of date before this phase (it still described `fullControlThrust` and per-profile PSM rates). Only its PSM, C and X sections were rewritten here. The rest waits for Phase 8.

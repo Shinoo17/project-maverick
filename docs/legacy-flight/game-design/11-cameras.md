@@ -1,6 +1,6 @@
 # 11 — Camera System
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P1/P2 · อ่าน interpolated flight state; ไม่เขียน simulation
+[กลับ Master Plan](../../../MASTER_PLAN.md) · P1/P2 · อ่าน interpolated flight state; ไม่เขียน simulation
 
 ## แยก View กับ Roll Mode
 

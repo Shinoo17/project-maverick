@@ -9,7 +9,7 @@ import { createMouseStick, defaultMouseSettings, readStickAxes, screenFrame } fr
 import type { CameraSettings } from '../../src/game/camera/cameraSettings'
 import { FlightInput } from '../../src/game/input/FlightInput'
 
-/** MR0 maneuver instrumentation (docs/psm-maneuver-control-plan.md §3, §5 MR0). Report only.
+/** MR0 maneuver instrumentation (docs/legacy-flight/psm-maneuver-control-plan.md §3, §5 MR0). Report only.
  * MANEUVER_REPORT_LABEL names out/<label>.{json,md} so before/after pairs sit side by side. */
 const label = process.env.MANEUVER_REPORT_LABEL ?? 'maneuvers'
 type Row = Record<string, unknown>

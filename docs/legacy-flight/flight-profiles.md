@@ -130,7 +130,7 @@ restoring moment is zero and a tail slide would otherwise hang nose-up. Raise
 `stiffness` (rad/s² at q = 1) for a faster nose drop; raise `minPressure` (a
 dimensionless q floor, 0.3 is about 49 m/s) to keep that drop strong at the
 near-motionless apex of a slide. It is shared by both stock airframes and can be
-overridden per aircraft. `docs/reverse-flow-departure.md` records the model,
+overridden per aircraft. `docs/legacy-flight/reverse-flow-departure.md` records the model,
 the sweep behind the stock values and the maneuvers it changes.
 
 `bankedDrift` turns a knife-edge pull into a horizontal drift instead of a cobra.

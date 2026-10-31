@@ -274,7 +274,7 @@ aero.damping: { attached: Axes; separated: Axes }   // lerp ด้วย separat
 
 - Moment = `−stiffness(incidence) · q · sin(alpha|beta)` → ศูนย์ที่ 0° และ 180°
 - **แก้ไข 23 ก.ย. 2026:** 180° ไม่ได้ flip เอง วัดแล้วหัวทิ้งช้า 22–25 s ต้องมี channel `departure` แยกต่างหาก
-  (`aero.departure`, physics version `p4.6-reverse-departure-1`) ดู `docs/reverse-flow-departure.md`
+  (`aero.departure`, physics version `p4.6-reverse-departure-1`) ดู `docs/legacy-flight/reverse-flow-departure.md`
 - Stiffness curve ต่อลำ เช่น F-22 ลดลงน้อยใน high AoA (predictable), Su-57 ลดลงมาก (freestyle), Su-35 ลดลงมาก + `alphaDrag` สูง
 - Validation: stiffness ≥ 0, knots เรียง incidence
 - **Restoring ไม่คูณ separation โดยตั้งใจ** (owner decision 20 ก.ย. 2026): การเสีย static stability หลัง stall
@@ -509,7 +509,7 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 - ลบ phase machine (`maneuvers.ts` เหลือ burner/airbrake หรือย้ายเข้า `engine.ts`)
 - Space = Air Brake; X ว่าง; Shift contextual (burner boost ใน §2 + governor); Q/E ramp
 - HUD: ลบ PSM speed band; flags ใช้ labels
-- Locales help text, `docs/game-design/02-controls.md`, `04-maneuvers.md`, `docs/flight-profiles.md`
+- Locales help text, `docs/legacy-flight/game-design/02-controls.md`, `04-maneuvers.md`, `docs/legacy-flight/flight-profiles.md`
 - **ไฟล์:** `commands.ts`, `FlightInput.ts`, `maneuvers.ts`, `practice.ts`, `replay.ts`, `PlaygroundHud.tsx`, `hudPainter.ts`, `FlightInstruments.tsx`, `FlightPage.tsx`, `locales/*`, `content/schemas.ts`, tests `maneuvers`/`poweredPsm`
 
 ### Phase 7 — Camera + HUD polish
@@ -530,7 +530,7 @@ Baseline ก่อนเริ่ม: `npm test` 18 files / 189 tests ผ่า�
 
 - Pedal turn energy (controlPower ระหว่าง yaw, low-q yaw authority, recovery acceleration): ดู [psm-phase8-pedal-energy-findings.md](psm-phase8-pedal-energy-findings.md) และ `benchmarks/flight/pedalEnergy.report.ts`; owner decisions ในเอกสารนั้นต้องตอบก่อน tune
 - F-22, Su-57 tuning ตาม personality; non-TVC จริง (F/A-18 หรือ F-16) ต้องมี model + rig (`presentationIds` มีแค่ `f22`/`su57` [schemas.ts:4](../src/content/schemas.ts#L4))
-- **ไฟล์:** `content/flight-profiles/*`, `content/aircraft/index.ts`, `render/aircraft/*`, `docs/flight-profiles.md`
+- **ไฟล์:** `content/flight-profiles/*`, `content/aircraft/index.ts`, `render/aircraft/*`, `docs/legacy-flight/flight-profiles.md`
 
 ### Phase 9 — FX / Audio / Maneuver detector
 - `feedback.ts`, vapor/vortex ใช้ separation/β, buffet shake, `src/audio/*`, `maneuverDetector.ts`

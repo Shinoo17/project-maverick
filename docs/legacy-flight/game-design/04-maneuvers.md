@@ -7,13 +7,13 @@
 > Everything below is historical milestone/design notes (P2 hold-C PSM, manual High-G). It no longer describes the game.
 
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P2 · พึ่ง flight ใน 03 และ input ใน 02
+[กลับ Master Plan](../../../MASTER_PLAN.md) · P2 · พึ่ง flight ใน 03 และ input ใน 02
 
 ## P2 implementation override · 7 กันยายน 2026
 
 ตามคำขอล่าสุด ผู้เล่นต้องคุมท่าเอง: **hold C + steer** แทน tap-to-assist เวอร์ชันแรก C อย่างเดียวไม่เปลี่ยน pitch/thrust/brake; เข้า active เมื่อ pitch/yaw magnitude >0.35, speed 65–115 m/s, AGL ≥150 m ทุกแกนตอบ player input ตลอด ไม่บังคับให้หยุดที่มุม Cobra; ผู้เล่นเชิดแล้วกดหัวกลับ หรือเลือก plane/ดึงต่อเพื่อ 180° ได้
 
-ปล่อย C, budget 3 s / 360° angular travel, speed <25 m/s หรือ altitude <80 m → recovery ระบบเพิ่มการตามหัวของ velocity ด้วย bounded force แต่ไม่หมุนหัวกลับเอง ผู้เล่นคืนคันบังคับกลางและ W เร่งออก; recovery complete ต้อง nose/path <ประมาณ 17° และ speed >60 m/s ต่อเนื่อง 0.3 s, timeout 6 s ไม่ถือว่าสำเร็จ จากนั้น cooldown 4 s + release ก่อน re-arm ค่าจริงอยู่ `maneuverProfile` ใน `src/game/flight/maneuvers.ts`; ผลตรวจอยู่ [P2 implementation](../phase-2-playground.md)
+ปล่อย C, budget 3 s / 360° angular travel, speed <25 m/s หรือ altitude <80 m → recovery ระบบเพิ่มการตามหัวของ velocity ด้วย bounded force แต่ไม่หมุนหัวกลับเอง ผู้เล่นคืนคันบังคับกลางและ W เร่งออก; recovery complete ต้อง nose/path <ประมาณ 17° และ speed >60 m/s ต่อเนื่อง 0.3 s, timeout 6 s ไม่ถือว่าสำเร็จ จากนั้น cooldown 4 s + release ก่อน re-arm ค่าจริงอยู่ `maneuverProfile` ใน `src/game/flight/maneuvers.ts`; ผลตรวจอยู่ [P2 implementation](../../phase-2-playground.md)
 
 ข้อความด้านล่างเป็นข้อเสนอเดิมสำหรับขยายต่อ หากขัดกันใช้ override นี้สำหรับ P2
 
@@ -78,7 +78,7 @@ Budget หมดเป็นการเลิก assist และช่วย r
 
 FCS ใช้ `vectoring.axes`, `lowSpeedAuthority`, `powerCurve`, `maxDeflection` จาก profile ไม่ตรวจ `if aircraftId === 'su57'` ใน core F-22 baseline เน้น pitch; Su-57 profile เกมให้ควบคุมหลายแกนได้มากกว่า; F/A-18E baseline ไม่มี thrust-vectoring assist
 
-แยก **ความสามารถเกม** ออกจาก rig animation และข้อมูลจริง: F-22 มีหัวฉีด thrust-vectoring แบบสองมิติที่แหล่งกองทัพอากาศอธิบายไว้; รายละเอียดจริงของ Su-57 ต้องผูก variant และแหล่งอ้างอิงก่อนเผยแพร่ ไม่เรียกมันว่า “3D vectoring จริงทุกแกน” จาก gameplay flag ดู [แหล่งข้อมูล](19-sources-and-decisions.md)
+แยก **ความสามารถเกม** ออกจาก rig animation และข้อมูลจริง: F-22 มีหัวฉีด thrust-vectoring แบบสองมิติที่แหล่งกองทัพอากาศอธิบายไว้; รายละเอียดจริงของ Su-57 ต้องผูก variant และแหล่งอ้างอิงก่อนเผยแพร่ ไม่เรียกมันว่า “3D vectoring จริงทุกแกน” จาก gameplay flag ดู [แหล่งข้อมูล](../../game-design/19-sources-and-decisions.md)
 
 อนิเมชัน nozzle อ่าน control solution ของ FCS เพื่อแสดงผล หาก GLB ไม่มี bone ที่เหมาะสม ให้ capability ทางภาพแจ้งเป็น missing ใน asset validation ไม่ให้ mesh เป็นตัวกำหนด flight physics
 

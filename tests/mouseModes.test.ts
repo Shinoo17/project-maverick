@@ -7,7 +7,7 @@ import { parseSettings } from '../src/platform/storage'
 import { runFlightReplay } from '../src/game/playground/replay'
 import { positionalHorizon, runAtFps } from './invariants/helpers'
 
-/* MR1 (docs/psm-maneuver-control-plan.md §4, §5 MR1): relative spring stick, body control
+/* MR1 (docs/legacy-flight/psm-maneuver-control-plan.md §4, §5 MR1): relative spring stick, body control
    frame, shaping settings. Input only: no PilotCommand field, schema or physics change. */
 const relative = (patch: Partial<MouseSettings> = {}) => {
   const input = new FlightInput({ ...defaultMouseSettings, mode: 'relative', ...patch }); input.setViewport(1000, 1000); input.engage()

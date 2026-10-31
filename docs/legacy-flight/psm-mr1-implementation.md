@@ -77,7 +77,7 @@ New file: `tests/mouseModes.test.ts`, 11 tests.
 
 ## Files
 
-`mouseStick.ts`, `FlightInput.ts`, `FlightPage.tsx`, `FlightScene.tsx`, `flight.css`, `platform/storage.ts`, `app/sessionStore.ts`, `locales/th.ts`, `locales/en.ts`, `docs/game-design/02-controls.md`, `benchmarks/flight/maneuvers.report.ts` (mouse probe), tests.
+`mouseStick.ts`, `FlightInput.ts`, `FlightPage.tsx`, `FlightScene.tsx`, `flight.css`, `platform/storage.ts`, `app/sessionStore.ts`, `locales/th.ts`, `locales/en.ts`, `docs/legacy-flight/game-design/02-controls.md`, `benchmarks/flight/maneuvers.report.ts` (mouse probe), tests.
 
 `session.ts` did not need a change: the settings live on `FlightInput.mouse`.
 

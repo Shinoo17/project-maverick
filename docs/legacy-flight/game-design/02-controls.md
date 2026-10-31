@@ -1,6 +1,6 @@
 # 02 — Controls: เมาส์และคีย์บอร์ด
 
-[กลับ Master Plan](../../MASTER_PLAN.md) · P1 · เจ้าของปุ่มและการ resolve input เพียงไฟล์เดียว
+[กลับ Master Plan](../../../MASTER_PLAN.md) · P1 · เจ้าของปุ่มและการ resolve input เพียงไฟล์เดียว
 
 ## เมาส์หลัง MR1 · 26 กันยายน 2026
 

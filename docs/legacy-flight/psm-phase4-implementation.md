@@ -71,9 +71,9 @@ The controller existed in Phase 3. It was extended, not replaced. No physical ae
 - [benchmarks/flight/phase4.report.ts](../benchmarks/flight/phase4.report.ts)
 - [benchmarks/flight/permissionProbes.ts](../benchmarks/flight/permissionProbes.ts)
 - [benchmarks/flight/targets.ts](../benchmarks/flight/targets.ts)
-- [docs/psm-implementation-plan.md](../docs/psm-implementation-plan.md)
-- [docs/psm-phase4-implementation.md](../docs/psm-phase4-implementation.md)
-- [docs/psm-phase4-review.md](../docs/psm-phase4-review.md)
+- [docs/legacy-flight/psm-implementation-plan.md](psm-implementation-plan.md)
+- [docs/legacy-flight/psm-phase4-implementation.md](psm-phase4-implementation.md)
+- [docs/legacy-flight/psm-phase4-review.md](psm-phase4-review.md)
 
 ## 3. Profile/schema changes
 
@@ -396,10 +396,10 @@ Controller feedback is prepared once per substep and reused by the controller/pa
 
 Generated reports:
 
-- [Phase 4 entries/sweep/comparisons](../benchmarks/flight/out/phase4.md) and [full JSON](../benchmarks/flight/out/phase4.json).
-- [Original scenario metrics](../benchmarks/flight/out/report.md).
-- [Existing Phase 3 authority/handoff fixtures, run with current physics](../benchmarks/flight/out/phase3.md).
-- [Crossflow B23–B25](../benchmarks/flight/out/crossflow.md).
+- [Phase 4 entries/sweep/comparisons](../../benchmarks/flight/out/phase4.md) and [full JSON](../benchmarks/flight/out/phase4.json).
+- [Original scenario metrics](../../benchmarks/flight/out/report.md).
+- [Existing Phase 3 authority/handoff fixtures, run with current physics](../../benchmarks/flight/out/phase3.md).
+- [Crossflow B23–B25](../../benchmarks/flight/out/crossflow.md).
 
 `out/` remains generated/ignored; the implementation report and before-snapshot are checked-in source artifacts. Running `npm run flight:bench` regenerates the reports without writing historical goldens.
 

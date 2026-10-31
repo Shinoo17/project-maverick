@@ -8,7 +8,7 @@
 > playtest/B9 target authoring. Numbers and interpretations below describe the old draft.
 
 
-Implemented against `docs/psm-implementation-plan.md`, Final Baseline Rev. 3. Read the complete plan and inspected Phase 0–1 runtime, tests and traces before editing. The untracked `docs/psm-architecture-review.md` was neither used as authority nor modified. No commit created. Stop here for review; Phase 3 is not implemented.
+Implemented against `docs/legacy-flight/psm-implementation-plan.md`, Final Baseline Rev. 3. Read the complete plan and inspected Phase 0–1 runtime, tests and traces before editing. The untracked `docs/legacy-flight/psm-architecture-review.md` was neither used as authority nor modified. No commit created. Stop here for review; Phase 3 is not implemented.
 
 **1. Files changed**
 
@@ -16,7 +16,7 @@ All paths below are relative to the repository root. Generated `benchmarks/fligh
 
 | File | Role |
 |---|---|
-| [benchmarks/flight/README.md](../benchmarks/flight/README.md) | Current Phase 2 commands, archive policy, diagnostic and migration documentation. |
+| [benchmarks/flight/README.md](../../benchmarks/flight/README.md) | Current Phase 2 commands, archive policy, diagnostic and migration documentation. |
 | [benchmarks/flight/flightBenchmarks.report.ts](../benchmarks/flight/flightBenchmarks.report.ts) | Relabels the existing tuning report for the current physics version. |
 | [benchmarks/flight/metrics.ts](../benchmarks/flight/metrics.ts) | Adds release incidence at entry/1 s and maximum attitude change per substep. |
 | [benchmarks/flight/legacyFeel.ts](../benchmarks/flight/legacyFeel.ts) | Reports original migrated feel expectations without failing on target misses; preserves runtime errors. |
@@ -41,7 +41,7 @@ All paths below are relative to the repository root. Generated `benchmarks/fligh
 | [src/game/flight/stepFlight.ts](../src/game/flight/stepFlight.ts) | Combines natural contributions with existing rate/force integration; fades neutral damping; removes PSM drag discount; preserves gravity through zero. |
 | [src/game/flight/validateProfile.ts](../src/game/flight/validateProfile.ts) | Required/finite/nonnegative curve, damping, drag and neutral-roll validation, ordered full-domain knots. |
 | [src/game/state/WorldState.ts](../src/game/state/WorldState.ts) | Optional last-substep diagnostic record, never read back by physics. |
-| [docs/psm-phase2-review.md](../docs/psm-phase2-review.md) | This review report, including all requested deliverables. |
+| [docs/legacy-flight/psm-phase2-review.md](psm-phase2-review.md) | This review report, including all requested deliverables. |
 | [tests/aerodynamics.test.ts](../tests/aerodynamics.test.ts) | 19 Phase 2 cases: natural signs/zeros, damping, continuity, boundaries, neutrality, gravity crossing, finiteness, deterministic tail slide, trim and profile validation. |
 | [tests/airflow.test.ts](../tests/airflow.test.ts) | Canonical rest/near-rest semantics and end-step telemetry expectations. |
 | [tests/envelope.test.ts](../tests/envelope.test.ts) | Incidence-based separation and now-active neutral-fade tuning with independent aircraft profiles. |

@@ -1,9 +1,9 @@
 # Phase 2 — Natural aerodynamics: independent code review
 
-Reviewed against `docs/psm-implementation-plan.md` (Final Baseline Rev. 3), which was treated as
-the sole authority. `docs/psm-architecture-review.md` and older PSM discussion were not used.
+Reviewed against `docs/legacy-flight/psm-implementation-plan.md` (Final Baseline Rev. 3), which was treated as
+the sole authority. `docs/legacy-flight/psm-architecture-review.md` and older PSM discussion were not used.
 Scope: the working-tree Phase 2 change set (26 modified files, 12 new files) plus
-`docs/psm-phase2-review.md` as the implementer's own account.
+`docs/legacy-flight/psm-phase2-review.md` as the implementer's own account.
 
 Verification performed: read the full plan and every changed file; ran `npx tsc -b` (clean),
 `npm test` (26 suites / 343 tests pass), `npm run flight:bench` (6 report suites / 15 pass);
@@ -339,7 +339,7 @@ Recorded so these are not re-litigated:
 
 # Round 2 — verification of the review response
 
-Reviewed `docs/psm-phase2-review-fixes.md` against the working tree at physics version
+Reviewed `docs/legacy-flight/psm-phase2-review-fixes.md` against the working tree at physics version
 `p3-natural-aero-2.1`. Everything below was re-derived from the code and from fresh runs, not read
 off the response document.
 
