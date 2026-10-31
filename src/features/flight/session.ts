@@ -4,6 +4,8 @@ import type { CameraSettings } from '../../game/camera/cameraSettings'
 import type { GraphicsSettings } from '../../render/graphicsSettings'
 import type { TargetDroneMode } from '../../game/playground/dronePath'
 import type { RefusalTone } from '../../render/lockTone'
+import type { FlightCoreId } from '../../game/flight/core'
+import type { CameraTrace } from '../../render/cameraTrace'
 export interface FlightSession {
   runtime: GameRuntime | null
   input: FlightInput
@@ -17,6 +19,10 @@ export interface FlightSession {
   running: boolean
   /** Playground modifier, null for none; read when the scene creates its runtime. */
   targetDrone: TargetDroneMode | null
+  /** Flight Lab: the flight core the scene's runtime uses (src/game/flight/core.ts). */
+  flightCore: FlightCoreId
+  /** Flight Lab: CAMERA_TRACE being recorded, or null (src/render/cameraTrace.ts). */
+  cameraTrace: CameraTrace | null
   resetId: number
   timeScale: number
   reducedMotion: boolean

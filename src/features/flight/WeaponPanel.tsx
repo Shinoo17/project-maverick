@@ -24,6 +24,7 @@ import type { WeaponKind } from '../../content/weapons'
 import { AIRCRAFT_HP } from '../../game/combat/damage'
 import type { FlightAction, InputPreset, KeyBindings } from '../../game/input/keyBindings'
 import type { AircraftState } from '../../game/state/WorldState'
+import { readFlight } from '../../game/flight/readout'
 import { bindingNames } from '../settings/KeyPrompt'
 import { weaponSlots, type MissileRow, type Refusal, type WeaponSlot } from './weaponSlots'
 import './weaponPanel.css'
@@ -155,7 +156,7 @@ export function WeaponPanel({ aircraftId, state, tick, refusals = {}, missiles, 
   const health = hp < 30 ? 'critical' : hp < 60 ? 'damaged' : 'nominal'
   const lit = Math.ceil(hp / (AIRCRAFT_HP / HP_SEGMENTS))
   const sway = reducedMotion ? 0 : clamp(-(state?.rates.roll ?? 0) * 1.4, 4)
-  const sag = reducedMotion ? 0 : clamp(((state?.maneuver.g ?? 1) - 1) * 0.5, 3)
+  const sag = reducedMotion ? 0 : clamp(((state ? readFlight(state).g : 1) - 1) * 0.5, 3)
   const tilt = { '--wpn-sway': `${sway.toFixed(2)}deg`, '--wpn-sag': `${sag.toFixed(2)}deg`, '--wpn-drop': `${(sag * 2).toFixed(1)}px` } as CSSProperties
 
   // Three or four missiles fold the unselected ones to one line, so the column clears the HUD tapes.

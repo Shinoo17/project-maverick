@@ -31,6 +31,8 @@ import { practiceSpawns, targetDrone as droneSpawn, type PracticePreset } from '
 import { dronePaths, type TargetDroneMode } from '../../game/playground/dronePath'
 import { BriefingChoice, BriefingStepper } from './BriefingControls'
 import { LogOut, Play, RotateCcw, Settings } from 'lucide-react'
+import { flightCoreAvailable, flightCoreIds, type FlightCoreId } from '../../game/flight/core'
+import { CameraTrace } from '../../render/cameraTrace'
 import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 // Menu title for each way a flight can stop.
@@ -42,10 +44,11 @@ export function FlightPage() {
   const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics, audio } = useSessionSettings()
   const reducedMotion = useReducedMotion(), uiScale = useUiScale()
   const [aircraftId, setAircraftId] = useState(selectedAircraftId)
-  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, resetId: 0, timeScale: 1, reducedMotion }), [])
+  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, flightCore: 'legacy', cameraTrace: null, resetId: 0, timeScale: 1, reducedMotion }), [])
   const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
   const [timeScale, setTimeScale] = useState(1), [targetDrone, setTargetDrone] = useState<TargetDroneMode | null>(null)
+  const [flightCore, setFlightCore] = useState<FlightCoreId>('legacy'), [tracing, setTracing] = useState(false)
   const [view, setView] = useState<'pause' | 'settings'>('pause')
   // Presses the aircraft refuses, by weapon slot (weaponSlots.ts): each plays on the card it was
   // made on, whatever is selected after, with a tone: a wait or no lock (the card shakes, a low
@@ -164,13 +167,18 @@ export function FlightPage() {
     session.targetDrone = mode; setTargetDrone(mode)
     session.runtime?.setTargetDrone(mode); resetFlight()
   }
-  function exportFlight() {
-    const replay = session.runtime?.exportReplay()
-    if (!replay) return
-    const url = URL.createObjectURL(new Blob([JSON.stringify(replay, null, 2)], { type: 'application/json' }))
-    const link = document.createElement('a'); link.href = url; link.download = 'maverick-flight-p3.json'; link.click()
+  function download(data: unknown, name: string) {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
+    const link = document.createElement('a'); link.href = url; link.download = name; link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
+  function exportFlight() {
+    const replay = session.runtime?.exportReplay()
+    if (replay) download(replay, 'maverick-flight-p3.json')
+  }
+  // CAMERA_TRACE: recording starts empty each time it is switched on; the export keeps the frames.
+  function traceCamera(on: boolean) { session.cameraTrace = on ? new CameraTrace() : null; setTracing(on) }
+  function exportCameraTrace() { if (session.cameraTrace) download(session.cameraTrace, 'maverick-camera-trace.json') }
   const stopped = telemetry && !telemetry.alive
   heldWarning.current = holdWarning(heldWarning.current, flightWarning(telemetry), performance.now())
   const warning = heldWarning.current.warning
@@ -182,7 +190,7 @@ export function FlightPage() {
   return <main className="flight-root" data-settings={inSettings || undefined} style={{ '--ui-scale': uiScale } as CSSProperties}>
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
       {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
-        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} onDown={onDown} />
+        <FlightScene indicators={indicators} aircraftId={aircraftId} flightCore={flightCore} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} onDown={onDown} />
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
@@ -233,14 +241,18 @@ export function FlightPage() {
             <details className="flight-brief-more flight-lab-settings"><summary>{t('flightLab')}</summary>
               <div className="flight-lab-grid">
                 <label htmlFor="validation-aircraft">{t('labAircraft')}</label><select id="validation-aircraft" value={aircraftId} onChange={e => { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); setAircraftId(e.target.value) }}>{playgroundAircraft.map(entry => <option key={entry.id} value={entry.id}>{entry.designation} · {entry.name}</option>)}</select>
+                <label htmlFor="flight-core">{t('labFlightCore')}</label><select id="flight-core" value={flightCore} onChange={e => { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); session.flightCore = e.target.value as FlightCoreId; setFlightCore(session.flightCore) }}>{flightCoreIds.map(id => <option key={id} value={id} disabled={!flightCoreAvailable(id)}>{t(`flightCore_${id}`)}</option>)}</select>
                 <label htmlFor="practice-speed">{t('practiceSpeed')}</label><select id="practice-speed" value={timeScale} onChange={e => { session.timeScale = Number(e.target.value); setTimeScale(session.timeScale) }}>{[1, 0.5, 0.25].map(value => <option key={value} value={value}>×{value}</option>)}</select>
               </div>
               <label className="flight-lab-check"><input type="checkbox" checked={lab} onChange={e => setLab(e.target.checked)} /> {t('showTelemetry')}</label>
+              <label className="flight-lab-check"><input type="checkbox" checked={tracing} onChange={e => traceCamera(e.target.checked)} /> {t('labCameraTrace')}</label>
               <div className="flight-lab-actions">
                 <button disabled={!ready || !!stopped} onClick={() => { session.runtime?.singleStep(); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null); session.invalidate?.() }}>{t('singleStep')}</button>
                 <button disabled={!ready} onClick={exportFlight}>{t('exportFlight')}</button>
+                <button disabled={!tracing} onClick={exportCameraTrace}>{t('exportCameraTrace')}</button>
               </div>
               <p>{t('exportFlightHint')}</p>
+              <p>{t('cameraTraceHint')}</p>
             </details>
           </section>
         </div>

@@ -96,11 +96,11 @@ function noseFlickMetrics({ trace, flickEnd, recoverStart, rollEnd }: ReturnType
 
 const round = (value: number | null | boolean | string) => typeof value === 'number' ? Number(value.toFixed(2)) : value
 
-it('reports the BF6-style inverted nose flick (report only)', () => {
-  const rows = ids.flatMap(id => speeds.flatMap(kph => recoveries.flatMap(recovery => (Object.keys(variants) as (keyof typeof variants)[])
-    .map(variant => noseFlickMetrics(noseFlickTrack(id, kph, variant, recovery))))))
-  mkdirSync('benchmarks/flight/out', { recursive: true })
-  writeFileSync('benchmarks/flight/out/nose-flick.json', JSON.stringify({ profileVersion: flightProfileVersion,
-    reference: { time80Seconds: 1.3, pathStaysNearLevel: true }, rows }, null, 2))
-  console.table(rows.map(row => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, round(value)]))))
-}, 60000)
+// it('reports the BF6-style inverted nose flick (report only)', () => {
+//   const rows = ids.flatMap(id => speeds.flatMap(kph => recoveries.flatMap(recovery => (Object.keys(variants) as (keyof typeof variants)[])
+//     .map(variant => noseFlickMetrics(noseFlickTrack(id, kph, variant, recovery))))))
+//   mkdirSync('benchmarks/flight/out', { recursive: true })
+//   writeFileSync('benchmarks/flight/out/nose-flick.json', JSON.stringify({ profileVersion: flightProfileVersion,
+//     reference: { time80Seconds: 1.3, pathStaysNearLevel: true }, rows }, null, 2))
+//   console.table(rows.map(row => Object.fromEntries(Object.entries(row).map(([key, value]) => [key, round(value)]))))
+// }, 60000)

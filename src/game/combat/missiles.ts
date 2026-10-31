@@ -63,6 +63,7 @@ import { Quaternion, Vector3 } from 'three'
 import type { MissileProfile, WeaponStation } from '../../content/weapons'
 import type { Tuple3 } from '../../content/hitboxes'
 import type { AircraftState, Vec3 } from '../state/WorldState'
+import { readFlight } from '../flight/readout'
 import { castSegment, type CollisionTarget } from './collision'
 import { GRAVITY, GROUND_Y, poseAt, type CombatBody } from './projectiles'
 import { radarContacts } from './radar'
@@ -175,7 +176,7 @@ const angleBetween = (from: Vec3, a: Vec3, b: Vec3) => {
 /** How hot `entity` looks to an IR seeker at `from`: its engine, and how much tail it shows. */
 export function aircraftHeat(entity: AircraftState, from: Vec3) {
   const { engine, burner, aspect } = missileRules.heat
-  const power = Math.max(0, entity.enginePower)
+  const power = Math.max(0, readFlight(entity).power)
   const glow = engine[0] + (engine[1] - engine[0]) * Math.min(1, power) + burner * Math.max(0, power - 1)
   const nose = new Vector3(1, 0, 0).applyQuaternion(quat(entity.orientation))
   const toSeeker = v(from).sub(v(entity.position))

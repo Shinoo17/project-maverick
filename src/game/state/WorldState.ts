@@ -15,6 +15,7 @@ import type { CountermeasureState, Decoy } from '../combat/countermeasures'
 import type { DronePath } from '../playground/dronePath'
 import type { TargetingState } from '../combat/targeting'
 import type { BotState } from '../bot/botPilot'
+import type { FlightCoreId } from '../flight/core'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -67,6 +68,9 @@ export interface AircraftState {
   /** Hit points, 0 to AIRCRAFT_HP (src/game/combat/damage.ts). */
   hp: number
   alive: boolean
+  /** The flight core that flies it (src/game/flight/core.ts). Absent = the legacy core.
+   * Everything outside the core reads its flight through readFlight (src/game/flight/readout.ts). */
+  flightCore?: FlightCoreId
 }
 export interface WorldState {
   tick: number

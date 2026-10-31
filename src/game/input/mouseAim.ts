@@ -2,6 +2,7 @@ import { MathUtils, Quaternion, Vector3, type Camera } from 'three'
 import type { AircraftState, Vec3 } from '../state/WorldState'
 import { observeAirflow } from '../flight/airflow'
 import { getFlightProfile } from '../flight/profile'
+import { readFlight } from '../flight/readout'
 import { WORLD_STEP } from '../runtime/clock'
 import { drawnReticle, solveGun, type GunMount, type TargetMotion } from '../combat/gunSolution'
 
@@ -164,8 +165,8 @@ export function turnAim(aim: MouseAim, dx: number, dy: number, viewRight: Vec3, 
 /** The instructor's share from the aircraft's state alone: whole in attached flight, gone in
  * post-stall, and gone where incidence cannot be read (the top of a tail slide). */
 export function instructorShare(state: AircraftState) {
-  const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
-  return (1 - MathUtils.smoothstep(airflow.incidenceDeg, MOUSE_AIM.handoverDeg[0], MOUSE_AIM.handoverDeg[1])) * airflow.confidence
+  const flight = readFlight(state)
+  return (1 - MathUtils.smoothstep(flight.incidenceDeg, MOUSE_AIM.handoverDeg[0], MOUSE_AIM.handoverDeg[1])) * flight.angleConfidence
 }
 const airflowOf = (state: AircraftState) => observeAirflow(state, getFlightProfile(state.aircraftId))
 

@@ -1,6 +1,4 @@
-import { interpretEnvelope, envelopeLabel } from '../../game/flight/envelope'
-import { observeAirflow } from '../../game/flight/airflow'
-import { getFlightProfile } from '../../game/flight/profile'
+import { readFlight, type BurnerStatus } from '../../game/flight/readout'
 import { Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../../game/state/WorldState'
 
@@ -11,21 +9,18 @@ export function flightWarning(state: AircraftState | null) {
   if (!state || !state.alive) return null
   if (Math.hypot(state.position.x, state.position.z) > 6500 || state.position.y > 6500) return 'boundaryWarning'
   if (state.position.y < 100) return 'lowAltitude'
-  const profile = getFlightProfile(state.aircraftId)
-  const flow = observeAirflow(state, profile)
-  const envelope = interpretEnvelope(state, flow, profile)
-  const label = envelopeLabel(envelope, state.intent.activity)
+  const flight = readFlight(state), label = flight.regime
   // Phase 4.5 treats active high-AoA input (including roll) as intentional drift,
   // even at full separation. Distinguishing a pilot fighting departure needs Phase 5 recovery signals.
   if (label === 'HIGH_AOA' || label === 'POST_STALL') return null
   // Low-speed separation alone should not hide the actionable energy advisory.
   // High-incidence recovery/departure still takes precedence below this speed.
-  if (flow.airspeed < 60 && envelope.highAoa === 0) return 'hudLowEnergy'
+  if (flight.airspeed < 60 && flight.highAoa === 0) return 'hudLowEnergy'
   if (label === 'RECOVERING') return 'hudStallRecovering'
   if (label === 'DEPARTED') return 'hudStall'
   // Held activity can leave mild separation labelled NORMAL. Match its severity
   // to the recovery advisory; DEPARTED above handles separation greater than 0.5.
-  if (envelope.separation > 0.1) return 'hudStallRecovering'
+  if (flight.postStall > 0.1) return 'hudStallRecovering'
   return null
 }
 
@@ -59,11 +54,7 @@ export function flightAttitude(orientation: AircraftState['orientation']) {
   }
 }
 
+const burnerKeys = { engaged: 'hudBurnerActive', depleted: 'hudBurnerLocked', recharging: 'recharging', ready: 'hudBurnerReady' } as const satisfies Record<BurnerStatus, string>
 export function burnerStatus(state: AircraftState | null) {
-  if (!state) return 'hudWaiting'
-  const m = state.maneuver
-  if (m.burnerActive) return 'hudBurnerActive'
-  if (m.burnerLocked) return 'hudBurnerLocked'
-  if (m.burner < 1 && m.burnerRest > 1) return 'recharging'
-  return 'hudBurnerReady'
+  return state ? burnerKeys[readFlight(state).burner.status] : 'hudWaiting'
 }

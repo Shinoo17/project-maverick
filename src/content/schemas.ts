@@ -2,6 +2,7 @@ import type { TargetDroneMode } from '../game/playground/dronePath'
 import type { FlightProfileId } from './flight-profiles'
 import type { FlightSpeedOverride } from '../game/flight/profileTypes'
 import type { Tuple3 } from './hitboxes'
+import type { FlightCoreId } from '../game/flight/core'
 export type AircraftId = string
 export const presentationIds = ['f22', 'su57'] as const
 export type Locale = 'th' | 'en'
@@ -67,4 +68,6 @@ export interface SessionConfig {
   targetDrone?: boolean | TargetDroneMode
   /** Per aircraft type, in the same ARCADE km/h units as its profile. */
   flightOverrides?: Record<AircraftId, FlightSpeedOverride>
+  /** Developer setting: which flight core flies every aircraft (src/game/flight/core.ts). Absent = 'legacy'. */
+  flightCore?: FlightCoreId
 }

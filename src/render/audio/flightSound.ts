@@ -37,6 +37,7 @@ import type { ThreatLevel } from '../../game/combat/rwr'
 import { motorBurning } from '../../game/combat/missiles'
 import { getWeapon } from '../../content/weapons'
 import { arcadeSpeed } from '../../game/flight/speedLimits'
+import { readFlight } from '../../game/flight/readout'
 import { machNumber } from '../vapor/atmosphere'
 import type { AudioMixer } from './mixer'
 import { loadSounds, sound, type SoundId } from './soundBank'
@@ -348,7 +349,7 @@ export function createFlightSound(mixer: AudioMixer) {
     const engine = mixer.bus('engine'), air = mixer.bus('air'), gun = mixer.bus('gun'), rocketry = mixer.bus('missile'), impacts = mixer.bus('impacts'), warning = mixer.bus('warning')
     if (!ctx || !engine || !air || !gun || !rocketry || !impacts || !warning) return
     if (ctx !== built) { clear(null); built = ctx; loadSounds(ctx) }
-    const now = ctx.currentTime, self = frame.player, alive = self.alive, m = self.maneuver
+    const now = ctx.currentTime, self = frame.player, alive = self.alive, flight = readFlight(self)
     const camera = frame.camera.position
 
     // The listener is the camera, moving with the player.
@@ -368,11 +369,11 @@ export function createFlightSound(mixer: AudioMixer) {
     player.buffet ??= startLoop(ctx, 'buffet', air)
     // Shot down, the engine winds back to idle and runs on there while the wreck falls.
     const running = alive || !!frame.falling
-    const power = alive ? clamp(self.enginePower, 0, 1) : 0, burner = alive && m.burnerActive
+    const power = alive ? clamp(flight.power, 0, 1) : 0, burner = alive && flight.burner.active
     const speed = Math.hypot(frame.velocity.x, frame.velocity.y, frame.velocity.z)
     const mach = machNumber(arcadeSpeed(speed) / 3.6, self.position.y)
     const flow = clamp((mach - 0.2) / 0.9, 0, 1)
-    const buffet = alive ? Math.max(clamp((m.g - 4) / 5, 0, 1), clamp((m.alpha - 15) / 25, 0, 1)) * clamp(mach / 0.4, 0, 1) : 0
+    const buffet = alive ? Math.max(clamp((flight.g - 4) / 5, 0, 1), clamp((flight.noseVelocityDeg - 15) / 25, 0, 1)) * clamp(mach / 0.4, 0, 1) : 0
     if (player.jet) {
       player.jet.gain.gain.setTargetAtTime(running ? MIX.engine * (0.55 + 0.45 * power) : 0, now, alive ? 0.12 : 0.4)
       player.jet.source.playbackRate.setTargetAtTime(0.85 + 0.3 * power + (burner ? 0.04 : 0), now, 0.25)
@@ -404,8 +405,9 @@ export function createFlightSound(mixer: AudioMixer) {
       voice.engine ??= startLoop(ctx, 'jet', voice.out.panner)
       const shift = dopplerRate(craft.position, craft.velocity, camera, frame.velocity)
       if (voice.engine) {
-        voice.engine.gain.gain.setTargetAtTime(MIX.otherEngine * (0.6 + 0.4 * clamp(craft.enginePower, 0, 1)), now, 0.15)
-        voice.engine.source.playbackRate.setTargetAtTime((0.85 + 0.3 * clamp(craft.enginePower, 0, 1)) * shift, now, 0.08)
+        const power = clamp(readFlight(craft).power, 0, 1)
+        voice.engine.gain.gain.setTargetAtTime(MIX.otherEngine * (0.6 + 0.4 * power), now, 0.15)
+        voice.engine.source.playbackRate.setTargetAtTime((0.85 + 0.3 * power) * shift, now, 0.08)
       }
       stepGun(ctx, voice.gun, craft.gun.shots, true, voice.guns.panner)
       // The fly-by starts early by however far its loudest moment is into the recording.

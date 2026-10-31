@@ -45,6 +45,7 @@ import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { AircraftState, Vec3 } from '../state/WorldState'
 import { neutralCommand, type PilotCommand } from '../runtime/commands'
 import { WORLD_STEP } from '../runtime/clock'
+import { readFlight } from '../flight/readout'
 import { createMouseAim, instruct, instructorShare, stepAim, type MouseAim } from '../input/mouseAim'
 import { EFFECTIVE_RANGE, gunMountOf, solveGun, type GunMount } from '../combat/gunSolution'
 import { boundingRadius } from '../combat/collision'
@@ -556,7 +557,7 @@ export function botCommand(bot: BotState, steering: MouseAim, self: AircraftStat
   steering.tracking = gunning ? 1 : 0
   const flown = steering.share > 0 ? instruct(steering, self) : { pitch: 0, roll: 0, yaw: 0 }
   // Ease off the pull as incidence climbs: the bot never opens the limiter into post-stall (no PSM below Hard).
-  const guardPull = 1 - 0.9 * MathUtils.smoothstep(self.maneuver.alpha, botRules.alphaGuard[0], botRules.alphaGuard[1])
+  const guardPull = 1 - 0.9 * MathUtils.smoothstep(readFlight(self).noseVelocityDeg, botRules.alphaGuard[0], botRules.alphaGuard[1])
   command.pitch = steering.share * flown.pitch * (flown.pitch > 0 ? guardPull : 1)
   command.roll = steering.share * flown.roll
   command.yaw = steering.share * flown.yaw

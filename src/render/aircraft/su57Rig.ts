@@ -2,31 +2,32 @@ import { Box3, Group, Matrix4, Mesh, Object3D, Quaternion, Vector3 } from 'three
 import type { AircraftState } from '../../game/state/WorldState'
 import { getFlightProfile } from '../../game/flight/profile'
 import { clamp } from '../../game/flight/speed'
+import { readFlight, type FlightReadout } from '../../game/flight/readout'
 import type { ExhaustNozzles } from '../exhaust/profile'
 
 const RAD = Math.PI / 180
 const smooth = (x: number) => { const t = clamp(x, 0, 1); return t * t * (3 - 2 * t) }
 
 /** Surfaces follow body rates; nozzles follow simulation-owned actuator angles. */
-export function su57ControlTargets(state: AircraftState) {
+export function su57ControlTargets(state: AircraftState, flight: FlightReadout = readFlight(state)) {
   const flightProfile = getFlightProfile(state.aircraftId).flight
   const speed = Math.hypot(state.velocity.x, state.velocity.y, state.velocity.z)
   const slow = 1 - smooth((speed - 45) / 105)
-  const alpha = smooth((state.maneuver.alpha - 12) / 58)
+  const alpha = smooth((flight.noseVelocityDeg - 12) / 58)
   const pitch = clamp(state.rates.pitch / flightProfile.pitchRate, -1, 1)
   const yaw = clamp(state.rates.yaw / flightProfile.yawRate, -1, 1)
   const roll = clamp(state.rates.roll / flightProfile.rollRate, -1, 1)
   const tvc = getFlightProfile(state.aircraftId).thrustVectoring
   const cant = (tvc?.cantDeg ?? 0) * RAD
   const nozzle = (side: 'left' | 'right') => {
-    const angle = tvc ? state.thrustVectoring[side] : 0
+    const angle = flight.nozzle?.[side] ?? 0
     return { pitch: angle * Math.cos(cant), yaw: angle * Math.sin(cant) * (side === 'left' ? -1 : 1) || 0 }
   }
   const left = nozzle('left'), right = nozzle('right')
-  // enginePower is thrust/max dry thrust, not the guide's 0..1 lever. Only the
+  // Power is thrust/max dry thrust, not the guide's 0..1 lever. Only the
   // accepted burner flag enters the opening branch; high dry thrust stays closed.
-  const power = state.alive ? clamp(state.enginePower, 0, 1) : 0
-  const area = state.alive && state.maneuver.burnerActive ? 1 : .6 - 1.6 * power
+  const power = state.alive ? clamp(flight.power, 0, 1) : 0
+  const area = state.alive && flight.burner.active ? 1 : .6 - 1.6 * power
   return { pitch, yaw, roll, slow, alpha, left, right, area }
 }
 
@@ -101,9 +102,9 @@ export function createSu57FlightRig(model: Object3D) {
   const exhaust: ExhaustNozzles = { left: frame(), right: frame() }
   const inverse = new Matrix4(), transform = new Matrix4(), rotation = new Quaternion(), vector = new Vector3()
   let initialized = false, area = 0
-  return Object.assign((state: AircraftState, dt = 1 / 60, reset = false) => {
+  return Object.assign((state: AircraftState, dt = 1 / 60, reset = false, flight?: FlightReadout) => {
     if (reset) initialized = false
-    const target = su57ControlTargets(state), step = Math.max(0, dt)
+    const target = su57ControlTargets(state, flight), step = Math.max(0, dt)
     const blend = initialized ? 1 - Math.exp(-step * 7) : 1
     const irisBlend = initialized ? 1 - Math.exp(-step * 5) : 1
     for (const surface of controls) {

@@ -1,6 +1,5 @@
-import { observeAirflow } from '../game/flight/airflow'
-import { interpretEnvelope } from '../game/flight/envelope'
-import { getFlightProfile } from '../game/flight/profile'
+import { readFlight } from '../game/flight/readout'
+import type { FlightCoreId } from '../game/flight/core'
 import { memo, Suspense, useEffect, useMemo, useRef, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Box3, Group, PerspectiveCamera, Quaternion, Vector3 } from 'three'
@@ -42,10 +41,10 @@ import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 import type { AudioSettings } from './audio/audioSettings'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; rwr?: RefObject<RwrDriver | null>; fps?: RefObject<HTMLElement | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void; onDown: () => void }
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; flightCore: FlightCoreId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void; onDown: () => void }
 /** Simulation seconds the player's wreck lies burning on the ground before the menu comes up. */
 const DOWN_SETTLE = 1.5
-function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady, onTelemetry, onDown, indicators }: Props) {
+function FlightWorld({ aircraftId, flightCore, session, running, targetDrone, audio, onReady, onTelemetry, onDown, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
   const rig = useMemo(() => new FlightCamera(new URLSearchParams(window.location.search).has('driftCamera')), [])
@@ -114,14 +113,14 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
   useEffect(() => () => tracers.dispose(), [tracers])
   useEffect(() => () => effects.dispose(), [effects])
   useEffect(() => {
-    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
+    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], flightCore, ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
     session.runtime = runtime; runtime.start(); runtime.pause()
     previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     // Paused, the canvas draws on demand; the page asks for a frame after a paused change.
     session.invalidate = invalidate
     rig.reset(); onReady(); invalidate()
     return () => { runtime.dispose(); session.runtime = null; session.invalidate = undefined }
-  }, [aircraftId, session, rig, onReady, invalidate])
+  }, [aircraftId, flightCore, session, rig, onReady, invalidate])
   useEffect(() => () => model.traverse(object => {
     if ('isSkinnedMesh' in object && object.isSkinnedMesh && 'skeleton' in object) (object.skeleton as { dispose(): void }).dispose()
   }), [model])
@@ -146,8 +145,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
         // Refreshed per simulation tick, not per rendered frame: the sim steps at 120 Hz
         // inside one advance() call, and a correction held across four ticks of a 2 rad/s
         // roll would make the aircraft answer differently at 30 fps than at 144.
-        const profile = getFlightProfile(live.aircraftId)
-        session.input.highAoa = interpretEnvelope(live, observeAirflow(live, profile), profile).highAoa
+        session.input.highAoa = readFlight(live).highAoa
         session.input.screen = screenFrame(live, session.camera)
         session.input.cursorFrame = session.camera.roll === 'horizon' ? screenFrame(live, { roll: 'horizon', horizonStyle: 'dynamic' }) : session.input.screen
         session.input.pose = live
@@ -194,6 +192,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     const cursor = session.input.mouse.mode === 'cursor'
     rig.aim = aiming && !cursor ? session.input.aim.direction : null
     rig.lookTurn = session.input.lookTarget()
+    rig.trace = session.cameraTrace
     // A tumbling wreck would spin an aircraft-locked camera with it, so the fall is watched horizon-locked.
     rig.update(camera as PerspectiveCamera, pose, wreck ? FALL_VIEW : session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()

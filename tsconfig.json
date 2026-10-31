@@ -15,5 +15,6 @@
     "noUnusedParameters": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "tests", "vite.config.ts", "benchmarks", "vitest.bench.config.ts"]
+  "include": ["src", "tests", "vite.config.ts", "benchmarks", "vitest.bench.config.ts"],
+  "exclude": ["benchmarks/flight/noseFlick.report.ts"]
 }

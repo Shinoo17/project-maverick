@@ -7,6 +7,7 @@ import { modelUrl } from '../content/aircraft'
 import { GameRuntime } from '../game/runtime/GameRuntime'
 import { getFlightProfile } from '../game/flight/profile'
 import { stepThrustVectoring, tvcTargets } from '../game/flight/thrustVectoring'
+import { readFlight } from '../game/flight/readout'
 import type { HangarFlightState } from '../features/studio/useHangarFlight'
 import { useAircraftAsset } from './aircraft/assetLoader'
 import { prepareAnimations } from './aircraft/animationStages'
@@ -75,17 +76,18 @@ export function HangarFlightView({ aircraft, input, playing, reducedMotion }: {
       frame.current.quaternion.identity(); reset.current = input.resetId
       volume.current.reset(); flame.reset()
     }
-    state.enginePower = input.throttle; state.maneuver.burnerActive = input.afterburner
     state.rates.pitch = input.pitch * profile.flight.pitchRate
     state.rates.roll = input.roll * profile.flight.rollRate
     state.rates.yaw = input.yaw * profile.flight.yawRate
     stepThrustVectoring(state, tvcTargets({ pitch: input.pitch, roll: input.roll, yaw: input.yaw }, 1, getFlightProfile(state.aircraftId).thrustVectoring!), dt)
-    rig(state, dt)
+    // Preview fixture: the panel's throttle and burner over the state's own readout.
+    const base = readFlight(state), flight = { ...base, power: input.throttle, burner: { ...base.burner, active: input.afterburner } }
+    rig(state, dt, false, flight)
     // Local +X is the nose: +Z pitches up, +X rolls, -Y yaws right.
     axis.set(input.roll, -input.yaw, input.pitch)
     if (axis.lengthSq()) frame.current.quaternion.multiply(turn.setFromAxisAngle(axis.normalize(), dt * .65))
     frame.current.updateWorldMatrix(true, true)
-    const conditions = { ...flightExhaustConditions(state), nozzles: rig.exhaust }
+    const conditions = { ...flightExhaustConditions(state, flight), nozzles: rig.exhaust }
     volume.current.exhaustPlume = flame.activeStyle.volumePlume
     volume.current.exhaustCavity = flame.activeStyle.volumeCavity
     volume.current.updateExhaust(conditions, dt, reducedMotion)

@@ -3,7 +3,7 @@ import { validateSession } from '../../content/validate'
 import type { WorldState } from '../state/WorldState'
 import { FixedClock, FLIGHT_STEP, WORLD_STEP } from './clock'
 import { commandSchemaVersion, neutralCommand, type PilotCommand } from './commands'
-import { stepFlight } from '../flight/stepFlight'
+import { getFlightCore, type FlightCore } from '../flight/core'
 import { botSpawnPose, combatBot, createPracticeState, droneRespawnPose, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
 import { circleFrom, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
 import { createThrustVectoringState } from '../flight/thrustVectoring'
@@ -61,6 +61,8 @@ export class GameRuntime {
   // Each bot's instructor memory (mouseAim.ts), by entity id. Not world state: it holds three.js
   // vectors, and it is rebuilt from nothing on every life and every reset, so a replay matches.
   private steering = new Map<string, MouseAim>()
+  // The session's flight core (SessionConfig.flightCore); every flown aircraft steps through it.
+  private core: FlightCore
 
   constructor(config: SessionConfig) {
     validateSession(config)
@@ -69,7 +71,10 @@ export class GameRuntime {
       ...(config.mapId === undefined ? {} : { mapId: config.mapId }),
       // `true` from older sessions is the still drone.
       ...(config.targetDrone ? { targetDrone: config.targetDrone === true ? 'still' as const : config.targetDrone } : {}),
-      ...(config.flightOverrides === undefined ? {} : { flightOverrides: structuredClone(config.flightOverrides) }) }
+      ...(config.flightOverrides === undefined ? {} : { flightOverrides: structuredClone(config.flightOverrides) }),
+      // Absent and 'legacy' are the same core; only another one is kept, so older sessions and replays read unchanged.
+      ...(config.flightCore === undefined || config.flightCore === 'legacy' ? {} : { flightCore: config.flightCore }) }
+    this.core = getFlightCore(this.config.flightCore)
     this.world = this.createWorld()
   }
 
@@ -125,6 +130,7 @@ export class GameRuntime {
       engine: { requestedPower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * speed ** 2 },
       enginePower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits),
       rates: { pitch: 0, yaw: 0, roll: 0 },
+      ...(this.config.flightCore ? { flightCore: this.config.flightCore } : {}),
     }
   }
 
@@ -173,7 +179,7 @@ export class GameRuntime {
         for (let substep = 0; substep < 2; substep++) {
           const previousX = entity.position.x
           if (!entity.alive) break
-          stepFlight(entity, safe, FLIGHT_STEP)
+          this.core.step(entity, safe, FLIGHT_STEP)
           if (entity.id === 'aircraft-1') stepPractice(this.world.practice, entity, safe, previousX, FLIGHT_STEP)
         }
       }

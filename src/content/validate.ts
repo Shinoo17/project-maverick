@@ -1,6 +1,7 @@
 import { flightProfiles } from './flight-profiles'
 import { validateFlightProfile } from '../game/flight/validateProfile'
 import { resolveSpeedLimits } from '../game/flight/speedLimits'
+import { flightCoreAvailable, isFlightCoreId } from '../game/flight/core'
 import { getWeapon, weaponStations, type GunProfile, type MissileProfile, type SeekerProfile } from './weapons'
 import { hitboxes, validateHitboxes } from './hitboxes'
 import { getAircraft } from './aircraft'
@@ -101,6 +102,8 @@ export function validateSession(config: SessionConfig) {
   if (!config.aircraftIds.length) throw new Error('session.aircraftIds: expected at least one aircraft')
   if (config.targetDrone !== undefined && typeof config.targetDrone !== 'boolean' && !['still', 'racetrack', 'circle', 'bot'].includes(config.targetDrone)) throw new Error('session.targetDrone: expected true, false, still, racetrack, circle or bot')
   if (config.targetDrone && config.mode !== 'playground') throw new Error('session.targetDrone: Playground only')
+  if (config.flightCore !== undefined && !isFlightCoreId(config.flightCore)) throw new Error('session.flightCore: expected legacy or new')
+  if (config.flightCore !== undefined && !flightCoreAvailable(config.flightCore)) throw new Error(`session.flightCore: '${config.flightCore}' is not built yet (FR1)`)
   config.aircraftIds.forEach((id, index) => {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }
     if (getAircraft(id).playgroundOnly && config.mode !== 'playground') throw new Error(`session.aircraftIds: ${id} is a Playground validation variant`)
