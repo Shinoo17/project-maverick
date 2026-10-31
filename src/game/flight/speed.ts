@@ -33,7 +33,12 @@ export function stepSpeed(state: AircraftState, command: PilotCommand, dt: numbe
     : -Math.min(-state.speedDrive * p.deceleration, Math.max(0, speed - p.minPoweredMps) / dt)
   const boost = m.burnerActive ? p.afterburnerAcceleration : 0
   const acceleration = Math.min(Math.max(0, drive) + boost, Math.max(0, topSpeed - speed) / dt)
-  const trim = p.drag * speed * speed
+  // The throttle setting, as the speed whose base drag it cancels. W/S and the burner
+  // set it to the current speed. Untouched it only follows speed down: a dive or a
+  // fall adds no thrust, and speed lost in a turn or climb stays lost until W.
+  state.throttleHoldMps = requested !== 0 || state.speedDrive !== 0 || m.burnerActive
+    ? speed : Math.min(state.throttleHoldMps ?? speed, speed)
+  const trim = p.drag * state.throttleHoldMps ** 2
   const dryThrust = dryThrustLimit(p, limits)
   const maxThrust = m.burnerActive
     ? Math.max(dryThrust * 1.6, p.drag * topSpeed ** 2 + p.afterburnerAcceleration)

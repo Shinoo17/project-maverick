@@ -47,6 +47,9 @@ export interface AircraftState {
   maneuver: ManeuverState
   stall: StallState
   speedDrive: number
+  /** The set throttle, as the speed whose base drag it cancels (src/game/flight/speed.ts).
+   * Unset until the first flight step, which takes the speed then. */
+  throttleHoldMps?: number
   /** Actual power, normalized by the dry thrust limit; may exceed 1 with burner. */
   enginePower: number
   engine: EngineState
