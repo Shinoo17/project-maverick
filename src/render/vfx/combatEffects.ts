@@ -13,8 +13,9 @@ latest world snapshot, and changes nothing in the simulation.
   player's own model that is drawn on it (ownWreck(), called before the camera is placed so the
   camera follows the fall). On the ground it explodes again and stays there, hidden. The player
   crashing into terrain explodes on the ground.
-- A missile trails its motor's plume (a short yellow-orange tongue of fire) and white smoke while the motor burns (none while it drops
-  out of a bay), and bursts in a yellow-orange fireball where its warhead goes off
+- A missile trails its motor's plume (a short yellow-orange tongue of fire) while the motor burns,
+  and white smoke from ignition until it is gone, burnt out or not, so it is easy to follow (none
+  while it drops out of a bay), and bursts in a yellow-orange fireball where its warhead goes off
   (missile-detonated), grown with distance like the aircraft; on the ground it
   kicks up dust instead. A dud (struck before it armed) only sparks where it broke up.
 - A flare is a round orange ball trailing thick white smoke; each shrinks and dims on its own
@@ -35,7 +36,7 @@ import { loadParticleAtlas, type ParticleAtlas, type SpriteSet } from './atlas'
 import { airExplosion, chaffBloom, createFlareTrail, createMissileTrail, createTrail, groundExplosion, groundHit, hitSpark, missileBurst, randomStream, type EffectLayers } from './effects'
 import { getWeapon } from '../../content/weapons'
 import { WORLD_STEP } from '../../game/runtime/clock'
-import { motorBurning } from '../../game/combat/missiles'
+import { motorBurning, motorLit } from '../../game/combat/missiles'
 import { flareHeat } from '../../game/combat/countermeasures'
 import { createParticleLayer } from './particles'
 import { advanceWreck, createWreck, type Wreck } from './wreck'
@@ -72,8 +73,9 @@ export interface EffectsFrame {
 
 export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
   const layers: EffectLayers = {
-    // Each missile's lingering trail holds about 80 × 7 = 560 puffs; a flare burst up to 8 × 2.5 × 80 = 1,600.
-    smoke: createParticleLayer({ capacity: 6400, additive: false, order: 5 }),
+    // Each missile's lingering trail holds one puff per 3 m over 7 s, about 1,400 at 600 m/s; a flare
+    // burst up to 8 × 2.5 × 80 = 1,600.
+    smoke: createParticleLayer({ capacity: 12000, additive: false, order: 5 }),
     glow: createParticleLayer({ capacity: 800, additive: true, order: 6 }),
   }
   // Smoke first, then the glow over it.
@@ -179,14 +181,15 @@ export function createCombatEffects({ sprites = 'classic' as SpriteSet } = {}) {
     const flying = new Set<number>()
     for (const missile of world?.missiles ?? []) {
       flying.add(missile.id)
-      if (!motorBurning(missile, getWeapon(missile.weaponId).missile!)) continue
+      if (!motorLit(missile)) continue
       if (!trails.has(missile.id)) trails.set(missile.id, createMissileTrail())
+      const burning = motorBurning(missile, getWeapon(missile.weaponId).missile!)
       // Where the missile is drawn between ticks (the snapshot is the tick's end), less 1.6 m to its
       // tail, on the model as drawn: larger with distance (MissileModels.tsx).
       const speed = Math.hypot(missile.velocity.x, missile.velocity.y, missile.velocity.z) || 1
       const scale = scaleAt(missile.position)
       const back = 1.6 * scale / speed - (clock - (world?.tick ?? 0) * WORLD_STEP)
-      trails.get(missile.id)!.emit(layers, clock, dt, { x: missile.position.x - missile.velocity.x * back, y: missile.position.y - missile.velocity.y * back, z: missile.position.z - missile.velocity.z * back }, missile.velocity, random, scale)
+      trails.get(missile.id)!.emit(layers, clock, dt, { x: missile.position.x - missile.velocity.x * back, y: missile.position.y - missile.velocity.y * back, z: missile.position.z - missile.velocity.z * back }, missile.velocity, random, scale, burning)
     }
     for (const id of trails.keys()) if (!flying.has(id)) trails.delete(id)
     const airborne = new Set<number>()

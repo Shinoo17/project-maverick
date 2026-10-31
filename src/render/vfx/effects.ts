@@ -138,11 +138,12 @@ export function createTrail(rate = { smoke: 22, fire: 30 }) {
   return { emit }
 }
 
-/** A missile's motor, only while it burns: a solid rocket's plume, then its smoke (user request
+/** A missile's motor: a solid rocket's plume while it `burning`, then its smoke (user request
  * 2026-10-26: no white star). Seen from outside, the plume is a short tongue of fire, pale yellow
  * at the nozzle going deep yellow and orange toward its tip, about `TONGUE` metres long and moving
- * with the missile; past its tip the exhaust is white smoke that hangs in the air for 5–7 s, so the
- * trail still marks the missile's path after burnout (an AIM-9 burns 2.2 s). The flame is drawn in
+ * with the missile; past its tip the exhaust is white smoke that hangs in the air for 5–7 s. The
+ * smoke keeps coming after burnout (an AIM-9 burns 2.2 s), for the whole flight, so the missile is
+ * easy to follow (user request 2026-10-31). The flame is drawn in
  * the alpha layer, like the explosions: light added to the pale sky burns out to white. The flame
  * is emitted at a rate per simulation second, the smoke one puff every `spacing` metres flown, so
  * a fast missile's trail is as solid as a slow one's. `scale` is how much larger the missile is
@@ -150,9 +151,9 @@ export function createTrail(rate = { smoke: 22, fire: 30 }) {
 export function createMissileTrail(rate = { flame: 400, spacing: 3 }) {
   const TONGUE = 6
   let smokeDue = 0, flameDue = 0
-  function emit(layers: EffectLayers, now: number, dt: number, tail: Vec3Like, velocity: Vec3Like, random: Random, scale = 1) {
+  function emit(layers: EffectLayers, now: number, dt: number, tail: Vec3Like, velocity: Vec3Like, random: Random, scale = 1, burning = true) {
     const speed = Math.hypot(velocity.x, velocity.y, velocity.z) || 1
-    smokeDue += speed * dt / rate.spacing; flameDue += rate.flame * dt
+    smokeDue += speed * dt / rate.spacing; if (burning) flameDue += rate.flame * dt
     // A point `metres` behind the nozzle, and `share` of this frame's travel further back.
     const behind = (metres: number, share = 0) => {
       const back = metres / speed + dt * share

@@ -133,6 +133,8 @@ export function hardpointOf(station: WeaponStation, count: number): Tuple3 {
 
 /** Seconds after launch the motor lights. */
 const ignition = (missile: Missile) => missile.mount === 'bay' ? missileRules.mounts.bay.separation : 0
+/** The motor has lit (it may since have burnt out). */
+export const motorLit = (missile: Missile) => missile.age >= ignition(missile)
 /** The motor is burning. */
 export const motorBurning = (missile: Missile, profile: MissileProfile) => missile.age >= ignition(missile) && missile.age < ignition(missile) + profile.burnSeconds
 
