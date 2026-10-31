@@ -1,4 +1,22 @@
 <!doctype html>
 <html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Maverick · HUD preview</title>
-<style>.flight-root.hud-preview-sky{background:linear-gradient(#86abc0,#acc5d2 52%,#8a947e 52%,#76806a)}</style>
+<style>.flight-root.hud-preview-sky{background:linear-gradient(#86abc0,#acc5d2 52%,#8a947e 52%,#76806a)}
+.hud-settings,.hud-settings-toggle{position:fixed;right:16px;top:16px;z-index:50;font:13px system-ui,sans-serif;color:#edf0ed}
+.hud-settings{width:272px;max-height:calc(100dvh - 32px);overflow:auto;background:#1c2227f2;border:1px solid #3b474e;border-radius:3px;padding:12px 14px}
+.hud-settings header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hud-settings h2{font-size:15px;font-weight:500;margin:0}
+.hud-settings fieldset{border:0;border-top:1px solid #3b474e;margin:12px 0 0;padding:8px 0 0}
+.hud-settings legend{color:#cfb88a;font-size:12px;padding:0 6px 0 0}
+.hud-settings label{display:block;margin-top:8px;color:#adb8be}
+.hud-settings label.is-flag{display:flex;align-items:center;gap:8px;color:#edf0ed;cursor:pointer;min-height:24px;margin-top:4px}
+.hud-settings label.is-flag input{accent-color:#cfb88a;width:16px;height:16px;margin:0}
+.hud-settings select,.hud-settings input[type=number]{display:block;width:100%;margin-top:4px;min-height:32px;box-sizing:border-box;background:#293239;color:#edf0ed;border:1px solid #3b474e;border-radius:3px;padding:4px 8px;font:inherit}
+.hud-settings button,.hud-settings-toggle{min-height:32px;background:#293239;color:#edf0ed;border:1px solid #3b474e;border-radius:3px;padding:4px 10px;font:inherit;cursor:pointer}
+.hud-settings-toggle{background:#1c2227e6}
+.hud-settings button:hover,.hud-settings-toggle:hover{background:#3b474e}
+.hud-settings button:disabled{opacity:.45;cursor:default}
+.hud-settings :focus-visible,.hud-settings-toggle:focus-visible{outline:2px solid #cfb88a;outline-offset:2px}
+.hud-settings footer{border-top:1px solid #3b474e;margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.hud-settings code{font:12px/1.5 ui-monospace,monospace;color:#cfd8dc;background:#151a1e;padding:6px 8px;word-break:break-all;user-select:all}
+</style>
 </head><body><div id="root"></div><script type="module" src="/src/features/flight/hudPreview.tsx"></script></body></html>

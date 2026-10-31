@@ -23,11 +23,11 @@ import { getAircraft } from '../../content/aircraft'
 import type { AircraftState, Vec3 } from '../state/WorldState'
 import { GRAVITY, GROUND_Y } from './projectiles'
 
-/** Provisional values, waiting on playtest (user values 2026-10-25 for the flare burst; duration 0.7 s
- * at the user's request, from 0.45 s). Change them here. */
+/** Provisional values, waiting on playtest (user values 2026-10-25 for the flare burst; duration 0.75 s
+ * at the user's request, from 0.45 s, then 0.7 s). Change them here. */
 export const countermeasureRules = {
   /** One burst: flares, alternating left and right over `duration` seconds; chaff at its start. */
-  burst: { flares: 8, chaff: 4, duration: 0.7 },
+  burst: { flares: 8, chaff: 4, duration: 0.75 },
   /** Seconds from the end of one burst until another may start. */
   cooldown: 1.5,
   /** Per kind: mean seconds it lasts, mean drag k (1/m), the share of gravity it falls with, and

@@ -88,7 +88,9 @@ export function FlightPage() {
   }, [session])
   const onReady = useCallback(() => setReady(true), [])
   const onError = useCallback(() => { setFailed(true); pause() }, [pause])
-  const onTelemetry = useCallback((state: AircraftState, tick: number) => { setTelemetry(state); setTelemetryTick(tick); if (!state.alive) pause() }, [pause])
+  const onTelemetry = useCallback((state: AircraftState, tick: number) => { setTelemetry(state); setTelemetryTick(tick) }, [])
+  // Shot down, the flight runs on while the wreck falls; the scene calls this once it is down.
+  const onDown = useCallback(() => pause(), [pause])
   useEffect(() => {
     if (!running) { if (!dialog.current?.open) dialog.current?.showModal() }
     else { closeDialog(); setView('pause') }
@@ -156,6 +158,8 @@ export function FlightPage() {
   function resetFlight(nextPreset: PracticePreset = practicePreset) {
     pause(); setHasStarted(false); session.resetId++; session.runtime?.reset(nextPreset); setCameraChanged(false); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null); session.invalidate?.()
   }
+  /** After a death: a fresh flight, flying at once. */
+  function respawn() { resetFlight(); void begin() }
   function chooseTargetDrone(mode: TargetDroneMode | null) {
     session.targetDrone = mode; setTargetDrone(mode)
     session.runtime?.setTargetDrone(mode); resetFlight()
@@ -178,7 +182,7 @@ export function FlightPage() {
   return <main className="flight-root" data-settings={inSettings || undefined} style={{ '--ui-scale': uiScale } as CSSProperties}>
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
       {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
-        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} />
+        <FlightScene indicators={indicators} aircraftId={aircraftId} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} onDown={onDown} />
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
@@ -243,7 +247,7 @@ export function FlightPage() {
         <footer className="flight-brief-actions">
           {pointerError && <p className="flight-brief-alert" role="alert">{t('pointerError')}</p>}
           {failed ? <button className="menu-launch" onClick={() => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); if (targetDrone) retryAircraftAsset(modelUrl(getAircraft(droneSpawn.aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) }}><span>{t('retry')}</span><RotateCcw size={24} aria-hidden="true" /></button>
-            : <button ref={launch} className="menu-launch" disabled={!ready || !webgl || !!stopped} onClick={() => void begin()}><span>{!ready && webgl ? t('flightLoading') : hasStarted ? t('resumeFlight') : t('beginFlight')}</span>{ready && webgl && !stopped && <Play size={24} fill="currentColor" aria-hidden="true" />}</button>}
+            : <button ref={launch} className="menu-launch" disabled={!ready || !webgl} onClick={() => stopped ? respawn() : void begin()}><span>{!ready && webgl ? t('flightLoading') : stopped ? t('respawn') : hasStarted ? t('resumeFlight') : t('beginFlight')}</span>{ready && webgl && <Play size={24} fill="currentColor" aria-hidden="true" />}</button>}
           <div className="flight-brief-secondary">
             {ready && <button onClick={() => resetFlight()}><RotateCcw size={16} aria-hidden="true" />{t('resetFlight')}</button>}
             <button onClick={() => setView('settings')}><Settings size={16} aria-hidden="true" />{t('homeSettings')}</button>

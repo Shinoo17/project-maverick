@@ -13,15 +13,15 @@
   },
   {
     "file": "engine/burner-loop.wav",
-    "source": "sound-source/select_sound/used/pixabay/afterburner-sound.mp3",
-    "licence": "Pixabay Content License (pixabay.com/service/license-summary): free to use, no attribution required",
-    "start": 10.5,
-    "length": 10,
+    "source": "sound-source/select_sound/used/game-sfx/afterburner.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 14,
+    "length": 8,
     "loop": true,
-    "crossfade": 0.6,
+    "crossfade": 0.5,
     "channels": 2,
-    "rate": 24000,
-    "gainDb": 2.2
+    "rate": 32000,
+    "gainDb": -13.42
   },
   {
     "file": "air/wind-loop.wav",
@@ -49,15 +49,15 @@
   },
   {
     "file": "air/sonic-boom.mp3",
-    "source": "sound-source/select_sound/used/pixabay/cinematic-sonic-boom.mp3",
+    "source": "sound-source/select_sound/used/pixabay/breaking-the-sound-barrier.mp3",
     "licence": "Pixabay Content License (pixabay.com/service/license-summary): free to use, no attribution required",
-    "start": 0.15,
-    "length": 4.1,
-    "fadeIn": 0.005,
-    "fadeOut": 0.8,
+    "start": 3.62,
+    "length": 4,
+    "fadeIn": 0.06,
+    "fadeOut": 2.5,
     "channels": 2,
-    "rate": 44100,
-    "gainDb": 1.42
+    "rate": 24000,
+    "gainDb": -0.25
   },
   {
     "file": "weapons/gun-loop.wav",
@@ -85,15 +85,15 @@
   },
   {
     "file": "weapons/missile-launch.mp3",
-    "source": "sound-source/select_sound/used/pixabay/missile-launch.mp3",
-    "licence": "Pixabay Content License (pixabay.com/service/license-summary): free to use, no attribution required",
-    "start": 0,
-    "length": 4.6,
+    "source": "sound-source/select_sound/used/game-sfx/missile-launch.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 0.03,
+    "length": 1.9,
     "fadeIn": 0.004,
-    "fadeOut": 1.2,
+    "fadeOut": 0.6,
     "channels": 2,
-    "rate": 24000,
-    "gainDb": -0.62
+    "rate": 48000,
+    "gainDb": 2.33
   },
   {
     "file": "weapons/missile-motor-loop.wav",
@@ -132,16 +132,40 @@
     "gainDb": -4.95
   },
   {
-    "file": "impacts/explosion-small.mp3",
-    "source": "sound-source/select_sound/used/sonniss/EXPLDsgn_Explosion Small Blast Enemy Death Crunchy Boom Cartoon Noisy Crash Impact Delay 03_ESM_AG.wav",
-    "licence": "Sonniss GDC 2026 Game Audio Bundle licence (sound-source/select_sound/License - GDC Game Audio.pdf): royalty-free, no attribution required",
-    "start": 0,
-    "length": 1.4778,
+    "file": "impacts/explosion-near.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/missile-explosions-near-to-far.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 0.047,
+    "length": 1,
     "fadeIn": 0.002,
-    "fadeOut": 0.5,
+    "fadeOut": 0.3,
     "channels": 2,
     "rate": 48000,
-    "gainDb": -0.02
+    "gainDb": -1
+  },
+  {
+    "file": "impacts/explosion-mid.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/missile-explosions-near-to-far.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 2.0733,
+    "length": 2.1,
+    "fadeIn": 0.002,
+    "fadeOut": 0.6,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
+  },
+  {
+    "file": "impacts/explosion-far.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/missile-explosions-near-to-far.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 5.2571,
+    "length": 3.2,
+    "fadeIn": 0.002,
+    "fadeOut": 1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
   },
   {
     "file": "impacts/explosion-large.mp3",
@@ -154,6 +178,114 @@
     "channels": 2,
     "rate": 48000,
     "gainDb": 0
+  },
+  {
+    "file": "weapons/flare-pop-1.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 0.05,
+    "length": 0.25,
+    "fadeIn": 0.002,
+    "fadeOut": 0.1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -0.41
+  },
+  {
+    "file": "weapons/flare-pop-2.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 2.81,
+    "length": 0.25,
+    "fadeIn": 0.002,
+    "fadeOut": 0.1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -0.34
+  },
+  {
+    "file": "weapons/flare-pop-3.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 3.08,
+    "length": 0.25,
+    "fadeIn": 0.002,
+    "fadeOut": 0.1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
+  },
+  {
+    "file": "weapons/flare-pop-4.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 3.34,
+    "length": 0.25,
+    "fadeIn": 0.002,
+    "fadeOut": 0.1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
+  },
+  {
+    "file": "weapons/flare-pop-5.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 3.6,
+    "length": 0.25,
+    "fadeIn": 0.002,
+    "fadeOut": 0.1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
+  },
+  {
+    "file": "weapons/flare-pop-6.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 3.87,
+    "length": 0.25,
+    "fadeIn": 0.002,
+    "fadeOut": 0.1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
+  },
+  {
+    "file": "weapons/flare-burn.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 0.12,
+    "length": 1.3,
+    "fadeIn": 0.03,
+    "fadeOut": 0.4,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -0.41
+  },
+  {
+    "file": "weapons/flare-burst.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/flare-deploy.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 2.81,
+    "length": 2.45,
+    "fadeIn": 0.002,
+    "fadeOut": 0.5,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
+  },
+  {
+    "file": "weapons/missile-miss.mp3",
+    "source": "sound-source/select_sound/used/game-sfx/missile-pass.wav",
+    "licence": "Third-party game audio: copyrighted, prototype use only, replace before any release",
+    "start": 0.04,
+    "length": 3.5,
+    "fadeIn": 0.004,
+    "fadeOut": 1,
+    "channels": 2,
+    "rate": 48000,
+    "gainDb": -1
   },
   {
     "file": "impacts/hit-metal.mp3",

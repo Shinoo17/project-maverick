@@ -34,7 +34,6 @@ import { TrainingRange } from './range/TrainingRange'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import { createBayDoors, type BayDoors } from './aircraft/bayDoors'
-import { countermeasureRules } from '../game/combat/countermeasures'
 import type { HudDriver } from '../features/flight/FlightInstruments'
 import type { RadarDriver } from '../features/flight/RadarScope'
 import type { RwrDriver } from '../features/flight/RwrScope'
@@ -43,8 +42,10 @@ import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 import type { AudioSettings } from './audio/audioSettings'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; rwr?: RefObject<RwrDriver | null>; fps?: RefObject<HTMLElement | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void }
-function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady, onTelemetry, indicators }: Props) {
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void; onDown: () => void }
+/** Simulation seconds the player's wreck lies burning on the ground before the menu comes up. */
+const DOWN_SETTLE = 1.5
+function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady, onTelemetry, onDown, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
   const rig = useMemo(() => new FlightCamera(new URLSearchParams(window.location.search).has('driftCamera')), [])
@@ -63,6 +64,8 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
   const rigTick = useRef(-1)
   const previous = useRef<AircraftState | null>(null), current = useRef<AircraftState | null>(null)
   const wasRunning = useRef(false), fps = useRef({ frames: 0, since: -1 })
+  // When the menu comes up after the player's death (simulation seconds): once the wreck is down, or at once off the map.
+  const downAt = useRef<number | null>(null), downed = useRef(false)
   const invalidate = useThree(state => state.invalidate)
   const gl = useThree(state => state.gl)
   const model = useMemo(() => buildFlightModel(asset, definition), [asset, definition])
@@ -94,8 +97,9 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
   // Volumes apply at once, even paused: the mixer keeps them for a context it makes later.
   useEffect(() => { mixer.setVolumes(audio) }, [mixer, audio])
   // Paused or hidden, the loop may not draw again, so sound is cut here rather than in a frame.
-  // Shot down, the flight stops at once; the explosion and the engine's fade play out first.
-  useEffect(() => { if (!running) mixer.silence(current.current && !current.current.alive ? 3 : 0) }, [running, mixer])
+  // Stopped by the death itself (the wreck down, or off the map), the explosion and the engine's fade
+  // play out first; paused by the pilot, even while falling, everything stops at once.
+  useEffect(() => { if (!running) { mixer.silence(downed.current ? 3 : 0); downed.current = false } }, [running, mixer])
   useEffect(() => { session.refused = lockTone.refuse; return () => { session.refused = undefined } }, [session, lockTone])
   useEffect(() => {
     const hidden = () => { if (document.hidden) mixer.silence() }, blur = () => mixer.silence()
@@ -126,7 +130,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     if (!runtime || !group.current) return
     const rigReset = reset.current !== session.resetId
     if (rigReset) {
-      reset.current = session.resetId; rig.reset(); gunnery.reset(); effects.reset(); rwrFrame.reset(); flightSound.reset(); bayDoors.current?.reset(); session.input.resyncAim(); assisting.current = false; firing.current = false
+      reset.current = session.resetId; downAt.current = null; rig.reset(); gunnery.reset(); effects.reset(); rwrFrame.reset(); flightSound.reset(); bayDoors.current?.reset(); session.input.resyncAim(); assisting.current = false; firing.current = false
       previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     }
     let alpha = 1
@@ -173,10 +177,16 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     const rigDt = session.running ? Math.min(dt, .1) * session.timeScale : rigTick.current >= 0 ? Math.max(0, tick - rigTick.current) * WORLD_STEP : 0
     updateRig(state, rigDt, rigReset)
     rigTick.current = tick
+    const simClock = ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP
+    // Shot down, the jet is drawn on its falling wreck, and the camera follows it there.
+    const wreck = effects.ownWreck(simClock)
     // Velocity is interpolated with the pose, so the camera's path look and the drawn FPM agree between ticks.
-    const pose = { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha),
-      velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) }
+    const pose = wreck ? { ...state, position: wreck.position.clone(), orientation: wreck.orientation.clone(), velocity: wreck.velocity.clone() }
+      : { ...state, position: new Vector3().copy(previous.current!.position).lerp(state.position, alpha), orientation: new Quaternion().copy(previous.current!.orientation).slerp(new Quaternion().copy(state.orientation), alpha),
+        velocity: new Vector3().copy(previous.current!.velocity).lerp(state.velocity, alpha) }
     group.current.position.copy(pose.position); group.current.quaternion.copy(pose.orientation)
+    // Burst on the ground, the jet is gone: its wreck once down, or itself crashed into terrain.
+    group.current.visible = !wreck?.landed && (state.alive || state.stopReason !== 'terrain')
     rig.baseFov = session.cameraFov; rig.snapFov = !session.running
     rig.gunZoom = session.running && firing.current && state.alive ? zoomOn(camera, world.current, state.targeting.targetId) : 0
     const aiming = session.preset === 'mouse' && session.input.aiming && session.input.aim.synced && state.alive
@@ -184,7 +194,8 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     const cursor = session.input.mouse.mode === 'cursor'
     rig.aim = aiming && !cursor ? session.input.aim.direction : null
     rig.lookTurn = session.input.lookTarget()
-    rig.update(camera as PerspectiveCamera, pose, session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
+    // A tumbling wreck would spin an aircraft-locked camera with it, so the fall is watched horizon-locked.
+    rig.update(camera as PerspectiveCamera, pose, wreck ? FALL_VIEW : session.camera, Math.min(dt, 0.1), session.reducedMotion, diagnosticBounds)
     camera.updateMatrixWorld()
     session.input.viewAway = rig.lookingAway
     // Mouse motion turns the aim about the view as drawn: right is right and up is up on screen.
@@ -193,9 +204,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     // The × keeps its angle through a change of lens (speed, burner, the gun zoom).
     session.input.setLens((camera as PerspectiveCamera).fov)
     const hits = runtime.drainHits(), events = runtime.drainEvents()
-    if (session.running && events.some(event => event.type === 'countermeasure-dispensed' && event.entityId === state.id)) lockTone.dispense(countermeasureRules.burst.flares, countermeasureRules.burst.duration)
     // The player's bay doors open for each missile leaving them.
-    const simClock = ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP
     for (const event of events) if (event.type === 'missile-launched' && event.entityId === state.id) bayDoors.current?.open(event.stationId, event.hardpoint.z, simClock)
     bayDoors.current?.update(simClock)
     // Rounds removed on the last tick still fly the part of it on screen, up to where they hit.
@@ -208,7 +217,13 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     placeMissiles(missilePool.current, previousWorld.current, world.current, alpha, camera.position)
     // Each queue is drained once a frame and shared: a second drain would come back empty.
     // Damage is applied inside the simulation; the HUD shows the player's confirmed hits, the effects show every hit and kill.
-    effects.update({ clock: ((world.current?.tick ?? 0) - 1 + alpha) * WORLD_STEP, events, hits, world: world.current, camera: camera as PerspectiveCamera, viewportHeight: size.height, wreckModels: wreckModels.current })
+    effects.update({ clock: simClock, events, hits, world: world.current, camera: camera as PerspectiveCamera, viewportHeight: size.height, wreckModels: wreckModels.current })
+    // The menu comes up once the player's wreck has burned a moment on the ground; a crash into the
+    // ground waits the same, a flight off the map stops at once.
+    for (const event of events) if (event.type === 'aircraft-destroyed' && event.entityId === state.id && event.cause !== 'weapon') downAt.current = simClock + (event.cause === 'terrain' ? DOWN_SETTLE : 0)
+    if (wreck?.landedNow) downAt.current = simClock + DOWN_SETTLE
+    // The menu reads the stop from telemetry, which may not have caught up with the death yet.
+    if (session.running && downAt.current !== null && simClock >= downAt.current) { downAt.current = null; downed.current = true; onTelemetry(state, tick); onDown() }
     let marks = gunnery.update(previousWorld.current, world.current, alpha,
       { id: state.id, targetId: state.alive ? state.targeting.targetId : null, lockOutside: state.targeting.outside, position: pose.position, orientation: pose.orientation, velocity: pose.velocity }, events, session.running && assisting.current)
     // What the radar shows: the scope at the bottom left and the carets on the heading tape.
@@ -222,7 +237,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     indicators.rwr?.current?.(state.alive ? warning : null, simClock)
     lockTone.warn(warning, session.running && state.alive && !document.hidden)
     // The recorded sounds: engines, guns, missiles, explosions and the lock warning.
-    flightSound.update({ active: session.running && !document.hidden, world: world.current, player: state, velocity: pose.velocity, camera, events, hits, warning: warning.top })
+    flightSound.update({ active: session.running && !document.hidden, world: world.current, player: state, velocity: pose.velocity, camera, events, hits, warning: warning.top, crash: wreck?.landedNow ? wreck.position : null, falling: !!wreck && !wreck.landed })
     if (cursor && aiming) {
       // Screen-locked aim assist: the × drawn toward the lead marker as this frame shows it.
       const lead = session.running && marks.lead ? markOnScreen(camera, marks.lead, session.input.stick, size.width, size.height) : null
@@ -272,6 +287,7 @@ function FlightWorld({ aircraftId, session, running, targetDrone, audio, onReady
     <Suspense fallback={null}><MissileModels pool={missilePool} /></Suspense>
     {targetDrone && <Suspense fallback={null}><TargetDrone group={drone} scaled={droneModel} showHitboxes={showHitboxes} /><DroneWrecks models={wreckModels} /></Suspense>}</>
 }
+const FALL_VIEW = { roll: 'horizon', horizonStyle: 'balanced' } as const
 const view = new Vector3(), toTarget = new Vector3(), viewRight = new Vector3(), viewUp = new Vector3()
 /** The gun zoom's share: none without a live target, fading as the target sits off the view axis (last frame's view). */
 function zoomOn(camera: { position: Vector3; getWorldDirection(target: Vector3): Vector3 }, now: WorldState | null, targetId: string | null) {

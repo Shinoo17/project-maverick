@@ -37,6 +37,22 @@ describe('engine and player intent separation', () => {
       expect(b.braking).toBeGreaterThan(a.braking)
     } finally { Object.assign(p.aero, old) }
   })
+  it('the untouched throttle holds its setting: it follows speed down, never up', () => {
+    const s = state(), input = neutralCommand(0, s.id), p = getFlightProfile('f22').flight
+    stepSpeed(s, input, dt, 100)
+    expect(s.throttleHoldMps).toBe(100)
+    // A dive or a fall adds no thrust: the trim stays at the setting's speed.
+    expect(stepSpeed(s, input, dt, 140).power.baseTrim).toBeCloseTo(p.drag * 100 ** 2, 12)
+    // Speed lost in a turn or climb lowers the setting, so nothing pushes it back.
+    stepSpeed(s, input, dt, 70)
+    expect(stepSpeed(s, input, dt, 90).power.baseTrim).toBeCloseTo(p.drag * 70 ** 2, 12)
+    // W, S and the burner set it to the speed they reach.
+    stepSpeed(s, { ...input, speedAdjust: 1 }, dt, 120)
+    expect(s.throttleHoldMps).toBe(120)
+    s.speedDrive = 0
+    stepSpeed(s, { ...input, afterburner: true }, dt, 150)
+    expect(s.throttleHoldMps).toBe(150)
+  })
   it('burner exhausts its reserve and unlocks only after recharge', () => {
     const s = state(), p = getFlightProfile('f22').maneuver
     s.maneuver.burner = dt / p.burnerSeconds

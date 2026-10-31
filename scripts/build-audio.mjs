@@ -12,9 +12,12 @@ recipe below and run again.
 - Loops are levelled by RMS, one-shots by peak; `gainOf` gives a file the same gain as another so
   the gun's loop and tail stay matched.
 - Writes public/assets/audio/manifest.json: source, trim, loop length, gain and licence of each file.
+- Writes sound-source/SOUND-SOURCES.md, gitignored: for each source, its length and which seconds of it
+  became which file, with the name it was downloaded under from sound-source/originals.json (gitignored
+  too; a source missing from it is shown by its own name).
 */
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,38 +27,58 @@ const sources = join(root, 'sound-source/select_sound/used')
 const output = join(root, 'public/assets/audio')
 const PIXABAY = 'Pixabay Content License (pixabay.com/service/license-summary): free to use, no attribution required'
 const SONNISS = 'Sonniss GDC 2026 Game Audio Bundle licence (sound-source/select_sound/License - GDC Game Audio.pdf): royalty-free, no attribution required'
+const GAME_SFX = 'Third-party game audio: copyrighted, prototype use only, replace before any release'
 
 /*
 Recipes. Times in seconds of the source. `loop`: `start` + `length` is the loop, `xfade` more is read
 past the end for the crossfade. One-shots: `start` + `length`, with `fadeIn` / `fadeOut`.
 `rms` / `peak` are dBFS targets. `search: [from, to]` moves a loop's start to where its head best
 matches the run past its end (spectral bands); `flatten` divides out slow level drift over that many seconds.
+`filter` is an ffmpeg audio filter run on the source as it is read.
 */
 const recipes = [
   // Engine: a steady jet bed throughout. Source peaks +2 dBFS, so it is levelled down.
   { out: 'engine/jet-loop.wav', src: 'pixabay/jet-loop.mp3', licence: PIXABAY, loop: true, start: 4, search: [1, 29.5], flatten: 2.5, length: 12, xfade: 0.5, channels: 2, rate: 24000, rms: -20 },
-  // Afterburner: the file is dry for 7 s, then burner until about 33 s; its level wanders, so flattened.
-  { out: 'engine/burner-loop.wav', src: 'pixabay/afterburner-sound.mp3', licence: PIXABAY, loop: true, start: 12, search: [8.5, 33], flatten: 2.5, length: 10, xfade: 0.6, channels: 2, rate: 24000, rms: -20 },
+  // Afterburner: two takes, each lighting up over 1.5 s then a steady roar (0–11.4 s, 12.75–23.8 s); the loop
+  // is cut from the second take's roar, with no light-up (user request 2026-10-26). Flattened against its drift.
+  { out: 'engine/burner-loop.wav', src: 'game-sfx/afterburner.wav', licence: GAME_SFX, loop: true, start: 14.5, search: [14, 23.7], flatten: 2.5, length: 8, xfade: 0.5, channels: 2, rate: 32000, rms: -20 },
   // Airflow: steady buffeting throughout. Dry for speed, wet (more low end) for high-g and high-AoA buffet.
   { out: 'air/wind-loop.wav', src: 'pixabay/high-speed-wind-buffeting-dry.mp3', licence: PIXABAY, loop: true, start: 3, search: [1, 29.5], length: 12, xfade: 0.4, channels: 2, rate: 32000, rms: -20 },
   { out: 'air/buffet-loop.wav', src: 'pixabay/high-speed-wind-buffeting-wet.mp3', licence: PIXABAY, loop: true, start: 5, search: [1, 29.5], length: 10, xfade: 0.4, channels: 2, rate: 32000, rms: -20 },
-  // Sonic boom: onset at 0.2 s, decays by 4 s.
-  { out: 'air/sonic-boom.mp3', src: 'pixabay/cinematic-sonic-boom.mp3', licence: PIXABAY, start: 0.15, length: 4.1, fadeIn: 0.005, fadeOut: 0.8, channels: 2, rate: 44100, peak: -1 },
+  // Sonic boom: the crack at 3.72 s of a jet breaking the barrier, from 0.1 s before it so the roar under the crack
+  // eases in; the roar after it fades over 2.5 s into the wind loop.
+  { out: 'air/sonic-boom.mp3', src: 'pixabay/breaking-the-sound-barrier.mp3', licence: PIXABAY, start: 3.62, length: 4, fadeIn: 0.06, fadeOut: 2.5, channels: 2, rate: 24000, peak: -1 },
   // Gun: a rotary cannon at a measured 20 rounds/s (50 ms pulses). Sustain 0.6–2.6 s = 40 pulses, and
   // the crossfade is two pulses, so the beat stays even across the wrap. The spin-down from 2.6 s is the tail.
   { out: 'weapons/gun-loop.wav', src: 'pixabay/mini-gun.mp3', licence: PIXABAY, loop: true, start: 0.6, length: 2.0, xfade: 0.1, channels: 1, rate: 24000, rms: -16 },
   { out: 'weapons/gun-tail.mp3', src: 'pixabay/mini-gun.mp3', licence: PIXABAY, start: 2.6, length: 2.4, fadeIn: 0.004, fadeOut: 0.6, channels: 1, rate: 24000, gainOf: 'weapons/gun-loop.wav' },
-  // Missile: the launch rush decays over 4.6 s; the other file's steady roar 0.8–2.4 s is the motor in flight.
-  { out: 'weapons/missile-launch.mp3', src: 'pixabay/missile-launch.mp3', licence: PIXABAY, start: 0, length: 4.6, fadeIn: 0.004, fadeOut: 1.2, channels: 2, rate: 24000, peak: -1 },
+  // Missile: the launch rush from 0.05 s, gone by 1.9 s; the other file's steady roar 0.8–2.4 s is the motor in flight.
+  { out: 'weapons/missile-launch.mp3', src: 'game-sfx/missile-launch.wav', licence: GAME_SFX, start: 0.03, length: 1.9, fadeIn: 0.004, fadeOut: 0.6, channels: 2, rate: 48000, peak: -1 },
   { out: 'weapons/missile-motor-loop.wav', src: 'pixabay/missile-firing-fl.mp3', licence: PIXABAY, loop: true, start: 0.8, search: [0.6, 3], flatten: 0.8, length: 1.6, xfade: 0.3, channels: 1, rate: 24000, rms: -16 },
   // RWR lock warning: beeps every 0.4286 s from 0.1025 s; seven of them (3.0 s), cut in the gap before
   // each beep, so the loop needs no crossfade.
   { out: 'warning/lock-warning-loop.wav', src: 'pixabay/missile-lock-detected-0s-3s-only.mp3', licence: PIXABAY, loop: true, start: 0.0925, length: 3.0, xfade: 0, channels: 1, rate: 24000, peak: -3 },
   // Fly-by: rises to its loudest near 4.5 s of the source, 2.5 s into this cut (flightSound.ts FLYBY_PEAK).
   { out: 'air/flyby.mp3', src: 'pixabay/jet-plane-flybyflac.mp3', licence: PIXABAY, start: 2, length: 10, fadeIn: 0.3, fadeOut: 3, channels: 1, rate: 24000, peak: -1 },
-  // Explosions and hits (none in the Pixabay set).
-  { out: 'impacts/explosion-small.mp3', src: 'sonniss/EXPLDsgn_Explosion Small Blast Enemy Death Crunchy Boom Cartoon Noisy Crash Impact Delay 03_ESM_AG.wav', licence: SONNISS, start: 0, length: 1.5, fadeIn: 0.002, fadeOut: 0.5, channels: 2, rate: 48000, peak: -1 },
+  // Missile bursts: three in the file, near to far (user's order), each picked by distance (flightSound.ts
+  // EXPLOSION_TIERS): near 0.05 s, gone by 0.9 s; mid 2.05 s, rolling to 4 s; far 5.25 s, rolling to 8.3 s.
+  // Kills keep the large boom below.
+  { out: 'impacts/explosion-near.mp3', src: 'game-sfx/missile-explosions-near-to-far.wav', licence: GAME_SFX, start: 0, length: 1.0, fadeIn: 0.002, fadeOut: 0.3, channels: 2, rate: 48000, peak: -1, trimSilence: -45 },
+  { out: 'impacts/explosion-mid.mp3', src: 'game-sfx/missile-explosions-near-to-far.wav', licence: GAME_SFX, start: 1.95, length: 2.1, fadeIn: 0.002, fadeOut: 0.6, channels: 2, rate: 48000, peak: -1, trimSilence: -45 },
+  { out: 'impacts/explosion-far.mp3', src: 'game-sfx/missile-explosions-near-to-far.wav', licence: GAME_SFX, start: 5.15, length: 3.2, fadeIn: 0.002, fadeOut: 1.0, channels: 2, rate: 48000, peak: -1, trimSilence: -45 },
   { out: 'impacts/explosion-large.mp3', src: 'sonniss/EffectiveTrailer_Booms_Vol2_075.wav', licence: SONNISS, start: 0.25, length: 6.5, fadeIn: 0.002, fadeOut: 2.5, channels: 2, rate: 48000, peak: -1, trimSilence: -45 },
+  // Flares, one pop per flare (flightSound.ts picks one at random): the file's single flare, its thump at 0.06 s,
+  // and the five pops of its burst take, 0.265 s apart from 2.82 s, each cut before the next. The single
+  // flare's burn after its thump is the burn under a run of flares, at the level recorded against its thump.
+  ...[0.05, 2.81, 3.08, 3.34, 3.6, 3.87].map((start, index) => (
+    { out: `weapons/flare-pop-${index + 1}.mp3`, src: 'game-sfx/flare-deploy.wav', licence: GAME_SFX, start, length: 0.25, fadeIn: 0.002, fadeOut: 0.1, channels: 2, rate: 48000, peak: -1 })),
+  { out: 'weapons/flare-burn.mp3', src: 'game-sfx/flare-deploy.wav', licence: GAME_SFX, start: 0.12, length: 1.3, fadeIn: 0.03, fadeOut: 0.4, channels: 2, rate: 48000, gainOf: 'weapons/flare-pop-1.mp3' },
+  // The burst take whole, its five pops 0.265 s apart and the burn after them, for a run of flares heard as
+  // recorded (flightSound.ts FLARE_STYLE). Starts at the first pop's onset.
+  { out: 'weapons/flare-burst.mp3', src: 'game-sfx/flare-deploy.wav', licence: GAME_SFX, start: 2.81, length: 2.45, fadeIn: 0.002, fadeOut: 0.5, channels: 2, rate: 48000, peak: -1 },
+  // A missile passing the player: a rush loudest near 0.6 s of the source, 0.56 s into this cut (flightSound.ts
+  // MISS_PEAK), dying by 3.5 s.
+  { out: 'weapons/missile-miss.mp3', src: 'game-sfx/missile-pass.wav', licence: GAME_SFX, start: 0.04, length: 3.5, fadeIn: 0.004, fadeOut: 1.0, channels: 2, rate: 48000, peak: -1 },
   { out: 'impacts/hit-metal.mp3', src: 'sonniss/DSGNImpt_Metal Hit Thud Thump Low Ring Geofon 1_The Noisery_Moaning Metal.wav', licence: SONNISS, start: 0, length: 0.7, fadeIn: 0.002, fadeOut: 0.4, channels: 1, rate: 48000, peak: -1, trimSilence: -45 },
 ]
 
@@ -63,8 +86,8 @@ const db = gain => 20 * Math.log10(Math.max(gain, 1e-12))
 const fromDb = dB => 10 ** (dB / 20)
 
 /** Decodes `seconds` from `start` as interleaved float samples. */
-function decode(file, start, seconds, channels, rate) {
-  const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', file, '-ss', String(start), '-t', String(seconds), '-ac', String(channels), '-ar', String(rate), '-f', 'f32le', '-'], { maxBuffer: 1 << 30 })
+function decode(file, start, seconds, channels, rate, filter) {
+  const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', file, '-ss', String(start), '-t', String(seconds), ...(filter ? ['-af', filter] : []), '-ac', String(channels), '-ar', String(rate), '-f', 'f32le', '-'], { maxBuffer: 1 << 30 })
   return new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4)
 }
 
@@ -180,7 +203,7 @@ try {
       start = best.start; match = `start ${start.toFixed(2)} s (join ${best.score.toFixed(1)} dB)  `
     }
     const xfade = recipe.loop ? recipe.xfade : 0
-    let read = decode(file, start, recipe.length + xfade, channels, rate)
+    let read = decode(file, start, recipe.length + xfade, channels, rate, recipe.filter)
     if (recipe.flatten) read = flatten(read, channels, rate, recipe.flatten)
     const fadeFrames = Math.round(xfade * rate)
     // A one-shot may run to the end of its source; a loop needs every frame it asks for.
@@ -231,10 +254,33 @@ try {
     }
     console.log(`${recipe.out.padEnd(32)} ${(frames / rate).toFixed(2)} s  gain ${db(gain).toFixed(1)} dB  rms ${db(after.rms).toFixed(1)}  peak ${db(after.peak).toFixed(1)} dBFS  ${match}${check}`)
     manifest.push({ file: recipe.out, source: `sound-source/select_sound/used/${recipe.src}`, licence: recipe.licence, start: +start.toFixed(4), length: +(frames / rate).toFixed(4),
-      ...(recipe.loop ? { loop: true, crossfade: xfade } : { fadeIn: recipe.fadeIn ?? 0, fadeOut: recipe.fadeOut ?? 0 }), channels, rate, gainDb: +db(gain).toFixed(2) })
+      ...(recipe.loop ? { loop: true, crossfade: xfade } : { fadeIn: recipe.fadeIn ?? 0, fadeOut: recipe.fadeOut ?? 0 }), ...(recipe.filter ? { filter: recipe.filter } : {}), channels, rate, gainDb: +db(gain).toFixed(2) })
   }
 } finally {
   rmSync(temp, { recursive: true, force: true })
 }
 writeFileSync(join(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
+
+// The private map of sources: what each one is and which of its seconds went where.
+const originalsFile = join(root, 'sound-source/originals.json')
+const originals = existsSync(originalsFile) ? JSON.parse(readFileSync(originalsFile, 'utf8')) : {}
+const seconds = value => `${value.toFixed(2)} s`
+const lines = ['# Sound sources', '', 'Private: gitignored, written by `node scripts/build-audio.mjs` on every run, so do not edit it by hand.',
+  'Each source in `sound-source/select_sound/used/`, the name it was downloaded under (`sound-source/originals.json`),',
+  'its length, and the seconds of it that each file in `public/assets/audio/` was cut from.', '']
+for (const src of [...new Set(recipes.map(recipe => recipe.src))]) {
+  const file = join(sources, src)
+  const [rate, channels, duration] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=sample_rate,channels:format=duration', '-of', 'default=nw=1:nk=1', file]).toString().trim().split('\n').map(Number)
+  lines.push(`## ${src}`, '', `- Original: ${originals[src] ?? src}`, `- ${seconds(duration)}, ${rate} Hz, ${channels === 1 ? 'mono' : 'stereo'}`, '',
+    '| File | Seconds of the source | Length | Kind | Treatment |', '| --- | --- | --- | --- | --- |')
+  for (const entry of manifest.filter(entry => entry.source.endsWith(`/${src}`))) {
+    const recipe = recipes.find(recipe => recipe.out === entry.file)
+    const end = entry.start + entry.length + (entry.loop ? entry.crossfade : 0)
+    const treatment = [entry.loop ? `crossfade ${entry.crossfade} s read past the end` : `fade in ${entry.fadeIn} s, out ${entry.fadeOut} s`,
+      recipe.flatten ? `flattened over ${recipe.flatten} s` : '', entry.filter ? `filter ${entry.filter}` : '', `gain ${entry.gainDb} dB`, `${entry.rate} Hz ${entry.channels === 1 ? 'mono' : 'stereo'}`].filter(Boolean).join('; ')
+    lines.push(`| ${entry.file} | ${entry.start.toFixed(2)}–${end.toFixed(2)} | ${seconds(entry.length)} | ${entry.loop ? 'loop' : 'one-shot'} | ${treatment} |`)
+  }
+  lines.push('')
+}
+writeFileSync(join(root, 'sound-source/SOUND-SOURCES.md'), lines.join('\n'))
 console.log(`${manifest.length} files, manifest.json written`)

@@ -46,6 +46,7 @@ export const en = {
   flightTitle: "Training flight",
   beginFlight: "Start flying",
   resumeFlight: "Resume flight",
+  respawn: "Respawn",
   pauseFlight: "Pause",
   pausedFlight: "Flight paused",
   resetFlight: "Reset flight",
