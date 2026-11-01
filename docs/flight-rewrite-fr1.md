@@ -1,6 +1,6 @@
 # Flight Rewrite — FR1 Report
 
-> วันที่ 1 พ.ย. 2026 · branch `feat/flight-rewrite` · **ยังไม่ commit** (รอ owner สั่ง)
+> วันที่ 1 พ.ย. 2026 · branch `feat/flight-rewrite` · commit `5513937` ตามที่ owner สั่ง
 > แผน: [flight-rewrite-plan.md](flight-rewrite-plan.md) §3.1, §3.3, §3.4, §3.6, §3.8, §4.2, §4.5, §6 · Requirements: [project-maverick-flight-control-psm-drift-rework-spec.md](project-maverick-flight-control-psm-drift-rework-spec.md)
 > ต่อจาก: [flight-rewrite-fr0.md](flight-rewrite-fr0.md)
 
@@ -350,4 +350,4 @@ Corner ที่วัดได้สูงกว่าค่าออกแบ�
 
 ## 12. สถานะ git
 
-ยังไม่ commit ตามกฎ "ไม่ commit จนกว่า owner สั่ง" ไฟล์ทั้งหมดอยู่ใน §2 (ไม่รวม `.claude/`)
+Commit `5513937` ตามที่ owner สั่ง (1 พ.ย.) รวมทุกไฟล์ใน §2 ไม่รวม `.claude/`
