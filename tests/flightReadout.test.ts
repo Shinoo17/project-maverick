@@ -81,10 +81,12 @@ describe('flight core dispatch', () => {
     }
     expect(a).toEqual(b)
   })
-  it("refuses the new core until it is built, and any unknown core", () => {
-    expect(flightCoreAvailable('new')).toBe(false)
-    expect(() => getFlightCore('new')).toThrow(/not built yet/)
-    expect(() => new GameRuntime({ ...config, flightCore: 'new' })).toThrow(/session.flightCore.*not built yet/)
+  // FR1 registered the new core; before it, 'new' was refused here.
+  it("flies the new core once registered, and refuses any unknown core", () => {
+    expect(flightCoreAvailable('new')).toBe(true)
+    expect(getFlightCore('new')).not.toBe(getFlightCore('legacy'))
+    const runtime = new GameRuntime({ ...config, flightCore: 'new' })
+    expect(runtime.snapshot().aircraft.every(entity => entity.flightCore === 'new' && entity.coreFlight)).toBe(true)
     expect(() => new GameRuntime({ ...config, flightCore: 'old' as never })).toThrow(/session.flightCore: expected legacy or new/)
   })
   it('replays recorded before the setting existed still run', () => {

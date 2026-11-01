@@ -39,6 +39,7 @@ import type { RwrDriver } from '../features/flight/RwrScope'
 import { createRwrFrame } from './rwrFrame'
 import { canvasDpr, type GraphicsSettings } from './graphicsSettings'
 import type { AudioSettings } from './audio/audioSettings'
+import { applyCoreTuning } from '../features/flight/coreTuning'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; rwr?: RefObject<RwrDriver | null>; fps?: RefObject<HTMLElement | null> }
 interface Props { indicators: FlightIndicators; aircraftId: AircraftId; flightCore: FlightCoreId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void; onDown: () => void }
@@ -115,6 +116,8 @@ function FlightWorld({ aircraftId, flightCore, session, running, targetDrone, au
   useEffect(() => {
     const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], flightCore, ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
     session.runtime = runtime; runtime.start(); runtime.pause()
+    // The new core starts on the Flight Lab's tuning: patch, then rebuild the world on it.
+    applyCoreTuning(session, aircraftId); if (flightCore === 'new') runtime.reset()
     previous.current = current.current = takeSnapshot(runtime); previousWorld.current = world.current
     // Paused, the canvas draws on demand; the page asks for a frame after a paused change.
     session.invalidate = invalidate

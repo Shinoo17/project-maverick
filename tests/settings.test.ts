@@ -71,8 +71,8 @@ describe('key bindings', () => {
     expect(parsed.pitchUp).toEqual(['KeyW', null])
     // speedUp's W is taken, so the slot empties rather than stealing it.
     expect(parsed.speedUp).toEqual([null, null])
-    // Esc is reserved: the slot falls back to its default.
-    expect(parsed.airbrake).toEqual(['Space', 'KeyB'])
+    // Esc is reserved: the slot falls back to its default (X since bindings v2).
+    expect(parsed.airbrake).toEqual(['KeyX', 'KeyB'])
   })
 
   it('keeps Esc, P and function keys for the game and the browser', () => {
@@ -87,7 +87,7 @@ describe('key bindings', () => {
   it('binds a free key at once', () => {
     const result = assignBinding(defaultBindings, 'airbrake', 1, 'KeyB')
     expect(result.status).toBe('done')
-    expect(result.status === 'done' && result.bindings.airbrake).toEqual(['Space', 'KeyB'])
+    expect(result.status === 'done' && result.bindings.airbrake).toEqual(['KeyX', 'KeyB'])
   })
 
   it('asks before taking a key from another action, and swaps on yes', () => {
@@ -100,8 +100,9 @@ describe('key bindings', () => {
   })
 
   it('moves a key between the two slots of the same action', () => {
+    // Since bindings v2 roll has no second key by default (←/→ became the coordinated turn).
     const result = assignBinding(defaultBindings, 'rollLeft', 1, 'KeyA')
-    expect(result.status === 'done' && result.bindings.rollLeft).toEqual(['ArrowLeft', 'KeyA'])
+    expect(result.status === 'done' && result.bindings.rollLeft).toEqual([null, 'KeyA'])
   })
 
   it('flies with rebound keys', () => {

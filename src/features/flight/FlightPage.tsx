@@ -32,6 +32,9 @@ import { dronePaths, type TargetDroneMode } from '../../game/playground/dronePat
 import { BriefingChoice, BriefingStepper } from './BriefingControls'
 import { LogOut, Play, RotateCcw, Settings } from 'lucide-react'
 import { flightCoreAvailable, flightCoreIds, type FlightCoreId } from '../../game/flight/core'
+import type { CoreTuning } from '../../game/flightCore/profile'
+import { CoreTuningPanel } from './CoreFlightLab'
+import { setCoreTuning } from './coreTuning'
 import { CameraTrace } from '../../render/cameraTrace'
 import './flight.css'
 const FlightScene = lazy(() => import('../../render/FlightScene'))
@@ -44,11 +47,12 @@ export function FlightPage() {
   const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics, audio } = useSessionSettings()
   const reducedMotion = useReducedMotion(), uiScale = useUiScale()
   const [aircraftId, setAircraftId] = useState(selectedAircraftId)
-  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, flightCore: 'legacy', cameraTrace: null, resetId: 0, timeScale: 1, reducedMotion }), [])
+  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, flightCore: 'legacy', coreTuning: {}, cameraTrace: null, resetId: 0, timeScale: 1, reducedMotion }), [])
   const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
   const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
   const [timeScale, setTimeScale] = useState(1), [targetDrone, setTargetDrone] = useState<TargetDroneMode | null>(null)
   const [flightCore, setFlightCore] = useState<FlightCoreId>('legacy'), [tracing, setTracing] = useState(false)
+  const [coreTuning, setTuning] = useState<CoreTuning>({})
   const [view, setView] = useState<'pause' | 'settings'>('pause')
   // Presses the aircraft refuses, by weapon slot (weaponSlots.ts): each plays on the card it was
   // made on, whatever is selected after, with a tone: a wait or no lock (the card shakes, a low
@@ -202,7 +206,7 @@ export function FlightPage() {
       <FlightSystemStatus state={telemetry} />
       {/* The Flight Lab readout takes the same corner, so the column steps aside while it is open. */}
       {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} tick={telemetryTick} refusals={refusals} preset={preset} bindings={keyboard.bindings} reducedMotion={reducedMotion} />}
-      <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} />
+      <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} input={session.input} />
       {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
       {running && preset === 'mouse' && controls.mode !== 'aim' && controls.mode !== 'cursor' && <div ref={indicators.gate} className="flight-stick-gate" aria-hidden="true" />}
       {running && preset === 'mouse' && controls.mode !== 'aim' && controls.mode !== 'cursor' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true">
@@ -253,6 +257,7 @@ export function FlightPage() {
               </div>
               <p>{t('exportFlightHint')}</p>
               <p>{t('cameraTraceHint')}</p>
+              {flightCore === 'new' && <CoreTuningPanel aircraftId={aircraftId} tuning={coreTuning} apply={next => { setCoreTuning(session, aircraftId, next); setTuning(session.coreTuning) }} />}
             </details>
           </section>
         </div>

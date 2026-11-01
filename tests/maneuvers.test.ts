@@ -30,16 +30,16 @@ import { FlightInput } from '../src/game/input/FlightInput'
 import { positionalHorizon, settleStick } from './invariants/helpers'
 import { runFlightReplay } from '../src/game/playground/replay'
 describe('P2 playground lifecycle', () => {
-  it('maps Space to the airbrake, leaves X and C unbound, and blends the inverted mouse frame with incidence', () => {
+  // Bindings v2 (flight rewrite FR1): X is the airbrake and Space the PSM override; before, Space was the airbrake and X unbound.
+  it('maps X to the airbrake and Space to PSM, leaves C unbound, and blends the inverted mouse frame with incidence', () => {
     const input = new FlightInput(positionalHorizon)
-    for (const code of ['KeyX', 'KeyC']) {
-      input.press(code); expect(input.command(0, 'a', 'keyboard')).toEqual(neutralCommand(0, 'a')); input.held.delete(code)
-    }
-    input.press('Space'); expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true }); input.held.delete('Space')
+    input.press('KeyC'); expect(input.command(0, 'a', 'keyboard')).toEqual(neutralCommand(0, 'a')); input.held.delete('KeyC')
+    input.press('KeyX'); expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true }); input.held.delete('KeyX')
+    input.press('Space'); expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), psm: true }); input.held.delete('Space')
     input.engage(); input.move(0, -input.gate.radius); input.screen = { angle: Math.PI, blend: 1 }
     expect(settleStick(input, 0).pitch).toBe(-1)
-    input.press('Space'); expect(input.command(8, 'a', 'mouse').pitch).toBe(-1)
-    input.held.delete('Space'); input.highAoa = 0.5
+    input.press('KeyX'); expect(input.command(8, 'a', 'mouse').pitch).toBe(-1)
+    input.held.delete('KeyX'); input.highAoa = 0.5
     expect(settleStick(input, 9).pitch).toBeCloseTo(0, 12)
     input.highAoa = 1
     expect(settleStick(input, 17).pitch).toBe(1)

@@ -175,10 +175,10 @@ describe('mouse aim', () => {
       return result
     }
     const cases: [string, PracticePreset, Step[]][] = [
-      ['Cobra', 'cobra', [[1, ['Space', 'ArrowUp']]]],
-      ['Kulbit', 'cobra', [[3, ['Space', 'ArrowUp']]]],
+      ['Cobra', 'cobra', [[1, ['KeyX', 'ArrowUp']]]],
+      ['Kulbit', 'cobra', [[3, ['KeyX', 'ArrowUp']]]],
       // The deep stall found in the browser: speed bled off, then a short Cobra.
-      ['bled Cobra', 'free', [[2.5, ['KeyS']], [0.3, ['Space']], [1.2, ['Space', 'ArrowUp']]]],
+      ['bled Cobra', 'free', [[2.5, ['KeyS']], [0.3, ['KeyX']], [1.2, ['KeyX', 'ArrowUp']]]],
     ]
     for (const [name, preset, steps] of cases) {
       const aimed = fly(preset, steps, 'aim'), alone = fly(preset, steps, 'relative')

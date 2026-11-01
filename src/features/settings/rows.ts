@@ -121,7 +121,7 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
           { kind: 'page', id: 'bindings', page: 'bindings', label: t('settingsBindings'), detail: t('settingsBindingsDetail'), disabled: noReason,
             valueLabel: t(sameBindings(s.keyboard.bindings, defaultKeyboardSettings.bindings) ? 'settingsDefault' : 'settingsCustom'),
             modified: !sameBindings(s.keyboard.bindings, defaultKeyboardSettings.bindings), reset: () => selectKeyboard({ bindings: defaultKeyboardSettings.bindings }) },
-          ...(['afterburner', 'airbrake'] as const).map(action => choice({
+          ...(['afterburner', 'airbrake', 'psm'] as const).map(action => choice({
             id: `${action}Mode`, label: t(`settingsPressMode_${action}` as const), detail: t('settingsPressModeDetail'), disabled: noReason,
             options: [{ value: 'hold', label: t('settingsHold') }, { value: 'toggle', label: t('settingsToggle') }],
             value: s.keyboard[action], modified: s.keyboard[action] !== defaultKeyboardSettings[action],

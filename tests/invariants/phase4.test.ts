@@ -160,9 +160,10 @@ it('labels and presentation have no effect on an automatic flight trace', () => 
   }
 })
 
-it('Space is Airbrake, Shift is Afterburner, X is unbound, and the positional mouse correction blends continuously', () => {
+// Bindings v2 (flight rewrite FR1): X is the airbrake, Space the PSM override (before: Space airbrake, X unbound).
+it('X is Airbrake, Shift is Afterburner, Space is PSM, and the positional mouse correction blends continuously', () => {
   const input = new FlightInput(positionalHorizon); input.press('KeyX'); input.press('Space'); input.press('ShiftLeft')
-  expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true, afterburner: true })
+  expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true, afterburner: true, psm: true })
   for (const angle of [-Math.PI, -1, 1, Math.PI]) for (const y of [-100, 100]) {
     input.clear(); input.engage(); input.move(150, y); input.screen = { angle, blend: 1 }
     const from = input.command(0, 'a', 'mouse')

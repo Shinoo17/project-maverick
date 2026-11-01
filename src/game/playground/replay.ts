@@ -7,9 +7,11 @@ export type FlightReplay = ReturnType<GameRuntime['exportReplay']>
 export function runFlightReplay(replay: FlightReplay) {
   if (replay.schemaVersion !== commandSchemaVersion || replay.profileVersion !== flightProfileVersion || replay.hz !== 60
     || replay.config.mode !== 'playground' || replay.config.aircraftIds.length !== 1
-    || replay.durationTicks !== replay.commands.length || replay.commands.length > 3600) throw new Error('Unsupported flight replay')
+    || replay.durationTicks !== replay.commands.length || replay.commands.length > 3600
+    || replay.coreTunedTick !== undefined) throw new Error('Unsupported flight replay')
   const runtime = new GameRuntime(replay.config)
   try {
+    if (replay.coreTuning) runtime.tuneCore(replay.coreTuning)
     runtime.reset(replay.preset); runtime.start()
     for (const command of replay.commands) runtime.advance(1 / 60, () => command)
     return runtime.snapshot()

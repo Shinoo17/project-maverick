@@ -19,8 +19,9 @@ describe('I21: no legacy gates', () => {
     expect(command.psmArm).toBeUndefined()
     // @ts-expect-error highG was removed from the command contract in Phase 6.
     expect(command.highG).toBeUndefined()
-    expect(Object.keys(command).sort()).toEqual(['actions', 'afterburner', 'airbrake', 'entityId', 'gunHeld', 'pitch', 'roll', 'speedAdjust', 'tick', 'yaw'])
-    expect(commandSchemaVersion).toBe(2)
+    // FR1 (flight rewrite) added `psm`, the Space PSM override, and bumped the schema to 3.
+    expect(Object.keys(command).sort()).toEqual(['actions', 'afterburner', 'airbrake', 'entityId', 'gunHeld', 'pitch', 'psm', 'roll', 'speedAdjust', 'tick', 'yaw'])
+    expect(commandSchemaVersion).toBe(3)
   })
 
   it('flight, input, camera and HUD never read a PSM phase or a retired command field', () => {

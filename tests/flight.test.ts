@@ -449,12 +449,12 @@ describe('mouse flight', () => {
     const camera: CameraSettings = { roll: 'horizon', horizonStyle: 'balanced' }
     const state = driftSpawn('f22', 500), profile = getFlightProfile('f22')
     const input = new FlightInput({ ...defaultMouseSettings, mode: 'stick' }), rig = new FlightCamera(), lens = new PerspectiveCamera()
-    input.setViewport(1000, 1000); input.engage(); input.press('Space')
+    input.setViewport(1000, 1000); input.engage(); input.press('KeyX')
     input.move(0, -input.stickRadius)
     const trace: { elevation: number; path: number; pitch: number; alpha: number; speed: number }[] = []
     for (let i = 0; i < upTicks + seconds * 120; i++) {
       const elevation = Math.asin(new Vector3(1, 0, 0).applyQuaternion(state.orientation as Quaternion).y) * 180 / Math.PI
-      if (i === upTicks) { input.move(0, 2 * input.stickRadius); if (!keepBrake) input.held.delete('Space') }
+      if (i === upTicks) { input.move(0, 2 * input.stickRadius); if (!keepBrake) input.held.delete('KeyX') }
       if (i >= upTicks) after(input, i - upTicks, elevation)
       rig.update(lens, state, camera, 1 / 120)
       input.highAoa = interpretEnvelope(state, observeAirflow(state, profile), profile).highAoa

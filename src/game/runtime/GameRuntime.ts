@@ -4,6 +4,8 @@ import type { WorldState } from '../state/WorldState'
 import { FixedClock, FLIGHT_STEP, WORLD_STEP } from './clock'
 import { commandSchemaVersion, neutralCommand, type PilotCommand } from './commands'
 import { getFlightCore, type FlightCore } from '../flight/core'
+import { createCoreFlight } from '../flightCore/step'
+import { coreAssistOf, coreProfileOf, validateCoreAssist, validateCoreProfile, type CoreTuning } from '../flightCore/profile'
 import { botSpawnPose, combatBot, createPracticeState, droneRespawnPose, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
 import { circleFrom, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
 import { createThrustVectoringState } from '../flight/thrustVectoring'
@@ -63,6 +65,10 @@ export class GameRuntime {
   private steering = new Map<string, MouseAim>()
   // The session's flight core (SessionConfig.flightCore); every flown aircraft steps through it.
   private core: FlightCore
+  // The Flight Lab's patch on the new core's profiles (FR1 tuning panel). Not world state: it is
+  // a session setting, exported with the replay. `tunedTick` is the last tick it changed on.
+  private coreTuning: CoreTuning = {}
+  private tunedTick = 0
 
   constructor(config: SessionConfig) {
     validateSession(config)
@@ -131,6 +137,7 @@ export class GameRuntime {
       enginePower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits),
       rates: { pitch: 0, yaw: 0, roll: 0 },
       ...(this.config.flightCore ? { flightCore: this.config.flightCore } : {}),
+      ...(this.config.flightCore === 'new' ? { coreFlight: createCoreFlight(aircraftId, speed, this.coreTuning) } : {}),
     }
   }
 
@@ -167,6 +174,7 @@ export class GameRuntime {
         const safe = { ...command }
         for (const key of ['pitch', 'roll', 'yaw', 'speedAdjust'] as const) safe[key] = Number.isFinite(command[key]) ? Math.max(-1, Math.min(1, command[key])) : 0
         safe.gunHeld = command.gunHeld === true
+        safe.psm = command.psm === true
         triggers.set(entity.id, safe.gunHeld)
         safe.actions = Array.isArray(command.actions) ? command.actions.filter(action => action?.type === 'next-target' || action?.type === 'fire-missile' || action?.type === 'countermeasure' || action?.type === 'select-secondary' && Number.isInteger(action.slot)) : []
         for (const action of safe.actions) {
@@ -179,7 +187,7 @@ export class GameRuntime {
         for (let substep = 0; substep < 2; substep++) {
           const previousX = entity.position.x
           if (!entity.alive) break
-          this.core.step(entity, safe, FLIGHT_STEP)
+          this.core.step(entity, safe, FLIGHT_STEP, this.coreTuning)
           if (entity.id === 'aircraft-1') stepPractice(this.world.practice, entity, safe, previousX, FLIGHT_STEP)
         }
       }
@@ -308,8 +316,22 @@ export class GameRuntime {
     this.status = 'paused'; this.clock.reset()
   }
   exportReplay() {
-    return { schemaVersion: commandSchemaVersion, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track) }
+    // A tuning changed mid-flight cannot be replayed from one patch: `coreTunedTick` marks it.
+    const tuned = Object.keys(this.coreTuning).length ? { coreTuning: structuredClone(this.coreTuning), ...(this.tunedTick > 0 ? { coreTunedTick: this.tunedTick } : {}) } : {}
+    return { schemaVersion: commandSchemaVersion, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track), ...tuned } as {
+      schemaVersion: number; profileVersion: string; config: SessionConfig; preset: PracticePreset; hz: number; durationTicks: number; truncated: boolean; commands: PilotCommand[]
+      coreTuning?: CoreTuning; coreTunedTick?: number
+    }
   }
+  /** Flight Lab: the new core's profile patch, applied from the next step without a reset.
+   * Every patched profile must still validate. */
+  tuneCore(tuning: CoreTuning) {
+    for (const id of Object.keys(tuning.profiles ?? {})) validateCoreProfile(coreProfileOf(id, tuning), `coreTuning.${id}`)
+    validateCoreAssist(coreAssistOf(tuning), 'coreTuning.assist')
+    this.coreTuning = structuredClone(tuning)
+    this.tunedTick = this.world.tick
+  }
+  get tuning(): CoreTuning { return structuredClone(this.coreTuning) }
   /** Playground modifier: sets the target drone (null removes it), then restarts the flight like reset(). */
   setTargetDrone(mode: TargetDroneMode | null) {
     if (this.status === 'disposed') return
@@ -321,7 +343,7 @@ export class GameRuntime {
   }
   reset(preset: PracticePreset = this.preset) {
     if (this.status === 'disposed') return
-    this.preset = preset; this.track = []; this.hits = []; this.events = []; this.nextEventId = 1; this.steering.clear()
+    this.preset = preset; this.track = []; this.tunedTick = 0; this.hits = []; this.events = []; this.nextEventId = 1; this.steering.clear()
     this.world = this.createWorld()
     this.clock.reset()
     this.clock.droppedSeconds = 0

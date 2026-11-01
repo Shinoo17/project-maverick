@@ -16,6 +16,7 @@ import type { DronePath } from '../playground/dronePath'
 import type { TargetingState } from '../combat/targeting'
 import type { BotState } from '../bot/botPilot'
 import type { FlightCoreId } from '../flight/core'
+import type { CoreFlightState } from '../flightCore/state'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -71,6 +72,8 @@ export interface AircraftState {
   /** The flight core that flies it (src/game/flight/core.ts). Absent = the legacy core.
    * Everything outside the core reads its flight through readFlight (src/game/flight/readout.ts). */
   flightCore?: FlightCoreId
+  /** The new core's own state (src/game/flightCore/state.ts); set on aircraft it flies. */
+  coreFlight?: CoreFlightState
 }
 export interface WorldState {
   tick: number
