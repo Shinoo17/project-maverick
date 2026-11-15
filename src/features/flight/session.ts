@@ -7,6 +7,9 @@ import type { RefusalTone } from '../../render/lockTone'
 import type { FlightCoreId } from '../../game/flight/core'
 import type { CameraTrace } from '../../render/cameraTrace'
 import type { CoreTuning } from '../../game/flightCore/profile'
+/** 'arcade': the chase camera ported from example/flight-control (the default); 'chase': the FR2
+ * rewrite camera; 'legacy': FlightCamera. The last two are kept for Flight Lab comparison. */
+export type CameraRigId = 'arcade' | 'chase' | 'legacy'
 export interface FlightSession {
   runtime: GameRuntime | null
   input: FlightInput
@@ -24,6 +27,8 @@ export interface FlightSession {
   flightCore: FlightCoreId
   /** Flight Lab: the tuning panel's patch on the new core's profiles; outlives each runtime. */
   coreTuning: CoreTuning
+  /** Flight Lab: the chase camera (see CameraRigId), on either core. Switches live. */
+  cameraRig: CameraRigId
   /** Flight Lab: CAMERA_TRACE being recorded, or null (src/render/cameraTrace.ts). */
   cameraTrace: CameraTrace | null
   resetId: number

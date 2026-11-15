@@ -28,16 +28,13 @@ describe('free look and look back', () => {
     expect(input.lookTarget()).toEqual({ yaw: 0, pitch: 0 })
   })
 
-  it('look back holds the aim and the stick still under mouse motion', () => {
-    for (const mode of ['aim', 'cursor'] as const) {
-      const input = new FlightInput({ ...new FlightInput().mouse, mode }); input.setViewport(1600, 900); input.engage()
-      const aim = input.aim.direction.clone(), { px, py } = input.stick
-      input.press('KeyR')
-      input.move(200, -100)
-      expect(input.aim.direction.equals(aim)).toBe(true)
-      expect([input.stick.px, input.stick.py]).toEqual([px, py])
-      expect(Math.abs(input.lookTarget().yaw)).toBeCloseTo(Math.PI)
-    }
+  it('look back holds the aim still under mouse motion', () => {
+    const input = new FlightInput(); input.setViewport(1600, 900); input.engage()
+    const aim = input.aim.direction.clone()
+    input.press('KeyR')
+    input.move(200, -100)
+    expect(input.aim.direction.equals(aim)).toBe(true)
+    expect(Math.abs(input.lookTarget().yaw)).toBeCloseTo(Math.PI)
   })
 
   it('look back turns the view half round, ahead of the jet looking back at it', () => {

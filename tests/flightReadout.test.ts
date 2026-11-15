@@ -17,7 +17,7 @@ import { CameraTrace } from '../src/render/cameraTrace'
 import type { CameraSettings } from '../src/game/camera/cameraSettings'
 import type { SessionConfig } from '../src/content/schemas'
 
-/* FR0 (docs/flight-rewrite-plan.md §3.2): the FlightReadout seam, the flight core dispatch and
+/* FR0: the FlightReadout seam, the flight core dispatch and
    CAMERA_TRACE. The legacy core still flies; these pin that the seam changes nothing. */
 
 describe('legacy FlightReadout', () => {
@@ -96,7 +96,7 @@ describe('flight core dispatch', () => {
 })
 
 describe('CAMERA_TRACE', () => {
-  const views: CameraSettings[] = [{ roll: 'horizon', horizonStyle: 'balanced' }, { roll: 'horizon', horizonStyle: 'dynamic' }, { roll: 'aircraft', horizonStyle: 'balanced' }]
+  const views: CameraSettings[] = [{ mode: 'horizon', roll: 'horizon', horizonStyle: 'balanced' }, { mode: 'horizon', roll: 'horizon', horizonStyle: 'dynamic' }, { mode: 'aircraft', roll: 'aircraft', horizonStyle: 'balanced' }]
   it.each(views)('records every frame without changing the shot (%o)', view => {
     const samples = runScenario('kulbit', 'su57').samples.filter((_, index) => index % 2 === 0)
     const shoot = (trace: CameraTrace | null) => {
@@ -115,8 +115,10 @@ describe('CAMERA_TRACE', () => {
     expect(last.flight.incidenceDeg).toBe(readFlight(state).incidenceDeg)
     expect(last.flight.rates).toEqual(state.rates)
     // The Kulbit ends post-stall: the PSM shot is in, every weight inside its range.
-    expect(Math.max(...trace.frames.map(frame => frame.blend.handover))).toBeGreaterThan(0.5)
-    for (const frame of trace.frames) for (const key of ['decouple', 'handover', 'drift', 'driftLag', 'psm', 'decoupled', 'aimShare', 'gunZoom'] as const) {
+    const legacy = trace.frames.flatMap(frame => frame.rig === 'legacy' ? [frame] : [])
+    expect(legacy).toHaveLength(samples.length)
+    expect(Math.max(...legacy.map(frame => frame.blend.handover))).toBeGreaterThan(0.5)
+    for (const frame of legacy) for (const key of ['decouple', 'handover', 'drift', 'driftLag', 'psm', 'decoupled', 'aimShare', 'gunZoom'] as const) {
       expect(frame.blend[key]).toBeGreaterThanOrEqual(0); expect(frame.blend[key]).toBeLessThanOrEqual(1)
     }
     expect(JSON.parse(JSON.stringify(trace)).frames).toHaveLength(samples.length)
@@ -134,14 +136,16 @@ describe('CAMERA_TRACE', () => {
 
 /* The seam holds: outside the flight core nothing reads the legacy core's own state. Named
    exceptions are the legacy core's debug ledger, and the HUD preview, whose fixtures write that
-   state (both go with the core at FR7), plus the runtime and the state type that create it. */
+   state (both go with the core at FR7), plus the runtime and the state type that create it.
+   The arcade core (example/flight-control's physics) is a core itself: its own `PSM.stall`
+   tuning and telemetry `stall` flag are not the legacy state. */
 describe('FlightReadout seam', () => {
   const root = join(__dirname, '../src')
   const files = (dir: string): string[] => readdirSync(dir).flatMap(name => {
     const path = join(dir, name)
     return statSync(path).isDirectory() ? files(path) : /\.tsx?$/.test(name) ? [path] : []
   })
-  const allowed = ['game/flight/', 'game/state/WorldState.ts', 'game/runtime/GameRuntime.ts', 'features/flight/LegacyFlightLab.tsx', 'features/flight/hudPreview.tsx']
+  const allowed = ['game/flight/', 'game/arcadeCore/', 'game/state/WorldState.ts', 'game/runtime/GameRuntime.ts', 'features/flight/LegacyFlightLab.tsx', 'features/flight/hudPreview.tsx']
   it('reads flight through readFlight only', () => {
     const offenders = files(root).map(path => relative(root, path)).filter(path => !allowed.some(prefix => path.startsWith(prefix))).flatMap(path =>
       readFileSync(join(root, path), 'utf8').split('\n').flatMap((line, index) => {

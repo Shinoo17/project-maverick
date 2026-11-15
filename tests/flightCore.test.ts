@@ -12,7 +12,7 @@ import { practiceSpawns, type PracticePreset } from '../src/game/playground/prac
 import type { AircraftState } from '../src/game/state/WorldState'
 import { runFlightReplay } from '../src/game/playground/replay'
 
-/* FR1 (docs/flight-rewrite-plan.md §3.3–§3.6, §6): the rewrite core's hard invariants and the
+/* FR1 (§6): the rewrite core's hard invariants and the
    FR1 acceptance cases FC-01, FC-10 and FC-16. */
 
 const DEG = Math.PI / 180

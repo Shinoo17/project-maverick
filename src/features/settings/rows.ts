@@ -12,9 +12,9 @@ import {
   selectAudio, selectCallsign, selectCamera, selectCameraFov, selectControls, selectDisplay, selectGraphics, selectKeyboard, selectLocale,
 } from '../../app/sessionStore'
 import { defaultAudioSettings, volumeRange, type VolumeChannel } from '../../render/audio/audioSettings'
-import { cameraFovRange, cameraRollOptions, defaultCameraSettings, horizonStyleDisabled, horizonStyleOptions } from '../../game/camera/cameraSettings'
+import { cameraFovRange, cameraModeOption, cameraModeOptions, defaultCameraSettings } from '../../game/camera/cameraSettings'
 import { defaultKeyboardSettings, sameBindings, type KeyboardSettings } from '../../game/input/keyBindings'
-import { defaultMouseSettings, mouseHintKey } from '../../game/input/mouseStick'
+import { aimLimits, defaultMouseSettings, type AimLimit } from '../../game/control/mouseSettings'
 import { aimAssistLevels, type AimAssistLevel } from '../../game/combat/aimAssist'
 import type { Translation } from '../../locales/en'
 import { defaultDisplaySettings, uiScaleRange, type Settings } from '../../platform/storage'
@@ -74,7 +74,6 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
   const mouseOff = s.keyboard.preset === 'keyboard' ? t('settingsNeedsMouse') : noReason
   const m = s.controls, dm = defaultMouseSettings
   // Mouse aim has no stick to frame or to put on another axis.
-  const stickOff = mouseOff ?? (m.mode === 'aim' || m.mode === 'cursor' ? t('settingsNeedsStickMode') : noReason)
   const g = s.graphics, dg = defaultGraphicsSettings
   const preset = graphicsPreset(g)
   const pending = (id: string, label: TextKey, reason: TextKey): PendingRow =>
@@ -101,16 +100,9 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
             value: m.aimAssist, modified: m.aimAssist !== dm.aimAssist, set: level => selectControls({ aimAssist: level as AimAssistLevel }), reset: () => selectControls({ aimAssist: dm.aimAssist }) }),
         ] },
         { title: t('settingsSectionMouse'), rows: [
-          choice({ id: 'mouseMode', label: t('mouseMode'), detail: t(mouseHintKey(m.mode)), disabled: mouseOff,
-            options: [{ value: 'aim', label: t('mouseModeAim') }, { value: 'cursor', label: t('mouseModeCursor') }, { value: 'relative', label: t('mouseModeRelative') }, { value: 'stick', label: t('mouseModeStick') }],
-            value: m.mode, modified: m.mode !== dm.mode, set: mode => selectControls({ mode: mode as typeof m.mode }), reset: () => selectControls({ mode: dm.mode }) }),
-          // Positional stick always reads the screen (example/F22), so only the relative stick has a frame to pick.
-          choice({ id: 'frame', label: t('controlFrame'), detail: t('settingsFrameDetail'), disabled: stickOff ?? (m.mode === 'stick' ? t('settingsFrameScreenStick') : noReason),
-            options: [{ value: 'body', label: t('controlFrameBody') }, { value: 'horizon', label: t('controlFrameHorizon') }],
-            value: m.frame, modified: m.frame !== dm.frame, set: frame => selectControls({ frame: frame as typeof m.frame }), reset: () => selectControls({ frame: dm.frame }) }),
-          choice({ id: 'xAxis', label: t('mouseXAxis'), detail: t('settingsXAxisDetail'), disabled: stickOff,
-            options: [{ value: 'roll', label: t('mouseXRoll') }, { value: 'yaw', label: t('mouseXYaw') }],
-            value: m.xAxis, modified: m.xAxis !== dm.xAxis, set: xAxis => selectControls({ xAxis: xAxis as typeof m.xAxis }), reset: () => selectControls({ xAxis: dm.xAxis }) }),
+          choice({ id: 'aimLimit', label: t('aimLimit'), detail: t('settingsAimLimitDetail'), disabled: mouseOff,
+            options: aimLimits.map(limit => ({ value: limit, label: t(`aimLimit_${limit}` as const) })),
+            value: m.aimLimit, modified: m.aimLimit !== dm.aimLimit, set: limit => selectControls({ aimLimit: limit as AimLimit }), reset: () => selectControls({ aimLimit: dm.aimLimit }) }),
           { kind: 'slider', id: 'sensitivity', label: t('mouseSensitivity'), detail: t('settingsSensitivityDetail'), disabled: mouseOff,
             value: m.sensitivity, min: 0.5, max: 2, step: 0.1, format: value => `${value.toFixed(1)}×`,
             modified: m.sensitivity !== dm.sensitivity, set: sensitivity => selectControls({ sensitivity: Math.round(sensitivity * 10) / 10 }), reset: () => selectControls({ sensitivity: dm.sensitivity }) },
@@ -146,18 +138,10 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
     {
       id: 'camera', label: t('settingsTabCamera'), pending: null, sections: [
         { title: t('settingsSectionChase'), rows: [
-          choice({ id: 'roll', label: t('cameraRoll'), detail: t(cameraRollOptions.find(o => o.id === s.camera.roll)!.detailKey), disabled: noReason,
-            options: cameraRollOptions.map(option => ({ value: option.id, label: t(option.labelKey) })),
-            value: s.camera.roll, modified: s.camera.roll !== defaultCameraSettings.roll,
-            set: roll => selectCamera({ roll: roll as typeof s.camera.roll }), reset: () => selectCamera({ roll: defaultCameraSettings.roll }) }),
-          // Aircraft locked has no roll style: the row shows "Default" and says why.
-          choice({ id: 'style', label: t('cameraStyle'),
-            detail: t(s.camera.roll === 'horizon' ? horizonStyleOptions.find(o => o.id === s.camera.horizonStyle)!.detailKey : horizonStyleDisabled.detailKey),
-            disabled: s.camera.roll === 'horizon' ? noReason : t(horizonStyleDisabled.detailKey),
-            valueLabel: s.camera.roll === 'horizon' ? undefined : t(horizonStyleDisabled.labelKey),
-            options: horizonStyleOptions.map(option => ({ value: option.id, label: t(option.labelKey) })),
-            value: s.camera.horizonStyle, modified: s.camera.roll === 'horizon' && s.camera.horizonStyle !== defaultCameraSettings.horizonStyle,
-            set: style => selectCamera({ horizonStyle: style as typeof s.camera.horizonStyle }), reset: () => selectCamera({ horizonStyle: defaultCameraSettings.horizonStyle }) }),
+          choice({ id: 'cameraMode', label: t('cameraMode'), detail: t(cameraModeOption(s.camera.mode).detailKey), disabled: noReason,
+            options: cameraModeOptions.map(option => ({ value: option.id, label: t(option.labelKey) })),
+            value: s.camera.mode, modified: s.camera.mode !== defaultCameraSettings.mode,
+            set: mode => selectCamera({ mode: mode as typeof s.camera.mode }), reset: () => selectCamera({ mode: defaultCameraSettings.mode }) }),
           { kind: 'slider', id: 'fov', label: t('settingsFov'), detail: t('settingsFovDetail'), disabled: noReason,
             value: s.cameraFov, min: cameraFovRange.min, max: cameraFovRange.max, step: cameraFovRange.step, format: value => `${value}°`,
             modified: s.cameraFov !== cameraFovRange.default, set: selectCameraFov, reset: () => selectCameraFov(cameraFovRange.default) },

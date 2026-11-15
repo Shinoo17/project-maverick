@@ -1,5 +1,5 @@
 import { readFlight } from '../../game/flight/readout'
-import { arcadeSpeed } from '../../game/flight/speedLimits'
+import { arcadeSpeed, simulationSpeed } from '../../game/flight/speedLimits'
 import type { AircraftState } from '../../game/state/WorldState'
 import { airDensity, flatRangeAtmosphere, machNumber, sampleAir, type VaporAtmosphere } from './atmosphere'
 
@@ -46,7 +46,8 @@ export function vaporConditions(flight: VaporFlightSample, altitude: number, atm
 export function flightVaporConditions(state: AircraftState, atmosphere: VaporAtmosphere = flatRangeAtmosphere): VaporConditions {
   const flight = readFlight(state)
   return vaporConditions({
-    speed: flight.airspeed,
+    // The sim speed the HUD reading stands for: the core decides the HUD scale (the arcade core reads true km/h).
+    speed: Math.abs(flight.hudSpeed - arcadeSpeed(flight.airspeed)) < 1e-6 ? flight.airspeed : simulationSpeed(flight.hudSpeed),
     aoa: flight.alphaDeg,
     sideslip: flight.betaDeg * Math.PI / 180,
     g: flight.g,

@@ -371,7 +371,9 @@ export function createFlightSound(mixer: AudioMixer) {
     const running = alive || !!frame.falling
     const power = alive ? clamp(flight.power, 0, 1) : 0, burner = alive && flight.burner.active
     const speed = Math.hypot(frame.velocity.x, frame.velocity.y, frame.velocity.z)
-    const mach = machNumber(arcadeSpeed(speed) / 3.6, self.position.y)
+    // HUD km/h per m/s is the core's own scale (the arcade core reads true km/h).
+    const hudPerMps = flight.airspeed > 1e-3 ? flight.hudSpeed / flight.airspeed : arcadeSpeed(1)
+    const mach = machNumber(speed * hudPerMps / 3.6, self.position.y)
     const flow = clamp((mach - 0.2) / 0.9, 0, 1)
     const buffet = alive ? Math.max(clamp((flight.g - 4) / 5, 0, 1), clamp((flight.noseVelocityDeg - 15) / 25, 0, 1)) * clamp(mach / 0.4, 0, 1) : 0
     if (player.jet) {

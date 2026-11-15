@@ -105,7 +105,7 @@ export interface AeroProfile {
   alphaNormalDeg: number
   alphaCriticalDeg: number
   restoring: { pitch: RestoringCurve; yaw: RestoringCurve }
-  /** Nose-down bias in reverse flow; see docs/legacy-flight/reverse-flow-departure.md.
+  /** Nose-down bias in reverse flow.
    * stiffness is rad/s² at q = 1; minPressure is a dimensionless q floor.
    */
   departure: { stiffness: number; minPressure: number }

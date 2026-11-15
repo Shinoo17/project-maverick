@@ -10,8 +10,8 @@ The chase camera. Two shots, blended by incidence:
 
 - Cruise: the pilot's chosen camera — Horizon locked (Balanced or Dynamic) or Aircraft locked.
   See `STYLE` below and `game/camera/cameraSettings.ts`.
-- PSM: the Phase 7 shot. Values are owner decisions recorded in
-  docs/legacy-flight/psm-phase7-implementation.md and measured by benchmarks/flight/camera.report.ts (B21).
+- PSM: the Phase 7 shot. Values are owner decisions from the Phase 7 report (removed with the
+  legacy flight docs on 2026-11-16; see git history).
   It holds a level horizon and runs the view down the flight path.
 
 Every cruise value is weighted by (1 − handover), so once the handover is complete the choice
@@ -380,7 +380,7 @@ export class FlightCamera {
   }
   private recordTrace(trace: CameraTrace, camera: PerspectiveCamera, style: Cruise, flight: FlightReadout, state: AircraftState, dt: number, psm: number, decoupled: number, aimShare: number) {
     const v = (x: Vector3): [number, number, number] => [x.x, x.y, x.z]
-    trace.record({ dt, style,
+    trace.record({ rig: 'legacy', dt, style,
       position: v(camera.position), look: v(new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)), up: v(new Vector3(0, 1, 0).applyQuaternion(camera.quaternion)), fov: camera.fov,
       chase: { look: v(this.look), up: v(this.up), boom: v(this.offset) },
       flight: { alphaDeg: flight.alphaDeg, betaDeg: flight.betaDeg, incidenceDeg: flight.incidenceDeg, confidence: flight.angleConfidence, airspeed: flight.airspeed, rates: { ...state.rates } },

@@ -27,22 +27,14 @@ describe('P2 maneuvers (Phase 6: no PSM phase, entry envelope or C)', () => {
 })
 
 import { FlightInput } from '../src/game/input/FlightInput'
-import { positionalHorizon, settleStick } from './invariants/helpers'
 import { runFlightReplay } from '../src/game/playground/replay'
 describe('P2 playground lifecycle', () => {
   // Bindings v2 (flight rewrite FR1): X is the airbrake and Space the PSM override; before, Space was the airbrake and X unbound.
-  it('maps X to the airbrake and Space to PSM, leaves C unbound, and blends the inverted mouse frame with incidence', () => {
-    const input = new FlightInput(positionalHorizon)
+  it('maps X to the airbrake and Space to PSM, and leaves C unbound', () => {
+    const input = new FlightInput()
     input.press('KeyC'); expect(input.command(0, 'a', 'keyboard')).toEqual(neutralCommand(0, 'a')); input.held.delete('KeyC')
     input.press('KeyX'); expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), airbrake: true }); input.held.delete('KeyX')
     input.press('Space'); expect(input.command(0, 'a', 'keyboard')).toEqual({ ...neutralCommand(0, 'a'), psm: true }); input.held.delete('Space')
-    input.engage(); input.move(0, -input.gate.radius); input.screen = { angle: Math.PI, blend: 1 }
-    expect(settleStick(input, 0).pitch).toBe(-1)
-    input.press('KeyX'); expect(input.command(8, 'a', 'mouse').pitch).toBe(-1)
-    input.held.delete('KeyX'); input.highAoa = 0.5
-    expect(settleStick(input, 9).pitch).toBeCloseTo(0, 12)
-    input.highAoa = 1
-    expect(settleStick(input, 17).pitch).toBe(1)
     input.clear(); expect(input.command(30, 'a', 'mouse')).toEqual(neutralCommand(30, 'a'))
   })
   it('uses the selected spawn, single-steps only while paused, and replays exported commands exactly', () => {

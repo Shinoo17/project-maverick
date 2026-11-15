@@ -14,7 +14,7 @@ export interface SpeedInput {
 }
 
 /*
-Hybrid speed, the middle way (docs/flight-rewrite-plan.md §3.6). One owner for the throttle:
+Hybrid speed, the middle way. One owner for the throttle:
 
 - W accelerates (full dry throttle), S decelerates (idle plus a soft brake). Either sets the
   held speed to the current speed, so releasing holds where the key left it. W + S cancel

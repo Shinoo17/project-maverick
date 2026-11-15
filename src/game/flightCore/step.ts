@@ -18,7 +18,7 @@ export function createCoreFlight(aircraftId: string, speed: number, tuning?: Cor
 }
 
 /*
-The rewrite core's flight step (docs/flight-rewrite-plan.md §3.3–§3.6). Rotation is rate
+The rewrite core's flight step. Rotation is rate
 command; translation is the sum of real forces on the velocity. The nose's direction is never
 copied onto the velocity, and there is no separate lateral damping: side force from sideslip
 is the only thing that bends the path toward a yawed nose (spec §7.5).

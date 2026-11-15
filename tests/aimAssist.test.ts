@@ -3,7 +3,7 @@ import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { aimAssist, aimMagnetMaxRate, assistRange, cursorDraw, rangeShare, withAimAssist, type AimAssistLevel } from '../src/game/combat/aimAssist'
 import { gunMountOf, solveGun } from '../src/game/combat/gunSolution'
-import { parseMouseSettings } from '../src/game/input/mouseStick'
+import { parseMouseSettings } from '../src/game/control/mouseSettings'
 import { runFlightReplay } from '../src/game/playground/replay'
 import type { TargetDroneMode } from '../src/game/playground/dronePath'
 

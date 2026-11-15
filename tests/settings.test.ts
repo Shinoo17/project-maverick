@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { backRoute, openSettings, parentRoute } from '../src/app/routes'
 import { parseCameraFov } from '../src/game/camera/cameraSettings'
 import { FlightInput } from '../src/game/input/FlightInput'
-import { defaultMouseSettings } from '../src/game/input/mouseStick'
+import { defaultMouseSettings } from '../src/game/control/mouseSettings'
 import {
   assignBinding, defaultBindings, defaultKeyboardSettings, isBindableCode, parseBindings, parseKeyboardSettings, type KeyBindings,
 } from '../src/game/input/keyBindings'
@@ -100,18 +100,23 @@ describe('key bindings', () => {
   })
 
   it('moves a key between the two slots of the same action', () => {
-    // Since bindings v2 roll has no second key by default (←/→ became the coordinated turn).
+    // Since bindings v3 (example/flight-control port) ←/→ are roll's second keys again.
     const result = assignBinding(defaultBindings, 'rollLeft', 1, 'KeyA')
-    expect(result.status === 'done' && result.bindings.rollLeft).toEqual([null, 'KeyA'])
+    expect(result.status === 'done' && result.bindings.rollLeft).toEqual(['ArrowLeft', 'KeyA'])
   })
 
   it('flies with rebound keys', () => {
     const bindings: KeyBindings = { ...defaultBindings, pitchUp: ['KeyI', null] }
-    const input = new FlightInput(defaultMouseSettings, parseKeyboardSettings({ bindings }))
-    input.press('KeyI')
-    expect(input.command(0, 'a', 'keyboard').pitch).toBe(1)
-    input.held.clear(); input.press('ArrowUp')
-    expect(input.command(1, 'a', 'keyboard').pitch).toBe(0)
+    // Keys build up progressively (example/flight-control), so each is held for a second.
+    const held = (code: string) => {
+      const input = new FlightInput(defaultMouseSettings, parseKeyboardSettings({ bindingsVersion: 3, bindings }))
+      input.press(code)
+      let pitch = 0
+      for (let tick = 0; tick < 60; tick++) pitch = input.command(tick, 'a', 'keyboard').pitch
+      return pitch
+    }
+    expect(held('KeyI')).toBe(1)
+    expect(held('ArrowUp')).toBe(0)
   })
 
   it('latches a toggle-mode afterburner on one press, ignores key repeat, and clears on pause', () => {

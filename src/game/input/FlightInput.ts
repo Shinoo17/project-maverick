@@ -1,100 +1,89 @@
+import { MathUtils, Vector3, type Camera } from 'three'
 import { neutralCommand, type PilotCommand } from '../runtime/commands'
 import { WORLD_STEP } from '../runtime/clock'
-import { LEVEL_FRAME, MOUSE_POSITIONAL, MOUSE_RELATIVE, MOUSE_STICK, clearStick, createMouseStick, defaultMouseSettings, engageStick, moveDiscStick, moveRelativeStick, moveStick, positionalRadius, readPositionalAxes, readStickAxes, springStick, stickGate, type MouseSettings, type ScreenFrame, type StickGate } from './mouseStick'
-import { aimAtCursor, aimAtRay, createMouseAim, followTarget, instruct, stepAim, trackLead, turnAim, unsyncAim, type CursorRay } from './mouseAim'
-import { gunMountOf, type GunMount } from '../combat/gunSolution'
-import { cursorDraw } from '../combat/aimAssist'
-import { capturePush, createPushCapture } from './pushCapture'
-import type { AircraftState, Vec3 } from '../state/WorldState'
+import type { AircraftState } from '../state/WorldState'
+import type { CoreAssist, CoreProfile } from '../flightCore/profile'
+import { CAMERA } from '../control/config'
+import { FlightControls, type ControlKeys } from '../control/ControlAxes'
+import { ControlMixer } from '../control/ControlMixer'
+import { StateAircraft } from '../control/controlAircraft'
+import { defaultMouseSettings, type MouseSettings } from '../control/mouseSettings'
 import { actionForCode, defaultKeyboardSettings, missileSelectActions, type FlightAction, type KeyboardSettings } from './keyBindings'
 export type { InputPreset } from './keyBindings'
 import type { InputPreset } from './keyBindings'
-import type { CoreAssist, CoreProfile } from '../flightCore/profile'
-import { simulationSpeed } from '../flight/speedLimits'
-// A held key is always full deflection and the shaped stick never is, so "strictly larger
-// wins" gives the keyboard priority over the mouse without a special case for it.
-const strongest = (digital: number, analog: number) => Math.abs(analog) > Math.abs(digital) ? analog : digital
-/** How long the positional stick rests in its dead zone before a half turn kept from passing
- * the vertical is let go. */
-const FLIP_RELEASE_SECONDS = 0.25
+
 const wrapPi = (angle: number) => angle - 2 * Math.PI * Math.round(angle / (2 * Math.PI))
-// F22's smoothAxis: a linear walk toward the target, at the release rate while it heads back
-// toward neutral or across it and at the engage rate while it grows.
-function slewToward(current: number, target: number, rate: { engage: number; release: number }, step: number) {
-  const returning = target === 0 || Math.sign(target) !== Math.sign(current) || Math.abs(target) < Math.abs(current)
-  const travel = (returning ? rate.release : rate.engage) * step
-  return Math.abs(target - current) <= travel ? target : current + Math.sign(target - current) * travel
-}
-// The new core's digital key shaping: rises at `rise` per second while the deflection grows
-// away from neutral (from neutral too), falls at `release` while it heads back or across.
-function shapeToward(current: number, target: number, rise: number, release: number, step: number) {
-  const growing = target !== 0 && (current === 0 || Math.sign(target) === Math.sign(current)) && Math.abs(target) > Math.abs(current)
-  const travel = (growing ? rise : release) * step
-  return Math.abs(target - current) <= travel ? target : current + Math.sign(target - current) * travel
-}
-/** Free look: view turn per pixel of mouse motion at sensitivity 1, and how far it may tilt up or down. */
-const FREE_LOOK = { radPerPixel: 0.25 * Math.PI / 180, maxPitch: 80 * Math.PI / 180 }
-/** Seconds for Q/E pedal travel from centre to full deflection. */
-export const PEDAL_RAMP_SECONDS = 0.2
-const DEG = Math.PI / 180
-const DIRECTION_KEYS = ['pitchUp', 'pitchDown', 'rollLeft', 'rollRight', 'yawLeft', 'yawRight', 'turnLeft', 'turnRight'] as const
-const smoothstep = (x: number, a: number, b: number) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
+
+/*
+The player's flight input, ported from example/flight-control (docs/MOUSE_CONTROL_SPEC.md there).
+
+  keys    → FlightControls (progressive axes: a tap nudges, a hold ramps to full, a release
+            decays; W/S a smoothed thrust command, released = hold speed)
+  mouse   → MouseAim (a world aim direction, turned about the rendered view's axes)
+  both    → ControlMixer: per axis, a key is 100 % manual and the aim controller takes the axis
+            back after release; Space turns the mouse into a virtual stick (PSM)
+          → PilotCommand
+
+Mouse + Keyboard is the 'mouse' preset, Keyboard Only the 'keyboard' preset (the mixer is a
+pass-through there). The aim controller reads the aircraft through controlAircraft.ts, which
+divides by the flight core's own available rates, so it follows whatever physics the core has.
+
+Determinism: the axes and the mixer step once per command tick, with dt = ticks × WORLD_STEP,
+never per rendered frame, and the recorded command carries their output, so a replay or another
+frame rate flies the same. Mouse motion turns the aim as it arrives, like the example.
+
+What this project keeps around it: key bindings with hold/toggle, the weapon and target actions,
+the left/right mouse buttons, free look (C) and look back (R), and the gun aim assist, which
+draws the same aim direction (FlightScene, gunLock.ts).
+*/
 export class FlightInput {
   readonly held = new Set<string>()
-  /** Mouse mode, control frame and shaping settings (MR1). Input only: the command contract
-   * and physics are unchanged, and a replay records the commands these produce. */
   mouse: MouseSettings
-  private springTick = -1
-  // Pixels of motion since the last command tick (relative mode).
-  private since = { x: 0, y: 0 }
-  /** Key bindings and hold/toggle choices. Input only, like `mouse`. */
   keyboard: KeyboardSettings
   /** Left mouse held while the pointer is locked to the flight surface. */
   mouseGun = false
-  // A next-target press waiting for the next command tick. One press is one action, however
-  // many ticks one frame runs, so it is taken by the first command and never repeated.
+  /** The new flight core's tuned profile (set by the flight scene from the Flight Lab), or null:
+   * the aim controller then reads the aircraft's untuned core profile. */
+  core: { profile: CoreProfile; assist: CoreAssist } | null = null
+  /** The last command built, for the Flight Lab overlay. */
+  lastCommand: PilotCommand | null = null
+  /** The aircraft as of the last simulation tick. Set by the flight scene. */
+  pose: AircraftState | null = null
+  /** Set by the flight scene each frame: the camera is still turned off the chase shot (easing back after a release). */
+  viewAway = false
+  /** Set by the flight scene: the gun lock's magnet flies the nose (arcade core), so the aim
+   * controller keeps off the stick and only held keys move it. No bank-to-turn rolls the jet. */
+  gunTracking = false
+
+  /** Keyboard axes and what the aircraft flies (example: FlightControls → ControlMixer). */
+  readonly controls = new FlightControls()
+  readonly mixer = new ControlMixer(this.controls)
+  private readonly aircraft = new StateAircraft()
+  // The rendered view without shake or free look, which the mouse aims through. Set by the scene.
+  private view: Camera | null = null
+  private stepTick = -1
+  // Put the aim back on the nose at the next command: after a reset, a respawn or a resume.
+  private resync = true
+  // A next-target press waiting for the next command tick. One press is one action.
   private nextTarget = false
-  // The missile slot picked since the last command (keys 1 and 2), or null.
+  // The missile slot picked since the last command (keys 1–4), or null.
   private select: number | null = null
-  // A missile launch pressed since the last command (K, or the right mouse button under mouse aim).
+  // A missile launch pressed since the last command (K, or the right mouse button).
   private launch = false
   // A countermeasure salvo pressed since the last command (F).
   private dispense = false
   private actionId = 1
-  /** The new flight core's profile and assists (flightCore 'new', set by the flight scene), or null
-   * under the legacy core. With a profile the keyboard is shaped and ←/→ fly the coordinated turn;
-   * without one every key reads as it always has. */
-  core: { profile: CoreProfile; assist: CoreAssist } | null = null
-  /** The coordinated turn (←/→): banking into a turn, levelling after release, or off. Shown on the Flight Lab overlay. */
-  turnAssist: 'off' | 'turning' | 'levelling' = 'off'
-  /** The last command built, for the Flight Lab overlay. */
-  lastCommand: PilotCommand | null = null
-  // New core: the digital keys' shaped deflections, stepped once per command tick (§4.4).
-  private shaped = { pitch: 0, roll: 0, yaw: 0, turn: 0 }
-  private shapeTick = -1
   // Afterburner/airbrake/PSM switched on by a toggle-mode key press.
   private readonly latched = new Set<FlightAction>()
+  // Free look: the view's turn off the chase shot from mouse motion while the key is held (radians).
+  private look = { yaw: 0, pitch: 0 }
+  // Degrees the hand has turned the aim since the gun lock last read it (takeHandMotion).
+  private hand = 0
+  private readonly before = new Vector3()
+
   constructor(mouse: MouseSettings = defaultMouseSettings, keyboard: KeyboardSettings = defaultKeyboardSettings) { this.mouse = { ...mouse }; this.keyboard = keyboard }
-  // Flow observation refreshed on simulation ticks.
-  highAoa = 0
-  // Q/E pedal travel. It advances one step per command tick, never per rendered frame,
-  // and the recorded command carries the ramped value, so replays match exactly.
-  // Linear, so a released pedal reaches exact neutral and the controller's neutral branch engages.
-  pedal = 0
-  private pedalTick = -1
-  // Positional stick mode's rate-limited axes (F22's DIRECT_RESPONSE), stepped per command tick.
-  private slew = { pitch: 0, x: 0 }
-  private slewTick = -1
-  // Positional stick mode's screen turn, rate limited like F22's camera roll correction.
-  private turn: number | null = null
-  // Post-stall push capture, armed while a push that started in post-stall is held.
-  private readonly capture = createPushCapture()
-  // The last level-frame angle, the half turn added each time the nose passes the vertical,
-  // and how long the stick has rested in its dead zone.
-  private level: number | null = null
-  private flip = 0
-  private centred = 0
-  /** The right mouse button under mouse aim: one missile launch, like a press of the launch key. */
+
+  /** The right mouse button under the mouse preset: one missile launch, like a press of the launch key. */
   pressLaunch() { this.launch = true }
   /** A key went down. Repeats keep a held key held but never flip a toggle again. */
   press(code: string, repeat = false) {
@@ -112,160 +101,84 @@ export class FlightInput {
   }
   /** True while any key bound to the action is held. */
   holds(action: FlightAction) { return this.keyboard.bindings[action].some(code => code !== null && this.held.has(code)) }
-  // Free look: the view's turn off the chase shot from mouse motion while the key is held (radians).
-  private look = { yaw: 0, pitch: 0 }
-  /** Set by the flight scene each frame: the camera is still turned off the chase shot (easing back after a release). */
-  viewAway = false
+  private switched(action: 'afterburner' | 'airbrake' | 'psm') { return this.keyboard[action] === 'toggle' ? this.latched.has(action) : this.holds(action) }
+
   /** While the view is turned away the mouse moves the camera, not the aim, and the aim holds still,
    * so the jet keeps flying where it was going. */
   get lookingAway() { return this.viewAway || this.holds('freeLook') || this.holds('lookBack') }
-  /** Where the camera looks off the chase shot: the free look while its key is held, plus a half turn for look back. */
+  /** Where the camera looks off the chase shot: the free look while its key is held, plus a half turn for look back.
+   * Yaw > 0 turns the view left, pitch > 0 up. */
   lookTarget() {
     if (!this.holds('freeLook')) this.look = { yaw: 0, pitch: 0 }
     return { yaw: wrapPi(this.look.yaw + (this.holds('lookBack') ? Math.PI : 0)), pitch: this.look.pitch }
   }
-  readonly stick = createMouseStick()
-  /** Mouse aim (mouseAim.ts): the direction the instructor flies the nose to. */
-  readonly aim = createMouseAim()
-  /** The aircraft as of the last simulation tick, for the instructor. Set by the flight scene. */
-  pose: AircraftState | null = null
-  // The rendered view's right and up, which mouse motion turns the aim about.
-  private view = { right: { x: 0, y: 0, z: 1 } as Vec3, up: { x: 0, y: 1, z: 0 } as Vec3 }
-  setView(right: Vec3, up: Vec3) { this.view = { right: { ...right }, up: { ...up } } }
-  /** Either mouse aim: world-locked ('aim') or screen-locked ('cursor'). */
-  get aiming() { return this.mouse.mode === 'aim' || this.mouse.mode === 'cursor' }
-  // Cursor mode: whether the × moved since the last command (a resting hand, not a held one).
-  private cursorMoved = false
-  /** Vertical field of view of the flight camera (Settings › Camera), for cursor mode's lens
-   * before a frame has been rendered. */
-  fov = 56
-  /** Cursor mode: the ray through the × from the last rendered frame (set by the flight scene). */
-  cursorRay: CursorRay | null = null
-  /** The selected target as of the last simulation tick (set by the flight scene), so cursor
-   * mode aims the reticle the HUD draws: at the target's range. */
-  target: AircraftState | null = null
-  // Cursor mode: pixels the hand moved the × since the last assist draw, and the lens the ×
-  // was last read through.
-  private handPixels = 0
-  private lensFov = 0
+
+  /** The mouse aim as the HUD, the camera and the aim assist read it. `direction` is the mixer's own
+   * vector: the aim assist turns it in place. */
+  get aim() {
+    const synced = !this.resync && !!this.pose?.alive
+    return { direction: this.mixer.aim.dir, share: this.mixer.aimShare, synced }
+  }
+  /** The PSM virtual stick (screen −1..1 per axis, y up), while the mouse is flying it. */
+  get virtualStick() { return this.mixer.stickMode && this.mixer.stick.active ? this.mixer.stick : null }
   /** The gun trigger, held on a key or the mouse. */
   get triggerHeld() { return this.holds('fireGun') || this.mouseGun }
-  private mount: { aircraftId: string; gun: GunMount } | null = null
-  /** Put the aim back on the nose at the next command: after a reset, a respawn or a resume. */
-  resyncAim() { unsyncAim(this.aim) }
-  // The flight surface in pixels, and the gate that spans it.
-  width = 640; height = 480
-  gate: StickGate = stickGate(640, 480)
-  // How far the airframe appears rotated inside the frame, and how much of that applies.
-  screen: ScreenFrame = LEVEL_FRAME
-  /** Cursor mode's frame: the true horizon under a horizon-locked camera (Balanced's small
-   * cosmetic tilt left out, or a held turn would sink), the airframe under Aircraft locked. */
-  cursorFrame: ScreenFrame = LEVEL_FRAME
-  clear() { this.cursorMoved = false; this.handPixels = 0; this.lensFov = 0; this.target = null; this.mouseGun = false; this.nextTarget = false; this.select = null; this.launch = false; this.dispense = false; this.highAoa = 0; this.pedal = 0; this.pedalTick = -1; this.shaped = { pitch: 0, roll: 0, yaw: 0, turn: 0 }; this.shapeTick = -1; this.turnAssist = 'off'; this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.capture.armed = false; this.capture.hold = null; this.springTick = -1; this.since = { x: 0, y: 0 }; this.held.clear(); this.latched.clear(); clearStick(this.stick); unsyncAim(this.aim); this.pose = null; this.screen = LEVEL_FRAME; this.cursorFrame = LEVEL_FRAME; this.cursorRay = null; this.look = { yaw: 0, pitch: 0 }; this.viewAway = false }
-  // The surface has taken the pointer: neutral and live from the first frame.
-  engage() { engageStick(this.stick); unsyncAim(this.aim); this.slew = { pitch: 0, x: 0 }; this.slewTick = -1; this.turn = null; this.level = null; this.flip = 0; this.centred = 0; this.since = { x: 0, y: 0 }; this.handPixels = 0; this.lensFov = 0 }
-  setViewport(width: number, height: number) {
-    if (!(width > 0 && height > 0) || (width === this.width && height === this.height)) return
-    this.width = width; this.height = height
-    this.gate = stickGate(width, height)
-    this.move(0, 0)
+
+  /** Put the aim back on the nose at the next command. */
+  resyncAim() { this.resync = true }
+  /** The surface has taken the pointer: the aim starts on the nose. */
+  engage() { this.resync = true }
+  clear() {
+    this.mouseGun = false; this.nextTarget = false; this.select = null; this.launch = false; this.dispense = false
+    this.held.clear(); this.latched.clear(); this.controls.reset(); this.stepTick = -1; this.resync = true
+    this.pose = null; this.look = { yaw: 0, pitch: 0 }; this.viewAway = false; this.hand = 0; this.gunTracking = false
   }
+
+  /** The rendered view the mouse aims through, without shake or free look (the chase shot). */
+  setView(camera: Camera) { this.view = camera }
+  /** The flight surface in pixels: half of it is full virtual stick travel on each axis. */
+  setViewport(width: number, height: number) {
+    if (!(width > 0 && height > 0)) return
+    this.mixer.viewport.w = width; this.mixer.viewport.h = height
+  }
+
+  /** Mouse motion (pixels): free look while its key is held, else the aim (or the PSM virtual stick). */
   move(x: number, y: number) {
-    const k = this.mouse.sensitivity
-    // Free look and look back take the mouse whole: the stick, the × and the aim stay where they
-    // were. Only free look turns the view with it, so C with R pans the view behind.
     if (this.holds('freeLook') || this.holds('lookBack')) {
       if (!this.holds('freeLook')) return
-      this.look.yaw = wrapPi(this.look.yaw - x * k * FREE_LOOK.radPerPixel)
-      this.look.pitch = Math.max(-FREE_LOOK.maxPitch, Math.min(FREE_LOOK.maxPitch, this.look.pitch - (this.mouse.invertPitch ? -y : y) * k * FREE_LOOK.radPerPixel))
+      const k = CAMERA.freeLookDegPerPx * Math.PI / 180, most = CAMERA.freeLookMaxPitchDeg * Math.PI / 180
+      this.look.yaw = wrapPi(this.look.yaw - x * k)
+      this.look.pitch = MathUtils.clamp(this.look.pitch - (this.mouse.invertPitch ? -y : y) * k, -most, most)
       return
     }
-    // Mouse aim turns the aim, and drives the relative stick the instructor hands over to in post-stall.
-    if (this.mouse.mode === 'aim' && this.stick.live && this.aim.synced) turnAim(this.aim, x * k, (this.mouse.invertPitch ? -y : y) * k, this.view.right, this.view.up)
-    // Cursor mode: the × is a held position anywhere in the window, like the positional stick.
-    // Invert pitch inverts the hand's motion; the × is then read where it is drawn.
-    if (this.mouse.mode === 'cursor') {
-      const { px, py } = this.stick
-      moveStick(this.stick, x * k, (this.mouse.invertPitch ? -y : y) * k, this.gate)
-      this.handPixels += Math.hypot(this.stick.px - px, this.stick.py - py)
-      if (x || y) this.cursorMoved = true
-    }
-    else if (this.mouse.mode !== 'stick') {
-      const { px, py } = this.stick
-      moveRelativeStick(this.stick, x * k, y * k, this.gate)
-      this.since.x += this.stick.px - px; this.since.y += this.stick.py - py
-    }
-    // Positional stick: raw motion; sensitivity sizes the disc instead (F22).
-    else moveDiscStick(this.stick, x, y, this.stickRadius)
+    if (this.viewAway || this.resync || !this.view || !this.pose?.alive) return
+    const k = this.mouse.sensitivity
+    this.before.copy(this.mixer.aim.dir)
+    this.mixer.mouseMove(x * k, (this.mouse.invertPitch ? -y : y) * k, this.view)
+    this.hand += this.before.angleTo(this.mixer.aim.dir) * 180 / Math.PI
   }
-  /** Positional stick mode's full-deflection disc, in pixels. */
-  get stickRadius() { return positionalRadius(this.gate, this.mouse.sensitivity) }
-  /*
-  Cursor mode, once per rendered frame. The × is a direction through the lens, so when the
-  field of view changes (speed, burner, the gun zoom) it is moved to keep its angle: a zoom
-  while firing must not swing the aim off the target under it.
-  */
-  setLens(fovDeg: number) {
-    if (this.mouse.mode !== 'cursor' || !(fovDeg > 0)) return
-    const previous = this.lensFov
-    this.lensFov = fovDeg
-    if (!(previous > 0) || previous === fovDeg) return
-    const scale = Math.tan(previous * Math.PI / 360) / Math.tan(fovDeg * Math.PI / 360)
-    moveStick(this.stick, this.stick.px * (scale - 1), this.stick.py * (scale - 1), this.gate)
-  }
-  /*
-  Cursor mode's aim assist, once per rendered frame like a hand: draws the × toward the lead
-  marker at `lead` (pixels from the middle), `leadDeg` off it through the lens, or `targetDeg`
-  off the target itself while firing, `range` metres from it (aimAssist.ts, `cursorDraw`). Not while the instructor is
-  not flying (a key, post-stall, a recovery). Not a hand on the mouse, so it never counts
-  against hands-off recovery. True while it acts.
-  */
-  drawCursor(lead: { x: number; y: number } | null, leadDeg: number, targetDeg: number, dt: number, range: number) {
-    const hand = this.handPixels
-    this.handPixels = 0
-    if (this.mouse.mode !== 'cursor' || !lead || !this.stick.live || !this.aim.synced || this.aim.share <= 0 || this.aim.recovering || this.lookingAway) return false
-    if (DIRECTION_KEYS.some(action => this.holds(action))) return false
-    const share = cursorDraw(this.mouse.aimAssist, leadDeg, targetDeg, dt, this.triggerHeld, hand, range)
-    if (share <= 0) return false
-    moveStick(this.stick, (lead.x - this.stick.px) * share, (lead.y - this.stick.py) * share, this.gate)
-    return true
-  }
+
+  /** Degrees the hand turned the aim since the last call (the gun lock's flick test). */
+  takeHandMotion() { const hand = this.hand; this.hand = 0; return hand }
+
   command(tick: number, entityId: string, preset: InputPreset) {
     const c = neutralCommand(tick, entityId)
     const has = (action: FlightAction) => this.holds(action)
-    if (this.core) this.flyKeys(c, tick, has, this.core)
-    else {
-      // The legacy core: ←/→ roll, as they did before they became the coordinated turn.
-      c.pitch = +has('pitchUp') - +has('pitchDown')
-      c.roll = +(has('rollRight') || has('turnRight')) - +(has('rollLeft') || has('turnLeft'))
-      this.stepPedal(tick, +has('yawRight') - +has('yawLeft'))
-      // Coordination is read off the keyboard roll before the mouse joins, so the keyboard
-      // keeps the axes it was tuned on and a mouse roll adds no yaw of its own. A held pedal
-      // key owns the axis (Q + E together is zero); a released pedal hands back to coordination.
-      c.yaw = has('yawLeft') || has('yawRight') ? this.pedal : this.pedal + (1 - Math.abs(this.pedal)) * c.roll * 0.12
+    const psm = this.switched('psm')
+    if (tick !== this.stepTick) {
+      // A tick that goes backwards is a runtime reset: start again from neutral.
+      if (tick < this.stepTick) { this.controls.reset(); this.resync = true }
+      const ticks = this.stepTick < 0 || tick < this.stepTick ? 1 : tick - this.stepTick
+      this.stepTick = tick
+      this.step(ticks * WORLD_STEP, preset, psm, has)
     }
-    if (preset === 'mouse' && this.aiming) this.flyAim(c, tick, has)
-    else if (preset === 'mouse' && this.mouse.mode === 'stick') this.flyStick(c, tick)
-    else if (preset === 'mouse') {
-      this.stepSpring(tick)
-      // The body frame reads the stick as drawn: mouse up is nose up at every bank.
-      const body = this.mouse.frame === 'body'
-      const axes = readStickAxes(this.stick, body ? LEVEL_FRAME : this.screen, body ? 0 : this.highAoa, MOUSE_RELATIVE)
-      if (axes) {
-        c.pitch = strongest(c.pitch, this.mouse.invertPitch ? -axes.pitch : axes.pitch)
-        if (this.mouse.xAxis === 'yaw') c.yaw = strongest(c.yaw, axes.roll)
-        else c.roll = strongest(c.roll, axes.roll)
-      }
-    }
-    c.speedAdjust = +has('speedUp') - +has('speedDown')
-    c.airbrake = this.keyboard.airbrake === 'toggle' ? this.latched.has('airbrake') : has('airbrake')
-    c.afterburner = this.keyboard.afterburner === 'toggle' ? this.latched.has('afterburner') : has('afterburner')
-    c.psm = this.keyboard.psm === 'toggle' ? this.latched.has('psm') : has('psm')
+    const stick = this.gunTracking && preset === 'mouse' ? this.controls : this.mixer
+    c.pitch = stick.pitch; c.roll = stick.roll; c.yaw = stick.yaw
+    c.speedAdjust = this.controls.thrust
+    c.airbrake = this.switched('airbrake')
+    c.afterburner = this.switched('afterburner')
+    c.psm = psm
     c.gunHeld = has('fireGun') || (preset === 'mouse' && this.mouseGun)
-    // A push that brings a post-stall nose back stops on the horizon unless the throttle is on
-    // (pushCapture.ts). Not under mouse aim, whose instructor has its own hands-off recovery,
-    // and not on the new core, which has no push capture (docs/flight-rewrite-plan.md §8).
-    if (!(preset === 'mouse' && this.aiming) && !this.core) c.pitch = capturePush(this.capture, this.pose, this.highAoa, c.pitch, c.speedAdjust > 0 || c.afterburner)
     if (this.nextTarget) { this.nextTarget = false; c.actions.push({ id: this.actionId++, type: 'next-target' }) }
     if (this.select !== null) { c.actions.push({ id: this.actionId++, type: 'select-secondary', slot: this.select }); this.select = null }
     if (this.launch) { this.launch = false; c.actions.push({ id: this.actionId++, type: 'fire-missile' }) }
@@ -273,173 +186,31 @@ export class FlightInput {
     this.lastCommand = c
     return c
   }
+
   /*
-  Mouse aim. Any held pitch, roll or yaw key takes all three axes from the instructor and
-  settles the aim onto the nose, so a released key leaves the jet where the key put it. Otherwise
-  the instructor flies its share and the relative stick, read in the body frame, the rest: all
-  of it in post-stall, until the hands have been off for a moment (stepAim).
+  One command tick of the example's per-step input (Game.simulate: controls.update, then
+  mixer.step). The FCS itself is part of the arcade flight core and steps after the command.
   */
-  private flyAim(c: ReturnType<typeof neutralCommand>, tick: number, has: (action: FlightAction) => boolean) {
-    const cursor = this.mouse.mode === 'cursor'
-    if (!cursor) this.stepSpring(tick)
-    if (!this.stick.live) return
-    // A wreck has no nose to aim; the respawned jet starts with the aim on its own.
-    if (!this.pose?.alive) { unsyncAim(this.aim); return }
-    const keyHeld = DIRECTION_KEYS.some(has)
-    // Looking away, the aim is neither read off the × nor turned with a target: the jet holds its course.
-    const away = this.lookingAway
-    // Post-stall's stick: the sprung one, or in cursor mode the held × as the positional stick.
-    const stick = readStickAxes(this.stick, LEVEL_FRAME, 0, cursor ? MOUSE_STICK : MOUSE_RELATIVE) ?? { pitch: 0, roll: 0 }
-    // The hand is on the mouse while the stick is out of the middle (or the × just moved).
-    const handsOn = keyHeld || Math.hypot(stick.pitch, stick.roll) > 0.02 || (cursor && this.cursorMoved)
-    this.cursorMoved = false
-    // Cursor mode: the nose that puts the gun reticle under the ×, read afresh every tick (a
-    // recovery flies its own). Through the rendered camera once there is one.
-    if (cursor && this.aim.synced && !this.aim.recovering && !keyHeld && !away) {
-      const target = this.target?.alive ? this.target : null
-      if (this.cursorRay) aimAtRay(this.aim, this.pose, this.cursorRay, this.gunOf(this.pose.aircraftId), target)
-      else aimAtCursor(this.aim, this.pose, this.stick.px, this.stick.py, this.height, this.fov, this.cursorFrame.angle * this.cursorFrame.blend)
+  private step(dt: number, preset: InputPreset, psm: boolean, has: (action: FlightAction) => boolean) {
+    const keys: ControlKeys = {
+      pitchUp: has('pitchUp'), pitchDown: has('pitchDown'),
+      rollLeft: has('rollLeft'), rollRight: has('rollRight'),
+      yawLeft: has('yawLeft'), yawRight: has('yawRight'),
+      throttleUp: has('speedUp'), throttleDown: has('speedDown'),
+      airbrake: this.switched('airbrake'), afterburner: this.switched('afterburner'), psm,
     }
-    stepAim(this.aim, this.pose, tick, keyHeld, handsOn)
-    // Cursor mode on a moving target: the lead's own turn is fed forward while the × is on it.
-    if (cursor && !this.aim.recovering && !keyHeld && !away) trackLead(this.aim, this.pose, this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
-    else this.aim.tracking = 0
-    // Close behind the locked target: the instructor turns with it.
-    followTarget(this.aim, this.pose, !this.aim.recovering && !keyHeld && !away && this.target?.alive ? this.target : null, this.gunOf(this.pose.aircraftId), tick)
-    const share = this.aim.share, pilot = this.mouse.invertPitch && !cursor ? -stick.pitch : stick.pitch
-    const flown = share > 0 ? instruct(this.aim, this.pose) : { pitch: 0, roll: 0, yaw: 0 }
-    c.pitch = strongest(c.pitch, share * flown.pitch + (1 - share) * pilot)
-    c.roll = strongest(c.roll, share * flown.roll + (1 - share) * stick.roll)
-    c.yaw = strongest(c.yaw, share * flown.yaw)
-  }
-  /*
-  Positional stick mode, as example/F22 flies it: the disc reading, turned into the airframe's
-  frame, then rate limited toward the reading once per command tick. A held key still
-  outranks it on its own axis.
-
-  Always read as drawn on screen, whatever the Stick frame setting says: F22 has no body
-  frame, and that turn is what makes a pointer held to the right a bank to the right rather
-  than a roll that never stops. The bank settles where the airframe appears rotated by the
-  pointer's angle. Under Aircraft locked nothing is rotated on screen, so a held side point
-  keeps rolling there, as it does under F22's Roll On.
-
-  The turn is F22's screen roll, rate limited at 200°/s like its camera's roll correction, and
-  held where there is no level frame at all. Never faded out near the vertical: a faded turn
-  cancels every pointer direction to nothing there, and the jet just falls.
-
-  Through the vertical the level frame flips by half a turn although the airframe has not
-  rolled. That flip is added back (`flip`), so a pull held through the vertical stays the same
-  pull and the jet goes all the way round the loop rather than stopping on the vertical or
-  rolling around it. The half turn is kept until the stick has rested in its dead zone for a
-  moment (FLIP_RELEASE_SECONDS), not when the pointer merely swings across: a Cobra pulled past
-  the vertical and then pushed back is the same half turn, and dropping it on the push would
-  read the push as a pull, the opposite of the body-axis reading post-stall hands over to, and
-  the two would cancel with the jet hanging nose high. While the stick rests in the dead zone it
-  commands nothing, so the turn jumps straight to its goal there instead of walking.
-  */
-  private flyStick(c: ReturnType<typeof neutralCommand>, tick: number) {
-    const yaw = this.mouse.xAxis === 'yaw'
-    if (!this.stick.live) { this.slew = { pitch: 0, x: 0 }; this.slewTick = tick; this.turn = null; return }
-    if (tick !== this.slewTick) {
-      // A tick that goes backwards is a runtime reset: start again from neutral.
-      if (tick < this.slewTick) { this.slew = { pitch: 0, x: 0 }; this.turn = null }
-      const ticks = this.slewTick < 0 || tick < this.slewTick ? 1 : tick - this.slewTick
-      this.slewTick = tick
-      const step = ticks * WORLD_STEP, rates = MOUSE_POSITIONAL.slew
-      const limit = MOUSE_POSITIONAL.turnRate * step, centred = Math.hypot(this.stick.x, this.stick.y) <= MOUSE_POSITIONAL.deadZone
-      // The level frame is read only outside the cone round the vertical (blend 1): inside it
-      // the bank swings with the smallest turn of the nose, and chasing it spins the jet round
-      // the vertical. Coming out more than a quarter turn from where it went in is the nose
-      // having passed the vertical, not a roll.
-      if (this.screen.blend >= 1) {
-        if (this.level !== null && Math.abs(wrapPi(this.screen.angle - this.level)) > Math.PI / 2) this.flip = wrapPi(this.flip + Math.PI)
-        this.level = this.screen.angle
-      }
-      this.centred = centred ? this.centred + step : 0
-      if (this.centred >= FLIP_RELEASE_SECONDS) this.flip = 0
-      const goal = wrapPi((this.level ?? 0) + this.flip)
-      this.turn = this.turn === null || centred ? goal : wrapPi(this.turn + Math.max(-limit, Math.min(limit, wrapPi(goal - this.turn))))
-      const axes = readPositionalAxes(this.stick, { angle: this.turn, blend: 1 }, this.mouse.invertPitch, this.highAoa) ?? { pitch: 0, roll: 0 }
-      this.slew.pitch = slewToward(this.slew.pitch, axes.pitch, rates.pitch, step)
-      this.slew.x = slewToward(this.slew.x, axes.roll, yaw ? rates.yaw : rates.roll, step)
-    }
-    c.pitch = strongest(c.pitch, this.slew.pitch)
-    if (yaw) c.yaw = strongest(c.yaw, this.slew.x)
-    else c.roll = strongest(c.roll, this.slew.x)
-  }
-  /*
-  The new core's keyboard (docs/flight-rewrite-plan.md §4.2, §4.5). Each digital key ramps to
-  full over digitalRise and back over digitalRelease, once per command tick, so the recorded
-  command carries the shaped value and a replay or another frame rate flies the same. Opposite
-  keys cancel. A held key owns its axis.
-
-  ←/→ are the coordinated turn: roll to turnBankDeg and pull what a level turn at the actual
-  bank needs, plus a correction toward level flight path. Released, it rolls the wings level and
-  hands back once they are (the only latch, shown on the overlay as `levelling`); A or D take
-  the roll back at once. The bank is undefined with the nose near the vertical, so the turn
-  fades out there. Pitch is only added while the jet is upright enough for a pull to mean up.
-  */
-  private flyKeys(c: ReturnType<typeof neutralCommand>, tick: number, has: (action: FlightAction) => boolean, core: NonNullable<FlightInput['core']>) {
-    const { profile, assist } = core
-    const axis = (plus: FlightAction, minus: FlightAction) => +has(plus) - +has(minus)
-    const turnKey = axis('turnRight', 'turnLeft'), rollKey = has('rollLeft') || has('rollRight')
-    if (tick !== this.shapeTick) {
-      if (tick < this.shapeTick) { this.shaped = { pitch: 0, roll: 0, yaw: 0, turn: 0 }; this.turnAssist = 'off' }
-      const ticks = this.shapeTick < 0 || tick < this.shapeTick ? 1 : tick - this.shapeTick
-      this.shapeTick = tick
-      const step = ticks * WORLD_STEP
-      const targets = { pitch: axis('pitchUp', 'pitchDown'), roll: axis('rollRight', 'rollLeft'), yaw: axis('yawRight', 'yawLeft'), turn: turnKey }
-      for (const key of ['pitch', 'roll', 'yaw', 'turn'] as const) this.shaped[key] = shapeToward(this.shaped[key], targets[key], 1 / assist.digitalRise, 1 / assist.digitalRelease, step)
-      // The levelling latch: from a released turn key until the wings are level or A/D take over.
-      if (turnKey !== 0) this.turnAssist = 'turning'
-      else if (this.turnAssist === 'turning' && this.shaped.turn === 0) this.turnAssist = 'levelling'
-      if (this.turnAssist === 'levelling' && (rollKey || !this.pose?.alive || Math.abs(this.bankDeg(this.pose)) < 2)) this.turnAssist = 'off'
-    }
-    c.pitch = this.shaped.pitch; c.roll = this.shaped.roll; c.yaw = this.shaped.yaw
+    this.controls.update(keys, dt)
+    const mixer = this.mixer
+    if (mixer.mode !== preset) { mixer.mode = preset; this.resync = true }
+    mixer.aimLimit = this.mouse.aimLimit
     const pose = this.pose
-    if (this.turnAssist === 'off' || !pose?.alive) return
-    const o = pose.orientation, v = pose.velocity, speed = Math.hypot(v.x, v.y, v.z)
-    // World y of the body's forward (+X): the turn fades out with the nose near the vertical.
-    const forwardY = 2 * (o.x * o.y + o.w * o.z)
-    const share = 1 - smoothstep(Math.abs(forwardY), 0.85, 0.97)
-    const bank = this.bankDeg(pose), goal = this.turnAssist === 'turning' ? this.shaped.turn * assist.turnBankDeg : 0
-    const error = ((goal - bank + 540) % 360) - 180
-    if (!rollKey) c.roll = Math.max(-1, Math.min(1, error / assist.turnBankSeconds / profile.maxRate.roll)) * share
-    if (has('pitchUp') || has('pitchDown') || speed < 1) return
-    // A level turn at bank φ pitches at g·sinφ·tanφ/V; the flight path angle closes over turnHoldSeconds.
-    const phi = Math.max(-80, Math.min(80, bank)) * DEG, gamma = Math.asin(Math.max(-1, Math.min(1, v.y / speed)))
-    const pitchRate = 9.81 * Math.sin(phi) * Math.tan(phi) / speed - gamma / assist.turnHoldSeconds / Math.max(Math.cos(phi), 0.3)
-    const control = Math.min(1, (speed / simulationSpeed(profile.controlSpeedKph)) ** 2)
-    const upright = smoothstep(Math.cos(bank * DEG), 0, 0.3)
-    c.pitch = Math.max(-1, Math.min(1, pitchRate / (profile.maxRate.pitch * DEG * Math.max(control, 0.05)))) * upright * share
-  }
-  /** Bank angle (deg, positive right wing down) from the body's right (+Z) and up (+Y) in world space. */
-  private bankDeg(pose: AircraftState) {
-    const { x, y, z, w } = pose.orientation
-    const rightY = 2 * (y * z - w * x), upY = 1 - 2 * (x * x + z * z)
-    return Math.atan2(-rightY, upY) / DEG
-  }
-  private gunOf(aircraftId: string) {
-    if (this.mount?.aircraftId !== aircraftId) this.mount = { aircraftId, gun: gunMountOf(aircraftId) }
-    return this.mount.gun
-  }
-  // Like the pedal: once per command tick, however many frames or reads fall inside it.
-  // The stick carried from the last tick springs for the ticks in between; motion since then
-  // does not, so what the hand just did is read in full.
-  private stepSpring(tick: number) {
-    if (tick === this.springTick) return
-    const ticks = this.springTick < 0 || tick < this.springTick ? 0 : tick - this.springTick
-    this.springTick = tick
-    springStick(this.stick, ticks, this.gate, this.since)
-    this.since = { x: 0, y: 0 }
-  }
-  private stepPedal(tick: number, target: number) {
-    if (tick === this.pedalTick) return
-    // A tick that goes backwards is a runtime reset: start again from centre.
-    if (tick < this.pedalTick) this.pedal = 0
-    const ticks = this.pedalTick < 0 || tick < this.pedalTick ? 1 : tick - this.pedalTick
-    this.pedalTick = tick
-    const travel = ticks * WORLD_STEP / PEDAL_RAMP_SECONDS
-    this.pedal = Math.abs(target - this.pedal) <= travel ? target : this.pedal + Math.sign(target - this.pedal) * travel
+    // A wreck has no nose to aim: the controls pass through until the respawn re-syncs the aim.
+    if (!pose?.alive) { mixer.mode = 'keyboard'; mixer.step(this.aircraft, dt); mixer.mode = preset; this.resync = true; return }
+    this.aircraft.read(pose, this.core?.profile)
+    if (this.resync) { mixer.reset(this.aircraft); this.resync = false }
+    // The arcade core runs the example's FCS: the mixer reads its mode and w as the example's did
+    // (the last step's). The other cores have none, so the PSM key stands in, at full weight.
+    const fcs = pose.arcadeFlight?.fcs
+    mixer.step(this.aircraft, dt, fcs ? { mode: fcs.mode, wHigh: fcs.wHigh } : { mode: psm ? 'PSM' : 'NORMAL', wHigh: 1 })
   }
 }

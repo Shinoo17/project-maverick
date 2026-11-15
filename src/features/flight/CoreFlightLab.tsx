@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Quaternion, Vector3 } from 'three'
 import { readFlight } from '../../game/flight/readout'
 import { psmShareOf, driftShareOf } from '../../game/camera/cameraRoll'
+import { driftWeight } from '../../game/camera/chaseBlend'
 import { coreAssist, coreProfileOf, type AxisSet, type CoreAssist, type CoreProfile, type CoreTuning } from '../../game/flightCore/profile'
 import { simulationSpeed, arcadeSpeed } from '../../game/flight/speedLimits'
 import type { FlightInput } from '../../game/input/FlightInput'
@@ -10,7 +11,7 @@ import type { AircraftState } from '../../game/state/WorldState'
 
 const deg = (radians: number) => radians * 180 / Math.PI
 const axes = (value: AxisSet, format = (v: number) => v.toFixed(0)) => [value.pitch, value.roll, value.yaw].map(format).join(' / ')
-type CoreLabKey = `coreLab${'Speed' | 'Velocity' | 'Forward' | 'Angles' | 'Command' | 'Rates' | 'Targets' | 'Saturation' | 'Band' | 'Control' | 'G' | 'Forces' | 'Psm' | 'Camera' | 'Drift' | 'Engine' | 'Airbrake' | 'Hold' | 'Turn'}`
+type CoreLabKey = `coreLab${'Speed' | 'Velocity' | 'Forward' | 'Angles' | 'Command' | 'Rates' | 'Targets' | 'Saturation' | 'Band' | 'Control' | 'G' | 'Forces' | 'Psm' | 'Camera' | 'Drift' | 'Engine' | 'Airbrake' | 'Hold' | 'Aim'}`
 const vector = (v: { x: number; y: number; z: number }, digits = 1) => [v.x, v.y, v.z].map(n => n.toFixed(digits)).join(', ')
 
 /** The new core's debug overlay (Flight Lab › telemetry; spec §10.2). It reads the core's own
@@ -38,12 +39,12 @@ export function CoreFlightLab({ state, input }: { state: AircraftState; input: F
     ['coreLabG', `${flight.g.toFixed(2)} (${p.gLimit} / −${p.gLimitNeg})`],
     ['coreLabForces', `${[d.lift, d.drag, d.side, d.thrust].map(v => v.toFixed(1)).join(' / ')} m/s²`],
     ['coreLabPsm', `${command?.psm ? 'ON' : '—'} / ${(core.psmAuthority * 100).toFixed(0)}%`],
-    ['coreLabCamera', `${psmShareOf(state).toFixed(2)} / ${driftShareOf(state).toFixed(2)}`],
+    ['coreLabCamera', `${driftWeight(flight).toFixed(2)} · ${psmShareOf(state).toFixed(2)} / ${driftShareOf(state).toFixed(2)}`],
     ['coreLabDrift', `${flight.noseVelocityDeg.toFixed(1)}° / ${driftShareOf(state).toFixed(2)}`],
     ['coreLabEngine', `${(core.throttle * 100).toFixed(0)}% / ${(core.power * 100).toFixed(0)}%${core.burner.active ? ' · AB' : ''}`],
     ['coreLabAirbrake', `${(core.airbrake * 100).toFixed(0)}%`],
     ['coreLabHold', `${d.speed.mode}${d.speed.ratchet ? ' · ratchet' : ''} · ${arcadeSpeed(core.speedTarget).toFixed(0)} km/h · I ${d.speed.integral.toFixed(3)}`],
-    ['coreLabTurn', input.turnAssist],
+    ['coreLabAim', `${input.mixer.autopilot.errorDeg.toFixed(1)}° / ${input.mixer.psmWeight.toFixed(2)}${input.mixer.stickMode ? ' · stick' : ''}`],
   ]
   return <dl className="flight-lab" aria-label={t('coreLab')}>
     {rows.map(([key, value]) => <div key={key}><dt>{t(key)}</dt><dd>{value}</dd></div>)}

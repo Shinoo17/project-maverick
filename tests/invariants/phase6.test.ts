@@ -2,9 +2,8 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { GameRuntime } from '../../src/game/runtime/GameRuntime'
 import { commandSchemaVersion, neutralCommand } from '../../src/game/runtime/commands'
-import { WORLD_STEP } from '../../src/game/runtime/clock'
 import { createManeuverState } from '../../src/game/flight/maneuvers'
-import { FlightInput, PEDAL_RAMP_SECONDS } from '../../src/game/input/FlightInput'
+import { FlightInput } from '../../src/game/input/FlightInput'
 import { runFlightReplay } from '../../src/game/playground/replay'
 
 // Code only: comments may still name the retired fields to explain their removal.
@@ -19,9 +18,9 @@ describe('I21: no legacy gates', () => {
     expect(command.psmArm).toBeUndefined()
     // @ts-expect-error highG was removed from the command contract in Phase 6.
     expect(command.highG).toBeUndefined()
-    // FR1 (flight rewrite) added `psm`, the Space PSM override, and bumped the schema to 3.
+    // FR1 (flight rewrite) added `psm`, the Space PSM override (schema 3); the gun lock added the optional `gunTrack` (schema 4).
     expect(Object.keys(command).sort()).toEqual(['actions', 'afterburner', 'airbrake', 'entityId', 'gunHeld', 'pitch', 'psm', 'roll', 'speedAdjust', 'tick', 'yaw'])
-    expect(commandSchemaVersion).toBe(3)
+    expect(commandSchemaVersion).toBe(4)
   })
 
   it('flight, input, camera and HUD never read a PSM phase or a retired command field', () => {
@@ -45,59 +44,7 @@ describe('I21: no legacy gates', () => {
   })
 })
 
-describe('Q/E pedal ramp', () => {
-  const step = WORLD_STEP / PEDAL_RAMP_SECONDS
-  const ticksToFull = Math.ceil(PEDAL_RAMP_SECONDS / WORLD_STEP)
-
-  it('ramps linearly per command tick to exactly full deflection and back to exact neutral', () => {
-    const input = new FlightInput()
-    input.press('KeyE')
-    for (let tick = 0; tick < ticksToFull + 3; tick++) {
-      expect(input.command(tick, 'a', 'keyboard').yaw).toBeCloseTo(Math.min(1, (tick + 1) * step), 12)
-    }
-    expect(input.command(ticksToFull + 3, 'a', 'keyboard').yaw).toBe(1)
-    input.held.delete('KeyE')
-    let tick = ticksToFull + 4, previous = 1
-    for (; previous > 0; tick++) {
-      const yaw = input.command(tick, 'a', 'keyboard').yaw
-      expect(previous - yaw).toBeCloseTo(Math.min(previous, step), 12)
-      previous = yaw
-    }
-    // Exact zero, so the controller's neutral branch (command[axis] === 0) engages.
-    expect(input.command(tick, 'a', 'keyboard')).toEqual(neutralCommand(tick, 'a'))
-  })
-
-  it('is idempotent within a tick, reverses through centre, and restarts on clear or a runtime reset', () => {
-    const input = new FlightInput()
-    input.press('KeyQ')
-    const first = input.command(5, 'a', 'keyboard').yaw
-    expect(input.command(5, 'a', 'keyboard').yaw).toBe(first)
-    expect(first).toBeCloseTo(-step, 12)
-    for (let tick = 6; tick < 6 + ticksToFull; tick++) input.command(tick, 'a', 'keyboard')
-    expect(input.pedal).toBe(-1)
-    input.held.delete('KeyQ'); input.press('KeyE')
-    const reversed = [0, 1, 2].map(i => input.command(6 + ticksToFull + i, 'a', 'keyboard').yaw)
-    expect(reversed[1] - reversed[0]).toBeCloseTo(step, 12)
-    expect(reversed[2] - reversed[1]).toBeCloseTo(step, 12)
-    // GameRuntime.reset restarts ticks at zero: the pedal starts again from centre.
-    expect(input.command(0, 'a', 'keyboard').yaw).toBeCloseTo(step, 12)
-    input.clear(); input.press('KeyE')
-    expect(input.command(1, 'a', 'keyboard').yaw).toBeCloseTo(step, 12)
-  })
-
-  it('keeps keyboard roll coordination at centre, full pedal and Q + E exactly as before', () => {
-    const input = new FlightInput()
-    input.press('KeyD')
-    expect(input.command(0, 'a', 'keyboard').yaw).toBe(0.12)
-    input.press('KeyQ')
-    for (let tick = 1; tick <= ticksToFull; tick++) input.command(tick, 'a', 'keyboard')
-    expect(input.command(ticksToFull + 1, 'a', 'keyboard').yaw).toBe(-1)
-    // Opposite keys cancel the axis, with no coordination leaking in (02-controls resolve rule).
-    const both = new FlightInput()
-    both.press('KeyD'); both.press('KeyQ'); both.press('KeyE')
-    for (let tick = 0; tick < 3; tick++) expect(both.command(tick, 'a', 'keyboard').yaw).toBe(0)
-  })
-
+describe('live key input', () => {
   it('I2/I3: live key input replays exactly at 30/60/144 render FPS', () => {
     const run = (fps: number) => {
       const input = new FlightInput(), runtime = new GameRuntime({ mode: 'playground', aircraftIds: ['su57'] })

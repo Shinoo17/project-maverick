@@ -5,6 +5,7 @@ import { FixedClock, FLIGHT_STEP, WORLD_STEP } from './clock'
 import { commandSchemaVersion, neutralCommand, type PilotCommand } from './commands'
 import { getFlightCore, type FlightCore } from '../flight/core'
 import { createCoreFlight } from '../flightCore/step'
+import { arcadeSpawnSpeed, arcadeSpawnSpeeds, createArcadeFlight } from '../arcadeCore/step'
 import { coreAssistOf, coreProfileOf, validateCoreAssist, validateCoreProfile, type CoreTuning } from '../flightCore/profile'
 import { botSpawnPose, combatBot, createPracticeState, droneRespawnPose, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
 import { circleFrom, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
@@ -97,11 +98,11 @@ export class GameRuntime {
   /** A still drone keeps `orientation`; a moving one starts its path at `position`, heading `heading`, on `tick`. */
   private createDrone(position: Vec3, heading: Vec3, orientation: AircraftState['orientation'], tick: number) {
     const mode = this.config.targetDrone as TargetDroneMode
-    const drone = this.createAircraft('drone-1', targetDrone.aircraftId, position, mode === 'bot' ? combatBot.speed : undefined)
+    const drone = this.createAircraft('drone-1', targetDrone.aircraftId, position, mode === 'bot' ? this.spawnSpeed(combatBot.speed) : undefined)
     drone.control = 'hold'; drone.velocity = { x: 0, y: 0, z: 0 }; drone.orientation = orientation
     if (mode === 'bot') {
       // Its own speed whatever the practice preset (Low energy spawns below the stall), with the engine trimmed for it.
-      const speed = combatBot.speed
+      const speed = this.spawnSpeed(combatBot.speed)
       drone.control = 'bot'; drone.bot = createBotState(0x5eed ^ tick)
       drone.velocity = { x: heading.x * speed, y: heading.y * speed, z: heading.z * speed }
       this.steering.set(drone.id, createBotSteering())
@@ -110,6 +111,8 @@ export class GameRuntime {
       drone.path = mode === 'racetrack' ? racetrackFrom(position, heading, tick) : circleFrom(position, position.y, tick)
       Object.assign(drone, dronePose(drone.path, 0))
     }
+    // Made again on the drone's own pose, now that it has one.
+    if (this.config.flightCore === 'arcade') drone.arcadeFlight = createArcadeFlight(drone)
     return drone
   }
   /** Brings a shot-down drone back, fresh, in front of the player once its wait is over. */
@@ -122,10 +125,13 @@ export class GameRuntime {
     if (index >= 0) world.aircraft[index] = this.createDrone(position, heading, orientation, world.tick)
   }
 
-  private createAircraft(id: string, aircraftId: string, position: AircraftState['position'], speed: number = practiceSpawns[this.preset].speed): AircraftState {
+  /** The arcade core flies the example's speeds (cruise 230 m/s), so its spawns scale up from this world's. */
+  private spawnSpeed(speed: number) { return this.config.flightCore === 'arcade' ? arcadeSpawnSpeed(speed) : speed }
+
+  private createAircraft(id: string, aircraftId: string, position: AircraftState['position'], speed: number = this.config.flightCore === 'arcade' ? arcadeSpawnSpeeds[this.preset] : practiceSpawns[this.preset].speed): AircraftState {
     const flight = getFlightProfile(aircraftId).flight
     const speedLimits = resolveSpeedLimits(flight, this.config.flightOverrides?.[aircraftId])
-    return {
+    const aircraft: AircraftState = {
       id, aircraftId, control: 'pilot', speedLimits,
       stores: fullArmament(getAircraft(aircraftId)), gun: createGunState(gunOf(aircraftId).weapon.id),
       position,
@@ -139,6 +145,9 @@ export class GameRuntime {
       ...(this.config.flightCore ? { flightCore: this.config.flightCore } : {}),
       ...(this.config.flightCore === 'new' ? { coreFlight: createCoreFlight(aircraftId, speed, this.coreTuning) } : {}),
     }
+    // From the first tick the controls and the camera read the arcade FCS, not a stand-in.
+    if (this.config.flightCore === 'arcade') aircraft.arcadeFlight = createArcadeFlight(aircraft)
+    return aircraft
   }
 
   start() { if (this.status === 'idle') this.status = 'running' }

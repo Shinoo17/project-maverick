@@ -10,7 +10,7 @@ import { coreProfileOf } from '../../src/game/flightCore/profile'
 import type { AircraftState } from '../../src/game/state/WorldState'
 
 /*
-FR1 feel numbers for the rewrite core (docs/flight-rewrite-fr1.md). Report only: nothing here is
+FR1 feel numbers for the rewrite core. Report only: nothing here is
 a target. Simulated where the number is a response (rates, instantaneous turn, bleed), from the
 profile's force balance where it is an equilibrium (sustained turn, top speed, 1 g stall).
 Speeds in simulation m/s with HUD km/h (× 5.4) beside them.

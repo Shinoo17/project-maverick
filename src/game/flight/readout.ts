@@ -5,7 +5,7 @@ import { flightCoreOf } from './core'
 FlightReadout: the one view of a flying aircraft that everything outside the flight core reads
 (HUD, telemetry, camera, rigs, exhaust, vapor, sound, practice, bot, input). Each core fills it
 from its own state, so a consumer never names maneuver, stall, intent or thrustVectoring, and
-swapping cores (docs/flight-rewrite-plan.md §3.2) changes nothing outside the core.
+swapping cores changes nothing outside the core.
 
 Two kinds of value:
 - Step values: what the last flight step flew with or ended on. A pose never changes them.

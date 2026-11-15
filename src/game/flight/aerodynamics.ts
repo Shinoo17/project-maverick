@@ -59,8 +59,7 @@ export function aeroFlowEffectiveness(flow: AirflowState, profile: AeroProfile):
  * tests/aerodynamics.test.ts pins this semantic.
  *
  * Departure is the separate nose-down channel for reverse flow, where restoring
- * has no moment; weighting, floor and consequences are in
- * docs/legacy-flight/reverse-flow-departure.md.
+ * has no moment.
  *
  * Damping blends attached→separated with max(separation, 1 − effectiveness), so
  * crossflow with no pitch-alpha stall (pure sideslip) still damps as separated flow.

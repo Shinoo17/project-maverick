@@ -152,7 +152,7 @@ it.each([60, 120].flatMap(speed => [
   expect(flow.incidenceDeg).toBeGreaterThan(profile.aero.alphaNormalDeg)
 
   // Rev. 4 supersedes the historical zero-first-pitch assertion; measured
-  // before/after values are archived in docs/legacy-flight/phase45-implementation-report.md.
+  // before/after values were archived in the Phase 4/5 report (removed 2026-11-16; see git history).
   // No C, brake or burner: natural flow recovery / the demanded H latch must
   // clear the restriction, including yaw held outward to sustain the sideslip.
   let firstPositiveStep: number | null = null

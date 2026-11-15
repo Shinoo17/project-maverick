@@ -17,6 +17,7 @@ import type { TargetingState } from '../combat/targeting'
 import type { BotState } from '../bot/botPilot'
 import type { FlightCoreId } from '../flight/core'
 import type { CoreFlightState } from '../flightCore/state'
+import type { ArcadeFlightState } from '../arcadeCore/step'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -74,6 +75,8 @@ export interface AircraftState {
   flightCore?: FlightCoreId
   /** The new core's own state (src/game/flightCore/state.ts); set on aircraft it flies. */
   coreFlight?: CoreFlightState
+  /** The arcade core's own state (src/game/arcadeCore/step.ts); made on its first step. */
+  arcadeFlight?: ArcadeFlightState
 }
 export interface WorldState {
   tick: number

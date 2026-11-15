@@ -88,7 +88,7 @@ Decision ID / วันที่ / ผู้แก้
 - กฎใหม่: Home เป็นหน้าแรก ทุกหน้าเมนูเป็น overlay บน 3D scene เดียว ไม่มี panel; เริ่มเกมจาก Home หรือหน้า setup; โหมดหลักคือ Campaign และ PVE; สไตล์ภาพตาม DESIGN.md ฉบับใหม่ (cyan selection, Barlow)
 - เพิ่ม phase P3b (game shell), P5b (PVE objective modes), P5c (Campaign) โดยไม่เปลี่ยนเลข P0–P7 เดิม เพราะเอกสาร phase, โค้ด และภาพอ้างอิง (`BUILD P3`, `VALUES PENDING P5 TUNING`) อ้างเลขเดิมอยู่ Offline release (P6) ต้องรวมงานเหล่านี้
 - เจ้าของรายละเอียด: [20](20-game-shell.md) หน้าจอและการนำทาง, [21](21-campaign.md) Campaign, [09](09-offline.md) กติกา PVE, [06](06-hangar.md) Hangar/Armament
-- เลข phase ของ Master (P0–P7, P3b, P5b, P5c) แยกจาก Phase ของงาน PSM ใน `docs/legacy-flight/psm-*`
+- เลข phase ของ Master (P0–P7, P3b, P5b, P5c) แยกจาก Phase ของงาน PSM เดิม (เอกสารลบแล้ว 2026-11-16 ดูใน git history)
 
 ## D15 / 27 กันยายน 2026 / PVE เป็นโหมดทีมสามแบบ
 

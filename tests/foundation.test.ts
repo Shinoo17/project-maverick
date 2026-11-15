@@ -4,7 +4,7 @@ import { FixedClock } from '../src/game/runtime/clock'
 import { aircraft, getAircraft } from '../src/content/aircraft'
 import { validateAircraft, validateSession } from '../src/content/validate'
 import { defaultSettings, parseSettings } from '../src/platform/storage'
-import { defaultMouseSettings } from '../src/game/input/mouseStick'
+import { defaultMouseSettings } from '../src/game/control/mouseSettings'
 
 describe('headless foundation', () => {
   it('creates independent entity IDs, even for the same aircraft, and serializes safely', () => {

@@ -21,8 +21,23 @@ export interface RotationInput {
   psmAuthority: number
 }
 
+/** The rate share dynamic pressure allows at `airspeed` (m/s), 0..1. */
+export const controlShare = (airspeed: number, p: CoreProfile) => MathUtils.clamp((airspeed / simulationSpeed(p.controlSpeedKph)) ** 2, 0, 1)
+
 /*
-Rate command (docs/flight-rewrite-plan.md §3.3), one law per axis, every step:
+The body rate full stick asks of each axis (rad/s), before the FBW band: maxRate scaled by
+dynamic pressure, floored by psmRate × psmAuthority. One formula for the core and for the
+mouse aim controller (game/control/controlAircraft.ts), so retuning the core retunes both.
+*/
+export function availableRates(airspeed: number, psmAuthority: number, p: CoreProfile) {
+  const control = controlShare(airspeed, p)
+  const available = {} as AxisSet
+  for (const axis of axisNames) available[axis] = Math.max(p.maxRate[axis] * control, p.psmRate[axis] * psmAuthority) * DEG
+  return { control, available }
+}
+
+/*
+Rate command, one law per axis, every step:
 
   target = pilot (input × available rate, kept inside the FBW band) + weathervane
   rate  += (target − rate)·(1 − e^(−dt/τ)), never faster than maxAccel
@@ -46,9 +61,7 @@ instead of nosing over. Yaw weathervanes at any sideslip.
 */
 export function stepRotation(rates: AxisSet, input: RotationInput, p: CoreProfile, dt: number) {
   const { air, command } = input
-  const control = MathUtils.clamp((air.airspeed / simulationSpeed(p.controlSpeedKph)) ** 2, 0, 1)
-  const available = {} as AxisSet
-  for (const axis of axisNames) available[axis] = Math.max(p.maxRate[axis] * control, p.psmRate[axis] * input.psmAuthority) * DEG
+  const { control, available } = availableRates(air.airspeed, input.psmAuthority, p)
 
   // Pitch band from the alpha limit and the G limit.
   const tauAlpha = 2 * p.tau.pitch, alpha = air.alphaDeg * DEG

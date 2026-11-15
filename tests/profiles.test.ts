@@ -8,7 +8,7 @@ import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import { neutralCommand } from '../src/game/runtime/commands'
 import { runFlightReplay } from '../src/game/playground/replay'
 import { defaultSettings, parseSettings } from '../src/platform/storage'
-import { defaultMouseSettings } from '../src/game/input/mouseStick'
+import { defaultMouseSettings } from '../src/game/control/mouseSettings'
 import { getExhaustProfile } from '../src/render/exhaust/profile'
 import { getVaporProfile } from '../src/render/vapor/profile'
 

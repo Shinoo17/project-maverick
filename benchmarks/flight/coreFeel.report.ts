@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { cornerSpeed, pullResponse, rollResponse, speedEnvelope, sustainedTurn, yawResponse } from './coreFeel'
 import { coreProfileOf } from '../../src/game/flightCore/profile'
 
-// FR1 feel numbers (docs/flight-rewrite-fr1.md). Writes only benchmarks/flight/out/core-feel-fr1.{json,md}.
+// FR1 feel numbers. Writes only benchmarks/flight/out/core-feel-fr1.{json,md}.
 it('reports the rewrite core feel numbers (report only)', () => {
   const ids = ['f22', 'su57']
   const speeds = [60, 80, 100, 120, 140, 160, 180, 200, 220]

@@ -1,7 +1,7 @@
 import { getAircraft } from '../../content/aircraft'
 
 /*
-The rewrite core's aircraft data (docs/flight-rewrite-plan.md §3.8). One flat table per
+The rewrite core's aircraft data. One flat table per
 aircraft, authored in the units the owner tunes in: degrees, seconds and HUD km/h. Every number
 is a placeholder until playtest; none is copied from Ace Combat or a video.
 
