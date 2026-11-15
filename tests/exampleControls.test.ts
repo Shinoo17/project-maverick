@@ -209,7 +209,8 @@ describe('saved settings', () => {
 
   it('reads an old mouse save as the defaults plus what still applies', () => {
     expect(parseMouseSettings({ mode: 'stick', frame: 'horizon', xAxis: 'yaw', sensitivity: 1.5, invertPitch: true, aimAssist: 'strong' }))
-      .toEqual({ sensitivity: 1.5, invertPitch: true, aimLimit: 'limited', aimAssist: 'strong' })
+      .toEqual({ sensitivity: 1.5, invertPitch: true, aimMode: 'world', aimLimit: 'limited', aimAssist: 'strong' })
+    expect(parseMouseSettings({ aimMode: 'screen' }).aimMode).toBe('screen')
     expect(parseMouseSettings({ aimLimit: 'free' }).aimLimit).toBe('free')
   })
 

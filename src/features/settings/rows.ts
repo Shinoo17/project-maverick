@@ -14,7 +14,7 @@ import {
 import { defaultAudioSettings, volumeRange, type VolumeChannel } from '../../render/audio/audioSettings'
 import { cameraFovRange, cameraModeOption, cameraModeOptions, defaultCameraSettings } from '../../game/camera/cameraSettings'
 import { defaultKeyboardSettings, sameBindings, type KeyboardSettings } from '../../game/input/keyBindings'
-import { aimLimits, defaultMouseSettings, type AimLimit } from '../../game/control/mouseSettings'
+import { aimLimits, aimModes, defaultMouseSettings, type AimLimit, type AimMode } from '../../game/control/mouseSettings'
 import { aimAssistLevels, type AimAssistLevel } from '../../game/combat/aimAssist'
 import type { Translation } from '../../locales/en'
 import { defaultDisplaySettings, uiScaleRange, type Settings } from '../../platform/storage'
@@ -100,6 +100,9 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
             value: m.aimAssist, modified: m.aimAssist !== dm.aimAssist, set: level => selectControls({ aimAssist: level as AimAssistLevel }), reset: () => selectControls({ aimAssist: dm.aimAssist }) }),
         ] },
         { title: t('settingsSectionMouse'), rows: [
+          choice({ id: 'aimMode', label: t('aimMode'), detail: t('settingsAimModeDetail'), disabled: mouseOff,
+            options: aimModes.map(mode => ({ value: mode, label: t(`aimMode_${mode}` as const) })),
+            value: m.aimMode, modified: m.aimMode !== dm.aimMode, set: mode => selectControls({ aimMode: mode as AimMode }), reset: () => selectControls({ aimMode: dm.aimMode }) }),
           choice({ id: 'aimLimit', label: t('aimLimit'), detail: t('settingsAimLimitDetail'), disabled: mouseOff,
             options: aimLimits.map(limit => ({ value: limit, label: t(`aimLimit_${limit}` as const) })),
             value: m.aimLimit, modified: m.aimLimit !== dm.aimLimit, set: limit => selectControls({ aimLimit: limit as AimLimit }), reset: () => selectControls({ aimLimit: dm.aimLimit }) }),

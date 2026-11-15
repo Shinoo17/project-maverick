@@ -133,7 +133,7 @@ export interface GlassState {
   seeker: LockMarks | null
   /** Mouse aim: where the instructor is flying the nose (a world direction), or in cursor mode
    * the held × as pixels from the middle of the frame; and its share (fades the world cursor). */
-  aim: { direction: Vec3Like; share: number; /** The gun lock (game/combat/gunLock.ts): ring fill 0..1, and whether it holds. */ lock?: { progress: number; locked: boolean } } | null
+  aim: ({ direction: Vec3Like } | { /** Screen steering: the held × in pixels from the middle of the frame. */ screen: { x: number; y: number } }) & { share: number; /** The gun lock (game/combat/gunLock.ts): ring fill 0..1, and whether it holds. */ lock?: { progress: number; locked: boolean } } | null
   /** Radar contacts by world bearing (degrees, the heading's convention), for the heading tape. */
   contacts: { bearing: number; painted: boolean; locked: boolean }[]
 }
@@ -484,7 +484,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   // instructor hands over to the stick in post-stall, where it no longer flies the nose.
   function drawAimCursor(aim: NonNullable<GlassState['aim']>, state: GlassState, camera: Camera) {
     if (aim.share <= 0.02) return
-    const point = projectVelocityMarker(camera, state.position, aim.direction, width, height, 24)
+    const point = 'screen' in aim ? { x: layout.cx + aim.screen.x, y: layout.cy + aim.screen.y, onScreen: true } : projectVelocityMarker(camera, state.position, aim.direction, width, height, 24)
     if (!point || !point.onScreen) return
     // The same lock colour as the lead marker, so the hand knows the gun has it.
     const lock = state.gunnery && state.gunnery.lock !== 'free' ? HUD_LOCK[state.gunnery.lock] : null

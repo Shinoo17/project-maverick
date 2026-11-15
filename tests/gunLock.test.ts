@@ -6,13 +6,13 @@ import { readFlight } from '../src/game/flight/readout'
 import { FlightInput } from '../src/game/input/FlightInput'
 import { GameRuntime } from '../src/game/runtime/GameRuntime'
 import type { AircraftState } from '../src/game/state/WorldState'
-import { gunMountOf, solveGun } from '../src/game/combat/gunSolution'
-import { createGunLock, gunLockTuning, stepGunLock, type GunLockState } from '../src/game/combat/gunLock'
+import { gunLine, gunMountOf, solveGun } from '../src/game/combat/gunSolution'
+import { createGunLock, gunLockTuning, stepGunLock, trackGoal, type GunLockState } from '../src/game/combat/gunLock'
 import type { AimAssistLevel } from '../src/game/combat/aimAssist'
 
 /*
 Gun lock (src/game/combat/gunLock.ts): the cursor held on the target charges a ring, a full
-ring locks the cursor onto the lead, a flick of the mouse breaks it.
+ring locks the cursor onto the lead, dragging the cursor off it lets go.
 */
 const mount = gunMountOf('f22')
 const DT = 1 / 120
@@ -29,29 +29,31 @@ function leadOf(shooter: AircraftState, target: AircraftState) {
   const solution = solveGun(shooter, mount, target)!
   return new Vector3(solution.aim.x, solution.aim.y, solution.aim.z).normalize().applyAxisAngle(new Vector3(0, 0, 1), -mount.elevationDeg * Math.PI / 180)
 }
-function run(lock: GunLockState, seconds: number, frame: { shooter: AircraftState; target: AircraftState | null; aim: Vector3; level?: AimAssistLevel; hand?: number }) {
+/** `drag`: degrees a second the hand turns the aim (about world up) before each frame. */
+function run(lock: GunLockState, seconds: number, frame: { shooter: AircraftState; target: AircraftState | null; aim: Vector3; level?: AimAssistLevel; drag?: number }) {
   const steps = Math.round(seconds / DT), aims: Vector3[] = []
   for (let i = 0; i < steps; i++) {
-    stepGunLock(lock, { level: frame.level ?? 'standard', shooter: frame.shooter, target: frame.target, mount, aim: frame.aim, dt: DT, handDeg: frame.hand ?? 0 })
+    if (frame.drag) frame.aim.applyAxisAngle(new Vector3(0, 1, 0), frame.drag * DT * Math.PI / 180)
+    stepGunLock(lock, { level: frame.level ?? 'standard', shooter: frame.shooter, target: frame.target, mount, aim: frame.aim, dt: DT })
     aims.push(frame.aim.clone())
   }
   return aims
 }
 
 describe('gun lock', () => {
-  it('charges over 1.5 s with the cursor on the target, then locks', () => {
+  it('charges over 1 s with the cursor on the target, then locks', () => {
     const { shooter, target } = scene(), lock = createGunLock(), aim = toward(shooter, target)
-    run(lock, 0.75, { shooter, target, aim })
+    run(lock, 0.5, { shooter, target, aim })
     expect(lock.progress).toBeCloseTo(0.5, 1)
     expect(lock.locked).toBe(false)
-    run(lock, 0.8, { shooter, target, aim })
+    run(lock, 0.55, { shooter, target, aim })
     expect(lock.locked).toBe(true)
   })
 
   it('charges faster on strong, and never on off', () => {
     const { shooter, target } = scene()
     const strong = createGunLock()
-    run(strong, 1.05, { shooter, target, aim: toward(shooter, target), level: 'strong' })
+    run(strong, 0.75, { shooter, target, aim: toward(shooter, target), level: 'strong' })
     expect(strong.locked).toBe(true)
     const off = createGunLock()
     run(off, 3, { shooter, target, aim: toward(shooter, target), level: 'off' })
@@ -68,30 +70,40 @@ describe('gun lock', () => {
     expect(lock.progress).toBeLessThan(charged)
   })
 
-  it('locked, glides the cursor onto the lead without a jump and holds it there', () => {
+  it('locked, eases the cursor onto the lead from rest to rest and holds it there', () => {
     const { shooter, target } = scene(), lock = createGunLock(), aim = toward(shooter, target)
-    run(lock, 1.5, { shooter, target, aim })
-    const lead = leadOf(shooter, target)
-    expect(aim.angleTo(lead) * 180 / Math.PI).toBeGreaterThan(3)
+    const lead = leadOf(shooter, target), start = aim.angleTo(lead) * 180 / Math.PI
+    while (!lock.locked) run(lock, DT, { shooter, target, aim })
+    // The ring filling drew the cursor part of the way, gently: it is not on the lead yet.
+    const gap = aim.angleTo(lead) * 180 / Math.PI
+    expect(gap).toBeLessThan(start * 0.6)
+    expect(gap).toBeGreaterThan(1)
     const aims = run(lock, 1, { shooter, target, aim })
-    let worst = 0
-    for (let i = 1; i < aims.length; i++) worst = Math.max(worst, aims[i].angleTo(aims[i - 1]) * 180 / Math.PI)
-    expect(worst).toBeLessThanOrEqual(gunLockTuning.followMaxDeg * DT + 1e-6)
+    const speeds = aims.slice(1).map((a, i) => a.angleTo(aims[i]) * 180 / Math.PI / DT)
+    // No jump: it starts from rest, and never moves faster than a smooth glide of that length.
+    expect(speeds[0]).toBeLessThan(2)
+    expect(Math.max(...speeds)).toBeLessThan(gap / gunLockTuning.settleSeconds[0] * 1.6)
     expect(aim.angleTo(lead) * 180 / Math.PI).toBeLessThan(0.05)
     expect(lock.locked).toBe(true)
   })
 
-  it('ignores small hand motion, breaks on a hard flick', () => {
+  it('springs back from a small nudge, lets go when the cursor is dragged off the lead', () => {
     const { shooter, target } = scene(), lock = createGunLock(), aim = toward(shooter, target)
-    run(lock, 1.6, { shooter, target, aim })
-    // A steady hand: 4°/s of drift.
-    run(lock, 1, { shooter, target, aim, hand: 4 * DT })
+    run(lock, 3, { shooter, target, aim })
+    // A nudge: 1.5° in a tenth of a second, then hands off.
+    run(lock, 0.1, { shooter, target, aim, drag: 15 })
     expect(lock.locked).toBe(true)
-    // A flick: 12° in a tenth of a second.
-    run(lock, 0.1, { shooter, target, aim, hand: 12 / 12 })
+    run(lock, 1.5, { shooter, target, aim })
+    expect(aim.angleTo(leadOf(shooter, target)) * 180 / Math.PI).toBeLessThan(0.05)
+    // A slow drift never lets go; a plain drag does, within a third of a second, the cursor left where the hand put it.
+    run(lock, 2, { shooter, target, aim, drag: 6 })
+    expect(lock.locked).toBe(true)
+    run(lock, 0.35, { shooter, target, aim, drag: 20 })
     expect(lock.locked).toBe(false)
-    // The ring starts again from empty: a re-lock takes the whole dwell.
-    expect(lock.progress).toBeLessThan(0.1)
+    expect(aim.angleTo(leadOf(shooter, target)) * 180 / Math.PI).toBeGreaterThan(2.5)
+    // The ring starts again from empty, after a wait: the cursor resting near the target does not lock straight back.
+    run(lock, 0.5, { shooter, target, aim })
+    expect(lock.progress).toBe(0)
   })
 
   it('does not charge out of gun reach, and lets go when the target dies or changes', () => {
@@ -132,6 +144,33 @@ describe('gun lock magnet (arcade core)', () => {
     // The path came round with the nose: no sideways slide left over.
     expect(readFlight(s).incidenceDeg).toBeLessThan(5)
     expect(bank).toBeLessThan(5)
+  })
+
+  it('holds the gun line on a target crossing from the side and shoots it down', () => {
+    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: ['f22'], targetDrone: 'bot', flightCore: 'arcade' })
+    runtime.start()
+    // The bot 400 m ahead, flying across the nose at 230 m/s.
+    const world = (runtime as unknown as { world: { aircraft: AircraftState[] } }).world, me = world.aircraft[0], bot = world.aircraft[1]
+    const across = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI / 2)
+    Object.assign(bot, { position: { x: me.position.x + 400, y: me.position.y, z: -150 }, velocity: { x: 0, y: 0, z: 230 }, orientation: { x: across.x, y: across.y, z: across.z, w: across.w }, arcadeFlight: undefined })
+    const lock = createGunLock()
+    lock.locked = true
+    let worst = 0
+    for (let i = 0; i < 150 && runtime.snapshot().aircraft[1].alive; i++) runtime.advance(1 / 60, (tick, id) => {
+      const s = runtime.snapshot(), shooter = s.aircraft[0], target = s.aircraft[1]
+      const command = neutralCommand(tick, id)
+      if (!target.alive) return command
+      command.gunTrack = trackGoal(lock, shooter, target, mount, 1 / 60) ?? undefined
+      // Once the pull is in and the nose has come round, the gun line stays on the solution.
+      if (i >= 50) {
+        const line = gunLine(shooter.orientation, mount.elevationDeg), aim = solveGun(shooter, mount, target)!.aim
+        worst = Math.max(worst, new Vector3(line.x, line.y, line.z).angleTo(new Vector3(aim.x, aim.y, aim.z)) * 180 / Math.PI)
+        command.gunHeld = true
+      }
+      return command
+    })
+    expect(worst).toBeLessThan(0.4)
+    expect(runtime.snapshot().aircraft[1].alive).toBe(false)
   })
 
   it('keeps the aim controller off the stick while tracking; held keys still fly', () => {

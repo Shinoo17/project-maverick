@@ -31,7 +31,7 @@ Ground and the training boundary end the flight as in the other cores.
 
 One addition of this project's: the gun lock's magnet. While the command carries gunTrack
 (game/combat/gunLock.ts) each sub-step draws the nose, and the flight path with it, toward it
-(config GUN_TRACK).
+(config GUN_TRACK), no faster than the jet's own pitch rate there.
 */
 export interface ArcadeFlightState {
   model: ArcadeModelData
@@ -110,7 +110,7 @@ export function stepArcadeFlight(state: AircraftState, command: PilotCommand, dt
   }
 }
 
-const goal = new Vector3(), nose = new Vector3(), axis = new Vector3(), pull = new Quaternion()
+const goal = new Vector3(), nose = new Vector3(), axis = new Vector3(), pull = new Quaternion(), limits = new Vector3()
 /** The gun lock's magnet (config GUN_TRACK): turns the nose, and the path with it, toward `track`. */
 function magnet(track: { x: number; y: number; z: number }, h: number) {
   goal.set(track.x, track.y, track.z)
@@ -122,7 +122,9 @@ function magnet(track: { x: number; y: number; z: number }, h: number) {
   axis.crossVectors(nose, goal)
   if (axis.lengthSq() < 1e-14) return
   axis.normalize()
-  const step = Math.min(angle * (1 - Math.exp(-GUN_TRACK.rate * h)), GUN_TRACK.maxRateDeg * DEG2RAD * h)
+  // No faster than the jet can turn itself: its pitch rate now (authority at this speed, the G limit).
+  const most = Math.min(GUN_TRACK.maxRateDeg * DEG2RAD, fm.rateLimits(limits).x)
+  const step = Math.min(angle * (1 - Math.exp(-GUN_TRACK.rate * h)), most * h)
   fm.quaternion.premultiply(pull.setFromAxisAngle(axis, step)).normalize()
   fm.velocity.applyAxisAngle(axis, step * GUN_TRACK.pathShare)
 }

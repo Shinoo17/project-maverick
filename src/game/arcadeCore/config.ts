@@ -371,7 +371,8 @@ export interface PsmProfile {
 /**
  * Gun lock magnet (this project's, not the example's; game/combat/gunLock.ts). While the
  * command carries `gunTrack`, each step turns the nose toward it by `rate` of the angle a second,
- * never faster than `maxRateDeg`, and the flight path with it by `pathShare` of that turn, so
+ * never faster than `maxRateDeg` nor than the jet's own pitch rate at that moment
+ * (FlightModel.rateLimits: authority by speed, the G limit), and the flight path with it by `pathShare` of that turn, so
  * the jet goes where the nose is drawn instead of sliding sideways or stalling. Arcade: the turn
  * costs no energy and pulls no G.
  */

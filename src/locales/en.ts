@@ -419,6 +419,8 @@ export const en = {
   cameraModeHorizonDetail: "Heading and pitch on a level horizon, with a little of the bank, so the horizon stays mostly level.",
   cameraModeAim: "Aim lock",
   cameraModeAimDetail: "Like Horizon lock, but looking along the mouse aim blended with the flight path, so the view leads into the turn.",
+  aimMode: "Mouse steering", aimMode_world: "Aim point (world)", aimMode_screen: "Screen position",
+  settingsAimModeDetail: "Aim point: the mouse moves a point in the world; the jet flies to it and stops turning. Screen position: the × stays where you leave it on the screen and the gun reticle is flown under it; held off the reticle the jet keeps turning that way, the further the harder, until you bring it back.",
   aimLimit: "Aim range", aimLimit_limited: "Limited (65° from the nose)", aimLimit_free: "Free (anywhere)",
   settingsAimLimitDetail: "Limited keeps the aim within 65° of the nose. Free lets you drag it anywhere, even behind; the jet turns as fast as its rates allow. G switches in flight.",
   mouseHintArcade: "Move the mouse to put the aim where you want to go; the jet turns its nose onto it by itself, banking for big turns. Arrow keys, A/D and Q/E take over their axis while held and hand it back on release. Hold Space for PSM: the mouse becomes a stick over the whole screen (up = pull, centre = hold, down = back to the flight path).",

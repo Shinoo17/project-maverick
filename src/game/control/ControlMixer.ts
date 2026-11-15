@@ -40,6 +40,12 @@ export type AimLimit = typeof MOUSE.aimLimit;
 export class ControlMixer implements ControlState {
   readonly aim = new MouseAim();
   readonly autopilot = new AimController();
+  /**
+   * This project's (not in the example): when set, it flies the aim in place of `autopilot`
+   * outside the PSM direct regime (game/control/Instructor.ts, set by FlightInput). Called once
+   * per step with `dt`; returns pitch, roll and yaw, −1..1.
+   */
+  instructor: ((dt: number) => { pitch: number; roll: number; yaw: number }) | null = null;
   mode: InputMode = 'mouse';
   /** `limited` keeps the aim within `MOUSE.coneDeg` of the nose; `free` lets it go anywhere. */
   aimLimit: AimLimit = MOUSE.aimLimit;
@@ -174,6 +180,14 @@ export class ControlMixer implements ControlState {
     let apPitch = ap.pitch;
     let apRoll = ap.roll;
     let apYaw = ap.yaw;
+    if (this.instructor) {
+      // The example's controller keeps its PSM direct regime; the instructor has everything else.
+      const flown = this.instructor(dt);
+      const w = this.psmWeight;
+      apPitch = flown.pitch + (apPitch - flown.pitch) * w;
+      apRoll = flown.roll + (apRoll - flown.roll) * w;
+      apYaw = flown.yaw + (apYaw - flown.yaw) * w;
+    }
     if (this.stick.active) {
       // Virtual stick: dead zone at centre, then a curve for fine control near it.
       apPitch = shapeStick(this.stick.y);

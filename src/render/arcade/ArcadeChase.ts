@@ -12,8 +12,8 @@ export const CAMERA_MODE_LABEL: Record<CameraMode, string> = {
   aim: 'Aim lock',
 };
 
-/** How fast Aim lock settles onto a gun lock and back off it (1/s): most of the way in a third of a second. */
-const GUN_LOCK_VIEW_RATE = 8;
+/** How fast Aim lock settles onto a gun lock and back off it (1/s): most of the way in a second. At 8 the view snapped level. */
+const GUN_LOCK_VIEW_RATE = 3;
 
 export interface ChaseTarget {
   position: THREE.Vector3;
