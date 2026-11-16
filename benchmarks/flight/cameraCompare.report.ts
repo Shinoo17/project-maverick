@@ -107,7 +107,7 @@ function film(rigName: string, view: CameraSettings, frames: AircraftState[]) {
     const l = v(frame.look), u = v(frame.up), level = new Vector3(0, 1, 0).addScaledVector(l, -l.y)
     if (level.lengthSq() > 1e-6 && Math.hypot(l.x, l.z) > 0.35) tilt.push(u.angleTo(level.normalize()) / DEG)
   }
-  const blend = trace.frames.map(frame => frame.rig === 'legacy' ? frame.blend.handover : frame.blend.drift)
+  const blend = trace.frames.map(frame => frame.rig === 'legacy' ? frame.blend.handover : frame.rig === 'chase' ? frame.blend.drift : frame.blend.psmShare)
   return {
     trace,
     metrics: {

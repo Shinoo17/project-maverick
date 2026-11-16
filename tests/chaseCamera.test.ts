@@ -313,7 +313,7 @@ describe('ChaseCamera', () => {
       if (frame.rig !== 'chase') continue
       for (const key of ['drift', 'levelShare', 'aimShare', 'gunZoom'] as const) { expect(frame.blend[key]).toBeGreaterThanOrEqual(0); expect(frame.blend[key]).toBeLessThanOrEqual(1) }
     }
-    expect(JSON.parse(JSON.stringify(trace)).version).toBe(2)
+    expect(JSON.parse(JSON.stringify(trace)).version).toBe(3)
   })
 
   it('rolls back to level the short way after Aircraft locked, however many rolls came before', () => {

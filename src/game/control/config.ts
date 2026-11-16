@@ -187,6 +187,64 @@ export const CAMERA = {
   /** Upper bound on camera rotation speed (deg/s) in horizon / aim lock: a flick of the aim is a quick pan, not a cut. */
   maxTurnRateDeg: 200,
   /**
+   * Camera plan C1 (2026-11-17, owner: "too fast, hard to aim, dizzy"): the view turns on a
+   * second-order spring, not the exponential follow above, so a pan starts and stops smoothly
+   * instead of jumping to full speed (the old Aim lock flick: 200°/s reached in one frame,
+   * ~12 000°/s²). Per mode:
+   *   - `omega` (rad/s), `damping`: the spring toward the mode's target view;
+   *   - `lagShare` 0..1: how much of the target's own turn rate the camera does NOT feed forward.
+   *     In a steady turn the view trails the target by 2·damping·lagShare·rate / omega. With
+   *     `boomRate` 0 that only delays the view; the jet keeps its place. 0 = no trailing;
+   *   - `maxRateDeg` / `maxAccelDeg`: the turn of the look direction (deg/s, deg/s²);
+   *   - `maxRollRateDeg` / `maxRollAccelDeg`: the same for the roll about the look direction,
+   *     which makes people sick sooner than any pan;
+   *   - `deadZone` (C2): while the look target is within this box round the centre of the
+   *     picture (fractions of the half-screen, x across, y up and down) the view is not pulled
+   *     at all and the target's turn is not fed forward: it coasts to a stop and holds still
+   *     while the reticle and the jet move on screen. Past the box the spring pulls only by
+   *     how far the target is beyond it (soft zone), so there is no step at the edge. A gun
+   *     lock shrinks the box to nothing, so the view settles on the lead;
+   *   - `leashDeg`: last resort, never further than this off the target (the screen boxes of
+   *     `composer` are the real edge).
+   * `composer` (C2): hard limits on screen, after the spring, in every mode. The reticle (the
+   * mouse aim) is kept inside `reticleBox`, and then the jet inside `jetBox` (fractions of the
+   * half-screen; the jet wins when both cannot fit). Only reaching an edge turns the view at the
+   * subject's own speed; inside, the caps above hold. Past a box the view is pulled back on a
+   * spring of its own (`edgeOmega` rad/s, at most `edgeMaxAccelDeg` deg/s² and, while it pulls,
+   * up to `edgeMaxRateDeg` deg/s), so a subject that jumps out is brought back smoothly; past
+   * `screenEdge` (fraction of the half-screen) it is turned back at once.
+   * The RECOVERY lead (psmPath.leadMaxRateDeg) still lifts `maxRateDeg`. The wreck view keeps the
+   * old exponential follow. `enabled: false` = the old follow in every mode.
+   */
+  motion: {
+    enabled: true,
+    /** Longest spring step (s): a long frame is cut into steps this long. */
+    substep: 1 / 120,
+    /**
+     * 0 = the camera's place round the jet turns with its look, so the jet holds its place in the
+     * picture. Above 0 the place follows the target on its own at this rate (1/s) and the gap to
+     * the look slides the jet toward the side it turns to ("Lag" framing). Flown at 30 it made
+     * the game worse (owner, 2026-11-17: dizzier than before): the jet, the thing the eye rests
+     * on, darted across the screen at 1.4 half-screens/s on a flick, against 0.5 before the plan
+     * and 0.16 at 0 (tests/cameraLoop.test.ts).
+     */
+    boomRate: 0,
+    aircraft: { omega: 9, damping: 1, lagShare: 0.25, maxRateDeg: 220, maxAccelDeg: 1400, maxRollRateDeg: 320, maxRollAccelDeg: 2000, deadZone: { x: 0.03, y: 0.03 }, leashDeg: 40 },
+    horizon: { omega: 5, damping: 1, lagShare: 0.55, maxRateDeg: 120, maxAccelDeg: 420, maxRollRateDeg: 45, maxRollAccelDeg: 180, deadZone: { x: 0.07, y: 0.06 }, leashDeg: 40 },
+    aim: { omega: 4.5, damping: 1, lagShare: 0.55, maxRateDeg: 110, maxAccelDeg: 360, maxRollRateDeg: 40, maxRollAccelDeg: 160, deadZone: { x: 0.1, y: 0.08 }, leashDeg: 40 },
+    composer: {
+      enabled: true,
+      edgeOmega: 9,
+      edgeMaxAccelDeg: 900,
+      edgeMaxRateDeg: 240,
+      screenEdge: 0.92,
+      /** Wide: at 0.6 a plain pull up already reached it and the edge spring kicked the view (437°/s² against 137). */
+      reticleBox: { x: 0.8, up: 0.8, down: 0.8 },
+      /** The jet rests about 0.41 below the centre: more room down than up. */
+      jetBox: { x: 0.7, up: 0.3, down: 0.85 },
+    },
+  },
+  /**
    * Horizon lock still banks with the aircraft for life: peak tilt (deg) at
    * 90° bank, easing back to level when inverted so a full roll never flips.
    */

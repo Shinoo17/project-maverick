@@ -6,6 +6,7 @@ import { toExampleFrame } from '../game/control/controlAircraft'
 import { ArcadeChase, CHASE_JET_LENGTH } from './arcade/ArcadeChase'
 import { visibility } from './targetVisibility'
 import type { CameraTrace } from './cameraTrace'
+import { CameraMotionMeter } from './arcade/cameraMotion'
 import type { CameraRig } from './cameraRig'
 
 /*
@@ -24,6 +25,7 @@ shake. This class only adapts it to the flight scene's CameraRig:
   the FOV is the example's own, and the gun zoom narrows it as the other rigs do.
 - The chase offsets are scaled to the airframe's length from the model's bounds.
 - The wreck view is the example's crash view, taken whenever the jet is no longer alive.
+- With a trace attached (Flight Lab), each frame records the picture's motion (camera plan C0).
 
 The camera only reads: it never writes the state or the aim it is given.
 */
@@ -52,12 +54,13 @@ export class ArcadeCamera implements CameraRig {
   private readonly position = new Vector3()
   private readonly size = new Vector3()
   private readonly recovery = new Vector3()
+  private readonly meter = new CameraMotionMeter()
 
   get lookingAway() { return this.rig.lookingAway }
   /** The example camera itself, for tests and the debug overlay. */
   get arcade() { return this.rig }
 
-  reset() { this.rig.snap(); this.burner = 0; this.zoom = 0 }
+  reset() { this.rig.snap(); this.burner = 0; this.zoom = 0; this.meter.reset() }
 
   update(camera: PerspectiveCamera, state: AircraftState, view: CameraSettings, dt: number, _reducedMotion = false, bounds?: Box3) {
     const rig = this.rig
@@ -81,6 +84,8 @@ export class ArcadeCamera implements CameraRig {
     if (arcade) this.burner = arcade.afterburner
     else this.burner += ((flight.burner.active ? 1 : 0) - this.burner) * (1 - Math.exp(-3.5 * dt))
     const fcsMode = arcade?.fcs.mode ?? (this.psm ? 'PSM' : 'NORMAL')
+    // The screen boxes of the camera's composer are in the picture as drawn: the base FOV setting and the gun zoom (last frame's).
+    rig.fovScale = this.baseFov / cameraFovRange.default * (1 - visibility.zoom * this.zoom)
     rig.update({
       position: this.position.set(state.position.x, state.position.y, state.position.z),
       quaternion: this.quaternion,
@@ -103,5 +108,17 @@ export class ArcadeCamera implements CameraRig {
     const fov = rig.camera.fov * this.baseFov / cameraFovRange.default * (1 - visibility.zoom * this.zoom)
     if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix() }
     this.chase.copy(rig.steady.quaternion)
+    if (this.trace) this.recordTrace(this.trace, camera, view, state, flight, dt)
+  }
+
+  private recordTrace(trace: CameraTrace, camera: PerspectiveCamera, view: CameraSettings, state: AircraftState, flight: ReturnType<typeof readFlight>, dt: number) {
+    const motion = this.meter.sample(camera.quaternion, camera.fov, dt)
+    const v = (x: Vector3): [number, number, number] => [x.x, x.y, x.z]
+    const steady = this.rig.steady
+    trace.record({ rig: 'arcade', dt, style: view.mode,
+      position: v(camera.position), look: v(new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)), up: v(new Vector3(0, 1, 0).applyQuaternion(camera.quaternion)), fov: camera.fov,
+      chase: { look: v(new Vector3(0, 0, -1).applyQuaternion(steady.quaternion)), up: v(new Vector3(0, 1, 0).applyQuaternion(steady.quaternion)), boom: v(camera.position.clone().sub(state.position as Vector3)) },
+      flight: { alphaDeg: flight.alphaDeg, betaDeg: flight.betaDeg, incidenceDeg: flight.incidenceDeg, confidence: flight.angleConfidence, airspeed: flight.airspeed, rates: { ...state.rates } },
+      blend: { ...motion, ...this.rig.followState, gunZoom: this.zoom, lookingAway: this.lookingAway } })
   }
 }

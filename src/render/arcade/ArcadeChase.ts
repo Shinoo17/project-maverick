@@ -140,6 +140,9 @@ export class ArcadeChase {
   private lookYaw = 0;
   private lookPitch = 0;
   private readonly view = new THREE.Quaternion();
+  /** Where the camera sits round the jet (`CAMERA.motion.boomRate`); the rig is where it looks. */
+  private readonly boom = new THREE.Quaternion();
+  private readonly place = new THREE.Quaternion();
   private readonly _lq = new THREE.Quaternion();
   private readonly _q = new THREE.Quaternion();
   private readonly _v = new THREE.Vector3();
@@ -209,6 +212,23 @@ export class ArcadeChase {
   private tilt: number | null = null;
   /** Look direction of the last update, for the view's turn rate. */
   private readonly lastLook = new THREE.Vector3(0, 0, 1);
+  /** The rig's angular velocity (rad/s, world) and its target's, smoothed (`CAMERA.motion`). */
+  private readonly spin = new THREE.Vector3();
+  private readonly targetSpin = new THREE.Vector3();
+  /** The follow target of the last update, for its turn rate. */
+  private readonly lastTarget = new THREE.Quaternion();
+  private readonly _fa = new THREE.Quaternion();
+  private readonly _fb = new THREE.Quaternion();
+  private readonly _fe = new THREE.Vector3();
+  private readonly _fv = new THREE.Vector3();
+  private readonly _fl = new THREE.Vector3();
+  private readonly _fr = new THREE.Vector3();
+  private readonly _fg = new THREE.Vector3();
+  /** Scratch of the screen boxes alone: they run inside the follow, which has its own. */
+  private readonly _ka = new THREE.Quaternion();
+  private readonly _kb = new THREE.Quaternion();
+  private readonly _kv = new THREE.Vector3();
+  private readonly _kd = new THREE.Vector3();
   private readonly _l = new THREE.Vector3();
   private readonly _c = new THREE.Vector3();
 
@@ -222,6 +242,9 @@ export class ArcadeChase {
     this.camera = new THREE.PerspectiveCamera(CAMERA.fovBase, aspect, CAMERA.near, CAMERA.far);
     this.steady = new SteadyCamera(CAMERA.fovBase, aspect, CAMERA.near, CAMERA.far);
   }
+
+  /** The drawn FOV over this camera's own (set from outside: base FOV setting, gun zoom), for the screen boxes of `CAMERA.motion`. */
+  fovScale = 1;
 
   /** Scale the chase distance to the aircraft (configured for ~19 m jets). */
   sizeScale = 1;
@@ -249,6 +272,12 @@ export class ArcadeChase {
     if (!active) return;
     this.lookYaw = wrapPi(yaw);
     this.lookPitch = pitch;
+  }
+
+  /** For the camera trace (`CAMERA.motion`): how far the look trails its last target, how far the camera's place is from the look (deg), the σ blend and the gun lock share. */
+  get followState() {
+    const deg = THREE.MathUtils.radToDeg;
+    return { lagDeg: deg(this.rig.angleTo(this.lastTarget)), offCentreDeg: deg(this.rig.angleTo(this.boom)), psmShare: this.shown, lockShare: this.lockShare };
   }
 
   /** True while the view is turned off the chase shot, including while it eases back. */
@@ -307,10 +336,25 @@ export class ArcadeChase {
 
     if (this.needsSnap) {
       this.rig.copy(target);
+      this.boom.copy(target);
       this.distance = wantDist;
       this.offset.set(0, CAMERA.height * this.sizeScale, -wantDist).applyQuaternion(this.rig);
       this.needsSnap = false;
+      this.spin.set(0, 0, 0);
+      this.targetSpin.set(0, 0, 0);
+      this.lastTarget.copy(target);
+    } else if (CAMERA.motion.enabled && !t.crashed) {
+      // The camera's place follows the target quicker than its look: the gap between them moves
+      // the jet off the centre of the picture, and the place only ever moves, never turns the view.
+      if (CAMERA.motion.boomRate > 0) this.boom.slerp(target, 1 - Math.exp(-CAMERA.motion.boomRate * dt));
+      this.follow(target, CAMERA.motion[this.mode], dt, t);
+      if (CAMERA.motion.composer.enabled) this.screenBoxes(t, this._fe, true);
+      if (!(CAMERA.motion.boomRate > 0)) this.boom.copy(this.rig);
+      this.distance += (wantDist - this.distance) * (1 - Math.exp(-CAMERA.distanceRate * dt));
     } else {
+      this.spin.set(0, 0, 0);
+      this.targetSpin.set(0, 0, 0);
+      this.lastTarget.copy(target);
       // Exponential follow, but never faster than maxTurnRate, so a fast
       // flick of the aim is a quick pan and not a cut.
       let k = 1 - Math.exp(-rate * dt);
@@ -320,6 +364,7 @@ export class ArcadeChase {
       const maxStep = THREE.MathUtils.degToRad(cap) * dt;
       if (limitTurn && angle * k > maxStep) k = maxStep / angle;
       this.rig.slerp(target, k);
+      this.boom.copy(this.rig);
       this.distance += (wantDist - this.distance) * (1 - Math.exp(-(t.crashed ? 1.2 : CAMERA.distanceRate) * dt));
     }
     // Aircraft lock (and the wreck view) have no up of their own: keep it on
@@ -333,12 +378,16 @@ export class ArcadeChase {
       this.lookPitch = Math.abs(this.lookPitch) < 1e-4 ? 0 : this.lookPitch * back;
     }
     const view = this.view.copy(this.rig);
+    const place = this.place.copy(this.boom);
     if (this.lookYaw !== 0 || this.lookPitch !== 0) {
       view.multiply(this._lq.setFromAxisAngle(BODY_UP, this.lookYaw));
       view.multiply(this._lq.setFromAxisAngle(BODY_LEFT, this.lookPitch));
+      place.multiply(this._lq.setFromAxisAngle(BODY_UP, this.lookYaw));
+      place.multiply(this._lq.setFromAxisAngle(BODY_LEFT, this.lookPitch));
     }
 
-    // The spring offsets are along the view's own axes: the jet moves in the frame, the view does not turn.
+    // The spring offsets are along the camera place's axes (the view's, but for the lag of
+    // `CAMERA.motion`): the jet moves in the frame, the view does not turn.
     // Post-stall the camera backs off, at the height that puts the tail of a
     // jet standing at right angles to the view on `psmFrame.tail` of the way
     // down the picture, at the FOV its speed gives.
@@ -354,7 +403,7 @@ export class ArcadeChase {
         (CAMERA.height + (stand - CAMERA.height) * w + this.heave.x + this.dip.x) * this.sizeScale,
         -this.distance - (this.surge.x + F.back * w) * this.sizeScale,
       )
-      .applyQuaternion(view);
+      .applyQuaternion(place);
     this.offset.lerp(desired, 1 - Math.exp(-CAMERA.positionRate * dt));
 
     const cam = this.camera;
@@ -507,6 +556,120 @@ export class ArcadeChase {
       shake = softLimit(shake * K.amount, 0, K.maxDeg);
     }
     this.shakeDeg += (shake - this.shakeDeg) * (1 - Math.exp(-K.rate * dt));
+  }
+
+  /**
+   * One frame of the view's turn toward `target` (camera plan C1, `CAMERA.motion`): a spring on
+   * the rig's angular velocity, the look turn and the roll about the look each held to their own
+   * rate and acceleration caps, then a leash that never lets the view fall further behind than
+   * `leashDeg`. The target's own turn rate is fed forward, less `lagShare`, so a steady turn is
+   * trailed by a steady angle instead of a growing one.
+   */
+  private follow(target: THREE.Quaternion, M: (typeof CAMERA.motion)['aim'], dt: number, t: ChaseTarget): void {
+    if (dt <= 0) return;
+    const rad = THREE.MathUtils.degToRad;
+    // The target's own turn rate (rad/s, world), smoothed: its frame-to-frame step is noisy.
+    const step = rotationVector(this._fa.copy(target).multiply(this._fb.copy(this.lastTarget).invert()), this._fe).divideScalar(dt);
+    clampLength(step, rad(M.maxRateDeg));
+    this.targetSpin.lerp(step, 1 - Math.exp(-20 * dt));
+    this.lastTarget.copy(target);
+    // Leading round to the RECOVERY target the camera path may turn faster: let the rig keep up.
+    const lift = Math.max(1, THREE.MathUtils.lerp(1, CAMERA.psmPath.leadMaxRateDeg / M.maxRateDeg, this.lead));
+    const maxRate = rad(M.maxRateDeg) * lift, maxAccel = rad(M.maxAccelDeg) * lift;
+    const maxRoll = rad(M.maxRollRateDeg), maxRollAccel = rad(M.maxRollAccelDeg);
+    const w2 = M.omega * M.omega, c = 2 * M.damping * M.omega;
+    // Dead zone as angles at the FOV in use; a gun lock closes it.
+    const open = 1 - this.lockShare;
+    const dzYaw = Math.atan(M.deadZone.x * open * this.tanHalf('x'));
+    const dzPitch = Math.atan(M.deadZone.y * open * this.tanHalf('y'));
+    // The screen boxes (C2) pull on a spring of their own, stiffer and with higher caps.
+    const C = CAMERA.motion.composer;
+    const e2 = C.edgeOmega * C.edgeOmega;
+    const edgeAccel = rad(C.edgeMaxAccelDeg), edgeRate = Math.max(maxRate, rad(C.edgeMaxRateDeg));
+    const n = Math.max(1, Math.ceil(dt / CAMERA.motion.substep - 1e-9));
+    const h = dt / n;
+    const spin = this.spin;
+    for (let i = 0; i < n; i++) {
+      const err = rotationVector(this._fa.copy(target).multiply(this._fb.copy(this.rig).invert()), this._fe);
+      // Dead zone, in the rig's own axes (x: pitch, y: yaw, z: roll): the pull is only what lies
+      // beyond the box, and the target's turn is fed forward only near and past its edge.
+      const inv = this._fb.copy(this.rig).invert();
+      err.applyQuaternion(inv);
+      const ff = this._fv.copy(this.targetSpin).applyQuaternion(inv).multiplyScalar(1 - M.lagShare);
+      const gy = deadBand(err, 'y', dzYaw), gx = deadBand(err, 'x', dzPitch);
+      ff.y *= gy;
+      ff.x *= gx;
+      err.applyQuaternion(this.rig);
+      ff.applyQuaternion(this.rig);
+      const accel = ff.sub(spin).multiplyScalar(c).addScaledVector(err, w2);
+      const look = this._fl.copy(BODY_FWD).applyQuaternion(this.rig);
+      splitClamp(accel, look, maxAccel, maxRollAccel, this._fr);
+      let pushed = false;
+      if (C.enabled) {
+        const edge = this.screenBoxes(t, this._fg, false);
+        if (edge.lengthSq() > 0) {
+          pushed = true;
+          accel.add(clampLength(edge.applyQuaternion(this.rig).multiplyScalar(e2), edgeAccel));
+        }
+      }
+      spin.addScaledVector(accel, h);
+      splitClamp(spin, look, pushed ? edgeRate : maxRate, maxRoll, this._fr);
+      const turn = spin.length() * h;
+      if (turn > 1e-12) this.rig.premultiply(this._fa.setFromAxisAngle(this._fv.copy(spin).normalize(), turn)).normalize();
+    }
+    // The leash holds the look direction only: the roll stays under its caps.
+    const from = this._fl.copy(BODY_FWD).applyQuaternion(this.rig);
+    const to = this._fv.copy(BODY_FWD).applyQuaternion(target);
+    const off = from.angleTo(to), leash = rad(M.leashDeg);
+    if (off > leash) {
+      const axis = this._fe.crossVectors(from, to);
+      if (axis.lengthSq() > 1e-12) this.rig.premultiply(this._fa.setFromAxisAngle(axis.normalize(), off - leash)).normalize();
+    }
+  }
+
+  /** tan of half the picture's FOV across (`x`) or up and down (`y`), as it was last drawn. */
+  private tanHalf(axis: 'x' | 'y'): number {
+    const v = Math.tan(THREE.MathUtils.degToRad(this.camera.fov * this.fovScale) / 2);
+    return axis === 'y' ? v : v * this.camera.aspect;
+  }
+
+  /**
+   * Camera plan C2 (`CAMERA.motion.composer`): the screen boxes. Adds to `out` (rig axes, rad)
+   * the turn that would bring the reticle (the aim) and then the jet back inside their boxes;
+   * with `hard`, instead turns the rig at once by whatever lies past `composer.screenEdge`, so
+   * neither ever leaves the picture. Returns `out`.
+   */
+  private screenBoxes(t: ChaseTarget, out: THREE.Vector3, hard: boolean): THREE.Vector3 {
+    const C = CAMERA.motion.composer;
+    out.set(0, 0, 0);
+    if (t.aim) this.keepOnScreen(this._kd.copy(t.aim), C.reticleBox, out, hard);
+    // Camera to jet: the boom offset reversed, at its place without the springs.
+    this.keepOnScreen(this._kd.set(0, -CAMERA.height * this.sizeScale, this.distance).applyQuaternion(this.boom), C.jetBox, out, hard);
+    return out;
+  }
+
+  /** One subject of `screenBoxes`: the world direction `dir` against `box` (fractions of the half-screen). */
+  private keepOnScreen(dir: THREE.Vector3, box: { x: number; up: number; down: number }, out: THREE.Vector3, hard: boolean): void {
+    const edge = CAMERA.motion.composer.screenEdge;
+    const tx = this.tanHalf('x'), ty = this.tanHalf('y');
+    const past = (a: number, limit: number) => (Math.abs(a) > limit ? a - Math.sign(a) * limit : 0);
+    // Rig axes: forward +Z, left +X, up +Y. Screen right is -X.
+    const local = this._kv.copy(dir).applyQuaternion(this._kb.copy(this.rig).invert());
+    // Behind the camera: nothing on screen to keep.
+    if (local.z <= 1e-3) return;
+    const right = Math.atan(-local.x / local.z);
+    const up = Math.atan(local.y / Math.hypot(local.x, local.z));
+    const yaw = past(right, Math.atan((hard ? Math.max(edge, box.x) : box.x) * tx));
+    const v = up > 0 ? (hard ? Math.max(edge, box.up) : box.up) : (hard ? Math.max(edge, box.down) : box.down);
+    const pitch = past(up, Math.atan(v * ty));
+    // A turn about the rig's up by +a turns the view left (right is -a); about its left by +a tilts it down (up is -a).
+    if (hard) {
+      if (yaw !== 0) this.rig.multiply(this._ka.setFromAxisAngle(BODY_UP, -yaw)).normalize();
+      if (pitch !== 0) this.rig.multiply(this._ka.setFromAxisAngle(BODY_LEFT, -pitch)).normalize();
+      return;
+    }
+    out.x -= pitch;
+    out.y -= yaw;
   }
 
   /** Aircraft attitude, its nose turned toward the flight path at high σ. */
@@ -1020,6 +1183,41 @@ function softFloor(h: number, min: number, soft: number): number {
   if (h >= soft) return h;
   const span = soft - min;
   return min + span * Math.exp((h - soft) / span);
+}
+
+/**
+ * Dead band on one component of `v`: shrunk toward 0 by `zone` (nothing left inside it), in
+ * place. Returns 0..1, how far the feed-forward is let through: none in the inner half of the
+ * zone, all of it from its edge out (1 when there is no zone).
+ */
+function deadBand(v: THREE.Vector3, key: 'x' | 'y', zone: number): number {
+  if (zone <= 0) return 1;
+  const a = v[key];
+  v[key] = Math.sign(a) * Math.max(0, Math.abs(a) - zone);
+  return THREE.MathUtils.smoothstep(Math.abs(a), zone * 0.5, zone);
+}
+
+/** Rotation vector of `q` (axis × angle, rad) the short way round, into `out`. */
+function rotationVector(q: THREE.Quaternion, out: THREE.Vector3): THREE.Vector3 {
+  const sign = q.w < 0 ? -1 : 1;
+  const w = Math.min(1, q.w * sign);
+  const s = Math.sqrt(Math.max(0, 1 - w * w));
+  const angle = 2 * Math.atan2(s, w);
+  out.set(q.x * sign, q.y * sign, q.z * sign);
+  return s > 1e-9 ? out.multiplyScalar(angle / s) : out.multiplyScalar(2);
+}
+
+function clampLength(v: THREE.Vector3, max: number): THREE.Vector3 {
+  const l = v.length();
+  return l > max ? v.multiplyScalar(max / l) : v;
+}
+
+/** Hold the part of `v` along the unit `axis` under `along` and the rest under `across`, in place (`tmp` is scratch). */
+function splitClamp(v: THREE.Vector3, axis: THREE.Vector3, across: number, along: number, tmp: THREE.Vector3): void {
+  const a = v.dot(axis);
+  const roll = THREE.MathUtils.clamp(a, -along, along);
+  clampLength(v.addScaledVector(axis, -a), across);
+  v.add(tmp.copy(axis).multiplyScalar(roll));
 }
 
 function approach(v: number, target: number, step: number) {

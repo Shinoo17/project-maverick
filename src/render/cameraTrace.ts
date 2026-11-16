@@ -7,12 +7,14 @@ without it. Flight Lab records and exports it. `rig` says which camera wrote the
 carry different blend weights.
 
 Version 2 (FR2) added `rig` and the ChaseCamera frames; legacy frames are otherwise as in version 1.
+Version 3 (camera plan C0, 2026-11-17) added the ArcadeCamera frames (`rig: 'arcade'`), with the
+picture's motion as the player sees it (render/arcade/cameraMotion.ts) and the C1 follow's lag.
 */
 type V3 = [number, number, number]
 interface TraceFrameBase {
   /** Frame index since the trace started, and the summed camera dt (s). */
   frame: number; t: number; dt: number
-  style: 'balanced' | 'dynamic' | 'aircraft'
+  style: 'balanced' | 'dynamic' | 'aircraft' | 'horizon' | 'aim'
   /** The rendered view after free look: eye, look direction, up, vertical FOV (degrees). */
   position: V3; look: V3; up: V3; fov: number
   /** The chase shot before free look: its look and up, and the boom offset from the jet. */
@@ -27,9 +29,13 @@ export interface LegacyCameraBlend { decouple: number; handover: number; drift: 
  * nose toward the path; levelShare the level horizon's share (0 inside the vertical cone); rollTarget,
  * levelGap and orbitLag roll angles (rad); rollRate rad/s, lookRate rad/s; lookLag and rollLag the springs' lags (s). */
 export interface ChaseCameraBlend { drift: number; pathOffsetDeg: number; levelShare: number; rollTarget: number; levelGap: number; rollRate: number; lookRate: number; lookLag: number; rollLag: number; orbitLag: number; aimShare: number; gunZoom: number; lookingAway: boolean }
-export type CameraTraceFrame = TraceFrameBase & ({ rig: 'legacy'; blend: LegacyCameraBlend } | { rig: 'chase'; blend: ChaseCameraBlend })
+/** ArcadeCamera: the drawn view's look turn rate (deg/s), its change (deg/s²) and roll rate (deg/s, signed);
+ * lagDeg how far the look trails its target and offCentreDeg how far the camera's place is from its look
+ * (CAMERA.motion); psmShare the σ blend toward the flight path; lockShare the gun lock's share. */
+export interface ArcadeCameraBlend { lookRateDeg: number; lookAccelDeg: number; rollRateDeg: number; lagDeg: number; offCentreDeg: number; psmShare: number; lockShare: number; gunZoom: number; lookingAway: boolean }
+export type CameraTraceFrame = TraceFrameBase & ({ rig: 'legacy'; blend: LegacyCameraBlend } | { rig: 'chase'; blend: ChaseCameraBlend } | { rig: 'arcade'; blend: ArcadeCameraBlend })
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
-export const CAMERA_TRACE_VERSION = 2
+export const CAMERA_TRACE_VERSION = 3
 // Two minutes at 144 FPS; older frames drop first.
 const CAPACITY = 17280
 
