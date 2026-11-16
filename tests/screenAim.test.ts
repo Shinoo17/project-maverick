@@ -122,8 +122,8 @@ describe('the instructor', () => {
     fly(2)
     let worst = 0
     for (let i = 1; i < commands.length; i++) for (const axis of ['pitch', 'roll', 'yaw'] as const) worst = Math.max(worst, Math.abs(commands[i][axis] - commands[i - 1][axis]))
-    // Every axis slews: no more than `slew` full deflections a second.
-    expect(worst).toBeLessThanOrEqual(INSTRUCTOR.slew / 60 + 1e-9)
+    // Every axis slews: no more than `slew` full deflections a second, or `slewRelease` while pitch or rudder is eased off.
+    expect(worst).toBeLessThanOrEqual(Math.max(INSTRUCTOR.slew, INSTRUCTOR.slewRelease) / 60 + 1e-9)
   })
 
   it('arrives on a world aim and settles without hunting', () => {

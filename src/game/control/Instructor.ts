@@ -67,8 +67,20 @@ export const INSTRUCTOR = {
   track: 0.5,
   /** How fast a command may move, in full deflections per second. */
   slew: 4,
+  /** The same for pitch and rudder being eased off: see `lagSeconds`. */
+  slewRelease: 12,
   /** Seconds over which the aim's turn rate is smoothed: a hand is not a steady turn. */
   rateSeconds: 0.15,
+  /** The same while that rate is falling: short, so the feed-forward ends when the hand does. */
+  rateFallSeconds: 0.03,
+  /** Owner 2026-11-17: under world aim the nose always ran past the cursor. Measured: 3.3° past a
+   * 21° flick up, 4.4° past a 42° drag that stops. Two causes: the feed-forward kept turning the
+   * nose for `rateSeconds` after the hand had stopped, and the brake was planned as if the stick
+   * and the jet answered at once. With the three values here: 0° past a flick, about 3° past the drag
+   * (the jet's own rate response; tests/aimOvershoot.test.ts).
+   * Seconds each axis takes to answer a command (the slew above, then the jet's own response): the
+   * brake is planned from where the nose will be by then, at the rate it is closing on the aim now. */
+  lagSeconds: { pitch: 0.1, yaw: 0.1 },
   /** An aim on the belly side is reached by pushing or by rolling to pull, whichever is quicker.
    * A push is planned as if the nose went this much slower than a pull. */
   pushPace: 0.3,
@@ -189,7 +201,8 @@ export function measureAim(s: InstructorState, aim: Vector3, dt: number, still: 
   TURN.crossVectors(s.previous, aim)
   if (still || TURN.lengthSq() <= 1e-16) TURN.set(0, 0, 0)
   else TURN.normalize().multiplyScalar(angle / dt)
-  s.rate.lerp(TURN, 1 - Math.exp(-dt / INSTRUCTOR.rateSeconds))
+  // Slow to build (a hand is noisy), quick to drop: a hand that has stopped is not turning the aim.
+  s.rate.lerp(TURN, 1 - Math.exp(-dt / (TURN.lengthSq() < s.rate.lengthSq() ? INSTRUCTOR.rateFallSeconds : INSTRUCTOR.rateSeconds)))
   // The hand's travel in one go: fading, and wiped by a little motion back the other way.
   const sweep = INSTRUCTOR.sweep
   const handMoves = !still && angle > MathUtils.degToRad(sweep.movingDeg) * dt
@@ -400,18 +413,22 @@ export function instruct(s: InstructorState, aim: Vector3, state: AircraftState,
   // the aim swings the nose out of the plane the roll is aiming for, and the roll overshoots.
   // Close in, pitch trims whatever the bank.
   const aligned = MathUtils.lerp(1, MathUtils.smoothstep(Math.cos(rollError), I.alignedCos[0], I.alignedCos[1]), MathUtils.smoothstep(offDeg, I.alignedDeg[0], I.alignedDeg[1]))
-  let pitch = fly(aligned * profile(pitchError, brake.pitch, I.gain.pitch * tight, pitchRate) + SPIN.z, rates.pitch, pitchRate)
+  // Where the error will be once the command has taken hold: the closing rate is the nose's less the aim's own.
+  const pitchAhead = pitchError - (rates.pitch - SPIN.z) * I.lagSeconds.pitch, yawAhead = yawError - (rates.yaw + SPIN.y) * I.lagSeconds.yaw
+  let pitch = fly(aligned * profile(pitchAhead, brake.pitch, I.gain.pitch * tight, pitchRate) + SPIN.z, rates.pitch, pitchRate)
   // Only while a roll to pull is being flown: in the direct range the push is the whole answer.
   if (!s.pushing) pitch = Math.max(pitch, -MathUtils.lerp(1, I.pullOnlyPush, MathUtils.smoothstep(offDeg, I.pullOnlyDeg[0], I.pullOnlyDeg[1]) * banked))
   const roll = fly(profile(rollError, brake.roll, I.gain.roll, rollRate), rates.roll, rollRate)
-  const yaw = clamp1(rudder * fly(profile(yawError, brake.yaw, I.gain.yaw * tight, yawRate) - SPIN.y, rates.yaw, yawRate))
+  const yaw = clamp1(rudder * fly(profile(yawAhead, brake.yaw, I.gain.yaw * tight, yawRate) - SPIN.y, rates.yaw, yawRate))
   // Each axis slews from the last command, so a goal that jumps (the wings rolling level as the
   // nose arrives, a push becoming a pull) eases the stick over instead of slamming it. Picked up
   // after a gap from what the jet is flying.
   const flown = s.flown, step = dt * MathUtils.lerp(I.slew, LEAD_TRACK.slew, s.tracking)
   if (!s.flying) { flown.pitch = clamp1(rates.pitch / pitchRate); flown.roll = clamp1(rates.roll / rollRate); flown.yaw = clamp1(rates.yaw / yawRate); s.flying = true }
-  flown.pitch += MathUtils.clamp(pitch - flown.pitch, -step, step)
+  // Easing off pitch or rudder (toward the centre, or through it) may go quicker: that is the brake.
+  const ease = (to: number, from: number) => { const most = Math.abs(to) < Math.abs(from) || to * from < 0 ? Math.max(step, dt * I.slewRelease) : step; return MathUtils.clamp(to - from, -most, most) }
+  flown.pitch += ease(pitch, flown.pitch)
   flown.roll += MathUtils.clamp(roll - flown.roll, -step, step)
-  flown.yaw += MathUtils.clamp(yaw - flown.yaw, -step, step)
+  flown.yaw += ease(yaw, flown.yaw)
   return flown
 }
