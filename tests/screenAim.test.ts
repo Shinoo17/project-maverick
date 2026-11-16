@@ -203,6 +203,106 @@ describe('the instructor: the bank is kept', () => {
     fly(3)
     expect(Math.abs(bankNow(runtime) - set)).toBeLessThan(5)
   })
+
+  it('nor when the mouse then makes a small correction against that bank', () => {
+    // A knife edge rolled on the keys to pass a gap, then 30 px (2.1°) of correction toward the high wing.
+    const { input, fly, runtime, commands } = session('world')
+    fly(0.3)
+    input.press('KeyD')
+    fly(0.55)
+    input.held.delete('KeyD')
+    fly(1.2)
+    const set = bankNow(runtime)
+    expect(set).toBeGreaterThan(80)
+    const from = commands.length
+    for (let i = 0; i < 6; i++) { input.move(-5, 0); fly(1 / 60) }
+    fly(2.5)
+    expect(Math.max(...commands.slice(from).map(c => Math.abs(c.roll)))).toBeLessThan(0.05)
+    expect(Math.abs(bankNow(runtime) - set)).toBeLessThan(3)
+    expect(input.aim.direction.angleTo(forwardOf(runtime.snapshot().aircraft[0].orientation)) * 180 / Math.PI).toBeLessThan(1.5)
+    // A turn past the direct range is the instructor's bank again, and that one the hand may level.
+    input.move(600, 0)
+    fly(4)
+    expect(bankNow(runtime)).toBeGreaterThan(30)
+    input.move(-30, 0)
+    fly(2.5)
+    expect(Math.abs(bankNow(runtime))).toBeLessThan(3)
+  })
+})
+
+describe('screen steering: the × after a re-sync', () => {
+  it('starts on the gun reticle as the camera draws it, not on the middle of the window', () => {
+    const { input, fly, view, runtime } = session('screen')
+    fly(0.3)
+    input.settleCursor(view)
+    const state = runtime.snapshot().aircraft[0]
+    const at = drawnReticle(state, gunMountOf('f22'), null).reticle
+    const drawn = new Vector3(at.x, at.y, at.z).project(view)
+    expect(Math.abs(input.cursor.px - drawn.x * W / 2)).toBeLessThan(1.5)
+    expect(Math.abs(input.cursor.py + drawn.y * H / 2)).toBeLessThan(1.5)
+    // The view sits above the jet, so the reticle shows under the middle.
+    expect(input.cursor.py).toBeGreaterThan(1)
+    // Once only: the hand owns the × from then on.
+    input.move(40, 0)
+    const held = { ...input.cursor }
+    input.settleCursor(view)
+    expect(input.cursor).toEqual(held)
+  })
+})
+
+describe('screen steering: at rest', () => {
+  it('hands off with the × on the reticle the jet holds its course, no creep', () => {
+    const { input, fly, view, runtime } = session('screen')
+    fly(0.3)
+    input.settleCursor(view)
+    const pitchOf = () => Math.asin(forwardOf(runtime.snapshot().aircraft[0].orientation).y) * 180 / Math.PI
+    const from = pitchOf()
+    const turned = fly(8)
+    expect(Math.abs(pitchOf() - from)).toBeLessThan(0.5)
+    expect(Math.abs(turned)).toBeLessThan(0.5)
+  })
+
+  it('and a pixel or two off the reticle is not a turn that never ends', () => {
+    const { input, fly, view } = session('screen')
+    fly(0.3)
+    input.settleCursor(view)
+    input.move(2, 0)
+    // 2 px is 0.19° of aim, inside the rest (FlightInput REST_DEG): a quarter of the turn that offset alone asks for.
+    expect(Math.abs(fly(8))).toBeLessThan(2.5)
+  })
+})
+
+describe('the instructor: a sweep of the hand', () => {
+  /** Drags the mouse left at `rate` degrees of aim a second. Returns when the bank first passed 10°, or -1. */
+  const drag = (rate: number, seconds: number) => {
+    const { input, fly, runtime } = session('world')
+    fly(0.3)
+    let banked = -1
+    for (let i = 0; i < seconds * 60; i++) {
+      input.move(-rate / 0.07 / 60, 0)
+      fly(1 / 60)
+      if (banked < 0 && Math.abs(bankOf(runtime.snapshot().aircraft[0].orientation)) > 10) banked = (i + 1) / 60
+    }
+    return { banked, off: input.aim.direction.angleTo(forwardOf(runtime.snapshot().aircraft[0].orientation)) * 180 / Math.PI, input, fly, runtime }
+  }
+
+  it('faster than the rudder can follow banks at once, and is caught up with', () => {
+    const swept = drag(30, 2)
+    // Without the sweep the bank waited for the error: 0.88 s, and the nose was still 7.6° behind at 2 s.
+    expect(swept.banked).toBeGreaterThan(0)
+    expect(swept.banked).toBeLessThan(0.7)
+    expect(swept.off).toBeLessThan(3)
+    // The hand stops: the bank the turn ended with is kept.
+    const bank = bankOf(swept.runtime.snapshot().aircraft[0].orientation)
+    swept.fly(2)
+    expect(Math.abs(bankOf(swept.runtime.snapshot().aircraft[0].orientation) - bank)).toBeLessThan(5)
+  })
+
+  it('one the rudder can follow stays flat, wings level', () => {
+    const slow = drag(18, 3)
+    expect(slow.banked).toBe(-1)
+    expect(slow.off).toBeLessThan(8)
+  })
 })
 
 describe('the instructor: at a held bank', () => {

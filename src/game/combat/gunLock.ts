@@ -8,7 +8,8 @@ import { assistRange, type AimAssistLevel } from './aimAssist'
 Gun lock: mouse aim's aim assist (owner design, 2026-11-16). It replaces the aim magnet
 (aimAssist.ts `aimMagnet`) under mouse aim.
 
-- Charge. Holding the cursor on the selected target, or on its lead, within `captureDeg` fills
+- Charge. Holding the cursor on the selected target, on its lead, or anywhere between the two,
+  within `captureDeg`, fills
   a ring around the cursor over `dwellSeconds` (1 s standard, 0.7 s strong). Off it the ring
   drains at `drainRate` of a full ring a second rather than emptying at once. While it fills the
   cursor is drawn gently toward the lead and carried along with it, more as the ring fills
@@ -44,7 +45,7 @@ The aim is input, not the record: replays keep the commands the aim produced.
 export const gunLockTuning = {
   /** Seconds the cursor must stay on the target to lock, by aim assist level. */
   dwellSeconds: { standard: 1, strong: 0.7 } as Record<Exclude<AimAssistLevel, 'off'>, number>,
-  /** Degrees from the target or its lead that count as on it. */
+  /** Degrees from the target, its lead, or the line between them that count as on it. */
   captureDeg: 4,
   /** While the ring fills: how fast the cursor closes on the lead (1/s) and the share of the lead's own motion it is
    * carried with, both at a full ring and in proportion to the fill below it. */
@@ -158,7 +159,7 @@ export function stepGunLock(lock: GunLockState, frame: GunLockFrame): GunLockSta
 
   toTarget.set(target.position.x - shooter.position.x, target.position.y - shooter.position.y, target.position.z - shooter.position.z).normalize()
   const ahead = toTarget.dot(nose) > 0
-  const off = Math.min(aim.angleTo(toTarget), aim.angleTo(lead)) / DEG
+  const off = offArc(aim, toTarget, lead)
   if (ahead && off <= T.captureDeg && lock.wait <= 0) {
     // The gentle pull: carried with the lead, then a share of the gap closed.
     if (lock.charging) aim.applyQuaternion(turn.identity().slerp(spin4.setFromUnitVectors(lock.lead, lead), T.chargeCarry * lock.progress))
@@ -176,6 +177,26 @@ export function stepGunLock(lock: GunLockState, frame: GunLockFrame): GunLockSta
     }
   } else drain(lock, dt)
   return lock
+}
+
+const normal = new Vector3(), onArc = new Vector3(), side = new Vector3()
+/*
+Degrees from `aim` to the nearest point of the arc from the target to its lead. The ring's own
+pull draws the cursor from the target toward the lead, so the whole way between them has to
+count as on the target. Measured to the two ends alone, a target crossing fast enough to put its
+lead more than twice `captureDeg` away left a gap in the middle: the pull drew the cursor into
+it, the ring drained, and a crossing target never locked however well the hand tracked it.
+*/
+function offArc(aim: Vector3, from: Vector3, to: Vector3) {
+  const ends = Math.min(aim.angleTo(from), aim.angleTo(to)) / DEG
+  normal.crossVectors(from, to)
+  if (normal.lengthSq() < 1e-10) return ends
+  normal.normalize()
+  const out = normal.dot(aim)
+  onArc.copy(aim).addScaledVector(normal, -out)
+  // Abeam the arc, not past either end of it.
+  if (side.crossVectors(from, onArc).dot(normal) < 0 || side.crossVectors(onArc, to).dot(normal) < 0) return ends
+  return Math.asin(Math.min(1, Math.abs(out))) / DEG
 }
 
 function drain(lock: GunLockState, dt: number) {

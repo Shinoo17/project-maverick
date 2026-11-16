@@ -106,6 +106,22 @@ describe('gun lock', () => {
     expect(lock.progress).toBe(0)
   })
 
+  it('locks a fast crossing target the hand keeps the cursor on, its lead far ahead of it', () => {
+    // 230 m/s across at 400 m: the lead is about 12° ahead of the target, three times captureDeg.
+    for (const level of ['standard', 'strong'] as const) {
+      const { shooter, target } = scene(400, 230), lock = createGunLock(), aim = toward(shooter, target)
+      expect(toward(shooter, target).angleTo(leadOf(shooter, target)) * 180 / Math.PI).toBeGreaterThan(2 * gunLockTuning.captureDeg)
+      for (let i = 0; i < 2.5 / DT && !lock.locked; i++) {
+        target.position = { ...target.position, z: target.position.z + 230 * DT }
+        // The hand: keeps bringing the cursor back onto the target itself, a little behind it.
+        const to = toward(shooter, target), gap = aim.angleTo(to)
+        if (gap > 1e-9) aim.applyAxisAngle(new Vector3().crossVectors(aim, to).normalize(), gap * (1 - Math.exp(-8 * DT))).normalize()
+        stepGunLock(lock, { level, shooter, target, mount, aim, dt: DT })
+      }
+      expect(lock.locked).toBe(true)
+    }
+  })
+
   it('does not charge out of gun reach, and lets go when the target dies or changes', () => {
     const far = scene(1500), none = createGunLock()
     run(none, 2, { shooter: far.shooter, target: far.target, aim: toward(far.shooter, far.target) })

@@ -247,8 +247,12 @@ function FlightWorld({ aircraftId, flightCore, session, running, targetDrone, au
     // Screen steering: the × the gun lock holds is drawn on its direction; then the ray through the ×
     // for the next commands, and the lens it was read through.
     session.input.setViewport(size.width, size.height)
+    if (steered) session.input.settleCursor(camera)
     if (steered && session.input.aimHeld) session.input.placeCursor(lens)
-    session.input.cursorRay = steered && state.alive ? cursorRay(camera, session.input.cursor.px, session.input.cursor.py, size.width, size.height, pose.position) : null
+    // The hand steers along the horizon where the view only leans with the bank (control/levelView.ts).
+    session.input.levelView = !wreck && session.camera.mode !== 'aircraft'
+    const steerAt = steered && state.alive ? session.input.steerPoint(camera) : null
+    session.input.cursorRay = steerAt ? cursorRay(camera, steerAt.px, steerAt.py, size.width, size.height, pose.position) : null
     session.input.setLens(lens.fov)
     const hits = runtime.drainHits(), events = runtime.drainEvents()
     // The player's bay doors open for each missile leaving them.

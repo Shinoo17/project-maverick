@@ -8,14 +8,34 @@ import { FlightControls, type ControlKeys } from '../control/ControlAxes'
 import { ControlMixer } from '../control/ControlMixer'
 import { MouseAim } from '../control/MouseAim'
 import { aimAtRay, createInstructor, followTarget, instruct, measureAim, resetInstructor, settleAim, trackLead, type CursorRay } from '../control/Instructor'
-import { gunMountOf, type GunMount } from '../combat/gunSolution'
+import { drawnReticle, gunMountOf, type GunMount } from '../combat/gunSolution'
 import { StateAircraft } from '../control/controlAircraft'
 import { defaultMouseSettings, type MouseSettings } from '../control/mouseSettings'
+import { levelOffset } from '../control/levelView'
 import { actionForCode, defaultKeyboardSettings, missileSelectActions, type FlightAction, type KeyboardSettings } from './keyBindings'
 export type { InputPreset } from './keyBindings'
 import type { InputPreset } from './keyBindings'
 
 const NEUTRAL = { pitch: 0, roll: 0, yaw: 0 }
+/*
+Screen steering's rest. The × is a rate control: any offset from the reticle is a turn that never
+ends, and one pixel is about 0.08°, half a degree a second. The reticle's place on the window also
+drifts by a pixel or so as the chase camera breathes with speed and load, so hands off the jet
+crept (0.25°/s measured, 2.4°/s before the × started on the reticle). So within `REST_DEG` of the
+nose the aim is drawn onto the nose: at a third of that the turn is a tenth of what it was, at
+twice it nothing is taken off. Fine aim is left: the reticle still closes on the ×, only slower
+over the last tenth of a degree.
+*/
+const REST_DEG = 0.35
+const REST_NOSE = new Vector3()
+function restOnNose(aim: Vector3, pose: AircraftState) {
+  const o = pose.orientation, x = o.x, y = o.y, z = o.z, w = o.w
+  // Body +X in the world.
+  REST_NOSE.set(1 - 2 * (y * y + z * z), 2 * (x * y + z * w), 2 * (x * z - y * w))
+  const ratio = MathUtils.radToDeg(REST_NOSE.angleTo(aim)) / REST_DEG
+  if (ratio >= 3) return aim
+  return aim.lerp(REST_NOSE, Math.exp(-ratio * ratio)).normalize()
+}
 const wrapPi = (angle: number) => angle - 2 * Math.PI * Math.round(angle / (2 * Math.PI))
 
 /*
@@ -78,6 +98,9 @@ export class FlightInput {
   /** The selected target as of the last simulation tick (set by the flight scene): screen steering
    * aims the reticle the HUD draws, at the target's range, and the instructor turns with it. */
   target: AircraftState | null = null
+  /** Set by the flight scene: the view keeps a level horizon and only leans with the bank (Horizon lock,
+   * Aim lock), so the hand steers along the horizon, not along the leaning picture (control/levelView.ts). */
+  levelView = false
   /** Screen steering: the × in pixels from the middle of the flight surface (x right, y down). */
   readonly cursor = { px: 0, py: 0 }
   /** Screen steering: the ray through the × from the last rendered frame (set by the flight scene). */
@@ -195,6 +218,7 @@ export class FlightInput {
       return
     }
     if (this.viewAway || this.resync || !this.view || !this.pose?.alive) return
+    this.mixer.aim.level = this.cursorAim.level = this.levelView
     const k = this.mouse.sensitivity
     // Sideways motion only: a move up or down with a few stray pixels across is not a move against the bank.
     if (Math.abs(x) > 2 * Math.abs(y)) this.handAside += x * k * MOUSE.sensitivityDegPerPx
@@ -242,6 +266,42 @@ export class FlightInput {
     this.cursor.px = at.x * this.width / 2; this.cursor.py = -at.y * this.height / 2
     this.holdCursor()
   }
+  /*
+  Screen steering, once per rendered frame, after the camera is placed: after a re-sync (the
+  pointer taken, a respawn) the × starts on the gun reticle as `camera` draws it. The reticle is
+  not in the middle of the window (the chase camera sits above the jet, so the reticle shows a few
+  pixels under the middle), and a × left in the middle was a standing error: hands off, the jet
+  pitched up at over 2° a second.
+  */
+  settleCursor(camera: Camera) {
+    const pose = this.pose
+    if (!this.homing || !this.screenAim || !pose?.alive) return
+    this.homing = false
+    const { reticle } = drawnReticle(pose, this.gunOf(pose.aircraftId), this.target?.alive ? this.target : null)
+    const at = this.scratch.set(reticle.x, reticle.y, reticle.z).project(camera)
+    if (at.z > 1 || !Number.isFinite(at.x) || !Number.isFinite(at.y)) return
+    this.cursor.px = at.x * this.width / 2; this.cursor.py = -at.y * this.height / 2
+    this.holdCursor()
+  }
+  /*
+  Screen steering: the place on the window the jet is steered to, for the scene's `cursorRay`. It is
+  the ×, with its offset from the gun reticle read along the horizon where the view leans with the
+  bank (`levelView`): a × held straight to the side of the reticle is a level turn, not a spiral
+  down the leaning picture. On the reticle the two are the same place, so the reticle still ends
+  under the ×. The gun lock reads the × itself (readCursor).
+  */
+  steerPoint(camera: Camera) {
+    const pose = this.pose
+    if (!this.levelView || !pose?.alive) return this.cursor
+    const { reticle } = drawnReticle(pose, this.gunOf(pose.aircraftId), this.target?.alive && !this.lookingAway ? this.target : null)
+    const at = this.scratch.set(reticle.x, reticle.y, reticle.z).project(camera)
+    if (at.z > 1 || !Number.isFinite(at.x) || !Number.isFinite(at.y)) return this.cursor
+    this.steer.px = at.x * this.width / 2; this.steer.py = -at.y * this.height / 2
+    return levelOffset(camera, this.cursor.px, this.cursor.py, this.steer, this.steer)
+  }
+  private readonly steer = { px: 0, py: 0 }
+  // Screen steering: the × waits to be put on the reticle (settleCursor).
+  private homing = true
   private readonly scratch = new Vector3()
   private gunOf(aircraftId: string) {
     if (this.mount?.aircraftId !== aircraftId) this.mount = { aircraftId, gun: gunMountOf(aircraftId) }
@@ -301,7 +361,7 @@ export class FlightInput {
     // A wreck has no nose to aim: the controls pass through until the respawn re-syncs the aim.
     if (!pose?.alive) { mixer.mode = 'keyboard'; mixer.step(this.aircraft, dt); mixer.mode = preset; this.resync = true; return }
     this.aircraft.read(pose, this.core?.profile)
-    if (this.resync) { mixer.reset(this.aircraft); this.resync = false; this.cursor.px = this.cursor.py = 0; this.cursorRay = null; resetInstructor(this.instructor) }
+    if (this.resync) { mixer.reset(this.aircraft); this.resync = false; this.cursor.px = this.cursor.py = 0; this.homing = true; this.cursorRay = null; resetInstructor(this.instructor) }
     // The arcade core runs the example's FCS: the mixer reads its mode and w as the example's did
     // (the last step's). The other cores have none, so the PSM key stands in, at full weight.
     const fcs = pose.arcadeFlight?.fcs
@@ -313,7 +373,7 @@ export class FlightInput {
     // Not while looking away: the jet holds its course.
     if (steered && !this.lookingAway && !mixer.stickMode) {
       if (this.aimHeld) aim.copy(this.cursorAim.dir)
-      else if (this.cursorRay) aimAtRay(aim, pose, this.cursorRay, mount, target)
+      else if (this.cursorRay) restOnNose(aimAtRay(aim, pose, this.cursorRay, mount, target), pose)
     }
     // The aim's own turn, for the instructor's feed-forward: the hand's (and the gun lock's) under
     // world aim; under screen steering the lead's while the × is on it. A key flying the nose is no turn.

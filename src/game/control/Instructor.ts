@@ -34,7 +34,7 @@ direct range the roll is not flown at all, so a turn ends with the jet still ban
 nose held on the aim with pitch and rudder; the old branch levelled the wings at once, which
 read as hurried. The wings roll level when the hand moves the mouse a little back against the
 bank (`levelDeg`): the hand's own motion, not the nose running a degree past the aim. And a bank set on the roll keys is the pilot's and is never
-levelled.
+levelled (`own`), until the instructor next banks the jet itself.
 
 What changed in the port. It read the legacy flight profile and airflow; here it is given the
 rates full stick commands now (`limits`, from controlAircraft.ts, any flight core). Its
@@ -89,6 +89,21 @@ export const INSTRUCTOR = {
   levelSeconds: 0.5,
   bankedDeg: 3,
   levelDoneDeg: 1,
+  /** A sweep of the hand banks at once (owner request 2026-11-16, "smooth, flying about"). Under a steady
+   * drag of the mouse the direct range waited for the nose to fall `directDeg` behind the aim, and
+   * the bank then came in only as the error grew on to `bankDeg`: the jet skidded on the rudder for
+   * most of a second, 24° behind a 40°/s hand, and then whipped round to catch up. A sweep is told
+   * from a flick by lasting: the hand has moved the aim more than `directDeg` in one go (`travel`,
+   * fading over `seconds` once the hand rests, wiped by `reverseDeg` of motion back) and has been moving for
+   * `heldSeconds` (faster than `movingDeg` a second), and is moving still, faster than the rudder
+   * can turn the nose (`outrun`: the smoothed rate of the aim as a multiple of the yaw rate full
+   * rudder gives now; a slower drag the rudder follows flat, wings level, as before). Then the bank
+   * is whole within `widthDeg` more of travel, wherever the nose has got to, and the roll is planned
+   * for the hand's own turn. A flick is over in a tenth of a second, so it never counts: inside the
+   * direct range it still flies direct with no roll, and past it the bank comes in with the error as
+   * before. The moment the hand stops the sweep is over too, so the bank the turn ends with is kept.
+   * `enabled: false` = as before, the bank by the error alone. */
+  sweep: { enabled: true, seconds: 0.5, reverseDeg: 1.5, widthDeg: 6, heldSeconds: [0.15, 0.3] as const, movingDeg: 5, outrun: [1, 1.5] as const },
   /** While rolling to pull, a push never asks more than this once the aim is far off. */
   pullOnlyPush: 0.2,
   pullOnlyDeg: [10, 30] as const,
@@ -125,6 +140,10 @@ export interface InstructorState {
   rate: Vector3
   previous: Vector3
   primed: boolean
+  /** How far the hand has turned the aim in one go, as a rotation (world axis × radians), and the seconds
+   * it has been moving (falling back three times as fast while it rests): see `INSTRUCTOR.sweep`. */
+  travel: Vector3
+  moving: number
   /** The gun solution's aim direction last tick, its smoothed turn (rad/s, world) and the target it was for. */
   lead: Vector3
   leadRate: Vector3
@@ -140,15 +159,17 @@ export interface InstructorState {
   /** Rolling the wings level: the hand moved back against the bank (see `levelDeg`); and the degrees it has moved back so far. */
   levelling: boolean
   back: number
+  /** The bank was last set on the roll keys, and the instructor has flown no roll of its own since: it is the pilot's, never levelled. */
+  own: boolean
   /** The last command: each axis slews from it. `flying` is false until the first command after a reset. */
   flown: { pitch: number; roll: number; yaw: number }
   flying: boolean
 }
-export const createInstructor = (): InstructorState => ({ rate: new Vector3(), previous: new Vector3(1, 0, 0), primed: false, lead: new Vector3(1, 0, 0), leadRate: new Vector3(), leadId: null, tracking: 0,
-  follow: new Vector3(), following: 0, followId: null, pushing: false, levelling: false, back: 0, flown: { pitch: 0, roll: 0, yaw: 0 }, flying: false })
+export const createInstructor = (): InstructorState => ({ rate: new Vector3(), previous: new Vector3(1, 0, 0), primed: false, travel: new Vector3(), moving: 0, lead: new Vector3(1, 0, 0), leadRate: new Vector3(), leadId: null, tracking: 0,
+  follow: new Vector3(), following: 0, followId: null, pushing: false, levelling: false, back: 0, own: false, flown: { pitch: 0, roll: 0, yaw: 0 }, flying: false })
 export function resetInstructor(s: InstructorState) {
-  s.rate.set(0, 0, 0); s.primed = false; s.leadRate.set(0, 0, 0); s.leadId = null; s.tracking = 0
-  s.follow.set(0, 0, 0); s.following = 0; s.followId = null; s.pushing = false; s.levelling = false; s.back = 0; s.flying = false
+  s.rate.set(0, 0, 0); s.primed = false; s.travel.set(0, 0, 0); s.moving = 0; s.leadRate.set(0, 0, 0); s.leadId = null; s.tracking = 0
+  s.follow.set(0, 0, 0); s.following = 0; s.followId = null; s.pushing = false; s.levelling = false; s.back = 0; s.own = false; s.flying = false
   return s
 }
 
@@ -163,12 +184,22 @@ const noseOf = (state: Pick<AircraftState, 'orientation'>, out = NOSE) => out.se
  * Call `settleAim` after the tick's syncs and limits have moved the aim.
  */
 export function measureAim(s: InstructorState, aim: Vector3, dt: number, still: boolean) {
-  if (!s.primed || !(dt > 0)) { s.rate.set(0, 0, 0); return s }
+  if (!s.primed || !(dt > 0)) { s.rate.set(0, 0, 0); s.travel.set(0, 0, 0); s.moving = 0; return s }
   const angle = s.previous.angleTo(aim)
   TURN.crossVectors(s.previous, aim)
   if (still || TURN.lengthSq() <= 1e-16) TURN.set(0, 0, 0)
   else TURN.normalize().multiplyScalar(angle / dt)
   s.rate.lerp(TURN, 1 - Math.exp(-dt / INSTRUCTOR.rateSeconds))
+  // The hand's travel in one go: fading, and wiped by a little motion back the other way.
+  const sweep = INSTRUCTOR.sweep
+  const handMoves = !still && angle > MathUtils.degToRad(sweep.movingDeg) * dt
+  s.moving = handMoves ? Math.min(s.moving + dt, 1) : Math.max(0, s.moving - 3 * dt)
+  if (still) s.travel.set(0, 0, 0)
+  else {
+    if (!handMoves) s.travel.multiplyScalar(Math.exp(-dt / sweep.seconds))
+    if (TURN.dot(s.travel) < 0) s.travel.multiplyScalar(Math.max(0, 1 - angle / MathUtils.degToRad(sweep.reverseDeg)))
+    s.travel.addScaledVector(TURN, dt)
+  }
   return s
 }
 export function settleAim(s: InstructorState, aim: Vector3) { s.previous.copy(aim); s.primed = true }
@@ -289,7 +320,20 @@ export function instruct(s: InstructorState, aim: Vector3, state: AircraftState,
   // Direct below `directDeg` (pitch and rudder, no roll toward the aim), banked from `bankDeg`.
   // Wider toward the belly: there the direct way is a push, and rolling over to pull is the long way round.
   const belly = off > 1e-6 ? MathUtils.clamp(-BODY.y / Math.sin(off), 0, 1) : 0
-  const banked = MathUtils.smoothstep(offDeg, MathUtils.lerp(I.directDeg, I.pushDirectDeg, belly), MathUtils.lerp(I.bankDeg, I.pushBankDeg, belly))
+  const byError = MathUtils.smoothstep(offDeg, MathUtils.lerp(I.directDeg, I.pushDirectDeg, belly), MathUtils.lerp(I.bankDeg, I.pushBankDeg, belly))
+  // A sweep of the hand counts as the error does (`sweep`), read on the side the hand is moving the aim to.
+  const travelled = s.travel.length()
+  let bySweep = 0
+  if (I.sweep.enabled && travelled > 1e-6) {
+    BODY.crossVectors(s.travel, aim).applyQuaternion(INVERSE)
+    const toBelly = MathUtils.clamp(-BODY.y / Math.max(BODY.length(), 1e-9), 0, 1)
+    const from = MathUtils.lerp(I.directDeg, I.pushDirectDeg, toBelly)
+    bySweep = MathUtils.smoothstep(MathUtils.radToDeg(travelled), from, from + I.sweep.widthDeg)
+      * MathUtils.smoothstep(s.moving, I.sweep.heldSeconds[0], I.sweep.heldSeconds[1])
+      * MathUtils.smoothstep(s.rate.length() / yawRate, I.sweep.outrun[0], I.sweep.outrun[1])
+    BODY.copy(aim).applyQuaternion(INVERSE)
+  }
+  const banked = Math.max(byError, bySweep)
   // How hard toward the aim: the pull the pitch profile below will ask for (its rate × speed),
   // none in the direct range, so a small drag of the hand does not bank the jet. Read off
   // the error alone, not off what the jet is pulling now: that would feed the bank back into
@@ -333,7 +377,12 @@ export function instruct(s: InstructorState, aim: Vector3, state: AircraftState,
   s.back *= Math.exp(-dt / I.levelSeconds)
   if (handAsideDeg * bankDeg > 0) { s.back = 0; s.levelling = false }
   else if (Math.abs(bankDeg) > I.bankedDeg) s.back += Math.abs(handAsideDeg)
-  if (rollKey || Math.abs(bankDeg) < I.levelDoneDeg) { s.levelling = false; s.back = 0 }
+  // A bank set on the roll keys stays the pilot's until the instructor banks the jet itself (a turn
+  // past the direct range, a target tracked or followed): a knife edge rolled on the keys to pass
+  // a gap is not rolled level by a small correction of the mouse against it.
+  if (rollKey) s.own = true
+  else if (Math.max(banked, s.tracking, s.following) > 0) s.own = false
+  if (rollKey || s.own || Math.abs(bankDeg) < I.levelDoneDeg) { s.levelling = false; s.back = 0 }
   else if (s.back > I.levelDeg) s.levelling = true
   rollError *= Math.max(banked, s.levelling ? 1 : 0, s.tracking, s.following)
   // Nearly inverted from the goal, keep rolling the way the jet already rolls: the goal wobbling

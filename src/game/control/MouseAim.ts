@@ -1,5 +1,6 @@
 import { MathUtils, Vector3, type Camera } from 'three';
 import { CAMERA, DEG2RAD, MOUSE } from './config';
+import { leveled } from './levelView';
 
 /**
  * The view the mouse aims through: its axes and, for `MOUSE.fovSensitivity`,
@@ -21,6 +22,12 @@ export class MouseAim {
   readonly dir = new Vector3(0, 0, -1);
   /** Seconds since the aim was last moved by the mouse or a sync. */
   idle = 0;
+  /**
+   * This project's (not in the example): turn about the view's axes with its bank lean taken out
+   * (./levelView.ts), so a hand moving right goes along the horizon however the picture leans.
+   * Set for Horizon lock and Aim lock; off, the view's own axes as in the example.
+   */
+  level = false;
   private readonly _a = new Vector3();
   private readonly _b = new Vector3();
 
@@ -33,6 +40,7 @@ export class MouseAim {
     // Camera basis from its world matrix: column 0 = right, column 1 = up.
     const right = this._a.set(e[0], e[1], e[2]).normalize();
     const up = this._b.set(e[4], e[5], e[6]).normalize();
+    if (this.level) leveled(camera, right, up);
     // Mouse right turns the aim right: a negative rotation about camera up.
     this.dir.applyAxisAngle(up, -dx * k);
     // Pointer y grows downward: mouse up (dy < 0) rotates the aim up.

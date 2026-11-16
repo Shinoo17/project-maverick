@@ -14,6 +14,7 @@ import { bindingNames } from '../settings/KeyPrompt'
 import { flightReturnRoute, routes } from '../../app/routes'
 import { getAircraft, modelUrl, playgroundAircraft } from '../../content/aircraft'
 import { FlightInput } from '../../game/input/FlightInput'
+import { MOUSE } from '../../game/control/config'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
 import type { AircraftState } from '../../game/state/WorldState'
 import { SceneBoundary } from '../../ui/components/SceneBoundary'
@@ -37,6 +38,21 @@ import { CoreTuningPanel } from './CoreFlightLab'
 import { setCoreTuning } from './coreTuning'
 import { CameraTrace } from '../../render/cameraTrace'
 import './flight.css'
+
+/*
+Takes the pointer with the system's pointer acceleration off where the browser can (raw counts,
+as example/flight-control's MouseInput asks): the same travel of the hand is then the same turn of
+the aim whether the hand moves fast or slowly, which is what makes a flick repeatable. A browser
+that does not know the option locks the ordinary way.
+*/
+function lockPointer(element: Element): Promise<void> | void {
+  const ask = (options?: { unadjustedMovement: boolean }) => (element.requestPointerLock as (options?: { unadjustedMovement: boolean }) => Promise<void> | void).call(element, options)
+  const request = ask({ unadjustedMovement: true })
+  return request?.catch((error: unknown) => {
+    if (error instanceof DOMException && error.name === 'NotSupportedError') return ask()
+    throw error
+  })
+}
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 // Menu title for each way a flight can stop.
 const stopTitle = { weapon: 'shotDown', terrain: 'crashed', boundary: 'boundaryReached' } as const
@@ -127,11 +143,12 @@ export function FlightPage() {
       session.preset = next
       selectKeyboard({ preset: next })
       if (next === 'keyboard') { if (document.pointerLockElement === surface.current) document.exitPointerLock(); return }
-      try { const request = surface.current?.requestPointerLock(); request?.then(() => session.input.engage(), pause) } catch { pause() }
+      try { const request = surface.current ? lockPointer(surface.current) : undefined; request?.then(() => session.input.engage(), pause) } catch { pause() }
     }
     const keyup = (e: KeyboardEvent) => session.input.held.delete(e.code)
     // The keyboard preset has no pointer lock, but free look still turns the camera with the mouse.
-    const move = (e: MouseEvent) => { if (session.running && (document.pointerLockElement === surface.current && session.preset === 'mouse' || session.preset === 'keyboard' && session.input.holds('freeLook'))) session.input.move(e.movementX, e.movementY) }
+    // A delta past MOUSE.maxEventDelta is a pointer-lock glitch, not the hand (as the example's MouseInput drops it): it would throw the aim tens of degrees.
+    const move = (e: MouseEvent) => { if (Math.abs(e.movementX) > MOUSE.maxEventDelta || Math.abs(e.movementY) > MOUSE.maxEventDelta) return; if (session.running && (document.pointerLockElement === surface.current && session.preset === 'mouse' || session.preset === 'keyboard' && session.input.holds('freeLook'))) session.input.move(e.movementX, e.movementY) }
     // Only a press made while already locked fires: the click that takes the lock never does (doc 02).
     const mousedown = (e: MouseEvent) => {
       if (!session.running || document.pointerLockElement !== surface.current || session.preset !== 'mouse') return
@@ -167,7 +184,7 @@ export function FlightPage() {
           const denied = (reason?: unknown) => { cleanup(); reject(reason instanceof Error ? reason : new Error('Pointer lock denied')) }
           const timeout = setTimeout(denied, 3000)
           document.addEventListener('pointerlockchange', changed); document.addEventListener('pointerlockerror', denied)
-          try { const request = surface.current!.requestPointerLock(); request?.catch(denied) } catch { denied() }
+          try { const request = lockPointer(surface.current!); request?.catch(denied) } catch { denied() }
         })
       }
       if (session.preset === 'mouse') session.input.engage()
