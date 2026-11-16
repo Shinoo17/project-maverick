@@ -1,35 +1,35 @@
-/* Select Mode (mockup 1b). The scene behind is dimmed by .menu-dim. */
+/* Select Mode. The scene behind is blurred and dimmed by .menu-dim (menu.css).
+   Same language as the flight pause menu: one large title at the top left, and the choices
+   as columns of type on a hairline along the bottom. No plates. */
 
-.mode-heading { position: absolute; left: var(--gutter); top: 150px; display: flex; flex-direction: column; gap: 8px; }
-.mode-heading h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(64px, 12vh, 96px); line-height: var(--display-leading); letter-spacing: 0.02em; text-transform: uppercase; }
+.mode-heading { position: absolute; left: var(--gutter); top: 104px; display: flex; flex-direction: column; gap: 10px; }
+.mode-heading h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(56px, 6.2vw, 104px); line-height: var(--display-leading); letter-spacing: 0.01em; text-transform: uppercase; }
 
-.mode-options { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 150px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; }
+.mode-cards { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--menu-line); }
 
-/* An option is floating type under one hairline; the current one has a thicker cyan line. */
-.mode-option { display: flex; flex-direction: column; gap: 14px; padding-top: 22px; border-top: 1px solid rgba(184, 214, 225, 0.35); text-align: left; color: var(--menu-text); transition: border-color 160ms ease-out; }
-.mode-option:hover, .mode-option[aria-current] { border-top: 2px solid var(--menu-accent); padding-top: 21px; }
-.mode-option:hover .mode-option-go { color: var(--menu-text); }
+.mode-card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 22px 28px 20px 24px; border-left: 1px solid var(--menu-line-soft); color: var(--menu-text); text-align: left; transition: background-color 180ms ease-out; }
+.mode-card:first-child { border-left: 0; }
+/* The rule on top: cyan across the column that is pointed at, and always on the current mode. */
+.mode-card::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: var(--menu-accent); transform: scaleX(0); transform-origin: left; transition: transform 260ms var(--ease-out); }
+.mode-card:hover, .mode-card:focus-visible { background: rgba(154, 215, 232, 0.07); color: var(--menu-text); }
+.mode-card:hover::before, .mode-card:focus-visible::before, .mode-card[aria-current]::before { transform: scaleX(1); }
 
-.mode-option-title { display: flex; align-items: baseline; gap: 18px; }
-.mode-option-title strong { font-family: var(--font-display); font-weight: 700; font-size: 72px; line-height: var(--display-leading); letter-spacing: var(--track-tight); text-transform: uppercase; }
-.mode-index { font-family: var(--font-mono); font-size: 14px; color: var(--menu-accent); }
-.mode-current { font-family: var(--font-display); font-size: 14px; letter-spacing: var(--track-wide); color: var(--menu-accent); text-transform: uppercase; }
+.mode-card-top { display: flex; align-items: center; gap: 12px; min-height: 24px; color: var(--menu-muted); }
+.mode-current { font-family: var(--font-display); font-size: 13px; letter-spacing: var(--track-wide); color: var(--menu-accent); text-transform: uppercase; }
+.mode-card-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(44px, 4.8vw, 76px); line-height: var(--display-leading); letter-spacing: var(--track-tight); color: var(--menu-secondary); text-transform: uppercase; transition: color 180ms ease-out; }
+.mode-card:hover .mode-card-title, .mode-card:focus-visible .mode-card-title, .mode-card[aria-current] .mode-card-title { color: #fff; }
+.mode-card-text { max-width: 40ch; font-size: 15px; line-height: 1.5; color: var(--menu-secondary); }
+.mode-card-fact { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--menu-muted); text-transform: uppercase; }
+.mode-card-action { display: flex; align-items: center; gap: 8px; min-height: 32px; margin-top: 10px; color: var(--menu-accent); font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
+.mode-card-action svg { transition: transform 220ms var(--ease-out); }
+.mode-card:hover .mode-card-action svg, .mode-card:focus-visible .mode-card-action svg { transform: translateX(8px); }
 
-.mode-option-text { max-width: 48ch; font-size: 16px; line-height: 1.55; color: var(--menu-text-soft); }
-.mode-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.mode-chips span { padding: 3px 10px; border: 1px solid var(--menu-line); font-family: var(--font-display); font-size: 13px; letter-spacing: var(--track); color: var(--menu-secondary); text-transform: uppercase; }
-
-.mode-option-facts { display: flex; align-items: center; gap: 28px; font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; }
-.mode-option-facts b { font-weight: 500; color: var(--menu-text); }
-.mode-option-go { margin-left: auto; color: var(--menu-accent); font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track); text-transform: uppercase; }
-
-/* Training: one smaller line under the two big options. */
-.mode-training { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 56px; display: flex; align-items: baseline; gap: 18px; min-height: 48px; padding-top: 12px; border-top: 1px solid var(--menu-line-soft); color: var(--menu-secondary); text-align: left; }
-.mode-training strong { font-family: var(--font-display); font-weight: 600; font-size: 24px; letter-spacing: var(--track-tight); color: var(--menu-text); text-transform: uppercase; }
-.mode-training:hover .mode-option-go { color: var(--menu-text); }
-
+@media (max-height: 720px) {
+  .mode-heading { top: 84px; }
+  .mode-card { gap: 8px; padding-top: 16px; }
+  .mode-card-text { font-size: 14px; }
+}
 @media (max-width: 900px) {
-  .mode-options { grid-template-columns: 1fr; gap: 32px; }
-  .mode-option-title strong { font-size: 56px; }
-  .mode-option-facts, .mode-training { flex-wrap: wrap; gap: 12px 20px; }
+  .mode-cards { grid-template-columns: 1fr; }
+  .mode-card { border-left: 0; border-top: 1px solid var(--menu-line-soft); }
 }

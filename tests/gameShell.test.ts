@@ -84,7 +84,7 @@ describe('menu settings', () => {
 
 describe('PVE maps', () => {
   it('lists three maps; only the Flat Training Range can start, and only for TDM', () => {
-    expect(pveMaps.map(map => map.id)).toEqual(['flat-range', 'mountains', 'coastal'])
+    expect(pveMaps.map(map => map.id)).toEqual(['flat-range', 'mountains', 'islands'])
     expect(canPlayPve(getMap('flat-range'), 'tdm')).toBe(true)
     expect(canPlayPve(getMap('flat-range'), 'control-point')).toBe(false)
     expect(canPlayPve(getMap('mountains'), 'tdm')).toBe(false)

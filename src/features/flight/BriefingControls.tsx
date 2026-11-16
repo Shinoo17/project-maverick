@@ -1,6 +1,6 @@
 /*
-Controls for the flight briefing/pause menu (FlightPage). They follow the menu overlay
-language in DESIGN.md: type on hairlines, cyan marks the selection, no filled panels.
+Controls for the flight briefing/pause menu (PauseMenu.tsx). They follow the menu
+language in DESIGN.md: segmented plates, cyan marks the selection.
 
 - BriefingChoice: a row of options as native radio buttons, so arrow keys move between
   them. Each option has a name and an optional detail line in mono (heights, speeds).
@@ -12,12 +12,12 @@ import { useId, type CSSProperties } from 'react'
 
 export interface ChoiceOption<T extends string> { value: T; name: string; detail?: string }
 
-export function BriefingChoice<T extends string>({ label, hint, options, value, disabled, onChange }:
-  { label: string; hint?: string; options: readonly ChoiceOption<T>[]; value: T; disabled?: boolean; onChange: (value: T) => void }) {
+export function BriefingChoice<T extends string>({ label, hideLabel, stacked, hint, options, value, disabled, onChange }:
+  { label: string; hideLabel?: boolean; /** One option per line, for a narrow drawer. */ stacked?: boolean; hint?: string; options: readonly ChoiceOption<T>[]; value: T; disabled?: boolean; onChange: (value: T) => void }) {
   const name = useId()
-  return <fieldset className="briefing-field" disabled={disabled}>
-    <BriefingLabel text={label} as="legend" />
-    <div className="briefing-choice" style={{ '--choices': options.length } as CSSProperties}>
+  return <fieldset className="briefing-field" disabled={disabled} aria-label={hideLabel ? label : undefined}>
+    {!hideLabel && <BriefingLabel text={label} as="legend" />}
+    <div className="briefing-choice" style={{ '--choices': stacked ? 1 : options.length } as CSSProperties}>
       {options.map(option => <label key={option.value} className="briefing-option">
         <input type="radio" name={name} value={option.value} checked={value === option.value} onChange={() => onChange(option.value)} />
         <span className="briefing-option-name">{option.name}</span>

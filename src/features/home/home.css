@@ -1,4 +1,4 @@
-/* Home (mockup 1). Positions follow the 1440 × 810 mockup. */
+/* Home: identity at the lower left, the main menu column at the lower right. */
 
 .home-brand { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: 0.18em; }
 .home-brand svg { color: var(--menu-accent); transform: rotate(-45deg); }
@@ -12,23 +12,39 @@
 .home-locale button { min-width: 44px; min-height: 44px; color: var(--menu-muted); border-bottom: 2px solid transparent; }
 .home-locale button[aria-pressed='true'] { color: var(--menu-text); border-bottom-color: var(--menu-accent); }
 
-.home-aircraft { position: absolute; left: var(--gutter); bottom: 132px; display: flex; flex-direction: column; gap: 6px; }
+.home-aircraft { position: absolute; left: var(--gutter); bottom: 96px; display: flex; flex-direction: column; gap: 6px; }
 .home-designation { font-family: var(--font-display); font-weight: 600; font-size: 34px; letter-spacing: var(--track-tight); color: var(--menu-accent); line-height: 1; }
 .home-name { font-family: var(--font-display); font-weight: 700; font-size: clamp(88px, min(12vw, 21vh), 176px); line-height: 0.82; letter-spacing: 0.01em; color: rgba(218, 226, 230, 0.94); text-transform: uppercase; }
 .home-role { margin-top: 14px; max-width: 40ch; font-family: var(--font-display); font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
 
-.home-actions { position: absolute; right: var(--gutter); bottom: 48px; display: flex; flex-direction: column; align-items: flex-end; gap: 18px; }
-.home-mode { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
-.home-mode span { font-family: var(--font-display); font-size: 12px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
-.home-mode strong { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: var(--track); text-transform: uppercase; }
-.home-mode small { font-size: 13px; color: var(--menu-muted); }
-.home-secondary { display: flex; gap: 10px; }
-.home-play { width: 330px; height: 76px; padding: 0 28px; font-size: 34px; }
+/* Main menu: one line for the sortie, PLAY, then quiet rows. No plates: the aircraft stays the picture. */
+.home-nav { position: absolute; right: var(--gutter); bottom: 52px; width: 340px; display: flex; flex-direction: column; gap: 6px; }
+.home-sortie { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-bottom: 8px; pointer-events: none; }
+.home-sortie > span { width: 28px; height: 2px; background: var(--menu-accent); }
+.home-sortie strong { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track-wide); text-transform: uppercase; }
+.home-sortie small { flex-basis: 100%; padding-left: 38px; font-size: 13px; line-height: 1.4; color: var(--menu-muted); }
+.home-nav .home-play { width: 100%; height: 76px; margin-bottom: 8px; font-size: 34px; }
+/* Quiet rows: label left, current value right, on a hairline that turns cyan when pointed at. */
+.home-nav .mv-tile { min-height: 48px; padding: 4px 4px; clip-path: none; background: none; border-bottom: 1px solid var(--menu-line-soft); color: var(--menu-secondary); text-shadow: inherit; }
+.home-nav .mv-tile::before { display: none; }
+.home-nav .mv-tile > svg { color: var(--menu-muted); }
+.home-nav .mv-tile-text { flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px; }
+.home-nav .mv-tile-text strong { font-size: 17px; }
+.home-nav .mv-tile-text small { font-family: var(--font-display); font-size: 14px; letter-spacing: var(--track); text-transform: uppercase; }
+.home-nav .mv-key { opacity: 0.5; }
+.home-nav .mv-tile:hover, .home-nav .mv-tile:focus-visible { transform: translateX(-6px); border-bottom-color: var(--menu-accent); color: #fff; }
+.home-nav .mv-tile:hover > svg, .home-nav .mv-tile:focus-visible > svg { color: var(--menu-accent); }
 
-.home-footer { position: absolute; left: var(--gutter); bottom: 44px; display: flex; gap: 28px; font-family: var(--font-mono); font-size: 12px; letter-spacing: var(--track-tight); color: var(--menu-muted); }
+.home-footer { position: absolute; left: var(--gutter); bottom: 40px; font-family: var(--font-mono); font-size: 12px; letter-spacing: var(--track-tight); color: var(--menu-muted); }
 
-/* Short windows: the footer would collide with the name block. */
+/* Short windows: tighter menu so the column clears the top bar. */
 @media (max-height: 760px) {
-  .home-aircraft { bottom: 96px; }
+  .home-aircraft { bottom: 76px; }
   .home-footer { bottom: 28px; }
+  .home-nav { bottom: 32px; }
+  .home-nav .home-play { height: 64px; font-size: 28px; }
+  .home-nav .mv-tile { min-height: 44px; }
+}
+@media (max-width: 900px) {
+  .home-nav { width: auto; }
 }

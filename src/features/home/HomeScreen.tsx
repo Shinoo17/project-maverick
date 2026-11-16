@@ -1,11 +1,12 @@
 /*
-Home (mockup 1 · Home). The active aircraft fills the screen; all text floats
-over it. PLAY starts the saved mode; MODE and HANGAR open those screens.
-Shortcuts: Enter = Play, M = Mode, H = Hangar.
+Home. The active aircraft fills the screen and almost nothing covers it: its name at
+the lower left, and at the lower right one line naming the sortie, the amber PLAY
+button, and Mode, Hangar and Settings as quiet labels on hairlines, each with its key.
+Shortcuts: Enter = Play, M = Mode, H = Hangar, S = Settings.
 */
 import { useTranslation } from 'react-i18next'
-import { House, Menu, Plane } from 'lucide-react'
-import { navigate, routes } from '../../app/routes'
+import { Crosshair, Plane, Settings, Warehouse } from 'lucide-react'
+import { navigate, openSettings, routes } from '../../app/routes'
 import { selectLocale, useSessionSettings } from '../../app/sessionStore'
 import { getAircraft } from '../../content/aircraft'
 import { getMap } from '../../content/maps'
@@ -13,7 +14,7 @@ import { difficulties, getPveMode } from '../../content/pve/modes'
 import type { Locale } from '../../content/schemas'
 import { useCampaignProgress } from '../campaign/useCampaignProgress'
 import { useMenuHotkeys } from '../menu/hooks'
-import { Eyebrow, HotkeyHints, LaunchButton, SettingsButton } from '../menu/parts'
+import { Eyebrow, LaunchButton, MenuTile } from '../menu/parts'
 import { playSelectedMode } from '../menu/playSelectedMode'
 import './home.css'
 
@@ -25,7 +26,7 @@ export function HomeScreen() {
   const mode = useSelectedModeSummary()
   const play = () => playSelectedMode(settings)
 
-  useMenuHotkeys({ Enter: play, KeyM: () => navigate('mode'), KeyH: () => navigate('hangar') })
+  useMenuHotkeys({ Enter: play, KeyM: () => navigate('mode'), KeyH: () => navigate('hangar'), KeyS: () => openSettings('home') })
 
   return <div className="home menu-overlay">
     <header className="menu-topbar">
@@ -39,7 +40,6 @@ export function HomeScreen() {
         {(['en', 'th'] as Locale[]).map(value => <button key={value} type="button" aria-pressed={locale === value}
           onClick={() => selectLocale(value)}>{value.toUpperCase()}</button>)}
       </div>
-      <SettingsButton from="home" />
     </header>
 
     <section className="home-aircraft" aria-label={t('homeActiveAircraft')}>
@@ -47,26 +47,15 @@ export function HomeScreen() {
       <p className="home-designation">{aircraft.designation}</p>
       <h1 className="home-name">{aircraft.name}</h1>
       <p className="home-role">{aircraft.role[locale]}</p>
-      <a className="menu-link" href={routes.hangar}>{t('homeChangeInHangar')} →</a>
     </section>
 
-    <section className="home-actions" aria-label={t('homeSelectedMode')}>
-      <div className="home-mode">
-        <span>{t('homeSelectedMode')}</span>
-        <strong>{mode.title}</strong>
-        <small>{mode.detail}</small>
-      </div>
-      <div className="home-secondary">
-        <a className="menu-button" href={routes.mode}><Menu size={18} aria-hidden="true" />{t('navMode')}</a>
-        <a className="menu-button" href={routes.hangar}><House size={18} aria-hidden="true" />{t('navHangar')}</a>
-      </div>
-      <LaunchButton label={t('homePlay')} onClick={play} className="home-play" />
-    </section>
-
-    <footer className="home-footer">
-      <span>{t('homeBuild')}</span>
-      <HotkeyHints hints={[['ENTER', t('homePlay')], ['M', t('navMode')], ['H', t('navHangar')]]} />
-    </footer>
+    <nav className="home-nav" aria-label={t('homeMenu')}>
+      <p className="home-sortie"><span aria-hidden="true" /><strong>{mode.title}</strong><small>{mode.detail}</small></p>
+      <LaunchButton label={t('homePlay')} onClick={play} className="home-play" hotkey="ENTER" />
+      <MenuTile href={routes.mode} icon={<Crosshair size={20} strokeWidth={1.6} aria-hidden="true" />} title={t('navMode')} detail={mode.title} hotkey="M" />
+      <MenuTile href={routes.hangar} icon={<Warehouse size={20} strokeWidth={1.6} aria-hidden="true" />} title={t('navHangar')} detail={aircraft.designation} hotkey="H" />
+      <MenuTile onClick={() => openSettings('home')} icon={<Settings size={20} strokeWidth={1.6} aria-hidden="true" />} title={t('homeSettings')} hotkey="S" />
+    </nav>
   </div>
 }
 

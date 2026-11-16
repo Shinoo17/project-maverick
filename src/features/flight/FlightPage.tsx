@@ -1,18 +1,21 @@
 /* Training extends the aircraft-first instrument language: full viewport range,
    compact telemetry at top left, visible aircraft in chase view, controls below.
-   A focused briefing/pause dialog owns setup, launch, reset and return; its
-   SETTINGS button swaps the dialog to the shared Settings panel (same component as
+   A modal briefing/pause dialog (PauseMenu.tsx) owns the sortie setup (aircraft, map,
+   opponent, spawn), launch, restart and exit, over the blurred paused flight; its
+   SETTINGS tile swaps the dialog to the shared Settings panel (same component as
    #/settings). The dialog is modal, so Settings must live inside it. */
 import { createRef, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
-import { selectCamera, selectControls, selectKeyboard, useSessionSettings } from '../../app/sessionStore'
+import { selectAircraft, selectCamera, selectControls, selectKeyboard, useSessionSettings } from '../../app/sessionStore'
 import { cameraModeOption, nextCameraSettings } from '../../game/camera/cameraSettings'
 import { actionForCode, type FlightAction } from '../../game/input/keyBindings'
 import { useReducedMotion, useUiScale } from '../menu/hooks'
 import { SettingsPanel } from '../settings/SettingsPanel'
 import { bindingNames } from '../settings/KeyPrompt'
 import { flightReturnRoute, routes } from '../../app/routes'
-import { getAircraft, modelUrl, playgroundAircraft } from '../../content/aircraft'
+import { aircraft as roster, getAircraft, modelUrl, playgroundAircraft } from '../../content/aircraft'
+import { defaultFlightMapId, getMap } from '../../content/maps'
+import { defaultBotSetup, type BotLoadout } from '../../game/bot/botSetup'
 import { FlightInput } from '../../game/input/FlightInput'
 import { MOUSE } from '../../game/control/config'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
@@ -21,7 +24,8 @@ import { SceneBoundary } from '../../ui/components/SceneBoundary'
 import { supportsWebGL2 } from '../../platform/webgl'
 import { retryAircraftAsset } from '../../render/aircraft/assetLoader'
 import type { CameraRigId, FlightSession } from './session'
-import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
+import { PlaygroundHud } from './PlaygroundHud'
+import { PauseMenu, type BotChoice, type DroneChoice } from './PauseMenu'
 import { RadarScope, type RadarDriver } from './RadarScope'
 import { RwrScope, type RwrDriver } from './RwrScope'
 import { WeaponPanel, type SlotRefusal } from './WeaponPanel'
@@ -29,9 +33,7 @@ import { pressedSlot, weaponSlots } from './weaponSlots'
 import { flightWarning, holdWarning, warningSeverity, type HeldWarning } from './telemetry'
 import { practiceSpawns, targetDrone as droneSpawn, type PracticePreset } from '../../game/playground/practice'
 import { arcadeSpawnSpeeds } from '../../game/arcadeCore/step'
-import { dronePaths, type TargetDroneMode } from '../../game/playground/dronePath'
-import { BriefingChoice, BriefingStepper } from './BriefingControls'
-import { LogOut, Play, RotateCcw, Settings } from 'lucide-react'
+import type { TargetDroneMode } from '../../game/playground/dronePath'
 import { flightCoreAvailable, flightCoreIds, type FlightCoreId } from '../../game/flight/core'
 import type { CoreTuning } from '../../game/flightCore/profile'
 import { CoreTuningPanel } from './CoreFlightLab'
@@ -56,17 +58,19 @@ function lockPointer(element: Element): Promise<void> | void {
 const FlightScene = lazy(() => import('../../render/FlightScene'))
 // Menu title for each way a flight can stop.
 const stopTitle = { weapon: 'shotDown', terrain: 'crashed', boundary: 'boundaryReached' } as const
-// Speed and size of each drone, from the same values the runtime flies.
-const droneDetail = (mode: TargetDroneMode | 'off') => mode === 'still' ? '0 m/s' : mode === 'racetrack' ? `${dronePaths.speed} m/s` : mode === 'circle' ? `${dronePaths.speed} m/s · r ${dronePaths.circleRadius / 1000} km` : mode === 'bot' ? 'GUN · MSL' : undefined
 export function FlightPage() {
   const { t } = useTranslation()
-  const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics, audio } = useSessionSettings()
+  const { aircraftId: selectedAircraftId, controls, camera, cameraFov, keyboard, graphics, audio, locale } = useSessionSettings()
   const reducedMotion = useReducedMotion(), uiScale = useUiScale()
   const [aircraftId, setAircraftId] = useState(selectedAircraftId)
-  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, flightCore: 'arcade', cameraRig: 'arcade', coreTuning: {}, cameraTrace: null, resetId: 0, timeScale: 1, reducedMotion }), [])
+  const session = useMemo<FlightSession>(() => ({ runtime: null, input: new FlightInput(controls, keyboard), preset: keyboard.preset, camera: { ...camera }, cameraFov, graphics, running: false, targetDrone: null, bot: { ...defaultBotSetup }, flightCore: 'arcade', cameraRig: 'arcade', coreTuning: {}, cameraTrace: null, resetId: 0, timeScale: 1, reducedMotion }), [])
   const [practicePreset, setPracticePreset] = useState<PracticePreset>('free')
-  const [lesson, setLesson] = useState(0), [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
-  const [timeScale, setTimeScale] = useState(1), [targetDrone, setTargetDrone] = useState<TargetDroneMode | null>(null)
+  const [lab, setLab] = useState(false), [cameraChanged, setCameraChanged] = useState(false)
+  const [timeScale, setTimeScale] = useState(1)
+  const [mapId, setMapId] = useState(defaultFlightMapId)
+  // The opponent slot: a target drone or the combat bot, never both (one drone entity in the runtime).
+  const [drone, setDrone] = useState<DroneChoice>('off'), [bot, setBot] = useState<BotChoice>('off'), [loadout, setLoadout] = useState<BotLoadout>(defaultBotSetup.loadout)
+  const targetDrone: TargetDroneMode | null = bot !== 'off' ? 'bot' : drone === 'off' ? null : drone
   const [flightCore, setFlightCore] = useState<FlightCoreId>('arcade'), [tracing, setTracing] = useState(false)
   const [cameraRig, setCameraRig] = useState<CameraRigId>('arcade')
   const [coreTuning, setTuning] = useState<CoreTuning>({})
@@ -196,10 +200,23 @@ export function FlightPage() {
   }
   /** After a death: a fresh flight, flying at once. */
   function respawn() { resetFlight(); void begin() }
-  function chooseTargetDrone(mode: TargetDroneMode | null) {
-    session.targetDrone = mode; setTargetDrone(mode)
-    session.runtime?.setTargetDrone(mode); resetFlight()
+  /** Sets the opponent slot and restarts the flight. Choosing the bot turns the drone off, and the other way round. */
+  function chooseOpponent(nextDrone: DroneChoice, nextBot: BotChoice, nextLoadout: BotLoadout) {
+    setDrone(nextDrone); setBot(nextBot); setLoadout(nextLoadout)
+    const mode: TargetDroneMode | null = nextBot !== 'off' ? 'bot' : nextDrone === 'off' ? null : nextDrone
+    session.targetDrone = mode
+    session.bot = { difficulty: nextBot === 'off' ? defaultBotSetup.difficulty : nextBot, loadout: nextLoadout }
+    session.runtime?.setTargetDrone(mode, session.bot); resetFlight()
   }
+  /** The scene builds a new runtime for another aircraft, map or flight core: back to a fresh briefing meanwhile. */
+  function rebuild() { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); session.resetId++ }
+  function chooseAircraft(id: string) {
+    if (id === aircraftId) return
+    rebuild(); setAircraftId(id)
+    // A roster aircraft becomes the active one everywhere (Home, Hangar); a Flight Lab variant does not.
+    if (roster.some(entry => entry.id === id)) selectAircraft(id)
+  }
+  function chooseMap(id: string) { if (id !== mapId) { rebuild(); setMapId(id) } }
   function download(data: unknown, name: string) {
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
     const link = document.createElement('a'); link.href = url; link.download = name; link.click()
@@ -218,90 +235,73 @@ export function FlightPage() {
   const inSettings = view === 'settings'
   // The title's tone: a stopped or failed flight reads as failure.
   const briefState = !webgl || failed || stopped ? 'stopped' : hasStarted ? 'paused' : 'ready'
+  const mapName = getMap(mapId).name[locale]
+  // What flies against the player, for the line that stays on screen in flight.
+  const opponentLabel = bot !== 'off' ? `${t('combatBot')} · ${t(`botLevel_${bot}`)} · ${t(`botLoadout_${loadout}`)}` : drone !== 'off' ? `${t('targetDrone')} · ${t(`drone_${drone}`)}` : null
   // Names the keys actually bound, so the hint stays right after a rebind.
   const controlsHint = t('controlsHint', bindingNames(keyboard.bindings))
   return <main className="flight-root" data-settings={inSettings || undefined} style={{ '--ui-scale': uiScale } as CSSProperties}>
     <div className="flight-scene" ref={surface} tabIndex={-1} aria-label={t('flightTitle')}>
       {webgl && !failed && <SceneBoundary key={`${aircraftId}-${retry}`} fallback={null} onError={onError}><Suspense fallback={null}>
-        <FlightScene indicators={indicators} aircraftId={aircraftId} flightCore={flightCore} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} onDown={onDown} />
+        <FlightScene indicators={indicators} aircraftId={aircraftId} mapId={mapId} flightCore={flightCore} session={session} running={running} targetDrone={targetDrone !== null} graphics={graphics} audio={audio} onReady={onReady} onTelemetry={onTelemetry} onDown={onDown} />
       </Suspense></SceneBoundary>}
     </div>
     <div className="flight-hud">
       <FlightInstruments driver={indicators.hud} />
       <RadarScope driver={indicators.radar} />
       <RwrScope driver={indicators.rwr} />
-      <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {t('flatRange')}</span></div>
+      <div className="flight-identity"><strong>{getAircraft(aircraftId).designation}</strong><span>{t('training')} / {mapName}</span></div>
       <div className="flight-actions">{graphics.showFps && <span ref={indicators.fps} className="flight-fps" aria-hidden="true" />}<span>{t(cameraModeOption(camera.mode).labelKey)}</span><button onClick={pause}>{t('pauseFlight')} · Esc</button></div>
       <FlightSystemStatus state={telemetry} />
       {/* The Flight Lab readout takes the same corner, so the column steps aside while it is open. */}
       {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} tick={telemetryTick} refusals={refusals} preset={preset} bindings={keyboard.bindings} reducedMotion={reducedMotion} />}
-      <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={lesson} cameraChanged={cameraChanged} lab={lab} input={session.input} />
+      <PlaygroundHud state={telemetry} practice={session.runtime?.snapshot().practice} lesson={0} cameraChanged={cameraChanged} lab={lab} input={session.input} />
       {running && warning && <p className="flight-warning" data-severity={warningSeverity(warning)} role="status">{t(warning)}</p>}
       {/* The PSM virtual stick (Space + mouse): shown by the scene only while the mouse flies it. */}
       {running && preset === 'mouse' && <div ref={indicators.stick} className="flight-stick" aria-hidden="true" hidden>
         <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" pathLength="96" /><path d="M50 14V8M86 50H92M50 86V92M14 50H8" /></svg>
       </div>}
       {/* Active practice modifiers stay on screen while flying (docs/game-design/10-playground.md). */}
-      {(timeScale !== 1 || targetDrone) && <p className="flight-timescale">{[timeScale !== 1 && `${t('practiceSpeed')} ×${timeScale}`, targetDrone && `${t('targetDrone')} · ${t(`drone_${targetDrone}`)}`].filter(Boolean).join(' · ')}</p>}
+      {(timeScale !== 1 || opponentLabel) && <p className="flight-timescale">{[timeScale !== 1 && `${t('practiceSpeed')} ×${timeScale}`, opponentLabel].filter(Boolean).join(' · ')}</p>}
       <p className="flight-controls">{controlsHint}</p>
     </div>
     <dialog ref={dialog} className={inSettings ? 'flight-settings' : 'flight-menu'} aria-labelledby={inSettings ? 'settings-title' : 'flight-menu-title'} onCancel={e => e.preventDefault()}
       onClose={() => { if (closingDialog.current) closingDialog.current = false; else if (!session.running) dialog.current?.showModal() }}>
-      {inSettings ? <div className="settings-scope"><SettingsPanel backLabel={t('pauseFlight')} onBack={() => setView('pause')} /></div> : <div className="settings-scope flight-brief" data-state={briefState}>
-        <header className="flight-brief-top">
-          <strong>{getAircraft(aircraftId).designation}</strong><span aria-hidden="true" />
-          <p>{t('training')} / {t('flatRange')}</p>
-        </header>
-        <div className="flight-brief-body">
-          <h1 id="flight-menu-title">{!webgl ? t('unsupported') : failed ? t('error') : stopped ? t(stopTitle[telemetry.stopReason ?? 'terrain']) : hasStarted ? t('pausedFlight') : t('flightReady')}</h1>
-          <p className="flight-brief-lede">{!webgl ? t('unsupportedHint') : failed ? t('errorHint') : t('flightHelp')}</p>
-          <p className="flight-brief-note">{t('baseline')}</p>
-          <section className="flight-brief-section" aria-labelledby="flight-brief-practice">
-            <h2 id="flight-brief-practice">{t('briefPractice')}</h2>
-            <BriefingChoice label={t('practicePreset')} disabled={!ready} value={practicePreset} onChange={value => { setPracticePreset(value); resetFlight(value) }}
-              options={(Object.keys(practiceSpawns) as PracticePreset[]).map(id => { const [name, detail] = t(`spawn_${id}`).split(' · '); return { value: id, name, detail: flightCore === 'arcade' ? detail.replace(/\d+ m\/s/, `${Math.round(arcadeSpawnSpeeds[id])} m/s`) : detail } })} />
-            <BriefingStepper label={t('practiceLesson')} disabled={!ready} values={lessonLabels.map(key => t(key))} index={lesson} previousLabel={t('lessonPrevious')} nextLabel={t('lessonNext')}
-              onChange={value => { setLesson(value); const spawn: PracticePreset = value === 6 ? 'cobra' : value === 5 ? 'recovery' : value === 4 ? 'highG' : 'free'; setPracticePreset(spawn); resetFlight(spawn) }} />
-            <BriefingChoice label={t('targetDroneToggle')} hint={targetDrone ? t(targetDrone === 'bot' ? 'combatBotHint' : 'targetDroneHint') : undefined} disabled={!ready} value={targetDrone ?? 'off'}
-              onChange={value => chooseTargetDrone(value === 'off' ? null : value)}
-              options={(['off', 'still', 'racetrack', 'circle', 'bot'] as const).map(id => ({ value: id, name: t(`drone_${id}`), detail: droneDetail(id) }))} />
-          </section>
-          <section className="flight-brief-section" aria-labelledby="flight-brief-controls">
-            <h2 id="flight-brief-controls">{t('briefControls')}</h2>
-            <p className="flight-brief-keys">{controlsHint}</p>
-            {preset === 'mouse' && <details className="flight-brief-more"><summary>{t('mousePreset')}</summary><p>{t('mouseHintArcade')}</p></details>}
-            <details className="flight-brief-more"><summary>{t('psmControlsHelp')}</summary><p>{t('psmControlsDetail')}</p></details>
-            <details className="flight-brief-more flight-lab-settings"><summary>{t('flightLab')}</summary>
-              <div className="flight-lab-grid">
-                <label htmlFor="validation-aircraft">{t('labAircraft')}</label><select id="validation-aircraft" value={aircraftId} onChange={e => { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); setAircraftId(e.target.value) }}>{playgroundAircraft.map(entry => <option key={entry.id} value={entry.id}>{entry.designation} · {entry.name}</option>)}</select>
-                <label htmlFor="flight-core">{t('labFlightCore')}</label><select id="flight-core" value={flightCore} onChange={e => { pause(); setReady(false); setHasStarted(false); setFailed(false); setTelemetry(null); setPracticePreset('free'); session.flightCore = e.target.value as FlightCoreId; setFlightCore(session.flightCore) }}>{flightCoreIds.map(id => <option key={id} value={id} disabled={!flightCoreAvailable(id)}>{t(`flightCore_${id}`)}</option>)}</select>
-                {<><label htmlFor="camera-rig">{t('labCameraRig')}</label><select id="camera-rig" value={cameraRig} onChange={e => { session.cameraRig = e.target.value as CameraRigId; setCameraRig(session.cameraRig); session.invalidate?.() }}>{(['arcade', 'chase', 'legacy'] as const).map(id => <option key={id} value={id}>{t(`cameraRig_${id}`)}</option>)}</select></>}
-                <label htmlFor="practice-speed">{t('practiceSpeed')}</label><select id="practice-speed" value={timeScale} onChange={e => { session.timeScale = Number(e.target.value); setTimeScale(session.timeScale) }}>{[1, 0.5, 0.25].map(value => <option key={value} value={value}>×{value}</option>)}</select>
-              </div>
-              <label className="flight-lab-check"><input type="checkbox" checked={lab} onChange={e => setLab(e.target.checked)} /> {t('showTelemetry')}</label>
-              <label className="flight-lab-check"><input type="checkbox" checked={tracing} onChange={e => traceCamera(e.target.checked)} /> {t('labCameraTrace')}</label>
-              <div className="flight-lab-actions">
-                <button disabled={!ready || !!stopped} onClick={() => { session.runtime?.singleStep(); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null); session.invalidate?.() }}>{t('singleStep')}</button>
-                <button disabled={!ready} onClick={exportFlight}>{t('exportFlight')}</button>
-                <button disabled={!tracing} onClick={exportCameraTrace}>{t('exportCameraTrace')}</button>
-              </div>
-              <p>{t('exportFlightHint')}</p>
-              <p>{t('cameraTraceHint')}</p>
-              {flightCore === 'new' && <CoreTuningPanel aircraftId={aircraftId} tuning={coreTuning} apply={next => { setCoreTuning(session, aircraftId, next); setTuning(session.coreTuning) }} />}
-            </details>
-          </section>
-        </div>
-        <footer className="flight-brief-actions">
-          {pointerError && <p className="flight-brief-alert" role="alert">{t('pointerError')}</p>}
-          {failed ? <button className="menu-launch" onClick={() => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); if (targetDrone) retryAircraftAsset(modelUrl(getAircraft(droneSpawn.aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) }}><span>{t('retry')}</span><RotateCcw size={24} aria-hidden="true" /></button>
-            : <button ref={launch} className="menu-launch" disabled={!ready || !webgl} onClick={() => stopped ? respawn() : void begin()}><span>{!ready && webgl ? t('flightLoading') : stopped ? t('respawn') : hasStarted ? t('resumeFlight') : t('beginFlight')}</span>{ready && webgl && <Play size={24} fill="currentColor" aria-hidden="true" />}</button>}
-          <div className="flight-brief-secondary">
-            {ready && <button onClick={() => resetFlight()}><RotateCcw size={16} aria-hidden="true" />{t('resetFlight')}</button>}
-            <button onClick={() => setView('settings')}><Settings size={16} aria-hidden="true" />{t('homeSettings')}</button>
-            <a href={routes[flightReturnRoute()]} onClick={pause}><LogOut size={16} aria-hidden="true" />{t('leaveFlight')}</a>
+      {inSettings ? <div className="settings-scope"><SettingsPanel backLabel={t('pauseFlight')} onBack={() => setView('pause')} /></div> : <PauseMenu
+        state={briefState}
+        title={!webgl ? t('unsupported') : failed ? t('error') : stopped ? t(stopTitle[telemetry.stopReason ?? 'terrain']) : hasStarted ? t('pausedFlight') : t('flightReady')}
+        lede={!webgl ? t('unsupportedHint') : failed ? t('errorHint') : undefined}
+        ready={ready} pointerError={pointerError}
+        launch={failed
+          ? { ref: launch, retry: true, disabled: false, label: t('retry'), onClick: () => { retryAircraftAsset(modelUrl(getAircraft(aircraftId))); if (targetDrone) retryAircraftAsset(modelUrl(getAircraft(droneSpawn.aircraftId))); setReady(false); setFailed(false); setRetry(x => x + 1) } }
+          : { ref: launch, retry: false, disabled: !ready || !webgl, label: !ready && webgl ? t('flightLoading') : stopped ? t('respawn') : hasStarted ? t('resumeFlight') : t('beginFlight'), onClick: () => stopped ? respawn() : void begin() }}
+        onRestart={() => resetFlight()} onSettings={() => setView('settings')} leaveHref={routes[flightReturnRoute()]} onLeave={pause}
+        aircraftId={aircraftId} onAircraft={chooseAircraft} mapId={mapId} onMap={chooseMap}
+        drone={drone} onDrone={value => chooseOpponent(value, value === 'off' ? bot : 'off', loadout)}
+        bot={bot} onBot={value => chooseOpponent(value === 'off' ? drone : 'off', value, loadout)}
+        loadout={loadout} onLoadout={value => chooseOpponent(drone, bot, value)}
+        spawn={practicePreset} onSpawn={value => { setPracticePreset(value as PracticePreset); resetFlight(value as PracticePreset) }}
+        spawnOptions={(Object.keys(practiceSpawns) as PracticePreset[]).map(id => { const [name, detail] = t(`spawn_${id}`).split(' · '); return { value: id, name, detail: flightCore === 'arcade' ? detail.replace(/\d+ m\/s/, `${Math.round(arcadeSpawnSpeeds[id])} m/s`) : detail } })}>
+        {/* Developer tools: the LAB drawer, not part of the sortie setup. */}
+        <>
+          <div className="flight-lab-grid">
+            <label htmlFor="validation-aircraft">{t('labAircraft')}</label><select id="validation-aircraft" value={aircraftId} onChange={e => chooseAircraft(e.target.value)}>{playgroundAircraft.map(entry => <option key={entry.id} value={entry.id}>{entry.designation} · {entry.name}</option>)}</select>
+            <label htmlFor="flight-core">{t('labFlightCore')}</label><select id="flight-core" value={flightCore} onChange={e => { rebuild(); session.flightCore = e.target.value as FlightCoreId; setFlightCore(session.flightCore) }}>{flightCoreIds.map(id => <option key={id} value={id} disabled={!flightCoreAvailable(id)}>{t(`flightCore_${id}`)}</option>)}</select>
+            <label htmlFor="camera-rig">{t('labCameraRig')}</label><select id="camera-rig" value={cameraRig} onChange={e => { session.cameraRig = e.target.value as CameraRigId; setCameraRig(session.cameraRig); session.invalidate?.() }}>{(['arcade', 'chase', 'legacy'] as const).map(id => <option key={id} value={id}>{t(`cameraRig_${id}`)}</option>)}</select>
+            <label htmlFor="practice-speed">{t('practiceSpeed')}</label><select id="practice-speed" value={timeScale} onChange={e => { session.timeScale = Number(e.target.value); setTimeScale(session.timeScale) }}>{[1, 0.5, 0.25].map(value => <option key={value} value={value}>×{value}</option>)}</select>
           </div>
-        </footer>
-      </div>}
+          <label className="flight-lab-check"><input type="checkbox" checked={lab} onChange={e => setLab(e.target.checked)} /> {t('showTelemetry')}</label>
+          <label className="flight-lab-check"><input type="checkbox" checked={tracing} onChange={e => traceCamera(e.target.checked)} /> {t('labCameraTrace')}</label>
+          <div className="flight-lab-actions">
+            <button disabled={!ready || !!stopped} onClick={() => { session.runtime?.singleStep(); setTelemetry(session.runtime?.snapshot().aircraft[0] ?? null); session.invalidate?.() }}>{t('singleStep')}</button>
+            <button disabled={!ready} onClick={exportFlight}>{t('exportFlight')}</button>
+            <button disabled={!tracing} onClick={exportCameraTrace}>{t('exportCameraTrace')}</button>
+          </div>
+          <p>{t('exportFlightHint')}</p>
+          <p>{t('cameraTraceHint')}</p>
+          {flightCore === 'new' && <CoreTuningPanel aircraftId={aircraftId} tuning={coreTuning} apply={next => { setCoreTuning(session, aircraftId, next); setTuning(session.coreTuning) }} />}
+        </>
+      </PauseMenu>}
     </dialog>
   </main>
 }

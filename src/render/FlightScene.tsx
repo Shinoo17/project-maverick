@@ -31,7 +31,7 @@ import { ChaseCamera } from './ChaseCamera'
 import type { CameraRig } from './cameraRig'
 import { WORLD_STEP } from '../game/runtime/clock'
 import { ArcadeCamera } from './ArcadeCamera'
-import { TrainingRange } from './range/TrainingRange'
+import { MapEnvironment } from './maps/MapEnvironment'
 import { FlightEffects } from './FlightEffects'
 import { createFlightRig } from './aircraft/flightRig'
 import { createBayDoors, type BayDoors } from './aircraft/bayDoors'
@@ -44,10 +44,10 @@ import type { AudioSettings } from './audio/audioSettings'
 import { applyCoreTuning } from '../features/flight/coreTuning'
 
 export type FlightIndicators = { stick: RefObject<HTMLDivElement | null>; gate?: RefObject<HTMLDivElement | null>; hud: RefObject<HudDriver | null>; radar?: RefObject<RadarDriver | null>; rwr?: RefObject<RwrDriver | null>; fps?: RefObject<HTMLElement | null> }
-interface Props { indicators: FlightIndicators; aircraftId: AircraftId; flightCore: FlightCoreId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void; onDown: () => void }
+interface Props { indicators: FlightIndicators; aircraftId: AircraftId; mapId: string; flightCore: FlightCoreId; session: FlightSession; running: boolean; targetDrone: boolean; graphics: GraphicsSettings; audio: AudioSettings; onReady: () => void; onTelemetry: (state: AircraftState, tick: number) => void; onDown: () => void }
 /** Simulation seconds the player's wreck lies burning on the ground before the menu comes up. */
 const DOWN_SETTLE = 1.5
-function FlightWorld({ aircraftId, flightCore, session, running, targetDrone, audio, onReady, onTelemetry, onDown, indicators }: Props) {
+function FlightWorld({ aircraftId, mapId, flightCore, session, running, targetDrone, audio, onReady, onTelemetry, onDown, indicators }: Props) {
   const definition = getAircraft(aircraftId)
   const asset = useAircraftAsset(modelUrl(definition))
   // The chase camera ported from example/flight-control (ArcadeCamera) flies every core. Flight Lab
@@ -126,7 +126,7 @@ function FlightWorld({ aircraftId, flightCore, session, running, targetDrone, au
   useEffect(() => () => tracers.dispose(), [tracers])
   useEffect(() => () => effects.dispose(), [effects])
   useEffect(() => {
-    const runtime = new GameRuntime({ mode: 'playground', mapId: 'flat-range', aircraftIds: [aircraftId], flightCore, ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}) })
+    const runtime = new GameRuntime({ mode: 'playground', mapId, aircraftIds: [aircraftId], flightCore, ...(session.targetDrone ? { targetDrone: session.targetDrone } : {}), ...(session.targetDrone === 'bot' ? { bot: session.bot } : {}) })
     session.runtime = runtime; runtime.start(); runtime.pause()
     // The new core starts on the Flight Lab's tuning: patch, then rebuild the world on it.
     applyCoreTuning(session, aircraftId); if (flightCore === 'new') runtime.reset()
@@ -135,7 +135,7 @@ function FlightWorld({ aircraftId, flightCore, session, running, targetDrone, au
     session.invalidate = invalidate
     legacyRig.reset(); chaseRig.reset(); arcadeRig.reset(); onReady(); invalidate()
     return () => { runtime.dispose(); session.runtime = null; session.invalidate = undefined }
-  }, [aircraftId, flightCore, session, legacyRig, chaseRig, arcadeRig, onReady, invalidate])
+  }, [aircraftId, mapId, flightCore, session, legacyRig, chaseRig, arcadeRig, onReady, invalidate])
   useEffect(() => () => model.traverse(object => {
     if ('isSkinnedMesh' in object && object.isSkinnedMesh && 'skeleton' in object) (object.skeleton as { dispose(): void }).dispose()
   }), [model])
@@ -348,7 +348,7 @@ function placeDrone(group: Group | null, model: Group | null, before: WorldState
 export default memo(function FlightScene(props: Props) {
   const limit = props.graphics.frameRate === 'unlimited' ? null : props.graphics.frameRate
   return <Canvas frameloop={props.running && limit === null ? 'always' : 'demand'} dpr={canvasDpr(props.graphics.renderScale)} gl={{ antialias: false }} camera={{ fov: 69, near: 0.5, far: 14000 }}>
-    <TrainingRange /><AssetLoaderProvider><Suspense fallback={null}><FlightWorld {...props} /></Suspense></AssetLoaderProvider>
+    <MapEnvironment mapId={props.mapId} /><AssetLoaderProvider><Suspense fallback={null}><FlightWorld {...props} /></Suspense></AssetLoaderProvider>
     {props.running && limit !== null && <FrameLimiter fps={limit} />}
   </Canvas>
 })

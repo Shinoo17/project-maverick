@@ -6,7 +6,9 @@ reloads the aircraft. The current screen is drawn as an overlay on top.
   MenuLayout
   ├─ MenuStage       shared 3D aircraft (hidden on Campaign and PVE),
   │                  or weapon models on Armament
-  ├─ dim + vignette  keep floating text readable
+  ├─ dim + vignette  keep text readable; the dim layer also blurs the scene
+  │                  on Select Mode and Settings
+  ├─ frame           HUD corner brackets
   └─ <Screen>        HomeScreen, ModeSelectScreen, HangarScreen, SettingsScreen, …
 
 Hangar and Armament share two pieces of state kept here: the aircraft being
@@ -75,6 +77,7 @@ export function MenuLayout({ route }: { route: MenuRouteId }) {
       weapons={sceneWeapons} weaponStatuses={weaponStatuses} onWeaponStatus={onWeaponStatus} weaponRetryId={weaponRetryId} />
     <div className="menu-dim" aria-hidden="true" />
     <div className="menu-vignette" aria-hidden="true" />
+    <div className="menu-frame" aria-hidden="true" />
 
     {route === 'home' && <HomeScreen />}
     {route === 'mode' && <ModeSelectScreen />}

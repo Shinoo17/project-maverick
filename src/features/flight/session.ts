@@ -3,6 +3,7 @@ import type { FlightInput, InputPreset } from '../../game/input/FlightInput'
 import type { CameraSettings } from '../../game/camera/cameraSettings'
 import type { GraphicsSettings } from '../../render/graphicsSettings'
 import type { TargetDroneMode } from '../../game/playground/dronePath'
+import type { BotSetup } from '../../game/bot/botSetup'
 import type { RefusalTone } from '../../render/lockTone'
 import type { FlightCoreId } from '../../game/flight/core'
 import type { CameraTrace } from '../../render/cameraTrace'
@@ -23,6 +24,8 @@ export interface FlightSession {
   running: boolean
   /** Playground modifier, null for none; read when the scene creates its runtime. */
   targetDrone: TargetDroneMode | null
+  /** The combat bot's difficulty and loadout, used while `targetDrone` is 'bot'. */
+  bot: BotSetup
   /** Flight Lab: the flight core the scene's runtime uses (src/game/flight/core.ts). */
   flightCore: FlightCoreId
   /** Flight Lab: the tuning panel's patch on the new core's profiles; outlives each runtime. */

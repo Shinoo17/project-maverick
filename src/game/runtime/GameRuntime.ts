@@ -8,7 +8,8 @@ import { createCoreFlight } from '../flightCore/step'
 import { arcadeSpawnSpeed, arcadeSpawnSpeeds, createArcadeFlight } from '../arcadeCore/step'
 import { coreAssistOf, coreProfileOf, validateCoreAssist, validateCoreProfile, type CoreTuning } from '../flightCore/profile'
 import { botSpawnPose, combatBot, createPracticeState, droneRespawnPose, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
-import { circleFrom, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
+import { circleFrom, droneFlares, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
+import { defaultBotSetup, type BotSetup } from '../bot/botSetup'
 import { createThrustVectoringState } from '../flight/thrustVectoring'
 import { createPilotIntent } from '../flight/intent'
 import { createManeuverState } from '../flight/maneuvers'
@@ -78,6 +79,7 @@ export class GameRuntime {
       ...(config.mapId === undefined ? {} : { mapId: config.mapId }),
       // `true` from older sessions is the still drone.
       ...(config.targetDrone ? { targetDrone: config.targetDrone === true ? 'still' as const : config.targetDrone } : {}),
+      ...(config.bot === undefined ? {} : { bot: { ...config.bot } }),
       ...(config.flightOverrides === undefined ? {} : { flightOverrides: structuredClone(config.flightOverrides) }),
       // Absent and 'legacy' are the same core; only another one is kept, so older sessions and replays read unchanged.
       ...(config.flightCore === undefined || config.flightCore === 'legacy' ? {} : { flightCore: config.flightCore }) }
@@ -103,13 +105,15 @@ export class GameRuntime {
     if (mode === 'bot') {
       // Its own speed whatever the practice preset (Low energy spawns below the stall), with the engine trimmed for it.
       const speed = this.spawnSpeed(combatBot.speed)
-      drone.control = 'bot'; drone.bot = createBotState(0x5eed ^ tick)
+      const setup = this.config.bot ?? defaultBotSetup
+      drone.control = 'bot'; drone.bot = createBotState(0x5eed ^ tick, setup.difficulty, setup.loadout)
       drone.velocity = { x: heading.x * speed, y: heading.y * speed, z: heading.z * speed }
       this.steering.set(drone.id, createBotSteering())
     } else if (mode !== 'still') {
       drone.control = 'path'
       drone.path = mode === 'racetrack' ? racetrackFrom(position, heading, tick) : circleFrom(position, position.y, tick)
       Object.assign(drone, dronePose(drone.path, 0))
+      if (mode === 'flares') drone.countermeasures.bursts = droneFlares.bursts
     }
     // Made again on the drone's own pose, now that it has one.
     if (this.config.flightCore === 'arcade') drone.arcadeFlight = createArcadeFlight(drone)
@@ -177,6 +181,8 @@ export class GameRuntime {
         // A moving one is put where its path is at the end of this tick.
         if (!flown(entity)) {
           if (entity.path && entity.alive) Object.assign(entity, dronePose(entity.path, (this.world.tick + 1 - entity.path.startTick) * WORLD_STEP))
+          // The 'flares' drone answers a missile coming for it; the burst rules pace it.
+          if (this.config.targetDrone === 'flares' && entity.alive && this.missileInbound(entity)) dispenses.add(entity.id)
           continue
         }
         const command = botCommands.get(entity.id) ?? commandAtTick?.(this.world.tick, entity.id) ?? neutralCommand(this.world.tick, entity.id)
@@ -219,12 +225,18 @@ export class GameRuntime {
       this.world.tick++
     })
   }
+  /** A missile launched at `entity` is within the flare drone's range. */
+  private missileInbound(entity: AircraftState) {
+    const p = entity.position
+    return this.world.missiles.some(missile => missile.targetId === entity.id
+      && Math.hypot(missile.position.x - p.x, missile.position.y - p.y, missile.position.z - p.z) < droneFlares.range)
+  }
   /** Moves flares and chaff in the air, starts the bursts asked for this tick, and releases the decoys due. */
   private stepDecoys(dispenses: Set<string>) {
     const world = this.world
     world.decoys = world.decoys.filter(decoy => stepDecoy(decoy, WORLD_STEP))
     for (const entity of world.aircraft) {
-      if (dispenses.has(entity.id) && entity.alive && flown(entity) && startBurst(entity.countermeasures, world.tick, WORLD_STEP))
+      if (dispenses.has(entity.id) && entity.alive && (flown(entity) || entity.control === 'path') && startBurst(entity.countermeasures, world.tick, WORLD_STEP))
         this.emit({ type: 'countermeasure-dispensed', entityId: entity.id, bursts: entity.countermeasures.bursts })
       world.decoys.push(...releaseDecoys(entity, world.tick, WORLD_STEP, () => world.nextProjectileId++))
     }
@@ -341,11 +353,11 @@ export class GameRuntime {
     this.tunedTick = this.world.tick
   }
   get tuning(): CoreTuning { return structuredClone(this.coreTuning) }
-  /** Playground modifier: sets the target drone (null removes it), then restarts the flight like reset(). */
-  setTargetDrone(mode: TargetDroneMode | null) {
+  /** Playground modifier: sets the target drone (null removes it) and, for the combat bot, its setup, then restarts the flight like reset(). */
+  setTargetDrone(mode: TargetDroneMode | null, bot?: BotSetup) {
     if (this.status === 'disposed') return
-    const { targetDrone: _, ...rest } = this.config
-    const next = mode ? { ...rest, targetDrone: mode } : rest
+    const { targetDrone: _, bot: __, ...rest } = this.config
+    const next = mode ? { ...rest, targetDrone: mode, ...(mode === 'bot' && bot ? { bot: { ...bot } } : {}) } : rest
     validateSession(next)
     this.config = next
     this.reset()

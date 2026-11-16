@@ -1,10 +1,11 @@
 /*
-Menu design system (DESIGN.md, mockups in example/Design.html).
-Text floats over the 3D scene: no panels, no solid plates. Readability comes
-from the vignette, the dim layer and a soft dark text shadow.
-Everything is scoped under .menu so it cannot reach the flight page or studio.
+Menu design system (DESIGN.md).
+The game scene stays visible behind every menu. Home shows it sharp; Select Mode,
+Settings and the flight pause menu blur it and lay cockpit-style panels over it:
+dark glass with one chamfered corner, hairline edges, stencil labels, key caps.
+Everything is scoped under .menu (or .settings-scope inside the flight page).
 
-Sections: tokens · frame layers · shared parts · buttons · narrow windows
+Sections: tokens · frame layers · shared parts · panels and tiles · buttons · narrow windows
 */
 
 /* ---------- Tokens ----------
@@ -25,6 +26,13 @@ Sections: tokens · frame layers · shared parts · buttons · narrow windows
   --menu-launch: #ffb74a;          /* PLAY / START / LAUNCH only */
   --menu-launch-hover: #ffd08a;
   --menu-hostile: #ff8a80;
+  /* Cockpit panels: dark glass fill, its edge, and the fill of a solid control. */
+  --menu-panel: rgba(8, 12, 15, 0.66);
+  --menu-panel-edge: rgba(174, 201, 211, 0.3);
+  --menu-solid: rgba(10, 15, 19, 0.9);
+  /* One corner pair is cut at 45°, like a placard: large for panels, small for controls. */
+  --clip-lg: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  --clip-sm: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 
   --font-display: 'Barlow Condensed', 'IBM Plex Sans Thai', sans-serif;
   --font-body: 'Barlow', 'IBM Plex Sans Thai', sans-serif;
@@ -60,9 +68,15 @@ html[lang='th'] :is(.menu, .settings-scope) { --track-wide: 0.02em; --track: 0.0
 .menu-stage-status p { display: flex; align-items: center; gap: 10px; }
 
 .menu-dim { position: absolute; inset: 0; pointer-events: none; background: rgba(3, 5, 7, 0.6); opacity: 0; transition: opacity 400ms var(--ease-out); }
-.menu[data-route='mode'] .menu-dim { opacity: 1; }
-/* Settings: a scrim from the left keeps the panel readable; the aircraft on the right stays clear. */
-.menu[data-route='settings'] .menu-dim { opacity: 1; background: linear-gradient(90deg, rgba(3, 5, 7, 0.9) 0%, rgba(3, 5, 7, 0.78) 44%, rgba(3, 5, 7, 0.1) 72%, transparent 100%); }
+/* Select Mode and Settings: the scene stays on screen, blurred and dimmed, behind the panels. */
+.menu:is([data-route='mode'], [data-route='settings']) .menu-dim { opacity: 1; background: rgba(4, 7, 9, 0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+/* HUD-style corner brackets around the whole frame. */
+.menu-frame { position: absolute; inset: 14px; pointer-events: none; --bracket: rgba(154, 215, 232, 0.45);
+  background:
+    linear-gradient(var(--bracket), var(--bracket)) left top / 26px 1px no-repeat, linear-gradient(var(--bracket), var(--bracket)) left top / 1px 26px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) right top / 26px 1px no-repeat, linear-gradient(var(--bracket), var(--bracket)) right top / 1px 26px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) left bottom / 26px 1px no-repeat, linear-gradient(var(--bracket), var(--bracket)) left bottom / 1px 26px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) right bottom / 26px 1px no-repeat, linear-gradient(var(--bracket), var(--bracket)) right bottom / 1px 26px no-repeat; }
 .menu-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(122% 104% at 50% 46%, transparent 44%, rgba(2, 3, 5, 0.88) 100%); }
 
 /* The overlay lets drags reach the 3D scene; only its controls take the pointer. */
@@ -99,25 +113,50 @@ html[lang='th'] :is(.menu, .settings-scope) { --track-wide: 0.02em; --track: 0.0
 /* Dashed box that marks a missing image, as in the mockups. */
 .menu-placeholder { display: flex; align-items: center; justify-content: center; padding: 8px 14px; border: 1px dashed rgba(154, 215, 232, 0.5); background: rgba(5, 7, 9, 0.6); font-family: var(--font-mono); font-size: 12px; color: var(--menu-accent); text-shadow: none; }
 
+/* ---------- Panels and tiles ----------
+   A cut-corner shape cannot carry a CSS border (the cut would have no edge), so the element
+   is filled with the edge colour and ::before lays the fill one pixel inside it.
+   --edge and --fill are the two colours; states change those. */
+:is(.menu, .settings-scope) :is(.mv-panel, .mv-tile, .menu-button) { position: relative; isolation: isolate; --edge: var(--menu-panel-edge); --fill: var(--menu-panel); background: var(--edge); }
+:is(.menu, .settings-scope) :is(.mv-panel, .mv-tile, .menu-button)::before { content: ''; position: absolute; inset: 1px; z-index: -1; background: var(--fill); clip-path: inherit; transition: background-color 140ms ease-out; }
+.mv-panel { clip-path: var(--clip-lg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); text-shadow: none; }
+
+/* Key cap: the key that does the same as the control it sits on. */
+.mv-key { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 22px; padding: 0 6px; border: 1px solid currentColor; border-radius: 3px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; line-height: 1; letter-spacing: 0; opacity: 0.75; }
+
+/* Tile: a large menu row with an icon, a title, a line of state and its key. */
+.mv-tile { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 8px 18px 8px 18px; clip-path: var(--clip-sm); --fill: var(--menu-solid); color: var(--menu-text); text-align: left; text-decoration: none; text-shadow: none; transition: color 140ms ease-out, transform 140ms var(--ease-out); }
+.mv-tile > svg { color: var(--menu-accent); }
+.mv-tile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mv-tile-text strong { font-family: var(--font-display); font-weight: 600; font-size: 19px; line-height: 1.1; letter-spacing: var(--track); text-transform: uppercase; }
+.mv-tile-text small { overflow: hidden; font-size: 13px; line-height: 1.3; color: var(--menu-muted); text-overflow: ellipsis; white-space: nowrap; }
+.mv-tile:hover, .mv-tile:focus-visible { --edge: var(--menu-accent); --fill: rgba(22, 40, 48, 0.94); color: #fff; transform: translateX(-4px); }
+.mv-tile:active { transform: translateX(-1px); }
+
 /* ---------- Buttons ---------- */
 .menu :is(a, button):focus-visible { outline: 2px solid var(--menu-accent); outline-offset: 3px; }
 .menu button:disabled { cursor: not-allowed; }
 
-/* Secondary: thin outline, e.g. MODE / HANGAR on Home. */
-.menu-button { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px; border: 1px solid var(--menu-outline); color: var(--menu-text); text-decoration: none; font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
-.menu-button:hover { background: rgba(154, 215, 232, 0.08); color: var(--menu-text); }
+/* Secondary: a cut-corner plate, e.g. START on PVE Setup's side actions. */
+.menu-button { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 22px; clip-path: var(--clip-sm); --edge: var(--menu-outline); --fill: var(--menu-solid); color: var(--menu-text); text-decoration: none; text-shadow: none; font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
+.menu-button:hover { --edge: var(--menu-accent); --fill: rgba(22, 40, 48, 0.94); color: #fff; }
 
 /* Icon only, e.g. the Settings gear in the top bar. */
 .menu-icon-button { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--menu-text); }
 .menu-icon-button:hover { color: var(--menu-accent); }
 
-/* Launch: the one amber button per screen. */
-.menu-launch { display: flex; align-items: center; justify-content: space-between; width: 300px; height: 72px; padding: 0 26px; background: var(--menu-launch); color: var(--menu-void); text-shadow: none; font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: var(--track-wide); text-transform: uppercase; }
+/* Launch: the one amber button per screen, with a hazard-stripe edge like an arming switch guard. */
+.menu-launch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 300px; height: 72px; padding: 0 26px 0 34px; clip-path: var(--clip-sm); background: var(--menu-launch); color: var(--menu-void); text-shadow: none; font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: var(--track-wide); text-transform: uppercase; transition: background-color 140ms ease-out, transform 140ms var(--ease-out); }
+.menu-launch::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 14px; background: repeating-linear-gradient(-45deg, rgba(5, 7, 9, 0.85) 0 6px, transparent 6px 12px); }
+.menu-launch > span { margin-right: auto; }
+.menu-launch .mv-key { opacity: 0.6; }
 .menu-launch:hover:not(:disabled) { background: var(--menu-launch-hover); color: var(--menu-void); }
-.menu-launch:disabled { background: transparent; color: var(--menu-muted); border: 1px dashed var(--menu-locked); opacity: 1; }
+.menu-launch:active:not(:disabled) { transform: scale(0.985); }
+.menu-launch:disabled { background: rgba(10, 15, 19, 0.7); color: var(--menu-muted); outline: 1px dashed var(--menu-locked); outline-offset: -1px; opacity: 1; }
+.menu-launch:disabled::before { display: none; }
 
 /* Confirm: cyan fill, e.g. SET ACTIVE. */
-.menu-confirm { display: inline-flex; align-items: center; gap: 12px; height: 52px; padding: 0 22px; background: var(--menu-accent); color: var(--menu-void); text-shadow: none; font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
+.menu-confirm { display: inline-flex; align-items: center; gap: 12px; height: 52px; padding: 0 22px; clip-path: var(--clip-sm); background: var(--menu-accent); color: var(--menu-void); text-shadow: none; font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: var(--track); text-transform: uppercase; }
 .menu-confirm:hover { background: var(--menu-text); color: var(--menu-void); }
 
 /* ---------- Narrow windows: overlay columns stack and scroll ---------- */
