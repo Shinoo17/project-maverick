@@ -4,15 +4,13 @@ import { createAircraft, runScenario, runTrack } from '../benchmarks/flight/harn
 import { driftSpawn } from '../benchmarks/flight/jetDrift'
 import { FLIGHT_STEP } from '../src/game/runtime/clock'
 import { FlightCamera } from '../src/render/FlightCamera'
-import { screenFrame } from '../src/game/input/mouseStick'
 import { BALANCED_TILT, driftShareOf, psmShareOf } from '../src/game/camera/cameraRoll'
-import { defaultCameraSettings, nextCameraSettings, parseCameraSettings, type CameraSettings } from '../src/game/camera/cameraSettings'
-import { parseSettings } from '../src/platform/storage'
+import type { CameraSettings } from '../src/game/camera/cameraSettings'
 import type { AircraftState } from '../src/game/state/WorldState'
 
-const BALANCED: CameraSettings = { roll: 'horizon', horizonStyle: 'balanced' }
-const DYNAMIC: CameraSettings = { roll: 'horizon', horizonStyle: 'dynamic' }
-const AIRCRAFT: CameraSettings = { roll: 'aircraft', horizonStyle: 'balanced' }
+const BALANCED: CameraSettings = { mode: 'horizon', roll: 'horizon', horizonStyle: 'balanced' }
+const DYNAMIC: CameraSettings = { mode: 'horizon', roll: 'horizon', horizonStyle: 'dynamic' }
+const AIRCRAFT: CameraSettings = { mode: 'aircraft', roll: 'aircraft', horizonStyle: 'balanced' }
 const every = [BALANCED, DYNAMIC, AIRCRAFT]
 
 /** Level flight along +X; the nose is banked about itself, then pitched up by `incidenceDeg`. */
@@ -37,25 +35,6 @@ const tiltOf = (camera: PerspectiveCamera) => {
   const up = new Vector3(0, 1, 0).applyQuaternion(camera.quaternion), look = viewOf(camera)
   return up.angleTo(new Vector3(0, 1, 0).addScaledVector(look, -look.y).normalize())
 }
-
-describe('camera settings', () => {
-  it('defaults to Horizon locked + Balanced and repairs bad values field by field', () => {
-    expect(defaultCameraSettings).toEqual(BALANCED)
-    expect(parseCameraSettings(undefined)).toEqual(BALANCED)
-    expect(parseCameraSettings({ roll: 'spin', horizonStyle: 'wobble' })).toEqual(BALANCED)
-    expect(parseCameraSettings({ roll: 'aircraft', horizonStyle: 'dynamic' })).toEqual({ roll: 'aircraft', horizonStyle: 'dynamic' })
-    // Saves from the three-style version map onto the new pair.
-    expect(parseCameraSettings({ roll: 'dynamic', horizonLock: false })).toEqual(DYNAMIC)
-    expect(parseCameraSettings({ roll: 'roll' })).toEqual(AIRCRAFT)
-    // A save from before camera settings existed reads as the default.
-    expect(parseSettings(JSON.stringify({ version: 1, aircraftId: 'f22' })).camera).toEqual(BALANCED)
-  })
-  it('V cycles Balanced → Dynamic → Aircraft locked → Balanced', () => {
-    expect(nextCameraSettings(BALANCED)).toEqual(DYNAMIC)
-    expect(nextCameraSettings(DYNAMIC).roll).toBe('aircraft')
-    expect(nextCameraSettings(AIRCRAFT)).toEqual(BALANCED)
-  })
-})
 
 describe('camera styles', () => {
   it('leave the PSM shot untouched: at full handover every camera is the same', () => {
@@ -225,22 +204,6 @@ describe('Aircraft locked through a jet drift', () => {
     for (const name of ['cobra', 'kulbit', 'tailSlide', 'reversal180', 'psmIntent450'] as const) {
       const trace = runScenario(name, 'f22')
       expect(Math.max(...trace.samples.map(sample => driftShareOf(sample.state))), name).toBe(0)
-    }
-  })
-})
-
-describe('stick frame per camera', () => {
-  it('matches what each camera leaves on screen, and blends to level with the PSM share', () => {
-    const banked = seeded(0, 90), half = Math.PI / 2
-    expect(screenFrame(banked, AIRCRAFT)).toEqual({ angle: 0, blend: 1 })
-    expect(Math.abs(screenFrame(banked, DYNAMIC).angle)).toBeCloseTo(half, 3)
-    expect(Math.abs(screenFrame(banked, BALANCED).angle)).toBeCloseTo(half - BALANCED_TILT, 3)
-    // At full PSM share (nose 60° up, no drift) every camera reads like the level horizon.
-    const drifting = seeded(60, 90)
-    for (const view of every) {
-      const frame = screenFrame(drifting, view), level = screenFrame(drifting, DYNAMIC)
-      expect(frame.angle).toBeCloseTo(level.angle, 5)
-      expect(frame.blend).toBeCloseTo(level.blend, 5)
     }
   })
 })

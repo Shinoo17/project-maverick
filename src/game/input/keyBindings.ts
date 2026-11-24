@@ -3,7 +3,14 @@ Keyboard bindings for flight, as plain data.
 
 Every flight action has two slots (primary, secondary) holding a `KeyboardEvent.code`
 ('KeyW', 'ShiftLeft', …) or null. Codes name the physical key, so a Thai keyboard layout
-flies the same way. Afterburner and airbrake can be held or toggled.
+flies the same way. Afterburner, airbrake and PSM can be held or toggled.
+
+Bindings version 2 (flight rewrite FR1): Space became the
+PSM override, the airbrake moved to X, and ←/→ became the coordinated turn instead of a second
+roll key. Version 3 (example/flight-control control port): the coordinated turn is gone and ←/→
+are the second roll keys again, as in the example; M switches Mouse + Keyboard / Keyboard Only
+and G switches Aim Limited / Aim Free. Older saves are migrated once, before they are read
+(migrateBindingsV1, then migrateBindingsV2).
 
 Ids are stable save-file values. Labels come from the locale files (`bindAction_<id>`).
 */
@@ -13,8 +20,12 @@ export const flightActions = [
   'speedUp', 'speedDown', 'afterburner', 'airbrake', 'cameraCycle', 'lookBack',
   // Newer actions go last: a saved key wins over a new action's default (parseBindings claims in this order).
   'fireGun', 'nextTarget', 'fireMissile', 'selectMissile1', 'selectMissile2', 'freeLook', 'countermeasure',
+  'selectMissile3', 'selectMissile4',
+  'psm', 'inputMode', 'aimLimit',
 ] as const
 export type FlightAction = typeof flightActions[number]
+/** The keys that pick missile slot 0, 1, 2 and 3 (the seeker's slot, in missileStations order). */
+export const missileSelectActions = ['selectMissile1', 'selectMissile2', 'selectMissile3', 'selectMissile4'] as const satisfies readonly FlightAction[]
 
 export type BindingSlots = [primary: string | null, secondary: string | null]
 export type KeyBindings = Record<FlightAction, BindingSlots>
@@ -22,24 +33,33 @@ export type PressMode = 'hold' | 'toggle'
 export type InputPreset = 'mouse' | 'keyboard'
 
 export interface KeyboardSettings {
+  /** The bindings layout this save was written with (see the header). */
+  bindingsVersion: typeof bindingsVersion
   preset: InputPreset
   bindings: KeyBindings
   afterburner: PressMode
   airbrake: PressMode
+  psm: PressMode
 }
+export const bindingsVersion = 3
 
 export const defaultBindings: Readonly<KeyBindings> = {
   pitchUp: ['ArrowUp', null], pitchDown: ['ArrowDown', null],
+  // ←/→ roll too, as in example/flight-control.
   rollLeft: ['KeyA', 'ArrowLeft'], rollRight: ['KeyD', 'ArrowRight'],
   yawLeft: ['KeyQ', null], yawRight: ['KeyE', null],
   speedUp: ['KeyW', null], speedDown: ['KeyS', null],
-  afterburner: ['ShiftLeft', 'ShiftRight'], airbrake: ['Space', null],
+  // Space holds the PSM override; X is the airbrake (not Ctrl: Ctrl+W closes the tab).
+  afterburner: ['ShiftLeft', 'ShiftRight'], airbrake: ['KeyX', null], psm: ['Space', null],
+  // M: Mouse + Keyboard ↔ Keyboard Only. G: Aim Limited ↔ Aim Free (example/flight-control).
+  inputMode: ['KeyM', null], aimLimit: ['KeyG', null],
   // Left mouse also fires in the mouse preset (FlightInput.mouseGun); J is the keyboard gun key (doc 02).
   fireGun: ['KeyJ', null],
   // T steps the gun's selected target (doc 02).
   nextTarget: ['KeyT', null],
-  // Right mouse also launches in the mouse preset; 1 and 2 pick the short- and medium-range missile.
+  // Right mouse also launches in the mouse preset; 1–4 pick missile slot 1–4 (short range first).
   fireMissile: ['KeyK', null], selectMissile1: ['Digit1', null], selectMissile2: ['Digit2', null],
+  selectMissile3: ['Digit3', null], selectMissile4: ['Digit4', null],
   // C held turns the camera with the mouse; R held looks back. Both leave the jet on its course.
   cameraCycle: ['KeyV', null], lookBack: ['KeyR', null], freeLook: ['KeyC', null],
   // F drops a salvo of flares and chaff together (doc 02).
@@ -47,7 +67,7 @@ export const defaultBindings: Readonly<KeyBindings> = {
 }
 
 export const defaultKeyboardSettings: Readonly<KeyboardSettings> = {
-  preset: 'mouse', bindings: defaultBindings, afterburner: 'hold', airbrake: 'hold',
+  bindingsVersion, preset: 'mouse', bindings: defaultBindings, afterburner: 'hold', airbrake: 'hold', psm: 'hold',
 }
 
 /** Actions whose key does nothing yet. The Settings page lists them as pending. */
@@ -86,13 +106,60 @@ export function parseBindings(value: unknown): KeyBindings {
   return result
 }
 
+/*
+Version 1 → 2, on the raw saved bindings before parseBindings reads them. A slot moves only
+while it still holds its version 1 default, so a key the player chose is never touched:
+- airbrake Space → X, if no saved binding has X (else the slot empties);
+- the second roll keys ArrowLeft/ArrowRight empty.
+That leaves Space and the arrows free for psm and turnLeft/turnRight, which are new and so
+take their defaults in parseBindings, unless the player had already put those keys elsewhere
+(then the new action starts unbound rather than stealing them).
+*/
+export function migrateBindingsV1(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
+  const data = Object.fromEntries(Object.entries(value).map(([action, slots]) => [action, Array.isArray(slots) ? [...slots] : slots])) as Record<string, unknown>
+  const slots = (action: string) => Array.isArray(data[action]) ? data[action] as unknown[] : null
+  const used = new Set(Object.values(data).flatMap(entry => Array.isArray(entry) ? entry : []))
+  const airbrake = slots('airbrake')
+  if (airbrake?.[0] === 'Space') airbrake[0] = used.has('KeyX') ? null : 'KeyX'
+  if (slots('rollLeft')?.[1] === 'ArrowLeft') slots('rollLeft')![1] = null
+  if (slots('rollRight')?.[1] === 'ArrowRight') slots('rollRight')![1] = null
+  return data
+}
+
+/*
+Version 2 → 3, on the raw saved bindings. The coordinated turn (turnLeft/turnRight) is removed;
+its key becomes the second roll key on its side if that slot is empty and no other action has
+the key. A version 1 save, which never had the turn, offers the arrow keys the same way.
+*/
+export function migrateBindingsV2(value: unknown, fromV1 = false): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
+  const data = Object.fromEntries(Object.entries(value).map(([action, slots]) => [action, Array.isArray(slots) ? [...slots] : slots])) as Record<string, unknown>
+  const turns = { rollLeft: fromV1 ? ['ArrowLeft'] : data.turnLeft, rollRight: fromV1 ? ['ArrowRight'] : data.turnRight }
+  delete data.turnLeft; delete data.turnRight
+  const used = new Set(Object.values(data).flatMap(entry => Array.isArray(entry) ? entry : []))
+  for (const [roll, turn] of Object.entries(turns)) {
+    const code = Array.isArray(turn) ? turn[0] : undefined
+    const slots = Array.isArray(data[roll]) ? data[roll] as unknown[] : null
+    if (!slots || typeof code !== 'string' || used.has(code) || (slots[1] !== null && slots[1] !== undefined)) continue
+    slots[1] = code
+    used.add(code)
+  }
+  return data
+}
+
 export function parseKeyboardSettings(value: unknown): KeyboardSettings {
   const data = value && typeof value === 'object' ? value as Record<string, unknown> : {}
+  // No version field is version 1. Read once, saved back as the current version.
+  const saved = data.bindingsVersion === bindingsVersion ? data.bindings
+    : data.bindingsVersion === 2 ? migrateBindingsV2(data.bindings) : migrateBindingsV2(migrateBindingsV1(data.bindings), true)
   return {
+    bindingsVersion,
     preset: data.preset === 'keyboard' ? 'keyboard' : 'mouse',
-    bindings: parseBindings(data.bindings),
+    bindings: parseBindings(saved),
     afterburner: data.afterburner === 'toggle' ? 'toggle' : 'hold',
     airbrake: data.airbrake === 'toggle' ? 'toggle' : 'hold',
+    psm: data.psm === 'toggle' ? 'toggle' : 'hold',
   }
 }
 

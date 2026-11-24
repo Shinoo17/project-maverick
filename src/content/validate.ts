@@ -1,9 +1,13 @@
 import { flightProfiles } from './flight-profiles'
 import { validateFlightProfile } from '../game/flight/validateProfile'
 import { resolveSpeedLimits } from '../game/flight/speedLimits'
+import { flightCoreAvailable, isFlightCoreId } from '../game/flight/core'
+import { coreProfileOf, validateCoreProfile } from '../game/flightCore/profile'
 import { getWeapon, weaponStations, type GunProfile, type MissileProfile, type SeekerProfile } from './weapons'
 import { hitboxes, validateHitboxes } from './hitboxes'
 import { getAircraft } from './aircraft'
+import { flightMapIds } from './maps'
+import { isBotDifficulty, isBotLoadout } from '../game/bot/botSetup'
 import { presentationIds, type AircraftDefinition, type SessionConfig } from './schemas'
 
 export function validateAircraft(entries: readonly AircraftDefinition[]) {
@@ -97,14 +101,18 @@ function validateMissileProfile(missile: MissileProfile | undefined, path: strin
 
 export function validateSession(config: SessionConfig) {
   if (!['playground', 'offline'].includes(config.mode)) throw new Error('session.mode: unsupported mode')
-  if (config.mapId !== undefined && config.mapId !== 'flat-range') throw new Error('session.mapId: unsupported map')
+  if (config.mapId !== undefined && !flightMapIds.includes(config.mapId)) throw new Error('session.mapId: unsupported map')
   if (!config.aircraftIds.length) throw new Error('session.aircraftIds: expected at least one aircraft')
-  if (config.targetDrone !== undefined && typeof config.targetDrone !== 'boolean' && !['still', 'racetrack', 'circle', 'bot'].includes(config.targetDrone)) throw new Error('session.targetDrone: expected true, false, still, racetrack, circle or bot')
+  if (config.targetDrone !== undefined && typeof config.targetDrone !== 'boolean' && !['still', 'racetrack', 'circle', 'flares', 'bot'].includes(config.targetDrone)) throw new Error('session.targetDrone: expected true, false, still, racetrack, circle, flares or bot')
+  if (config.bot !== undefined && !(isBotDifficulty(config.bot.difficulty) && isBotLoadout(config.bot.loadout))) throw new Error('session.bot: expected a difficulty (easy, normal, hard) and a loadout (none, gun, missile, full)')
   if (config.targetDrone && config.mode !== 'playground') throw new Error('session.targetDrone: Playground only')
+  if (config.flightCore !== undefined && !isFlightCoreId(config.flightCore)) throw new Error('session.flightCore: expected legacy or new')
+  if (config.flightCore !== undefined && !flightCoreAvailable(config.flightCore)) throw new Error(`session.flightCore: '${config.flightCore}' is not built yet`)
   config.aircraftIds.forEach((id, index) => {
     try { getAircraft(id) } catch { throw new Error(`session.aircraftIds[${index}]: unknown id "${id}"`) }
     if (getAircraft(id).playgroundOnly && config.mode !== 'playground') throw new Error(`session.aircraftIds: ${id} is a Playground validation variant`)
     validateAircraft([getAircraft(id)])
+    if (config.flightCore === 'new') validateCoreProfile(coreProfileOf(id), `session.aircraftIds[${index}] core profile`)
   })
   if (config.flightOverrides !== undefined) {
     if (!config.flightOverrides || typeof config.flightOverrides !== 'object' || Array.isArray(config.flightOverrides)) {

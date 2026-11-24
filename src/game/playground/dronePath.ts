@@ -13,8 +13,13 @@ and out over the first and last ROLL_METRES of each turn so it never snaps.
 */
 import type { Quat, Vec3 } from '../state/WorldState'
 
-/** 'bot' is not a path: the drone is flown by the combat bot (src/game/bot/botPilot.ts). */
-export type TargetDroneMode = 'still' | 'racetrack' | 'circle' | 'bot'
+/** 'flares' flies the circle and drops flares at a missile coming for it (`droneFlares`).
+ * 'bot' is not a path: the drone is flown by the combat bot (src/game/bot/botPilot.ts). */
+export type TargetDroneMode = 'still' | 'racetrack' | 'circle' | 'flares' | 'bot'
+
+/** The 'flares' drone: it starts a burst while a missile launched at it is within `range` metres,
+ * as often as the burst cooldown allows, from a stock of `bursts` per life. Provisional. */
+export const droneFlares = { range: 2500, bursts: 40 } as const
 
 /** Provisional values, waiting on playtest. */
 export const dronePaths = {

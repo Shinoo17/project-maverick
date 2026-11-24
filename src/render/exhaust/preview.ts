@@ -14,6 +14,7 @@ import { GameRuntime } from '../../game/runtime/GameRuntime'
 import { stepThrustVectoring, tvcTargets } from '../../game/flight/thrustVectoring'
 import { FLIGHT_STEP } from '../../game/runtime/clock'
 import { getFlightProfile } from '../../game/flight/profile'
+import { readFlight } from '../../game/flight/readout'
 import { flightExhaustConditions } from './profile'
 import { JetExhaust } from './JetExhaust'
 import { resolveExhaustStyle } from './style'
@@ -96,14 +97,12 @@ function frame(now: number) {
   if (document.hidden) return
   const dt = paused ? 0 : Math.min(.05, rawDelta)
   controls.update(); camera.updateMatrixWorld()
-  state.enginePower = power; state.maneuver.burnerActive = burner
   const profile = getFlightProfile(aircraft), flightProfile = profile.flight
   const pitch = scenario === 'pitch-up' || scenario === 'slow' || scenario === 'cobra' ? 1 : scenario === 'pitch-down' ? -1 : vector / (profile.thrustVectoring?.maxAngle ?? 14)
   const roll = scenario === 'roll' ? 1 : Number(params.get('roll') ?? 0)
   const speed = Number(params.get('speed') ?? (scenario === 'slow' || scenario === 'cobra' || scenario === 'recovery' ? 55 : 180))
   const aoa = Number(params.get('aoa') ?? (scenario === 'cobra' ? 90 : scenario === 'recovery' ? 60 : 0))
   state.velocity = { x: speed, y: scenario === 'recovery' ? -80 : 0, z: 0 }
-  state.maneuver.alpha = aoa
   state.rates.pitch = pitch * flightProfile.pitchRate; state.rates.roll = roll * flightProfile.rollRate
   state.rates.yaw = scenario === 'yaw' ? flightProfile.yawRate : 0
   actuatorTime += dt
@@ -111,9 +110,11 @@ function frame(now: number) {
     stepThrustVectoring(state, tvcTargets({ pitch, roll, yaw: scenario === 'yaw' ? 1 : 0 }, 1, getFlightProfile(state.aircraftId).thrustVectoring!), FLIGHT_STEP)
     actuatorTime -= FLIGHT_STEP
   }
-  updateRig?.(state, dt); jet.updateMatrixWorld(true)
+  // Preview fixture: the page's throttle, burner and incidence over the state's own readout.
+  const base = readFlight(state), flight = { ...base, power, burner: { ...base.burner, active: burner }, noseVelocityDeg: aoa }
+  updateRig?.(state, dt, false, flight); jet.updateMatrixWorld(true)
   volume.update(vaporConditions({ speed: 180, aoa: clouds ? 21 : 3, g: clouds ? 6.8 : 1, sideslip: 0 }, 400), dt, false, aircraft)
-  const conditions = { ...flightExhaustConditions(state), nozzles: updateRig?.exhaust }
+  const conditions = { ...flightExhaustConditions(state, flight), nozzles: updateRig?.exhaust }
   volume.exhaustPlume = exhaust.activeStyle.volumePlume
   volume.exhaustCavity = exhaust.activeStyle.volumeCavity
   volume.updateExhaust(conditions, dt)
@@ -121,7 +122,7 @@ function frame(now: number) {
   if (modelReady) volume.render(renderer, scene, camera, jet.matrixWorld, [exhaust])
   else renderer.render(scene, camera)
   frames++; duration += rawDelta
-  if (duration > 1 && modelReady) { element('status').textContent = `${Math.round(frames / duration)} FPS · ${paused ? 'หยุดการไหล' : 'ไอพ่นไหลต่อเนื่อง'}${profile.thrustVectoring ? ` · L ${state.thrustVectoring.left.toFixed(1)}° / R ${state.thrustVectoring.right.toFixed(1)}°` : ''}`; frames = 0; duration = 0 }
+  if (duration > 1 && modelReady) { element('status').textContent = `${Math.round(frames / duration)} FPS · ${paused ? 'หยุดการไหล' : 'ไอพ่นไหลต่อเนื่อง'}${flight.nozzle ? ` · L ${flight.nozzle.left.toFixed(1)}° / R ${flight.nozzle.right.toFixed(1)}°` : ''}`; frames = 0; duration = 0 }
 }
 requestAnimationFrame(frame)
 // Handle for scripted screenshots: camera placement and per-source toggles.

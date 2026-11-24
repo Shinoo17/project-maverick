@@ -3,6 +3,7 @@ import type { AircraftState } from '../../game/state/WorldState'
 import { getAircraft } from '../../content/aircraft'
 import { getFlightProfile } from '../../game/flight/profile'
 import { clamp } from '../../game/flight/speed'
+import { readFlight, type FlightReadout } from '../../game/flight/readout'
 import { type ExhaustNozzles } from '../exhaust/profile'
 import { createSu57FlightRig } from './su57Rig'
 
@@ -27,7 +28,8 @@ function hinge(model: Object3D, name: string, axis: Vector3, reference: Vector3)
   const rest = bone.quaternion.clone(), rotation = new Quaternion()
   return (degrees: number) => bone.quaternion.copy(rest).multiply(rotation.setFromAxisAngle(axis, degrees * Math.PI / 180))
 }
-export type FlightRig = ((state: AircraftState, dt?: number, reset?: boolean) => void) & { exhaust?: ExhaustNozzles }
+/** `flight` defaults to the state's own readout; previews pass a fixture instead. */
+export type FlightRig = ((state: AircraftState, dt?: number, reset?: boolean, flight?: FlightReadout) => void) & { exhaust?: ExhaustNozzles }
 function createF22FlightRig(model: Object3D): FlightRig {
   const controls = surfaces.map(surface => ({ ...surface, angle: 0, set: hinge(model, surface.mesh, new Vector3(0, 1, 0), surface.yaw ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1)) }))
   const nozzles = (['L', 'R'] as const).flatMap(side => ['Upper', 'Lower'].map((part, index) => ({
@@ -35,7 +37,7 @@ function createF22FlightRig(model: Object3D): FlightRig {
     direction: index === 0 ? 1 : -1,
     set: hinge(model, `Engine_Nozzle_${side}_Flap_${part}`, new Vector3(1, 0, 0), new Vector3(0, 0, -1)),
   })))
-  return (state: AircraftState, dt = 1 / 60, reset = false) => {
+  return (state: AircraftState, dt = 1 / 60, reset = false, flight: FlightReadout = readFlight(state)) => {
     const flightProfile = getFlightProfile(state.aircraftId).flight
     const pitch = state.rates.pitch / flightProfile.pitchRate, roll = state.rates.roll / flightProfile.rollRate, yaw = state.rates.yaw / flightProfile.yawRate
     // Smooth the presentation actuators on press, reversal and release. The
@@ -46,7 +48,7 @@ function createF22FlightRig(model: Object3D): FlightRig {
       surface.angle += (target - surface.angle) * blend
       surface.set?.(surface.angle)
     })
-    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * state.enginePower * 5 + state.thrustVectoring[nozzle.side]))
+    nozzles.forEach(nozzle => nozzle.set?.(nozzle.direction * flight.power * 5 + (flight.nozzle?.[nozzle.side] ?? 0)))
   }
 }
 

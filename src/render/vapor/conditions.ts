@@ -1,6 +1,5 @@
-import { observeAirflow } from '../../game/flight/airflow'
-import { getFlightProfile } from '../../game/flight/profile'
-import { arcadeSpeed } from '../../game/flight/speedLimits'
+import { readFlight } from '../../game/flight/readout'
+import { arcadeSpeed, simulationSpeed } from '../../game/flight/speedLimits'
 import type { AircraftState } from '../../game/state/WorldState'
 import { airDensity, flatRangeAtmosphere, machNumber, sampleAir, type VaporAtmosphere } from './atmosphere'
 
@@ -42,14 +41,15 @@ export function vaporConditions(flight: VaporFlightSample, altitude: number, atm
   }
 }
 
-// Use signed aerodynamic incidence, not maneuver.alpha (which also counts yaw).
+// Use signed aerodynamic incidence, not the nose–velocity angle (which also counts yaw).
 // Velocity is in simulation metres/second, not the HUD's scaled arcade speed.
 export function flightVaporConditions(state: AircraftState, atmosphere: VaporAtmosphere = flatRangeAtmosphere): VaporConditions {
-  const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
+  const flight = readFlight(state)
   return vaporConditions({
-    speed: airflow.airspeed,
-    aoa: airflow.alphaDeg,
-    sideslip: airflow.betaDeg * Math.PI / 180,
-    g: state.maneuver.g,
+    // The sim speed the HUD reading stands for: the core decides the HUD scale (the arcade core reads true km/h).
+    speed: Math.abs(flight.hudSpeed - arcadeSpeed(flight.airspeed)) < 1e-6 ? flight.airspeed : simulationSpeed(flight.hudSpeed),
+    aoa: flight.alphaDeg,
+    sideslip: flight.betaDeg * Math.PI / 180,
+    g: flight.g,
   }, state.position.y, atmosphere)
 }

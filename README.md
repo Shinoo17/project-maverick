@@ -48,7 +48,7 @@ Phase 1 adds a 60 Hz world / 120 Hz flight runtime, direct W/S acceleration with
 
 ## P3 profiles and aircraft weapons
 
-Flight tuning lives in one file per aircraft under `src/content/flight-profiles/`, with shared defaults and explicit PSM capability. Set `topSpeedKph` and `afterburnerTopSpeedKph` in displayed ARCADE km/h; the runtime converts them to simulation speed. Optional session `flightOverrides` change these limits without editing shared profiles. See the [flight profile guide](docs/flight-profiles.md) for tuning speeds, adding aircraft and configuring limited or unsupported PSM.
+Flight tuning lives in one file per aircraft under `src/content/flight-profiles/`, with shared defaults and explicit PSM capability. Set `topSpeedKph` and `afterburnerTopSpeedKph` in displayed ARCADE km/h; the runtime converts them to simulation speed. Optional session `flightOverrides` change these limits without editing shared profiles.
 
 Each aircraft also defines a `stall` block: speed/AoA entry and recovery thresholds,
 remaining surface control, drag and transition times. Stall progressively costs
@@ -103,5 +103,5 @@ yaw/roll TVC. Legacy labels/path grip remain until Phase 4; automatic breakout i
 Flight Lab shows requested/actual power, signed capacity, aero/TVC/floor/unmet allocation,
 actual and coupled torque, actuator lag, nozzle targets and the controlled path-rate cap.
 Its aircraft selector includes the Playground-only `f22-notvc` validation variant.
-See the [Phase 3 implementation and validation report](docs/psm-phase3-implementation.md)
-for all changed files, measured capacities, invariant results, benchmarks and known limitations.
+The player's default flight is now the arcade core ported from example/flight-control; see
+[docs/flight-control-port.md](docs/flight-control-port.md).

@@ -55,13 +55,21 @@ function Airfield() {
   </group>
 }
 
-export function TrainingRange() {
+/** Sky dome, haze and sun: shared by every map for now, so the vapor and the aircraft are lit alike. */
+export function RangeAtmosphere() {
   return <>
     <color attach="background" args={[HAZE]} />
     <fogExp2 attach="fog" args={[HAZE, FOG_DENSITY]} />
     <hemisphereLight args={['#dce9f7', '#857761', 1.5]} />
     <directionalLight position={SUN_POSITION} color="#fff3e0" intensity={3.1} />
-    <Sky /><Ground /><Airfield />
+    <Sky />
+  </>
+}
+
+export function TrainingRange() {
+  return <>
+    <RangeAtmosphere />
+    <Ground /><Airfield />
     {trainingRings.map(x => <mesh key={x} rotation={[0, Math.PI / 2, 0]} position={[x, 400, 0]}>
       <torusGeometry args={[65, 2.2, 10, 64]} />
       <meshStandardMaterial color="#f2b545" emissive="#7a4f0f" emissiveIntensity={.7} roughness={.45} metalness={.15} />

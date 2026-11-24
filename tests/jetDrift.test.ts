@@ -2,9 +2,8 @@ import { expect, it } from 'vitest'
 import { Quaternion, Vector3 } from 'three'
 import { driftSpawn, driftIds } from '../benchmarks/flight/jetDrift'
 import { runTrack } from '../benchmarks/flight/harness'
-import { FlightInput, PEDAL_RAMP_SECONDS } from '../src/game/input/FlightInput'
-import { centreStick } from '../src/game/input/mouseStick'
-import { readIntent, createPilotIntent } from '../src/game/flight/intent'
+import { FlightInput } from '../src/game/input/FlightInput'
+import { readIntent } from '../src/game/flight/intent'
 import { interpretEnvelope } from '../src/game/flight/envelope'
 import { observeAirflow } from '../src/game/flight/airflow'
 import { getFlightProfile, validateFlightProfile } from '../src/game/flight/profile'
@@ -14,31 +13,9 @@ import { directionalBrakeStep, integrateTranslation } from '../src/game/flight/e
 import { stepFlight } from '../src/game/flight/stepFlight'
 import { stepSpeed } from '../src/game/flight/speed'
 import { neutralCommand } from '../src/game/runtime/commands'
-import { FLIGHT_STEP as dt, WORLD_STEP } from '../src/game/runtime/clock'
-import { runAtFps, positionalHorizon, settleStick } from './invariants/helpers'
+import { FLIGHT_STEP as dt } from '../src/game/runtime/clock'
+import { runAtFps } from './invariants/helpers'
 import { runFlightReplay } from '../src/game/playground/replay'
-
-it('real cardinal/diagonal mouse paths reach entry without changing fine aim or body-axis meaning', () => {
-  for (const [x, y] of [[0, -240], [240, -240], [-240, -240]]) {
-    // The positional stick is rate limited (F22), so the reading is read once it has arrived.
-    const input = new FlightInput(positionalHorizon); input.engage(); input.move(x, y); input.press('Space')
-    const command = settleStick(input, 0)
-    expect(readIntent(command, createPilotIntent(), dt, 0).demand).toBe(1)
-    expect(command.yaw).toBe(0)
-    expect(input.command(8, 'a', 'mouse').pitch).toBe(command.pitch) // Stopping movement is held input.
-    centreStick(input.stick)
-    expect(readIntent(settleStick(input, 9), createPilotIntent(), dt, 0).activity).toBe(0)
-  }
-  const input = new FlightInput(positionalHorizon); input.engage(); input.move(0, -30)
-  expect(readIntent(settleStick(input, 0), createPilotIntent(), dt, 0).demand).toBe(0)
-  // Q/E ramp on the command timeline (Phase 6) and reverse through exact centre.
-  const pedalStep = WORLD_STEP / PEDAL_RAMP_SECONDS
-  input.press('ArrowDown'); input.press('KeyE')
-  expect(input.command(8, 'a', 'mouse')).toMatchObject({ pitch: -1, yaw: pedalStep })
-  input.held.delete('KeyE'); input.press('KeyQ')
-  expect(input.command(9, 'a', 'mouse').yaw).toBe(0)
-  expect(input.command(10, 'a', 'mouse').yaw).toBe(-pedalStep)
-})
 
 it.each([0.15, 0.22, 0.3])('all-axis continuation bridges handoff but reaches genuine release (%s s)', seconds => {
   const state = driftSpawn('f22'), p = getFlightProfile('f22')
@@ -137,16 +114,16 @@ it('I18 directional brake has exact dissipative impulse work and cannot reverse 
   }
 })
 
-it.each(driftIds)('%s actual keyboard/mouse handoffs replay with all new memory at 30/60/144 FPS', id => {
+it.each(driftIds)('%s actual keyboard handoffs replay with all new memory at 30/60/144 FPS', id => {
   const run = (fps: number) => {
-    const input = new FlightInput(positionalHorizon); input.engage()
+    const input = new FlightInput()
     return runAtFps(fps, id, (tick, entityId) => {
-      input.held.clear(); centreStick(input.stick)
-      if (tick < 60) { input.move(240, -240); input.press('Space') }
+      input.held.clear()
+      if (tick < 60) { input.press('ArrowUp'); input.press('Space') }
       else if (tick < 120) input.press('KeyE')
-      else if (tick < 180) input.move(240, 0)
-      else if (tick < 210) input.move(0, -180)
-      return input.command(tick, entityId, 'mouse')
+      else if (tick < 180) input.press('KeyD')
+      else if (tick < 210) input.press('ArrowDown')
+      return input.command(tick, entityId, 'keyboard')
     }, 4)
   }
   const reference = run(60)

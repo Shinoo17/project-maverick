@@ -81,6 +81,10 @@ export function withAimAssist<T extends { pitch: number; yaw: number }>(command:
 }
 
 /*
+Since 2026-11-16 the player's mouse aim uses the gun lock instead (gunLock.ts: hold the cursor on
+the target, it locks onto the lead, a flick breaks it). The magnet below stays for its tests and
+as a reference.
+
 Mouse aim's assist (src/game/input/mouseAim.ts). There the stick belongs to the instructor,
 which would take back any nudge on the next tick, so the assist moves the aim instead: inside
 the same cone it draws the aim toward where the nose must point for the gun line to lie on

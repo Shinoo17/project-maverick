@@ -45,16 +45,13 @@ Master นี้เป็นเจ้าของขอบเขต ลำดั
 | เอกสาร | เป็นเจ้าของเรื่อง |
 |---|---|
 | [01 Architecture](docs/game-design/01-architecture.md) | โครงสร้างโค้ด, state, command, event, game loop |
-| [02 Controls](docs/game-design/02-controls.md) | ปุ่มหลัก, mouse/keyboard, rebinding, input conflicts |
-| [03 Flight & Speed](docs/game-design/03-flight-and-speed.md) | แบบจำลองบิน, W/S, ความเร็วและหน่วย, energy |
-| [04 Maneuvers](docs/game-design/04-maneuvers.md) | High-G, Airbrake, Cobra, PSM, thrust vectoring |
+| [Flight control port](docs/flight-control-port.md) | ปุ่ม, mouse aim, แบบจำลองบิน (arcade core จาก example/flight-control), PSM, gun lock, กล้อง (แทน 02 Controls, 03 Flight & Speed, 04 Maneuvers, 11 Cameras เดิม) |
 | [05 Aircraft](docs/game-design/05-aircraft.md) | ข้อมูลรายลำ, ความแตกต่าง, บาลานซ์, facts |
 | [06 Hangar](docs/game-design/06-hangar.md) | เลือกเครื่อง, ดู 3D, stat bars, หน้า Armament, ความรู้ |
 | [07 Weapons & Damage](docs/game-design/07-weapons-and-damage.md) | ปืน, missile, lock, countermeasure, hit, kill |
 | [08 Bots](docs/game-design/08-bots.md) | AI pilot, perception, difficulty |
 | [09 Offline](docs/game-design/09-offline.md) | โหมด PVE (TDM / Control Point / ชิงธง / Priority Target / Flyover), match lifecycle, scoring, spawn, pause |
 | [10 Playground](docs/game-design/10-playground.md) | ฝึกบิน, tutorial, flight lab, tuning workflow |
-| [11 Cameras](docs/game-design/11-cameras.md) | horizon lock, aircraft-follow, free look, transitions |
 | [12 HUD & Feedback](docs/game-design/12-hud-and-feedback.md) | HUD, menus, accessibility, เสียงและ VFX |
 | [13 Assets](docs/game-design/13-assets.md) | GLB pipeline, rig, load, cache, resource lifecycle |
 | [14 World](docs/game-design/14-world.md) | หน่วยโลก, terrain, collision, ขอบสนาม |
@@ -105,7 +102,7 @@ flowchart TD
 
 สถานะ 14 ก.ย. 2026: เริ่ม P3 profile/armament foundation แล้ว — Flight/Weapons อ่านข้อมูลรายลำ, ติดตั้งอาวุธเต็มความจุอัตโนมัติใน session และเอา branch ตามชื่อเครื่องออกจาก core; facts/LOD/weapon geometry ยังไม่ครบ ดู [P3 implementation](docs/phase-3-aircraft-loadouts.md)
 
-สถานะ 27 ก.ย. 2026: ปรับ roadmap ตาม Design example โดยแทรก P3b game shell, P5b PVE objective modes และ P5c Campaign ไม่เปลี่ยนเลข phase เดิม (D14) เลข P ของ Master แยกจาก Phase ของงาน PSM ใน `docs/psm-*` งาน PSM ที่ค้าง (Phase 8 personality tuning, MR3+) พักไว้ได้โดยไม่บล็อก P3b
+สถานะ 27 ก.ย. 2026: ปรับ roadmap ตาม Design example โดยแทรก P3b game shell, P5b PVE objective modes และ P5c Campaign ไม่เปลี่ยนเลข phase เดิม (D14) เลข P ของ Master แยกจาก Phase ของงาน PSM เดิม (เอกสารลบแล้ว 2026-11-16 ดู git history) งาน PSM ที่ค้าง (Phase 8 personality tuning, MR3+) พักไว้ได้โดยไม่บล็อก P3b
 
 สถานะ implementation 27 ก.ย. 2026 (P3b ส่วนแรก): Home, Select Mode, Hangar (overlay บน menu scene ร่วม), Campaign Map แบบ mock (operation แรก M01–M06, สถานะคำนวณจาก progress) และ PVE Setup (ห้าโหมด, สาม maps: Flat Training Range พร้อม/Mountains/Coastal PLANNED) อยู่ใน `src/features/{menu,home,mode,hangar,campaign,pve}` 28 ก.ย. เพิ่ม: คอลัมน์ ARMAMENT ใน Hangar และหน้า Armament (`#/hangar/armament`: รายละเอียดอาวุธ, โมเดล 3D หรือ `NO MODEL`, คอลัมน์ขวาใช้ ARMAMENT แทน STATIONS) และ orbit 360° ใน Hangar 28 ก.ย. เพิ่มหน้า Settings (`#/settings` และใน pause dialog: หก tab, ตั้งปุ่มได้, Controller/Audio เป็น pending; สเปกใน 20) ยังไม่มี: ghost airframe/bay ใน Armament, mission runtime; START/PLAY เปิดได้เฉพาะ free flight บน Flat Training Range โรงเก็บเดิมย้ายไป `#/studio` (ไม่มีลิงก์จากเมนู)
 

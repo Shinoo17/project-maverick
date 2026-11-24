@@ -66,14 +66,13 @@ const SPEED_TAPE: Tape = { minor: 100, major: 500, span: 1400 }
 const ALTITUDE_TAPE: Tape = { minor: 100, major: 500, span: 3800 }
 const HEADING_HALF_SPAN = 26
 
-// Rungs every 5° out to ±60, each a real pair of world points 6 km ahead of the aircraft.
+// Rungs every 5° out to ±90 (the zenith and nadir), each a real pair of world points 6 km ahead of the aircraft.
 const LADDER_STEP = 5
-const LADDER_LIMIT = 60
+const LADDER_LIMIT = 90
 const LADDER_DISTANCE = 6000
 const LADDER_HALF_SPAN = 0.15
 const LADDER_GAP = 0.2
 
-const VERTICAL_SPEED_FULL_SCALE = 60
 const CLEARANCE_FULL_SCALE = 600
 const EDGE_CAUTION = 620
 const RESERVE_CAUTION = 0.25
@@ -134,7 +133,7 @@ export interface GlassState {
   seeker: LockMarks | null
   /** Mouse aim: where the instructor is flying the nose (a world direction), or in cursor mode
    * the held × as pixels from the middle of the frame; and its share (fades the world cursor). */
-  aim: { direction: Vec3Like; share: number } | { screen: { x: number; y: number }; share: number } | null
+  aim: ({ direction: Vec3Like } | { /** Screen steering: the held × in pixels from the middle of the frame. */ screen: { x: number; y: number } }) & { share: number; /** The gun lock (game/combat/gunLock.ts): ring fill 0..1, and whether it holds. */ lock?: { progress: number; locked: boolean } } | null
   /** Radar contacts by world bearing (degrees, the heading's convention), for the heading tape. */
   contacts: { bearing: number; painted: boolean; locked: boolean }[]
 }
@@ -204,7 +203,7 @@ export type GlassLayout = ReturnType<typeof glassLayout>
 
 const WORLD_UP = new Vector3(0, 1, 0)
 const projected = new Vector3(), scratch = new Vector3(), across = new Vector3()
-const level = new Vector3(), ladderDir = new Vector3(), centre = new Vector3()
+const level = new Vector3(), levelUp = new Vector3(), ladderDir = new Vector3(), centre = new Vector3()
 
 // Points behind the lens return null rather than folding back into view.
 export function projectPoint(camera: Camera, point: Vec3Like, width: number, height: number): Point | null {
@@ -249,8 +248,18 @@ export function projectVelocityMarker(camera: Camera, position: Vec3Like, veloci
 
 // One rung's screen endpoints. The rung plane follows the nose's ground track, not its
 // pitch, so it banks and slides with the world rather than with the airframe.
-export function projectRung(camera: Camera, position: Vec3Like, forward: Vec3Like, angle: number, width: number, height: number) {
+// With the wing axis (`wing`, body right) the track holds through the vertical: the nose's own track
+// shrinks to nothing there, so it is blended with the canopy's, cos(pitch)·nose − sin(pitch)·up
+// on the ground plane, which is the heading itself with the wings level and never vanishes
+// unless the wings stand on end. Without it a vertical nose has no track and no rung.
+export function projectRung(camera: Camera, position: Vec3Like, forward: Vec3Like, angle: number, width: number, height: number, wing?: Vec3Like) {
   level.set(forward.x, 0, forward.z)
+  if (wing) {
+    // Body up = wing (body right) × forward.
+    levelUp.set(wing.y * forward.z - wing.z * forward.y, 0, wing.x * forward.y - wing.y * forward.x)
+    const sinPitch = MathUtils.clamp(forward.y, -1, 1), cosPitch = Math.sqrt(1 - sinPitch * sinPitch)
+    level.multiplyScalar(cosPitch).addScaledVector(levelUp, -sinPitch)
+  }
   if (level.lengthSq() < 1e-6) return null
   level.normalize()
   across.crossVectors(level, WORLD_UP).normalize()
@@ -376,7 +385,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     ctx.rect(layout.cx - layout.half * LADDER_CLIP, layout.ladderTop, layout.half * LADDER_CLIP * 2, layout.ladderBottom - layout.ladderTop)
     ctx.clip()
     for (let angle = -LADDER_LIMIT; angle <= LADDER_LIMIT; angle += LADDER_STEP) {
-      const rung = projectRung(camera, state.position, state.forward, angle, width, height)
+      const rung = projectRung(camera, state.position, state.forward, angle, width, height, state.right)
       if (!rung) continue
       const { left, right } = rung
       const isHorizon = angle === 0
@@ -474,15 +483,13 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
   // circle, small enough to sit inside the reticle's gaps when the nose arrives. It fades as the
   // instructor hands over to the stick in post-stall, where it no longer flies the nose.
   function drawAimCursor(aim: NonNullable<GlassState['aim']>, state: GlassState, camera: Camera) {
-    // The screen-locked × is the hand on the stick: always drawn, dimmer once it is a plain stick.
-    const held = 'screen' in aim
-    if (!held && aim.share <= 0.02) return
-    const point = held ? { x: layout.cx + aim.screen.x, y: layout.cy + aim.screen.y } : projectVelocityMarker(camera, state.position, aim.direction, width, height, 24)
-    if (!point || ('onScreen' in point && !point.onScreen)) return
+    if (aim.share <= 0.02) return
+    const point = 'screen' in aim ? { x: layout.cx + aim.screen.x, y: layout.cy + aim.screen.y, onScreen: true } : projectVelocityMarker(camera, state.position, aim.direction, width, height, 24)
+    if (!point || !point.onScreen) return
     // The same lock colour as the lead marker, so the hand knows the gun has it.
     const lock = state.gunnery && state.gunnery.lock !== 'free' ? HUD_LOCK[state.gunnery.lock] : null
     ctx.save()
-    ctx.globalAlpha = held ? 0.55 + 0.45 * aim.share : aim.share
+    ctx.globalAlpha = aim.share
     luminous(() => {
       ctx.beginPath()
       for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const) {
@@ -490,6 +497,24 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       }
       ctx.stroke()
     }, lock ? 2.2 : 1.8, (lock ?? HUD_CURSOR).color, (lock ?? HUD_CURSOR).bloom)
+    // The gun lock's ring: an open arc filling clockwise from the top while the cursor charges on
+    // the target, a closed circle once it holds. Distinct from the missile seeker's box.
+    const gun = aim.lock
+    if (gun && (gun.locked || gun.progress > 0.001)) {
+      const radius = 17, top = -Math.PI / 2
+      const tone = gun.locked ? lock ?? HUD_LOCK.captured : HUD_CURSOR
+      if (!gun.locked) {
+        ctx.globalAlpha = aim.share * 0.35
+        ctx.beginPath(); ctx.arc(point.x, point.y, radius, 0, Math.PI * 2)
+        ctx.lineWidth = 1.2; ctx.strokeStyle = HUD_GREEN_DIM; ctx.stroke()
+        ctx.globalAlpha = aim.share
+      }
+      luminous(() => {
+        ctx.beginPath()
+        ctx.arc(point.x, point.y, radius, top, top + Math.PI * 2 * (gun.locked ? 1 : gun.progress))
+        ctx.stroke()
+      }, gun.locked ? 2.4 : 2, tone.color, tone.bloom)
+    }
     ctx.restore()
   }
 
@@ -657,7 +682,6 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
 
     const pitch = live ? signed(state.pitch) : '––'
     const bank = live && state.bank !== null ? signed(state.bank) : '––'
-    const verticalSpeed = live ? signed(state.verticalSpeed) : '––'
     const aoa = live ? signed(state.aoa) : '––'
     const g = live ? state.gLoad.toFixed(1) : '–.–'
     const aoaColor = !live ? HUD_GREEN_DIM : state.regime !== 'NORMAL' ? regimeTone(state.regime) : Math.abs(state.aoa) > 26 ? HUD_GREEN_CAUTION : HUD_GREEN_DIM
@@ -681,27 +705,19 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
       : state.burnerState === 'depleted' || state.burnerState === 'engaged' ? HUD_GREEN_ALERT
         : state.burnerState === 'inhibited' || reserve < RESERVE_CAUTION ? HUD_GREEN_CAUTION : HUD_GREEN
     const burnerLabel = AFTERBURNER_LABELS[state.burnerState]
-    const burnerClock = live ? `${state.burnerSeconds.toFixed(1)}s` : '––.–s'
+    // A burner without a reserve (the arcade core) has no clock.
+    const burnerClock = !live ? '––.–s' : Number.isFinite(state.burnerSeconds) ? `${state.burnerSeconds.toFixed(1)}s` : '∞'
 
-    // Narrow frames have no room outboard of the tapes; both gauges become digits.
+    // Narrow frames have no room outboard of the tapes; the reheat gauge becomes digits.
+    // Vertical speed reads under the altitude box (drawTape's subreadouts).
     if (layout.compact) {
-      text(`V/S ${verticalSpeed}`, right, second + 40, display(12), HUD_GREEN_DIM, 'right')
-      text(`${burnerLabel} ${burnerClock}`, right, second + 60, display(12), burnerColor, 'right')
+      text(`${burnerLabel} ${burnerClock}`, right, second + 40, display(12), burnerColor, 'right')
       return
     }
 
     const gaugeTop = layout.cy - layout.tapeHeight * 0.28
     const gaugeBottom = layout.cy + layout.tapeHeight * 0.28
     const gaugeSpan = gaugeBottom - gaugeTop
-
-    const climb = live ? MathUtils.clamp(state.verticalSpeed / VERTICAL_SPEED_FULL_SCALE, -1, 1) : 0
-    const climbX = layout.cx + layout.half * layout.tapeOffset + 92
-    const climbMid = (gaugeTop + gaugeBottom) / 2
-    line(climbX, gaugeTop, climbX, gaugeBottom, 1.2, HUD_GREEN_DIM)
-    line(climbX - 5, climbMid, climbX + 5, climbMid, 1.2, HUD_GREEN_DIM)
-    line(climbX - 4, climbMid, climbX - 4, climbMid - (climb * gaugeSpan) / 2, 3, HUD_GREEN)
-    text('V/S', climbX, gaugeTop - 12, display(10), HUD_GREEN_DIM, 'center')
-    text(verticalSpeed, climbX, gaugeBottom + 14, display(12, 700), HUD_GREEN, 'center')
 
     // Reserve empties toward the floor; the tick is where a burst stops being worth it.
     const reheatX = layout.cx - layout.half * layout.tapeOffset - 92
@@ -739,6 +755,7 @@ export function createGlassPainter(canvas: HTMLCanvasElement) {
     drawTape({
       x: layout.cx + layout.half * layout.tapeOffset, value: Math.max(0, state.altitude), side: 'right', tape: ALTITUDE_TAPE,
       label: 'ALT · M AGL', digits: 5, live: state.live,
+      subreadouts: [`V/S ${state.live ? signed(state.verticalSpeed) : '––'} M/S`],
     })
     drawHeadingTape(state)
     drawStatusBlock(state)

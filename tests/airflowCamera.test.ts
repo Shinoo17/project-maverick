@@ -4,8 +4,8 @@ import { createAircraft, runScenario } from '../benchmarks/flight/harness'
 import { FlightCamera, type CameraSettings } from '../src/render/FlightCamera'
 
 // The two pre-style modes: a level lens is Horizon locked Dynamic, riding the airframe is Aircraft locked.
-const HORIZON: CameraSettings = { roll: 'horizon', horizonStyle: 'dynamic' }
-const AIRCRAFT: CameraSettings = { roll: 'aircraft', horizonStyle: 'balanced' }
+const HORIZON: CameraSettings = { mode: 'horizon', roll: 'horizon', horizonStyle: 'dynamic' }
+const AIRCRAFT: CameraSettings = { mode: 'aircraft', roll: 'aircraft', horizonStyle: 'balanced' }
 import { FLIGHT_STEP } from '../src/game/runtime/clock'
 import { projectVelocityMarker } from '../src/features/flight/hudPainter'
 import type { AircraftState } from '../src/game/state/WorldState'

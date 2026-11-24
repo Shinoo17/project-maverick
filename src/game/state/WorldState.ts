@@ -15,6 +15,9 @@ import type { CountermeasureState, Decoy } from '../combat/countermeasures'
 import type { DronePath } from '../playground/dronePath'
 import type { TargetingState } from '../combat/targeting'
 import type { BotState } from '../bot/botPilot'
+import type { FlightCoreId } from '../flight/core'
+import type { CoreFlightState } from '../flightCore/state'
+import type { ArcadeFlightState } from '../arcadeCore/step'
 
 export type Vec3 = { x: number; y: number; z: number }
 export type Quat = Vec3 & { w: number }
@@ -47,6 +50,9 @@ export interface AircraftState {
   maneuver: ManeuverState
   stall: StallState
   speedDrive: number
+  /** The set throttle, as the speed whose base drag it cancels (src/game/flight/speed.ts).
+   * Unset until the first flight step, which takes the speed then. */
+  throttleHoldMps?: number
   /** Actual power, normalized by the dry thrust limit; may exceed 1 with burner. */
   enginePower: number
   engine: EngineState
@@ -64,6 +70,13 @@ export interface AircraftState {
   /** Hit points, 0 to AIRCRAFT_HP (src/game/combat/damage.ts). */
   hp: number
   alive: boolean
+  /** The flight core that flies it (src/game/flight/core.ts). Absent = the legacy core.
+   * Everything outside the core reads its flight through readFlight (src/game/flight/readout.ts). */
+  flightCore?: FlightCoreId
+  /** The new core's own state (src/game/flightCore/state.ts); set on aircraft it flies. */
+  coreFlight?: CoreFlightState
+  /** The arcade core's own state (src/game/arcadeCore/step.ts); made on its first step. */
+  arcadeFlight?: ArcadeFlightState
 }
 export interface WorldState {
   tick: number

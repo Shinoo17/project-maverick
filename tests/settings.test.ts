@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { backRoute, openSettings, parentRoute } from '../src/app/routes'
 import { parseCameraFov } from '../src/game/camera/cameraSettings'
 import { FlightInput } from '../src/game/input/FlightInput'
-import { defaultMouseSettings } from '../src/game/input/mouseStick'
+import { defaultMouseSettings } from '../src/game/control/mouseSettings'
 import {
   assignBinding, defaultBindings, defaultKeyboardSettings, isBindableCode, parseBindings, parseKeyboardSettings, type KeyBindings,
 } from '../src/game/input/keyBindings'
 import { stepChoice, stepSlider, type ChoiceRow, type SliderRow } from '../src/features/settings/rows'
 import { effectiveUiScale, parseDisplaySettings, parseSettings, resolveReducedMotion } from '../src/platform/storage'
 import { defaultGraphicsSettings, graphicsPreset, parseGraphicsSettings, presetValues } from '../src/render/graphicsSettings'
+import { defaultAudioSettings, parseAudioSettings, volumeGain } from '../src/render/audio/audioSettings'
 
 describe('saved settings', () => {
   it('reads a save from before the Settings page with every new group at its default', () => {
@@ -17,7 +18,16 @@ describe('saved settings', () => {
     expect(settings.keyboard).toEqual(defaultKeyboardSettings)
     expect(settings.graphics).toEqual(defaultGraphicsSettings)
     expect(settings.display).toEqual({ uiScale: 100, reducedMotion: 'auto' })
+    expect(settings.audio).toEqual(defaultAudioSettings)
     expect(settings.cameraFov).toBe(56)
+  })
+
+  it('keeps each volume a percent on the 5 % grid, and a missing channel at its default', () => {
+    const audio = parseAudioSettings({ master: 137, engine: -4, gun: 42, missile: 'loud', music: 0 })
+    expect(audio).toEqual({ ...defaultAudioSettings, master: 100, engine: 0, gun: 40, music: 0 })
+    expect(volumeGain(100)).toBe(1)
+    expect(volumeGain(50)).toBe(0.25)
+    expect(volumeGain(0)).toBe(0)
   })
 
   it('clamps and snaps out-of-range numbers', () => {
@@ -61,8 +71,8 @@ describe('key bindings', () => {
     expect(parsed.pitchUp).toEqual(['KeyW', null])
     // speedUp's W is taken, so the slot empties rather than stealing it.
     expect(parsed.speedUp).toEqual([null, null])
-    // Esc is reserved: the slot falls back to its default.
-    expect(parsed.airbrake).toEqual(['Space', 'KeyB'])
+    // Esc is reserved: the slot falls back to its default (X since bindings v2).
+    expect(parsed.airbrake).toEqual(['KeyX', 'KeyB'])
   })
 
   it('keeps Esc, P and function keys for the game and the browser', () => {
@@ -77,7 +87,7 @@ describe('key bindings', () => {
   it('binds a free key at once', () => {
     const result = assignBinding(defaultBindings, 'airbrake', 1, 'KeyB')
     expect(result.status).toBe('done')
-    expect(result.status === 'done' && result.bindings.airbrake).toEqual(['Space', 'KeyB'])
+    expect(result.status === 'done' && result.bindings.airbrake).toEqual(['KeyX', 'KeyB'])
   })
 
   it('asks before taking a key from another action, and swaps on yes', () => {
@@ -90,17 +100,23 @@ describe('key bindings', () => {
   })
 
   it('moves a key between the two slots of the same action', () => {
+    // Since bindings v3 (example/flight-control port) ←/→ are roll's second keys again.
     const result = assignBinding(defaultBindings, 'rollLeft', 1, 'KeyA')
     expect(result.status === 'done' && result.bindings.rollLeft).toEqual(['ArrowLeft', 'KeyA'])
   })
 
   it('flies with rebound keys', () => {
     const bindings: KeyBindings = { ...defaultBindings, pitchUp: ['KeyI', null] }
-    const input = new FlightInput(defaultMouseSettings, parseKeyboardSettings({ bindings }))
-    input.press('KeyI')
-    expect(input.command(0, 'a', 'keyboard').pitch).toBe(1)
-    input.held.clear(); input.press('ArrowUp')
-    expect(input.command(1, 'a', 'keyboard').pitch).toBe(0)
+    // Keys build up progressively (example/flight-control), so each is held for a second.
+    const held = (code: string) => {
+      const input = new FlightInput(defaultMouseSettings, parseKeyboardSettings({ bindingsVersion: 3, bindings }))
+      input.press(code)
+      let pitch = 0
+      for (let tick = 0; tick < 60; tick++) pitch = input.command(tick, 'a', 'keyboard').pitch
+      return pitch
+    }
+    expect(held('KeyI')).toBe(1)
+    expect(held('ArrowUp')).toBe(0)
   })
 
   it('latches a toggle-mode afterburner on one press, ignores key repeat, and clears on pause', () => {

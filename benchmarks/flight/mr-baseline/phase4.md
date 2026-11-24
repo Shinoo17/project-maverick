@@ -80,4 +80,4 @@ B16 sweeps q in eight seconds with a 20%-of-band (0.26-q) 0.5 Hz ripple. A separ
 | f22-notvc | comparison | B19.auto.maxRotation3s | 121.4504 deg | ok |
 
 Existing B1–B5/B10/B11/B13/B15/B18/B19/B20 and B23–B25 remain in report.md, phase3.md and crossflow.md, all generated with the current physics version.
-The manual High-G fixture retired in Phase 6 with the Space High-G command; its last values are in docs/psm-phase6-implementation.md.
+The manual High-G fixture retired in Phase 6 with the Space High-G command; its last values are in the Phase 6 report (git history).

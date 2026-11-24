@@ -1,10 +1,12 @@
 /*
 Settings panel (menu #/settings and the flight pause dialog). Uses the menu tokens
-(menu.css, .menu or .settings-scope). Rows are type on hairlines over a scrim, like the
-other menu screens; the pointed-at row gets the cyan bar used for selection elsewhere.
+(menu.css, .menu or .settings-scope). One cut-corner glass plate over the blurred scene:
+tabs as plates along the top, rows on hairlines with large steppers, and the pointed-at
+row marked with the cyan bar used for selection elsewhere.
 */
 
-.settings-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--menu-text); font-family: var(--font-body); }
+.settings-panel { position: relative; isolation: isolate; display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 22px 28px 20px; clip-path: var(--clip-lg); background: var(--menu-panel-edge); color: var(--menu-text); font-family: var(--font-body); text-shadow: none; }
+.settings-panel::before { content: ''; position: absolute; inset: 1px; z-index: -1; clip-path: inherit; background: rgba(8, 12, 15, 0.78); }
 
 .settings-header { display: flex; align-items: center; gap: 22px; }
 .settings-back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--menu-text); font-family: var(--font-display); font-size: 15px; letter-spacing: var(--track); text-transform: uppercase; }
@@ -13,12 +15,12 @@ other menu screens; the pointed-at row gets the cyan bar used for selection else
 .settings-header h1 { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1; letter-spacing: var(--track-wide); text-transform: uppercase; }
 
 /* Tabs: one line of small caps, Q and E prompts at the ends. */
-.settings-tabs { display: flex; align-items: center; gap: 4px; margin-top: 26px; border-bottom: 1px solid var(--menu-line); }
+.settings-tabs { display: flex; align-items: center; gap: 4px; margin-top: 20px; border-bottom: 1px solid var(--menu-line); }
 .settings-tabs > .key-prompt { color: var(--menu-muted); }
-.settings-tabs button { position: relative; min-height: 44px; padding: 0 12px; font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; white-space: nowrap; }
-.settings-tabs button:hover { color: var(--menu-text); }
-.settings-tabs button[aria-selected='true'] { color: var(--menu-text); }
-.settings-tabs button[aria-selected='true']::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--menu-accent); }
+.settings-tabs button { position: relative; flex: 1 1 auto; min-height: 48px; padding: 0 14px; font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: var(--track); color: var(--menu-muted); text-transform: uppercase; white-space: nowrap; transition: color 140ms ease-out, background-color 140ms ease-out; }
+.settings-tabs button:hover { color: var(--menu-text); background: rgba(154, 215, 232, 0.06); }
+.settings-tabs button[aria-selected='true'] { color: #fff; background: rgba(154, 215, 232, 0.14); }
+.settings-tabs button[aria-selected='true']::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--menu-accent); }
 .settings-tabs button[data-pending] { color: var(--menu-locked); }
 .settings-tabs button[data-pending][aria-selected='true'] { color: var(--menu-secondary); }
 
@@ -27,9 +29,9 @@ other menu screens; the pointed-at row gets the cyan bar used for selection else
 
 .settings-section h2 { margin: 22px 0 6px; font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: var(--track-wide); color: var(--menu-muted); text-transform: uppercase; }
 
-.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 48px; padding: 4px 12px 4px 14px; border-bottom: 1px solid var(--menu-line-soft); border-left: 2px solid transparent; cursor: default; outline: none; transition: background-color 140ms ease-out, border-color 140ms ease-out; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 54px; padding: 4px 12px 4px 14px; border-bottom: 1px solid var(--menu-line-soft); border-left: 2px solid transparent; cursor: default; outline: none; transition: background-color 140ms ease-out, border-color 140ms ease-out; }
 .settings-row:hover { background: rgba(154, 215, 232, 0.05); }
-.settings-row[data-selected] { border-left-color: var(--menu-accent); background: rgba(154, 215, 232, 0.08); }
+.settings-row[data-selected] { border-left-color: var(--menu-accent); background: rgba(154, 215, 232, 0.1); }
 .settings-row:focus-visible { outline: 1px solid var(--menu-accent); outline-offset: -1px; }
 .settings-row[data-kind='page'] { cursor: pointer; }
 .settings-row[aria-disabled] .settings-row-label, .settings-row[aria-disabled] .settings-value { color: var(--menu-locked); }
@@ -38,23 +40,23 @@ other menu screens; the pointed-at row gets the cyan bar used for selection else
 .settings-modified { width: 6px; height: 6px; background: var(--menu-accent); flex-shrink: 0; margin-left: -16px; }
 .settings-row-control { display: flex; align-items: center; justify-content: flex-end; min-width: 240px; }
 
-.settings-value { min-width: 110px; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
+.settings-value { min-width: 130px; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
 .settings-value.is-pending { font-family: var(--font-mono); font-weight: 400; font-size: 12px; color: var(--menu-locked); }
 
 .settings-stepper { display: flex; align-items: center; gap: 4px; }
-.settings-stepper button { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--menu-line); color: var(--menu-text); }
-.settings-stepper button:hover:not(:disabled) { border-color: var(--menu-accent); color: var(--menu-accent); }
+.settings-stepper button { width: 42px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--menu-line); background: rgba(10, 15, 19, 0.6); color: var(--menu-text); }
+.settings-stepper button:hover:not(:disabled) { border-color: var(--menu-accent); background: rgba(154, 215, 232, 0.14); color: #fff; }
 .settings-stepper button:disabled { opacity: 0.3; }
 
 .settings-slider { display: flex; align-items: center; gap: 12px; }
 .settings-slider .settings-value { min-width: 64px; text-align: right; }
-.settings-slider input { width: 150px; accent-color: var(--menu-accent); }
+.settings-slider input { width: 190px; height: 28px; accent-color: var(--menu-accent); cursor: pointer; }
 
 .settings-text { width: 220px; height: 36px; padding: 0 10px; border: 1px solid var(--menu-line); background: rgba(5, 7, 9, 0.6); color: var(--menu-text); font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: var(--track); text-transform: uppercase; }
 .settings-text:focus { outline: none; border-color: var(--menu-accent); }
 
 .settings-page-control { display: flex; align-items: center; gap: 12px; }
-.settings-modify { height: 32px; padding: 0 14px; border: 1px solid var(--menu-outline); font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: var(--track); color: var(--menu-text); text-transform: uppercase; }
+.settings-modify { height: 40px; padding: 0 18px; border: 1px solid var(--menu-outline); font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: var(--track); color: var(--menu-text); text-transform: uppercase; }
 .settings-modify:hover { border-color: var(--menu-accent); color: var(--menu-accent); background: rgba(154, 215, 232, 0.08); }
 
 /* Description bar and key hints. */
@@ -93,10 +95,18 @@ button.settings-binding-slot:focus-visible { outline: 2px solid var(--menu-accen
 .settings-bindings-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 44px; margin-top: 10px; font-size: 14px; color: var(--menu-text-soft); }
 
 /* Menu route: the panel on the left, the aircraft framed on the right. */
-.settings-screen .settings-panel { position: absolute; left: var(--gutter); top: 32px; bottom: 28px; height: auto; width: min(780px, 58vw); pointer-events: auto; text-shadow: none; }
+.settings-screen .settings-panel { position: absolute; left: var(--gutter); top: 36px; bottom: 36px; height: auto; width: min(840px, 60vw); pointer-events: auto; }
 
+/* Short windows: less chrome so the rows keep their room. */
+@media (max-height: 720px) {
+  .settings-panel { padding: 14px 24px 14px; }
+  .settings-tabs { margin-top: 10px; }
+  .settings-detail { min-height: 56px; }
+  .settings-screen .settings-panel { top: 20px; bottom: 20px; }
+}
 @media (max-width: 900px) {
   .settings-screen .settings-panel { height: calc(100dvh - 32px); }
+  .settings-panel { padding: 16px; }
   .settings-tabs { overflow-x: auto; }
   .settings-row { flex-wrap: wrap; }
   .settings-row-control { min-width: 0; margin-left: auto; }

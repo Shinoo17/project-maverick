@@ -30,10 +30,16 @@ export function SectionHeading({ title, aside }: { title: string; aside?: ReactN
 }
 
 /** The amber button that starts a flight (PLAY, START, LAUNCH). */
-export function LaunchButton({ label, onClick, disabled = false, className = '' }: { label: string; onClick: () => void; disabled?: boolean; className?: string }) {
+export function LaunchButton({ label, onClick, disabled = false, className = '', hotkey }: { label: string; onClick: () => void; disabled?: boolean; className?: string; hotkey?: string }) {
   return <button type="button" className={`menu-launch ${className}`} onClick={onClick} disabled={disabled}>
-    <span>{label}</span><Play size={24} fill="currentColor" aria-hidden="true" />
+    <span>{label}</span>{hotkey && <kbd className="mv-key" aria-hidden="true">{hotkey}</kbd>}<Play size={24} fill="currentColor" aria-hidden="true" />
   </button>
+}
+
+/** A large menu row: icon, title, one line of state, and the key that does the same. A link with `href`, else a button. */
+export function MenuTile({ icon, title, detail, hotkey, href, onClick }: { icon: ReactNode; title: string; detail?: string; hotkey?: string; href?: string; onClick?: () => void }) {
+  const body = <>{icon}<span className="mv-tile-text"><strong>{title}</strong>{detail && <small>{detail}</small>}</span>{hotkey && <kbd className="mv-key" aria-hidden="true">{hotkey}</kbd>}</>
+  return href ? <a className="mv-tile" href={href} onClick={onClick}>{body}</a> : <button type="button" className="mv-tile" onClick={onClick}>{body}</button>
 }
 
 /** Label/value rows, e.g. MAP · Flat Training Range. */

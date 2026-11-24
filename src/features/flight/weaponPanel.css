@@ -1,5 +1,6 @@
 /* Weapons column (WeaponPanel.tsx). Off-white symbology over a set-back grid plane; the HUD's
-   green marks only the selected missile, red only heat and damage. */
+   green marks only the selected missile with rounds left, amber a wait, red heat, damage and a
+   refused press, grey what is spent. */
 .wpn {
   --wpn-ink: #f2f4ee; --wpn-dim: rgba(242, 244, 238, 0.66); --wpn-faint: rgba(242, 244, 238, 0.17);
   --wpn-select: #62ff84; --wpn-caution: #ffd08a; --wpn-alert: #ff5c5c;
@@ -96,17 +97,44 @@
 .wpn-launch { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; }
 .wpn-missile[data-empty] .wpn-icon * { stroke-dasharray: 2 2.5; }
 .wpn-missile[data-empty] .wpn-value { color: var(--wpn-dim); }
+/* Selected but empty: still stepped forward, so the pilot sees what is selected, but grey, never the green of a ready round. */
+.wpn-missile[data-selected][data-empty] .wpn-icon, .wpn-missile[data-selected][data-empty] .wpn-launch { color: var(--wpn-dim); }
+.wpn-missile[data-selected][data-empty]::after { background: var(--wpn-dim); }
+/* Three or four missiles (data-crowded): the unselected ones fold to one line — icon, name, count,
+   select key — so the column stays clear of the HUD's altitude tape. */
+.wpn[data-crowded] .wpn-missile:not([data-selected]) { grid-template-columns: 84px minmax(0, 1fr) auto auto; grid-template-rows: 1fr; height: 32px; padding-block: 4px; }
+.wpn[data-crowded] .wpn-missile:not([data-selected]) :is(.wpn-icon, .wpn-name, .wpn-value, .wpn-row) { grid-row: 1; align-self: center; }
+.wpn[data-crowded] .wpn-missile:not([data-selected]) .wpn-value { grid-column: 3; font-size: 20px; }
+.wpn[data-crowded] .wpn-missile:not([data-selected]) .wpn-row { grid-column: 4; }
+.wpn[data-crowded] .wpn-missile:not([data-selected]) :is(.wpn-cat, .wpn-pips) { display: none; }
 /* Countermeasures: level with the gun, a hairline under it like a missile card. */
 .wpn-cm { transform: translateZ(10px); opacity: 0.85; }
 .wpn-cm::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 1px; background: var(--wpn-faint); }
 .wpn-cm .wpn-chaff { stroke-width: 1.6; }
 .wpn-cm[data-empty] .wpn-icon * { stroke-dasharray: 2 2.5; }
 .wpn-cm[data-empty] .wpn-value, .wpn-cm[data-empty] .wpn-launch { color: var(--wpn-dim); }
+/* Between bursts: the card is filled amber like a hot gun's (.wpn-heat), draining from the right
+   to the next burst, and the key reads WAIT in amber. */
+.wpn-cm .wpn-launch { transition: color 150ms ease-out; }
+.wpn-cm[data-wait] .wpn-launch { color: var(--wpn-caution); }
+.wpn-wait {
+  --wait: 255, 208, 138; position: absolute; inset: 0; z-index: -1; overflow: hidden;
+  background: rgba(var(--wait), 0.06); box-shadow: inset 0 0 0 1px rgba(var(--wait), 0.2);
+}
+.wpn-wait i { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(var(--wait), 0.3); border-right: 2px solid rgba(var(--wait), 0.9); transition: width 100ms linear; }
 .wpn-a11y { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* A trigger press on a locked gun: the card shudders sideways, the gun refusing to fire. */
-.wpn-gun[data-denied="a"] { animation: wpn-deny-a 320ms; }
-.wpn-gun[data-denied="b"] { animation: wpn-deny-b 320ms; }
+/* A refused press plays on the card it was made on (data-refused, WeaponPanel.tsx). Refused for
+   now (gun heat, the launch interval, no lock, the dispensers between bursts): the card shudders
+   sideways and its word turns amber. */
+.wpn-card:is([data-refused="wait"], [data-refused="nolock"])[data-denied="a"] { animation: wpn-deny-a 320ms; }
+.wpn-card:is([data-refused="wait"], [data-refused="nolock"])[data-denied="b"] { animation: wpn-deny-b 320ms; }
+.wpn-card:is([data-refused="wait"], [data-refused="nolock"]) .wpn-launch { color: var(--wpn-caution); }
+/* Empty: EMPTY flashes red twice, then settles grey. */
+.wpn-card[data-refused="empty"][data-denied="a"] .wpn-launch { animation: wpn-refuse-a 450ms; }
+.wpn-card[data-refused="empty"][data-denied="b"] .wpn-launch { animation: wpn-refuse-b 450ms; }
+@keyframes wpn-refuse-a { 0%, 30%, 60%, 90% { color: var(--wpn-alert); } 15%, 45%, 75% { color: var(--wpn-dim); } }
+@keyframes wpn-refuse-b { 0%, 30%, 60%, 90% { color: var(--wpn-alert); } 15%, 45%, 75% { color: var(--wpn-dim); } }
 @keyframes wpn-deny-a { 15% { translate: -5px 0; } 35% { translate: 4px 0; } 55% { translate: -3px 0; } 75% { translate: 2px 0; } 100% { translate: 0 0; } }
 @keyframes wpn-deny-b { 15% { translate: -5px 0; } 35% { translate: 4px 0; } 55% { translate: -3px 0; } 75% { translate: 2px 0; } 100% { translate: 0 0; } }
 .wpn[data-hit="a"] { animation: wpn-hit-a 420ms; }
@@ -122,6 +150,6 @@
 @media (max-width: 760px) { .wpn { right: 8px; bottom: 12px; scale: 0.64; } }
 @media (prefers-reduced-motion: reduce) {
   .wpn-stage, .wpn-stage > * { transition: none; }
-  .wpn[data-hit], .wpn-gun[data-denied] { animation: none; }
+  .wpn[data-hit], .wpn-card[data-denied] { animation: none; }
   .wpn-gun[data-firing] .wpn-barrel { animation: none; }
 }

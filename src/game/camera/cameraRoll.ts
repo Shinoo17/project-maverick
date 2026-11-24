@@ -11,8 +11,7 @@ would stop meaning "up on screen".
 */
 import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../state/WorldState'
-import { observeAirflow } from '../flight/airflow'
-import { getFlightProfile } from '../flight/profile'
+import { readFlight } from '../flight/readout'
 
 /*
 How far the view leaves the nose, from incidence alone (Phase 7, owner-approved). Zero in
@@ -29,8 +28,8 @@ export function psmShare(incidenceDeg: number, confidence: number) {
 
 /** `psmShare` read straight from the aircraft state (no smoothing). */
 export function psmShareOf(state: AircraftState) {
-  const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
-  return psmShare(airflow.incidenceDeg, airflow.confidence)
+  const flight = readFlight(state)
+  return psmShare(flight.incidenceDeg, flight.angleConfidence)
 }
 
 /*
@@ -87,11 +86,11 @@ const NOSE = new Vector3(), PATH = new Vector3(), ORIENT = new Quaternion()
 
 /** `driftShare` read straight from the aircraft state (no smoothing). */
 export function driftShareOf(state: AircraftState) {
-  const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
-  if (airflow.airspeed < 1e-6) return 0
+  const flight = readFlight(state)
+  if (flight.airspeed < 1e-6) return 0
   NOSE.set(1, 0, 0).applyQuaternion(ORIENT.copy(state.orientation as Quaternion))
   PATH.copy(state.velocity as Vector3).normalize()
-  return driftShare(NOSE, PATH, airflow.incidenceDeg)
+  return driftShare(NOSE, PATH, flight.incidenceDeg)
 }
 
 /** Jet drift share from the nose, the flight path (unit vectors) and the incidence between them. */

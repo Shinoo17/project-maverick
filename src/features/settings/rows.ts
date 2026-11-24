@@ -9,11 +9,12 @@ being hidden (docs 20).
 */
 import type { TFunction } from 'i18next'
 import {
-  selectCallsign, selectCamera, selectCameraFov, selectControls, selectDisplay, selectGraphics, selectKeyboard, selectLocale,
+  selectAudio, selectCallsign, selectCamera, selectCameraFov, selectControls, selectDisplay, selectGraphics, selectKeyboard, selectLocale,
 } from '../../app/sessionStore'
-import { cameraFovRange, cameraRollOptions, defaultCameraSettings, horizonStyleDisabled, horizonStyleOptions } from '../../game/camera/cameraSettings'
+import { defaultAudioSettings, volumeRange, type VolumeChannel } from '../../render/audio/audioSettings'
+import { cameraFovRange, cameraModeOption, cameraModeOptions, defaultCameraSettings } from '../../game/camera/cameraSettings'
 import { defaultKeyboardSettings, sameBindings, type KeyboardSettings } from '../../game/input/keyBindings'
-import { defaultMouseSettings, mouseHintKey } from '../../game/input/mouseStick'
+import { aimLimits, aimModes, defaultMouseSettings, type AimLimit, type AimMode } from '../../game/control/mouseSettings'
 import { aimAssistLevels, type AimAssistLevel } from '../../game/combat/aimAssist'
 import type { Translation } from '../../locales/en'
 import { defaultDisplaySettings, uiScaleRange, type Settings } from '../../platform/storage'
@@ -73,12 +74,16 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
   const mouseOff = s.keyboard.preset === 'keyboard' ? t('settingsNeedsMouse') : noReason
   const m = s.controls, dm = defaultMouseSettings
   // Mouse aim has no stick to frame or to put on another axis.
-  const stickOff = mouseOff ?? (m.mode === 'aim' || m.mode === 'cursor' ? t('settingsNeedsStickMode') : noReason)
   const g = s.graphics, dg = defaultGraphicsSettings
   const preset = graphicsPreset(g)
   const pending = (id: string, label: TextKey, reason: TextKey): PendingRow =>
     ({ kind: 'pending', id, label: t(label), detail: t(reason), disabled: t(reason), modified: false })
   const effectOptions = effectQualities.map(value => ({ value, label: t(`settingsQuality_${value}` as const) }))
+  const volume = (channel: VolumeChannel, label: TextKey, detail: TextKey): SliderRow => ({
+    kind: 'slider', id: `volume-${channel}`, label: t(label), detail: t(detail), disabled: noReason,
+    value: s.audio[channel], min: volumeRange.min, max: volumeRange.max, step: volumeRange.step, format: value => `${value}%`,
+    modified: s.audio[channel] !== defaultAudioSettings[channel],
+    set: value => selectAudio({ [channel]: value }), reset: () => selectAudio({ [channel]: defaultAudioSettings[channel] }) })
 
   return [
     {
@@ -95,16 +100,12 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
             value: m.aimAssist, modified: m.aimAssist !== dm.aimAssist, set: level => selectControls({ aimAssist: level as AimAssistLevel }), reset: () => selectControls({ aimAssist: dm.aimAssist }) }),
         ] },
         { title: t('settingsSectionMouse'), rows: [
-          choice({ id: 'mouseMode', label: t('mouseMode'), detail: t(mouseHintKey(m.mode)), disabled: mouseOff,
-            options: [{ value: 'aim', label: t('mouseModeAim') }, { value: 'cursor', label: t('mouseModeCursor') }, { value: 'relative', label: t('mouseModeRelative') }, { value: 'stick', label: t('mouseModeStick') }],
-            value: m.mode, modified: m.mode !== dm.mode, set: mode => selectControls({ mode: mode as typeof m.mode }), reset: () => selectControls({ mode: dm.mode }) }),
-          // Positional stick always reads the screen (example/F22), so only the relative stick has a frame to pick.
-          choice({ id: 'frame', label: t('controlFrame'), detail: t('settingsFrameDetail'), disabled: stickOff ?? (m.mode === 'stick' ? t('settingsFrameScreenStick') : noReason),
-            options: [{ value: 'body', label: t('controlFrameBody') }, { value: 'horizon', label: t('controlFrameHorizon') }],
-            value: m.frame, modified: m.frame !== dm.frame, set: frame => selectControls({ frame: frame as typeof m.frame }), reset: () => selectControls({ frame: dm.frame }) }),
-          choice({ id: 'xAxis', label: t('mouseXAxis'), detail: t('settingsXAxisDetail'), disabled: stickOff,
-            options: [{ value: 'roll', label: t('mouseXRoll') }, { value: 'yaw', label: t('mouseXYaw') }],
-            value: m.xAxis, modified: m.xAxis !== dm.xAxis, set: xAxis => selectControls({ xAxis: xAxis as typeof m.xAxis }), reset: () => selectControls({ xAxis: dm.xAxis }) }),
+          choice({ id: 'aimMode', label: t('aimMode'), detail: t('settingsAimModeDetail'), disabled: mouseOff,
+            options: aimModes.map(mode => ({ value: mode, label: t(`aimMode_${mode}` as const) })),
+            value: m.aimMode, modified: m.aimMode !== dm.aimMode, set: mode => selectControls({ aimMode: mode as AimMode }), reset: () => selectControls({ aimMode: dm.aimMode }) }),
+          choice({ id: 'aimLimit', label: t('aimLimit'), detail: t('settingsAimLimitDetail'), disabled: mouseOff,
+            options: aimLimits.map(limit => ({ value: limit, label: t(`aimLimit_${limit}` as const) })),
+            value: m.aimLimit, modified: m.aimLimit !== dm.aimLimit, set: limit => selectControls({ aimLimit: limit as AimLimit }), reset: () => selectControls({ aimLimit: dm.aimLimit }) }),
           { kind: 'slider', id: 'sensitivity', label: t('mouseSensitivity'), detail: t('settingsSensitivityDetail'), disabled: mouseOff,
             value: m.sensitivity, min: 0.5, max: 2, step: 0.1, format: value => `${value.toFixed(1)}×`,
             modified: m.sensitivity !== dm.sensitivity, set: sensitivity => selectControls({ sensitivity: Math.round(sensitivity * 10) / 10 }), reset: () => selectControls({ sensitivity: dm.sensitivity }) },
@@ -115,7 +116,7 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
           { kind: 'page', id: 'bindings', page: 'bindings', label: t('settingsBindings'), detail: t('settingsBindingsDetail'), disabled: noReason,
             valueLabel: t(sameBindings(s.keyboard.bindings, defaultKeyboardSettings.bindings) ? 'settingsDefault' : 'settingsCustom'),
             modified: !sameBindings(s.keyboard.bindings, defaultKeyboardSettings.bindings), reset: () => selectKeyboard({ bindings: defaultKeyboardSettings.bindings }) },
-          ...(['afterburner', 'airbrake'] as const).map(action => choice({
+          ...(['afterburner', 'airbrake', 'psm'] as const).map(action => choice({
             id: `${action}Mode`, label: t(`settingsPressMode_${action}` as const), detail: t('settingsPressModeDetail'), disabled: noReason,
             options: [{ value: 'hold', label: t('settingsHold') }, { value: 'toggle', label: t('settingsToggle') }],
             value: s.keyboard[action], modified: s.keyboard[action] !== defaultKeyboardSettings[action],
@@ -140,18 +141,10 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
     {
       id: 'camera', label: t('settingsTabCamera'), pending: null, sections: [
         { title: t('settingsSectionChase'), rows: [
-          choice({ id: 'roll', label: t('cameraRoll'), detail: t(cameraRollOptions.find(o => o.id === s.camera.roll)!.detailKey), disabled: noReason,
-            options: cameraRollOptions.map(option => ({ value: option.id, label: t(option.labelKey) })),
-            value: s.camera.roll, modified: s.camera.roll !== defaultCameraSettings.roll,
-            set: roll => selectCamera({ roll: roll as typeof s.camera.roll }), reset: () => selectCamera({ roll: defaultCameraSettings.roll }) }),
-          // Aircraft locked has no roll style: the row shows "Default" and says why.
-          choice({ id: 'style', label: t('cameraStyle'),
-            detail: t(s.camera.roll === 'horizon' ? horizonStyleOptions.find(o => o.id === s.camera.horizonStyle)!.detailKey : horizonStyleDisabled.detailKey),
-            disabled: s.camera.roll === 'horizon' ? noReason : t(horizonStyleDisabled.detailKey),
-            valueLabel: s.camera.roll === 'horizon' ? undefined : t(horizonStyleDisabled.labelKey),
-            options: horizonStyleOptions.map(option => ({ value: option.id, label: t(option.labelKey) })),
-            value: s.camera.horizonStyle, modified: s.camera.roll === 'horizon' && s.camera.horizonStyle !== defaultCameraSettings.horizonStyle,
-            set: style => selectCamera({ horizonStyle: style as typeof s.camera.horizonStyle }), reset: () => selectCamera({ horizonStyle: defaultCameraSettings.horizonStyle }) }),
+          choice({ id: 'cameraMode', label: t('cameraMode'), detail: t(cameraModeOption(s.camera.mode).detailKey), disabled: noReason,
+            options: cameraModeOptions.map(option => ({ value: option.id, label: t(option.labelKey) })),
+            value: s.camera.mode, modified: s.camera.mode !== defaultCameraSettings.mode,
+            set: mode => selectCamera({ mode: mode as typeof s.camera.mode }), reset: () => selectCamera({ mode: defaultCameraSettings.mode }) }),
           { kind: 'slider', id: 'fov', label: t('settingsFov'), detail: t('settingsFovDetail'), disabled: noReason,
             value: s.cameraFov, min: cameraFovRange.min, max: cameraFovRange.max, step: cameraFovRange.step, format: value => `${value}°`,
             modified: s.cameraFov !== cameraFovRange.default, set: selectCameraFov, reset: () => selectCameraFov(cameraFovRange.default) },
@@ -187,11 +180,21 @@ export function buildSettingsTabs(s: Settings, t: TFunction): SettingsTab[] {
       ],
     },
     {
-      id: 'audio', label: t('settingsTabAudio'), pending: t('settingsAudioPending'), sections: [
-        { title: t('settingsSectionVolume'), rows: [
-          pending('master', 'settingsVolumeMaster', 'settingsAudioPending'),
-          pending('engine', 'settingsVolumeEngine', 'settingsAudioPending'),
-          pending('ui', 'settingsVolumeUi', 'settingsAudioPending'),
+      id: 'audio', label: t('settingsTabAudio'), pending: null, sections: [
+        { title: t('settingsSectionVolume'), rows: [volume('master', 'settingsVolumeMaster', 'settingsVolumeMasterDetail')] },
+        { title: t('settingsSectionAircraftSound'), rows: [
+          volume('engine', 'settingsVolumeEngine', 'settingsVolumeEngineDetail'),
+          volume('air', 'settingsVolumeAir', 'settingsVolumeAirDetail'),
+        ] },
+        { title: t('settingsSectionWeaponSound'), rows: [
+          volume('gun', 'settingsVolumeGun', 'settingsVolumeGunDetail'),
+          volume('missile', 'settingsVolumeMissile', 'settingsVolumeMissileDetail'),
+          volume('impacts', 'settingsVolumeImpacts', 'settingsVolumeImpactsDetail'),
+        ] },
+        { title: t('settingsSectionCockpitSound'), rows: [volume('warning', 'settingsVolumeWarning', 'settingsVolumeWarningDetail')] },
+        { title: t('settingsSectionMusicMenu'), rows: [
+          volume('music', 'settingsVolumeMusic', 'settingsVolumeMusicDetail'),
+          volume('ui', 'settingsVolumeUi', 'settingsVolumeUiDetail'),
         ] },
       ],
     },

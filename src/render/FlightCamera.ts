@@ -1,7 +1,7 @@
 import { Box3, Euler, MathUtils, Matrix4, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { AircraftState } from '../game/state/WorldState'
-import { observeAirflow } from '../game/flight/airflow'
-import { getFlightProfile } from '../game/flight/profile'
+import { readFlight, type FlightReadout } from '../game/flight/readout'
+import type { CameraTrace } from './cameraTrace'
 import { balancedTilt, bankAbout, driftShare, psmShare } from '../game/camera/cameraRoll'
 import type { CameraSettings } from '../game/camera/cameraSettings'
 import { visibility } from './targetVisibility'
@@ -10,8 +10,8 @@ The chase camera. Two shots, blended by incidence:
 
 - Cruise: the pilot's chosen camera — Horizon locked (Balanced or Dynamic) or Aircraft locked.
   See `STYLE` below and `game/camera/cameraSettings.ts`.
-- PSM: the Phase 7 shot. Values are owner decisions recorded in
-  docs/psm-phase7-implementation.md and measured by benchmarks/flight/camera.report.ts (B21).
+- PSM: the Phase 7 shot. Values are owner decisions from the Phase 7 report (removed with the
+  legacy flight docs on 2026-11-16; see git history).
   It holds a level horizon and runs the view down the flight path.
 
 Every cruise value is weighted by (1 − handover), so once the handover is complete the choice
@@ -178,6 +178,8 @@ export class FlightCamera {
   aim: Vector3 | null = null
   /** Free look and look back: how far the view should turn off the chase shot (radians, view frame). */
   lookTurn = { yaw: 0, pitch: 0 }
+  /** CAMERA_TRACE (cameraTrace.ts): while set, each update appends one frame. Read-only: it never changes the shot. */
+  trace: CameraTrace | null = null
   private orbit = { yaw: 0, pitch: 0 }
   /** The chase shot before the look turn. Mouse aim and the × steer by this view, not the turned one. */
   readonly chase = new Quaternion()
@@ -237,20 +239,20 @@ export class FlightCamera {
     const q = new Quaternion().copy(state.orientation), position = new Vector3().copy(state.position)
     const nose = new Vector3(1, 0, 0).applyQuaternion(q), bodyUp = new Vector3(0, 1, 0).applyQuaternion(q)
     const wing = new Vector3(0, 0, 1).applyQuaternion(q)
-    const airflow = observeAirflow(state, getFlightProfile(state.aircraftId))
+    const flight = readFlight(state)
     // Presentation only: reveal real nose/path separation from airflow alone,
     // ignoring unreliable angles near rest. No maneuver phase exists.
-    const decoupleTarget = psmShare(airflow.incidenceDeg, airflow.confidence)
+    const decoupleTarget = psmShare(flight.incidenceDeg, flight.angleConfidence)
     const decoupleRate = decoupleTarget > this.decouple ? DECOUPLE.attack : DECOUPLE.release
     this.decouple = reducedMotion ? 0 : this.decouple + (decoupleTarget - this.decouple) * (1 - Math.exp(-decoupleRate * dt))
-    const handoverTarget = MathUtils.lerp(this.handover, psmShare(airflow.incidenceDeg, 1), airflow.confidence)
+    const handoverTarget = MathUtils.lerp(this.handover, psmShare(flight.incidenceDeg, 1), flight.angleConfidence)
     const handoverRate = handoverTarget > this.handover ? DECOUPLE.attack : DECOUPLE.release
     this.handover = reducedMotion ? handoverTarget : this.handover + (handoverTarget - this.handover) * (1 - Math.exp(-handoverRate * dt))
     const snap = !this.initialized || reducedMotion
-    const path = airflow.airspeed > 1e-6 ? new Vector3().copy(state.velocity).normalize() : nose.clone()
+    const path = flight.airspeed > 1e-6 ? new Vector3().copy(state.velocity).normalize() : nose.clone()
     // Jet drift, held like the handover where incidence is unreliable. Only Aircraft locked uses it:
     // there it takes its share out of both PSM weights and turns it into extra lag instead.
-    const driftTarget = MathUtils.lerp(this.drift, driftShare(nose, path, airflow.incidenceDeg), airflow.confidence)
+    const driftTarget = MathUtils.lerp(this.drift, driftShare(nose, path, flight.incidenceDeg), flight.angleConfidence)
     const driftRate = driftTarget > this.drift ? DECOUPLE.attack : DECOUPLE.release
     this.drift = snap ? driftTarget : this.drift + (driftTarget - this.drift) * (1 - Math.exp(-driftRate * dt))
     const keep = cruise === 'aircraft' ? 1 - this.drift : 1
@@ -341,7 +343,7 @@ export class FlightCamera {
     // --- Boom and aim -----------------------------------------------------------------------
     // Chase offset sized so the whole airframe (normalised to 18.9 units long) stays in frame
     // even at rest, with speed only easing the camera back a few units.
-    const speed = airflow.airspeed
+    const speed = flight.airspeed
     const back = 26 + Math.min(3, speed / 70) + d * 9
     const desiredOffset = forward.clone().multiplyScalar(-back).addScaledVector(this.boomUp, MathUtils.lerp(style.height, BOOM_HEIGHT, w) + d * 3.5)
     desiredOffset.y = Math.max(5, position.y + desiredOffset.y) - position.y
@@ -369,11 +371,20 @@ export class FlightCamera {
     camera.position.copy(position).add(this.offset)
     // Reduced motion holds the FOV still, so it has no gun zoom either.
     const fov = reducedMotion ? this.baseFov + FOV.reduced - FOV.base
-      : (this.baseFov + Math.min(FOV.speed, speed / 50) + (state.maneuver.burnerActive ? FOV.burner : 0) + d * FOV.decouple) * (1 - visibility.zoom * this.gunZoom)
+      : (this.baseFov + Math.min(FOV.speed, speed / 50) + (flight.burner.active ? FOV.burner : 0) + d * FOV.decouple) * (1 - visibility.zoom * this.gunZoom)
     camera.fov += (fov - camera.fov) * (reducedMotion || this.snapFov ? 1 : 1 - Math.exp(-3 * dt)); camera.updateProjectionMatrix()
     this.chase.copy(camera.quaternion)
     this.turnLook(camera, position, dt, snap)
     camera.position.y = Math.max(5, camera.position.y)
+    if (this.trace) this.recordTrace(this.trace, camera, cruise, flight, state, dt, w, d, aimShare)
+  }
+  private recordTrace(trace: CameraTrace, camera: PerspectiveCamera, style: Cruise, flight: FlightReadout, state: AircraftState, dt: number, psm: number, decoupled: number, aimShare: number) {
+    const v = (x: Vector3): [number, number, number] => [x.x, x.y, x.z]
+    trace.record({ rig: 'legacy', dt, style,
+      position: v(camera.position), look: v(new Vector3(0, 0, -1).applyQuaternion(camera.quaternion)), up: v(new Vector3(0, 1, 0).applyQuaternion(camera.quaternion)), fov: camera.fov,
+      chase: { look: v(this.look), up: v(this.up), boom: v(this.offset) },
+      flight: { alphaDeg: flight.alphaDeg, betaDeg: flight.betaDeg, incidenceDeg: flight.incidenceDeg, confidence: flight.angleConfidence, airspeed: flight.airspeed, rates: { ...state.rates } },
+      blend: { decouple: this.decouple, handover: this.handover, drift: this.drift, driftLag: this.lastDriftLag, psm, decoupled, aimShare, gunZoom: this.gunZoom, gap: this.gap, boomGap: this.boomGap, rollLag: this.rollLag, lookingAway: this.lookingAway } })
   }
   /** Swing the finished chase shot about the jet by the eased look turn (see FREE_LOOK). */
   private turnLook(camera: PerspectiveCamera, pivot: Vector3, dt: number, snap: boolean) {

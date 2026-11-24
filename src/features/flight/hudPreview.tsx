@@ -7,7 +7,11 @@
 // at the lock, the painted one's missile coming at us, and one behind out of sight; ?radar=held keeps
 // the lock inside the cone). RWR: ?rwr (the radar fixtures turned on the player: the lock off the right locks
 // it with a radar missile, the painted one's missile has gone active, the close one behind searches). Missile lock: ?lock (with the ?gun target; cycles search, tracking, acquiring, locked,
-// lock lost), ?lock=0.45 holds that progress, ?lock=locked holds the lock. Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?deny (a refused trigger press each second), ?hp=25, ?sel=1, ?firing.
+// lock lost), ?lock=0.45 holds that progress, ?lock=locked holds the lock. Weapons column: ?aircraft=su57, ?heat=0.85 (?heat=cycle fires to overheat and cools), ?ovht, ?cooling, ?hp=25, ?sel=1, ?firing,
+// ?missiles=4 (1–4 missile slots, extra ones copied from the aircraft's), ?empty, ?wait (the dispensers' wait cycling),
+// ?deny=empty|wait|nolock (a refused press each second on the gun, the selected missile and the dispensers;
+// with ?flip the selection steps to the next missile 0.3 s after each refusal, which must stay on the card refused).
+// The settings panel (top right, toggled with `) writes the same query and reloads; ?nopanel hides it for captures.
 import { createRef, StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useTranslation } from 'react-i18next'
@@ -16,8 +20,9 @@ import i18n from '../../locales'
 import { GameRuntime } from '../../game/runtime/GameRuntime'
 import type { AircraftState } from '../../game/state/WorldState'
 import { FlightInstruments, FlightSystemStatus, type HudDriver } from './FlightInstruments'
-import { PlaygroundHud } from './PlaygroundHud'
-import { WeaponPanel } from './WeaponPanel'
+import { PlaygroundHud, lessonLabels } from './PlaygroundHud'
+import { WeaponPanel, type SlotRefusal } from './WeaponPanel'
+import type { MissileRow, Refusal } from './weaponSlots'
 import { flightWarning } from './telemetry'
 import { defaultBindings } from '../../game/input/keyBindings'
 import { bindingNames } from '../settings/KeyPrompt'
@@ -27,8 +32,8 @@ import { radarFrame } from '../../render/radarFrame'
 import { RadarScope, type RadarDriver } from './RadarScope'
 import { RwrScope, type RwrDriver } from './RwrScope'
 import { createRwrFrame } from '../../render/rwrFrame'
-import { missileStations } from '../../content/weapons'
-import { getAircraft } from '../../content/aircraft'
+import { gunStation, missileStations } from '../../content/weapons'
+import { getAircraft, playgroundAircraft } from '../../content/aircraft'
 import { createLockFrame } from '../../render/lockFrame'
 import { createSeekerState, seekerRules } from '../../game/combat/seeker'
 import type { GameEvent } from '../../game/runtime/events'
@@ -51,10 +56,32 @@ const aircraftId = params.get('aircraft') ?? 'f22'
 const rwr = params.has('rwr')
 const radar = params.get('radar') ?? (rwr ? '' : null)
 const lock = params.get('lock')
+const ownMissiles = missileStations(getAircraft(aircraftId))
+const previewMissiles: MissileRow[] = Array.from({ length: Number(params.get('missiles') ?? ownMissiles.length) }, (_, index) => {
+  const row = ownMissiles[index % ownMissiles.length]
+  return index < ownMissiles.length ? row : { station: { ...row.station, id: `${row.station.id}-${index}` }, weapon: row.weapon }
+})
+const ownGun = gunStation(getAircraft(aircraftId)).station.id
+const deny = params.has('deny') ? (params.get('deny') || 'empty') as Refusal : null
+/** The missile slot selected at `seconds` of page time: ?sel, or with ?flip the next one 0.3 s past each whole second. */
+const previewSlot = (seconds: number) => params.has('flip') ? (Math.floor(seconds - 0.3) % previewMissiles.length + previewMissiles.length) % previewMissiles.length : Number(params.get('sel') ?? 0)
+/** ?deny: each slot's refusals by page time. A refusal lands each whole second on the missile selected then, and on the gun and dispensers unless ?flip. */
+function previewRefusals(seconds: number): Record<string, SlotRefusal> {
+  if (!deny) return {}
+  const beat = Math.floor(seconds), n = previewMissiles.length, out: Record<string, SlotRefusal> = {}
+  previewMissiles.forEach((row, slot) => {
+    // The last whole second on which this slot was selected.
+    const last = beat - ((beat - 1 - slot) % n + n) % n
+    if (params.has('flip')) out[row.station.id] = { count: last, reason: deny }
+    else if (slot === previewSlot(seconds)) out[row.station.id] = { count: beat, reason: deny }
+  })
+  if (!params.has('flip')) Object.assign(out, { [ownGun]: { count: beat, reason: 'wait' }, countermeasures: { count: beat, reason: deny === 'empty' ? 'empty' : 'wait' } })
+  return out
+}
 /** The ?lock cycle in seconds: search, the climb to the lock, the lock held, the lock lost and bleeding away. */
 const LOCK_CYCLE = { search: 1, climb: 2.4, hold: 2, lost: 1.8 }
 function previewSeeker(seconds: number) {
-  const seeker = createSeekerState()
+  const seeker = createSeekerState(previewSlot(performance.now() / 1000))
   seeker.targetId = 'drone-1'
   if (lock === 'locked') return Object.assign(seeker, { progress: 1, locked: true, tracking: true })
   if (lock && lock !== '' && Number.isFinite(Number(lock))) return Object.assign(seeker, { progress: Number(lock), tracking: true })
@@ -103,6 +130,107 @@ function fly(state: AircraftState, t: number) {
   if (params.has('cooling')) { state.gun.heat = 0.6; state.gun.cooling = true }
   if (params.has('firing')) state.gun.shots = Math.floor(t * 50)
   if (params.has('hp')) state.hp = Number(params.get('hp'))
+  // Stores for the copied missile stations, and the selected slot.
+  for (const row of previewMissiles) if (!state.stores.some(store => store.stationId === row.station.id)) state.stores.push({ stationId: row.station.id, weaponId: row.weapon.id, count: Math.max(1, row.station.capacity - 1) })
+  state.targeting.seeker.slot = previewSlot(performance.now() / 1000)
+  // Empty stores (the gun card shows heat, not rounds) and dispensers; the dispensers' wait between bursts, cycling every 2.2 s (preview tick 0).
+  if (params.has('empty')) { state.stores = state.stores.map(store => ({ ...store, count: 0 })); state.countermeasures.bursts = 0 }
+  if (params.has('wait')) state.countermeasures.readyTick = Math.round((1 - (t % 2.2) / 2.2) * 132)
+}
+
+/** A query value: null leaves the key out, '' writes it bare (?lab). */
+type QueryValue = string | null
+type Field = { key: string; label: string } & (
+  | { kind: 'flag' }
+  | { kind: 'choice'; options: readonly (readonly [QueryValue, string])[] }
+  | { kind: 'number'; min?: number; max?: number; step?: number; placeholder: string })
+const off = [null, 'ปิด'] as const
+const settingGroups: readonly { title: string; fields: readonly Field[] }[] = [
+  { title: 'ฉาก', fields: [
+    { key: 'aircraft', label: 'เครื่องบิน', kind: 'choice', options: playgroundAircraft.map(entry => [entry.id === 'f22' ? null : entry.id, `${entry.designation} ${entry.name}`] as const) },
+    { key: 'lang', label: 'ภาษา', kind: 'choice', options: [[null, 'ตามระบบ'], ['th', 'ไทย'], ['en', 'English']] },
+    { key: 'size', label: 'ขนาดจอ', kind: 'choice', options: [[null, 'เต็มหน้าต่าง'], ['1280x672', '1280 × 672'], ['1366x768', '1366 × 768'], ['1920x1080', '1920 × 1080'], ['1024x640', '1024 × 640']] },
+    { key: 't', label: 'หยุดเวลาที่ (วินาที)', kind: 'number', min: 0, step: 0.5, placeholder: 'เดินตามจริง' },
+    { key: 'lesson', label: 'บทฝึก', kind: 'choice', options: [[null, 'ไม่มี'], ...lessonLabels.slice(1).map((_, index) => [String(index + 1), `บทที่ ${index + 1}`] as const)] },
+    { key: 'lab', label: 'Lab (ข้อมูลดีบัก, ซ่อนแผงอาวุธ)', kind: 'flag' },
+  ] },
+  { title: 'สภาพการบิน', fields: [
+    { key: 'warning', label: 'คำเตือนบินต่ำ', kind: 'flag' },
+    { key: 'stall', label: 'Stall', kind: 'flag' },
+    { key: 'recovering', label: 'กำลังฟื้นจาก stall', kind: 'flag' },
+    { key: 'psm', label: 'PSM (thrust vectoring)', kind: 'flag' },
+  ] },
+  { title: 'ปืนและล็อกเป้า', fields: [
+    { key: 'gun', label: 'เป้าปืน', kind: 'choice', options: [off, ['', '550 m'], ['hit', 'โดนทุกวินาที'], ['assist', 'ASSIST'], ['far', '1,300 m (เกินระยะ)']] },
+    { key: 'lock', label: 'ล็อกมิสไซล์', kind: 'choice', options: [off, ['', 'วนทุกขั้น'], ['0.25', 'ค้าง 25%'], ['0.45', 'ค้าง 45%'], ['0.75', 'ค้าง 75%'], ['locked', 'ล็อกแล้ว']] },
+    { key: 'still', label: 'Reduced motion (กรอบล็อก)', kind: 'flag' },
+  ] },
+  { title: 'เรดาร์', fields: [
+    { key: 'radar', label: 'เรดาร์', kind: 'choice', options: [off, ['', 'ล็อกหลุดกรวย'], ['held', 'ล็อกในกรวย']] },
+    { key: 'rwr', label: 'RWR (ถูกล็อก)', kind: 'flag' },
+  ] },
+  { title: 'แผงอาวุธ', fields: [
+    { key: 'heat', label: 'ความร้อนปืน', kind: 'choice', options: [off, ['cycle', 'ยิงจน overheat แล้วเย็น'], ['0.3', '30%'], ['0.6', '60%'], ['0.85', '85%'], ['0.95', '95%']] },
+    { key: 'ovht', label: 'Overheat', kind: 'flag' },
+    { key: 'cooling', label: 'กำลังเย็น', kind: 'flag' },
+    { key: 'firing', label: 'กำลังยิง', kind: 'flag' },
+    { key: 'hp', label: 'HP', kind: 'number', min: 0, max: 100, step: 5, placeholder: '100' },
+    { key: 'missiles', label: 'จำนวนช่องมิสไซล์', kind: 'choice', options: [[null, 'ตามเครื่องบิน'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']] },
+    { key: 'sel', label: 'ช่องที่เลือก', kind: 'choice', options: [[null, '1'], ['1', '2'], ['2', '3'], ['3', '4']] },
+    { key: 'empty', label: 'หมด (มิสไซล์ + flare)', kind: 'flag' },
+    { key: 'wait', label: 'Flare รอบรรจุ (วน)', kind: 'flag' },
+    { key: 'deny', label: 'กดแล้วถูกปฏิเสธ', kind: 'choice', options: [off, ['empty', 'หมด'], ['wait', 'รอ'], ['nolock', 'NO LOCK']] },
+    { key: 'flip', label: 'สลับช่องหลังถูกปฏิเสธ', kind: 'flag' },
+  ] },
+]
+const panelKey = 'maverick.hudPreview.panel'
+function readPanelOpen() { try { return localStorage.getItem(panelKey) !== 'closed' } catch { return true } }
+function writePanelOpen(open: boolean) { try { localStorage.setItem(panelKey, open ? 'open' : 'closed') } catch { /* storage blocked */ } }
+/** The query as typed by hand: bare keys for flags, in panel order. */
+function queryString(values: URLSearchParams) {
+  const parts = [...values].map(([key, value]) => value === '' ? encodeURIComponent(key) : `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+  return parts.length ? `?${parts.join('&')}` : ''
+}
+/** Settings that rewrite the query and reload: every fixture reads it once at load. */
+function SettingsPanel() {
+  const [open, setOpen] = useState(readPanelOpen)
+  const toggle = (next: boolean) => { setOpen(next); writePanelOpen(next) }
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.code === 'Backquote' && !(event.target instanceof HTMLInputElement)) setOpen(now => { writePanelOpen(!now); return !now }) }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [])
+  const apply = (key: string, value: QueryValue) => {
+    if ((params.get(key) ?? null) === value) return
+    const next = new URLSearchParams()
+    // Panel order first, then any keys the panel does not know.
+    for (const field of settingGroups.flatMap(group => group.fields)) {
+      const current = field.key === key ? value : params.get(field.key)
+      if (current !== null) next.set(field.key, current)
+    }
+    for (const [other, current] of params) if (!next.has(other) && other !== key) next.set(other, current)
+    location.search = queryString(next)
+  }
+  if (!open) return <button className="hud-settings-toggle" onClick={() => toggle(true)} aria-expanded="false">ตั้งค่า preview · `</button>
+  return <aside className="hud-settings" aria-label="ตั้งค่า HUD preview">
+    <header><h2>HUD preview</h2><button onClick={() => toggle(false)} aria-expanded="true">ซ่อน · `</button></header>
+    {settingGroups.map(group => <fieldset key={group.title}><legend>{group.title}</legend>
+      {group.fields.map(field => {
+        const id = `hud-setting-${field.key}`, current = params.get(field.key)
+        if (field.kind === 'flag') return <label key={field.key} className="is-flag"><input id={id} type="checkbox" checked={current !== null} onChange={event => apply(field.key, event.target.checked ? '' : null)} />{field.label}</label>
+        if (field.kind === 'choice') {
+          const index = Math.max(0, field.options.findIndex(([value]) => value === current))
+          return <label key={field.key} htmlFor={id}>{field.label}<select id={id} value={index} onChange={event => apply(field.key, field.options[Number(event.target.value)][0])}>
+            {field.options.map(([, text], option) => <option key={option} value={option}>{text}</option>)}
+          </select></label>
+        }
+        const commit = (text: string) => apply(field.key, text.trim() === '' ? null : text.trim())
+        return <label key={field.key} htmlFor={id}>{field.label}<input id={id} type="number" min={field.min} max={field.max} step={field.step} placeholder={field.placeholder} defaultValue={current ?? ''}
+          onBlur={event => commit(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') commit(event.currentTarget.value) }} /></label>
+      })}
+    </fieldset>)}
+    <footer><code>{queryString(params) || '(ค่าเริ่มต้น)'}</code><button onClick={() => { location.search = '' }} disabled={!params.size}>รีเซ็ตทั้งหมด</button></footer>
+  </aside>
 }
 
 function Preview() {
@@ -205,11 +333,11 @@ function Preview() {
     <div className="flight-identity"><strong>F-22</strong><span>{t('training')} / {t('flatRange')}</span></div>
     <div className="flight-actions"><span>{t('cameraRollHorizon')}</span><button>{t('pauseFlight')} · Esc</button></div>
     <FlightSystemStatus state={telemetry} />
-    {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} selected={Number(params.get('sel') ?? 0)} denied={params.has('deny') ? Math.floor(performance.now() / 1000) : 0} preset="mouse" bindings={defaultBindings} reducedMotion={false} />}
+    {!lab && <WeaponPanel aircraftId={aircraftId} state={telemetry} tick={params.has('wait') ? 0 : undefined} refusals={previewRefusals(performance.now() / 1000)} missiles={previewMissiles} preset="mouse" bindings={defaultBindings} reducedMotion={false} />}
     <PlaygroundHud state={telemetry} lesson={lesson} cameraChanged={false} lab={lab} />
     <p className="flight-warning" role="status">{warning ? t(warning) : ''}</p>
     <p className="flight-controls">{t('controlsHint', bindingNames(defaultBindings))}</p>
-  </div></main></div>
+  </div></main>{!params.has('nopanel') && <SettingsPanel />}</div>
 }
 
 createRoot(document.getElementById('root')!).render(<StrictMode><Preview /></StrictMode>)

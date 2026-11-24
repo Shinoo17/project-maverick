@@ -10,3 +10,9 @@
 node_modules
 
 /benchmarks/flight/out/
+
+# Sounds: only the chosen originals in sound-source/select_sound go into Git (LFS). Everything else there stays
+# local: the raw libraries in sound-source/original_sound (several GB), any new download, and the private map of
+# sources (SOUND-SOURCES.md, originals.json, written and read by scripts/build-audio.mjs).
+/sound-source/*
+!/sound-source/select_sound/

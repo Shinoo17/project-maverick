@@ -3,9 +3,13 @@ import { validateSession } from '../../content/validate'
 import type { WorldState } from '../state/WorldState'
 import { FixedClock, FLIGHT_STEP, WORLD_STEP } from './clock'
 import { commandSchemaVersion, neutralCommand, type PilotCommand } from './commands'
-import { stepFlight } from '../flight/stepFlight'
+import { getFlightCore, type FlightCore } from '../flight/core'
+import { createCoreFlight } from '../flightCore/step'
+import { arcadeSpawnSpeed, arcadeSpawnSpeeds, createArcadeFlight } from '../arcadeCore/step'
+import { coreAssistOf, coreProfileOf, validateCoreAssist, validateCoreProfile, type CoreTuning } from '../flightCore/profile'
 import { botSpawnPose, combatBot, createPracticeState, droneRespawnPose, practiceSpawns, stepPractice, targetDrone, type PracticePreset } from '../playground/practice'
-import { circleFrom, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
+import { circleFrom, droneFlares, dronePose, racetrackFrom, type TargetDroneMode } from '../playground/dronePath'
+import { defaultBotSetup, type BotSetup } from '../bot/botSetup'
 import { createThrustVectoringState } from '../flight/thrustVectoring'
 import { createPilotIntent } from '../flight/intent'
 import { createManeuverState } from '../flight/maneuvers'
@@ -61,6 +65,12 @@ export class GameRuntime {
   // Each bot's instructor memory (mouseAim.ts), by entity id. Not world state: it holds three.js
   // vectors, and it is rebuilt from nothing on every life and every reset, so a replay matches.
   private steering = new Map<string, MouseAim>()
+  // The session's flight core (SessionConfig.flightCore); every flown aircraft steps through it.
+  private core: FlightCore
+  // The Flight Lab's patch on the new core's profiles (FR1 tuning panel). Not world state: it is
+  // a session setting, exported with the replay. `tunedTick` is the last tick it changed on.
+  private coreTuning: CoreTuning = {}
+  private tunedTick = 0
 
   constructor(config: SessionConfig) {
     validateSession(config)
@@ -69,7 +79,11 @@ export class GameRuntime {
       ...(config.mapId === undefined ? {} : { mapId: config.mapId }),
       // `true` from older sessions is the still drone.
       ...(config.targetDrone ? { targetDrone: config.targetDrone === true ? 'still' as const : config.targetDrone } : {}),
-      ...(config.flightOverrides === undefined ? {} : { flightOverrides: structuredClone(config.flightOverrides) }) }
+      ...(config.bot === undefined ? {} : { bot: { ...config.bot } }),
+      ...(config.flightOverrides === undefined ? {} : { flightOverrides: structuredClone(config.flightOverrides) }),
+      // Absent and 'legacy' are the same core; only another one is kept, so older sessions and replays read unchanged.
+      ...(config.flightCore === undefined || config.flightCore === 'legacy' ? {} : { flightCore: config.flightCore }) }
+    this.core = getFlightCore(this.config.flightCore)
     this.world = this.createWorld()
   }
 
@@ -86,19 +100,23 @@ export class GameRuntime {
   /** A still drone keeps `orientation`; a moving one starts its path at `position`, heading `heading`, on `tick`. */
   private createDrone(position: Vec3, heading: Vec3, orientation: AircraftState['orientation'], tick: number) {
     const mode = this.config.targetDrone as TargetDroneMode
-    const drone = this.createAircraft('drone-1', targetDrone.aircraftId, position, mode === 'bot' ? combatBot.speed : undefined)
+    const drone = this.createAircraft('drone-1', targetDrone.aircraftId, position, mode === 'bot' ? this.spawnSpeed(combatBot.speed) : undefined)
     drone.control = 'hold'; drone.velocity = { x: 0, y: 0, z: 0 }; drone.orientation = orientation
     if (mode === 'bot') {
       // Its own speed whatever the practice preset (Low energy spawns below the stall), with the engine trimmed for it.
-      const speed = combatBot.speed
-      drone.control = 'bot'; drone.bot = createBotState(0x5eed ^ tick)
+      const speed = this.spawnSpeed(combatBot.speed)
+      const setup = this.config.bot ?? defaultBotSetup
+      drone.control = 'bot'; drone.bot = createBotState(0x5eed ^ tick, setup.difficulty, setup.loadout)
       drone.velocity = { x: heading.x * speed, y: heading.y * speed, z: heading.z * speed }
       this.steering.set(drone.id, createBotSteering())
     } else if (mode !== 'still') {
       drone.control = 'path'
       drone.path = mode === 'racetrack' ? racetrackFrom(position, heading, tick) : circleFrom(position, position.y, tick)
       Object.assign(drone, dronePose(drone.path, 0))
+      if (mode === 'flares') drone.countermeasures.bursts = droneFlares.bursts
     }
+    // Made again on the drone's own pose, now that it has one.
+    if (this.config.flightCore === 'arcade') drone.arcadeFlight = createArcadeFlight(drone)
     return drone
   }
   /** Brings a shot-down drone back, fresh, in front of the player once its wait is over. */
@@ -111,10 +129,13 @@ export class GameRuntime {
     if (index >= 0) world.aircraft[index] = this.createDrone(position, heading, orientation, world.tick)
   }
 
-  private createAircraft(id: string, aircraftId: string, position: AircraftState['position'], speed: number = practiceSpawns[this.preset].speed): AircraftState {
+  /** The arcade core flies the example's speeds (cruise 230 m/s), so its spawns scale up from this world's. */
+  private spawnSpeed(speed: number) { return this.config.flightCore === 'arcade' ? arcadeSpawnSpeed(speed) : speed }
+
+  private createAircraft(id: string, aircraftId: string, position: AircraftState['position'], speed: number = this.config.flightCore === 'arcade' ? arcadeSpawnSpeeds[this.preset] : practiceSpawns[this.preset].speed): AircraftState {
     const flight = getFlightProfile(aircraftId).flight
     const speedLimits = resolveSpeedLimits(flight, this.config.flightOverrides?.[aircraftId])
-    return {
+    const aircraft: AircraftState = {
       id, aircraftId, control: 'pilot', speedLimits,
       stores: fullArmament(getAircraft(aircraftId)), gun: createGunState(gunOf(aircraftId).weapon.id),
       position,
@@ -125,7 +146,12 @@ export class GameRuntime {
       engine: { requestedPower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits), actualThrust: flight.drag * speed ** 2 },
       enginePower: flight.drag * speed ** 2 / dryThrustLimit(flight, speedLimits),
       rates: { pitch: 0, yaw: 0, roll: 0 },
+      ...(this.config.flightCore ? { flightCore: this.config.flightCore } : {}),
+      ...(this.config.flightCore === 'new' ? { coreFlight: createCoreFlight(aircraftId, speed, this.coreTuning) } : {}),
     }
+    // From the first tick the controls and the camera read the arcade FCS, not a stand-in.
+    if (this.config.flightCore === 'arcade') aircraft.arcadeFlight = createArcadeFlight(aircraft)
+    return aircraft
   }
 
   start() { if (this.status === 'idle') this.status = 'running' }
@@ -155,12 +181,15 @@ export class GameRuntime {
         // A moving one is put where its path is at the end of this tick.
         if (!flown(entity)) {
           if (entity.path && entity.alive) Object.assign(entity, dronePose(entity.path, (this.world.tick + 1 - entity.path.startTick) * WORLD_STEP))
+          // The 'flares' drone answers a missile coming for it; the burst rules pace it.
+          if (this.config.targetDrone === 'flares' && entity.alive && this.missileInbound(entity)) dispenses.add(entity.id)
           continue
         }
         const command = botCommands.get(entity.id) ?? commandAtTick?.(this.world.tick, entity.id) ?? neutralCommand(this.world.tick, entity.id)
         const safe = { ...command }
         for (const key of ['pitch', 'roll', 'yaw', 'speedAdjust'] as const) safe[key] = Number.isFinite(command[key]) ? Math.max(-1, Math.min(1, command[key])) : 0
         safe.gunHeld = command.gunHeld === true
+        safe.psm = command.psm === true
         triggers.set(entity.id, safe.gunHeld)
         safe.actions = Array.isArray(command.actions) ? command.actions.filter(action => action?.type === 'next-target' || action?.type === 'fire-missile' || action?.type === 'countermeasure' || action?.type === 'select-secondary' && Number.isInteger(action.slot)) : []
         for (const action of safe.actions) {
@@ -173,7 +202,7 @@ export class GameRuntime {
         for (let substep = 0; substep < 2; substep++) {
           const previousX = entity.position.x
           if (!entity.alive) break
-          stepFlight(entity, safe, FLIGHT_STEP)
+          this.core.step(entity, safe, FLIGHT_STEP, this.coreTuning)
           if (entity.id === 'aircraft-1') stepPractice(this.world.practice, entity, safe, previousX, FLIGHT_STEP)
         }
       }
@@ -196,12 +225,18 @@ export class GameRuntime {
       this.world.tick++
     })
   }
+  /** A missile launched at `entity` is within the flare drone's range. */
+  private missileInbound(entity: AircraftState) {
+    const p = entity.position
+    return this.world.missiles.some(missile => missile.targetId === entity.id
+      && Math.hypot(missile.position.x - p.x, missile.position.y - p.y, missile.position.z - p.z) < droneFlares.range)
+  }
   /** Moves flares and chaff in the air, starts the bursts asked for this tick, and releases the decoys due. */
   private stepDecoys(dispenses: Set<string>) {
     const world = this.world
     world.decoys = world.decoys.filter(decoy => stepDecoy(decoy, WORLD_STEP))
     for (const entity of world.aircraft) {
-      if (dispenses.has(entity.id) && entity.alive && flown(entity) && startBurst(entity.countermeasures, world.tick, WORLD_STEP))
+      if (dispenses.has(entity.id) && entity.alive && (flown(entity) || entity.control === 'path') && startBurst(entity.countermeasures, world.tick, WORLD_STEP))
         this.emit({ type: 'countermeasure-dispensed', entityId: entity.id, bursts: entity.countermeasures.bursts })
       world.decoys.push(...releaseDecoys(entity, world.tick, WORLD_STEP, () => world.nextProjectileId++))
     }
@@ -302,20 +337,34 @@ export class GameRuntime {
     this.status = 'paused'; this.clock.reset()
   }
   exportReplay() {
-    return { schemaVersion: commandSchemaVersion, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track) }
+    // A tuning changed mid-flight cannot be replayed from one patch: `coreTunedTick` marks it.
+    const tuned = Object.keys(this.coreTuning).length ? { coreTuning: structuredClone(this.coreTuning), ...(this.tunedTick > 0 ? { coreTunedTick: this.tunedTick } : {}) } : {}
+    return { schemaVersion: commandSchemaVersion, profileVersion: flightProfileVersion, config: structuredClone(this.config), preset: this.preset, hz: 60, durationTicks: this.track.length, truncated: this.world.tick > this.track.length, commands: structuredClone(this.track), ...tuned } as {
+      schemaVersion: number; profileVersion: string; config: SessionConfig; preset: PracticePreset; hz: number; durationTicks: number; truncated: boolean; commands: PilotCommand[]
+      coreTuning?: CoreTuning; coreTunedTick?: number
+    }
   }
-  /** Playground modifier: sets the target drone (null removes it), then restarts the flight like reset(). */
-  setTargetDrone(mode: TargetDroneMode | null) {
+  /** Flight Lab: the new core's profile patch, applied from the next step without a reset.
+   * Every patched profile must still validate. */
+  tuneCore(tuning: CoreTuning) {
+    for (const id of Object.keys(tuning.profiles ?? {})) validateCoreProfile(coreProfileOf(id, tuning), `coreTuning.${id}`)
+    validateCoreAssist(coreAssistOf(tuning), 'coreTuning.assist')
+    this.coreTuning = structuredClone(tuning)
+    this.tunedTick = this.world.tick
+  }
+  get tuning(): CoreTuning { return structuredClone(this.coreTuning) }
+  /** Playground modifier: sets the target drone (null removes it) and, for the combat bot, its setup, then restarts the flight like reset(). */
+  setTargetDrone(mode: TargetDroneMode | null, bot?: BotSetup) {
     if (this.status === 'disposed') return
-    const { targetDrone: _, ...rest } = this.config
-    const next = mode ? { ...rest, targetDrone: mode } : rest
+    const { targetDrone: _, bot: __, ...rest } = this.config
+    const next = mode ? { ...rest, targetDrone: mode, ...(mode === 'bot' && bot ? { bot: { ...bot } } : {}) } : rest
     validateSession(next)
     this.config = next
     this.reset()
   }
   reset(preset: PracticePreset = this.preset) {
     if (this.status === 'disposed') return
-    this.preset = preset; this.track = []; this.hits = []; this.events = []; this.nextEventId = 1; this.steering.clear()
+    this.preset = preset; this.track = []; this.tunedTick = 0; this.hits = []; this.events = []; this.nextEventId = 1; this.steering.clear()
     this.world = this.createWorld()
     this.clock.reset()
     this.clock.droppedSeconds = 0

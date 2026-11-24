@@ -9,7 +9,7 @@ import type { AircraftState } from '../../src/game/state/WorldState'
 import { FLIGHT_STEP as dt } from '../../src/game/runtime/clock'
 
 /*
-Maneuver catalogue M1–M7 (docs/psm-maneuver-control-plan.md §3) as closed-loop scripts.
+Maneuver catalogue M1–M7 as closed-loop scripts.
 
 Every script is the recipe a player is taught: the switch conditions read incidence,
 attitude, heading or speed, never time alone, so a faster airframe runs the same recipe

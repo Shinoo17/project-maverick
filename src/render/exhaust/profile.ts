@@ -1,9 +1,9 @@
 import type { Vector3 } from 'three'
 import { getAircraft } from '../../content/aircraft'
-import { getFlightProfile } from '../../game/flight/profile'
 import type { AircraftId } from '../../content/schemas'
 import type { AircraftState } from '../../game/state/WorldState'
 import { clamp } from '../../game/flight/speed'
+import { readFlight, type FlightReadout } from '../../game/flight/readout'
 
 // Metres in FlightWorld's centered, 18.9 m presentation frame (+X forward).
 // Measured AFTER node removal, prepareAnimations(frame zero), and orientation.
@@ -23,10 +23,11 @@ export interface ExhaustNozzleShape { origin: Vector3; axis: Vector3; up: Vector
 export interface ExhaustNozzles { left: ExhaustNozzleFrame; right: ExhaustNozzleFrame }
 
 export interface ExhaustConditions { aircraftId: AircraftId; power: number; afterburner: boolean; vectorAngle: number; vectorAngles?: { left: number; right: number }; nozzles?: ExhaustNozzles }
-export function flightExhaustConditions(state: AircraftState): ExhaustConditions {
-  return { aircraftId: state.aircraftId, power: state.alive ? clamp(state.enginePower, 0, 1) : 0,
-    afterburner: state.alive && state.maneuver.burnerActive, vectorAngle: 0,
-    vectorAngles: getFlightProfile(state.aircraftId).thrustVectoring ? { left: state.thrustVectoring.left * Math.PI / 180, right: state.thrustVectoring.right * Math.PI / 180 } : undefined }
+export function flightExhaustConditions(state: AircraftState, flight: FlightReadout = readFlight(state)): ExhaustConditions {
+  const nozzle = flight.nozzle
+  return { aircraftId: state.aircraftId, power: state.alive ? clamp(flight.power, 0, 1) : 0,
+    afterburner: state.alive && flight.burner.active, vectorAngle: 0,
+    vectorAngles: nozzle ? { left: nozzle.left * Math.PI / 180, right: nozzle.right * Math.PI / 180 } : undefined }
 }
 
 /**

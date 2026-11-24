@@ -2,6 +2,8 @@ import type { TargetDroneMode } from '../game/playground/dronePath'
 import type { FlightProfileId } from './flight-profiles'
 import type { FlightSpeedOverride } from '../game/flight/profileTypes'
 import type { Tuple3 } from './hitboxes'
+import type { FlightCoreId } from '../game/flight/core'
+import type { BotSetup } from '../game/bot/botSetup'
 export type AircraftId = string
 export const presentationIds = ['f22', 'su57'] as const
 export type Locale = 'th' | 'en'
@@ -60,11 +62,16 @@ export interface AircraftHangarInfo {
 
 export interface SessionConfig {
   mode: 'playground' | 'offline'
-  mapId?: 'flat-range'
+  /** A map from `flightMaps` (src/content/maps). Absent = the flat training range. */
+  mapId?: string
   aircraftIds: AircraftId[]
   /** Playground only: adds a target drone ahead of the spawn that holds still or flies a path
    * (src/game/playground/dronePath.ts). Absent or false = no drone; true = 'still' (older sessions). */
   targetDrone?: boolean | TargetDroneMode
+  /** The combat bot (targetDrone 'bot'): its difficulty and what it may shoot. Absent = normal, fully armed. */
+  bot?: BotSetup
   /** Per aircraft type, in the same ARCADE km/h units as its profile. */
   flightOverrides?: Record<AircraftId, FlightSpeedOverride>
+  /** Developer setting: which flight core flies every aircraft (src/game/flight/core.ts). Absent = 'legacy'. */
+  flightCore?: FlightCoreId
 }

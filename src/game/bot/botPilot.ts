@@ -45,6 +45,7 @@ import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { AircraftState, Vec3 } from '../state/WorldState'
 import { neutralCommand, type PilotCommand } from '../runtime/commands'
 import { WORLD_STEP } from '../runtime/clock'
+import { readFlight } from '../flight/readout'
 import { createMouseAim, instruct, instructorShare, stepAim, type MouseAim } from '../input/mouseAim'
 import { EFFECTIVE_RANGE, gunMountOf, solveGun, type GunMount } from '../combat/gunSolution'
 import { boundingRadius } from '../combat/collision'
@@ -53,10 +54,12 @@ import { getAircraft } from '../../content/aircraft'
 import { missileStations } from '../../content/weapons'
 import type { Missile } from '../combat/missiles'
 import { rwrPicture, type RwrThreat } from '../combat/rwr'
+import { botHasGun, botHasMissiles, type BotDifficulty, type BotLoadout } from './botSetup'
 
 export type BotTactic = 'patrol' | 'engage' | 'evade' | 'extend' | 'defend'
 
-/** One difficulty for now (doc 08's Normal). Provisional values, waiting on playtest. */
+/** Doc 08's three difficulties. They differ in reaction, aim and trigger discipline only: every bot
+ * flies the same aircraft limits. Provisional values, waiting on playtest. */
 export interface BotProfile {
   /** Seconds before a new tactic takes over, drawn per decision. */
   reactionSeconds: readonly [number, number]
@@ -73,9 +76,11 @@ export interface BotProfile {
   missileRestSeconds: readonly [number, number]
 }
 export const botProfiles = {
+  easy: { reactionSeconds: [0.7, 1.0], aimErrorDeg: 1.8, aimErrorSeconds: 1.1, fireConeDeg: 1.2, triggerDelaySeconds: 0.6, burstSeconds: [0.25, 0.5], restSeconds: [1.2, 2.2], missileRestSeconds: [14, 20] },
   normal: { reactionSeconds: [0.3, 0.5], aimErrorDeg: 0.7, aimErrorSeconds: 1.4, fireConeDeg: 1.2, triggerDelaySeconds: 0.25, burstSeconds: [0.4, 0.8], restSeconds: [0.5, 1.1], missileRestSeconds: [6, 10] },
-} as const satisfies Record<string, BotProfile>
-export type BotDifficulty = keyof typeof botProfiles
+  hard: { reactionSeconds: [0.15, 0.25], aimErrorDeg: 0.3, aimErrorSeconds: 1.8, fireConeDeg: 1.2, triggerDelaySeconds: 0.1, burstSeconds: [0.6, 1.0], restSeconds: [0.3, 0.7], missileRestSeconds: [3.5, 6] },
+} as const satisfies Record<BotDifficulty, BotProfile>
+export type { BotDifficulty, BotLoadout }
 
 /** Tactics and safety, shared by every difficulty. Provisional values, waiting on playtest. */
 export const botRules = {
@@ -148,6 +153,9 @@ export const botRules = {
    * this share of the IR missile's launch range. */
   missileMinRange: 400,
   irHandover: 0.8,
+  /** Unarmed: it breaks while the contact is inside this range with its nose within this of the bot, wherever the bot looks. */
+  unarmedThreatRange: 3500,
+  unarmedThreatConeDeg: 45,
 } as const
 
 export interface BotContact {
@@ -164,6 +172,8 @@ export interface BotContact {
 /** Plain data, so a snapshot copies it and a replay rebuilds it. */
 export interface BotState {
   difficulty: BotDifficulty
+  /** What it may shoot (botSetup.ts). Unarmed ('none') it never engages: it patrols and evades. */
+  loadout: BotLoadout
   tactic: BotTactic
   /** Tick the current tactic took over. */
   since: number
@@ -198,9 +208,9 @@ export interface BotState {
   missileRest: number
 }
 
-export function createBotState(seed: number, difficulty: BotDifficulty = 'normal'): BotState {
+export function createBotState(seed: number, difficulty: BotDifficulty = 'normal', loadout: BotLoadout = 'full'): BotState {
   return {
-    difficulty, tactic: 'patrol', since: 0, contact: null, pending: null, rng: seed >>> 0,
+    difficulty, loadout, tactic: 'patrol', since: 0, contact: null, pending: null, rng: seed >>> 0,
     aimError: { from: [0, 0], to: [0, 0], start: 0 }, onAimSince: -1, burstUntil: -1, restUntil: -1,
     waypoint: 0, breakSide: 1, reverseAt: 0, threatGone: 0, climbing: false, lastGun: 0, turnAxis: null, threat: null, missileReadyTick: 0, missileRest: 0,
   }
@@ -290,16 +300,22 @@ function wanted(bot: BotState, self: AircraftState, tick: number): BotTactic {
   const contact = contactNow(bot.contact, tick)
   const range = Math.hypot(contact.position.x - self.position.x, contact.position.y - self.position.y, contact.position.z - self.position.z)
   // Threat: the contact is close behind with its nose on the bot.
-  const threatened = range < botRules.threatRange && offNose({ position: contact.position, orientation: velocityFrame(contact.velocity) }, self.position) < botRules.threatConeDeg
-    && offNose(self, contact.position) > 90
+  const pointedAt = offNose({ position: contact.position, orientation: velocityFrame(contact.velocity) }, self.position)
+  // Unarmed, it has nothing to fight with: any contact pointing at it inside a longer range is a threat.
+  const unarmed = bot.loadout === 'none'
+  const threatened = unarmed ? range < botRules.unarmedThreatRange && pointedAt < botRules.unarmedThreatConeDeg
+    : range < botRules.threatRange && pointedAt < botRules.threatConeDeg && offNose(self, contact.position) > 90
   const speed = speedOf(self.velocity), elapsed = (tick - bot.since) * WORLD_STEP
+  // What it does when nothing threatens it: fight, or (unarmed) fly its patrol.
+  const idle: BotTactic = unarmed ? 'patrol' : 'engage'
   if (bot.tactic === 'evade') {
     bot.threatGone = threatened ? 0 : bot.threatGone + 1 / botRules.decisionHz
     if (bot.threatGone < botRules.threatClearSeconds && elapsed < botRules.evadeMaxSeconds) return 'evade'
-    return speed < botRules.slow ? 'extend' : 'engage'
+    return speed < botRules.slow ? 'extend' : idle
   }
   if (threatened) return 'evade'
   if (bot.tactic === 'extend' && (speed < botRules.fast || elapsed < 3) && elapsed < botRules.extendMaxSeconds) return 'extend'
+  if (unarmed) return speed < botRules.slow ? 'extend' : 'patrol'
   // Two aircraft circling each other with neither getting its nose round: break off, open the range
   // and come back from a new side. It also gives the other pilot a shot.
   if (bot.tactic === 'engage' && range < 2000 && Math.min(elapsed, (tick - bot.lastGun) * WORLD_STEP) > botRules.stalemateSeconds) return 'extend'
@@ -493,7 +509,7 @@ function holdTurn(bot: BotState, self: AircraftState, direction: Vector3) {
 
 /** The missile actions this tick: pick the station for the range, then launch once locked (see the header). */
 function missileActions(bot: BotState, self: AircraftState, missiles: readonly Missile[], tick: number): PilotCommand['actions'] {
-  if (bot.tactic !== 'engage' || !bot.contact) return []
+  if (bot.tactic !== 'engage' || !bot.contact || !botHasMissiles(bot.loadout)) return []
   const contact = contactNow(bot.contact, tick)
   const range = Math.hypot(contact.position.x - self.position.x, contact.position.y - self.position.y, contact.position.z - self.position.z)
   const rows = missileStations(getAircraft(self.aircraftId)).map((row, slot) => ({ ...row, slot,
@@ -550,13 +566,13 @@ export function botCommand(bot: BotState, steering: MouseAim, self: AircraftStat
   const handsOn = steering.recovering ? flying : instructorShare(self) > 0.5
   if (!steering.recovering || flying) steering.direction.copy(plan.direction)
   stepAim(steering, self, tick, false, handsOn)
-  const gunning = plan.gun && !guarded && !steering.recovering
+  const gunning = plan.gun && !guarded && !steering.recovering && botHasGun(bot.loadout)
   // On the gun the instructor flies tighter, as it does for a player's aim on the lead. The
   // lead's own turn is already in the aim's measured rate, so trackLead's feed-forward is not needed.
   steering.tracking = gunning ? 1 : 0
   const flown = steering.share > 0 ? instruct(steering, self) : { pitch: 0, roll: 0, yaw: 0 }
   // Ease off the pull as incidence climbs: the bot never opens the limiter into post-stall (no PSM below Hard).
-  const guardPull = 1 - 0.9 * MathUtils.smoothstep(self.maneuver.alpha, botRules.alphaGuard[0], botRules.alphaGuard[1])
+  const guardPull = 1 - 0.9 * MathUtils.smoothstep(readFlight(self).noseVelocityDeg, botRules.alphaGuard[0], botRules.alphaGuard[1])
   command.pitch = steering.share * flown.pitch * (flown.pitch > 0 ? guardPull : 1)
   command.roll = steering.share * flown.roll
   command.yaw = steering.share * flown.yaw
